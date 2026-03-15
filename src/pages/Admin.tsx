@@ -10,19 +10,90 @@ import { addTip, loadTips, deleteTip, updateTip } from "@/lib/tipsStorage";
 import { addCoupon, loadCoupons, deleteCoupon, updateCoupon, calculateTotalOdds, CouponMatch, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, saveFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
 import { Tip } from "@/components/TipCard";
-import { Plus, Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, XCircle } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, XCircle, Users, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
 import UpcomingMatchesList from "@/components/UpcomingMatchesList";
 import { UpcomingMatch } from "@/hooks/useUpcomingMatches";
 import Logo from "@/components/Logo";
+import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
   const { toast } = useToast();
   const [tips, setTips] = useState<Tip[]>(loadTips());
   const [coupons, setCoupons] = useState<Coupon[]>(loadCoupons());
   const [featured, setFeatured] = useState<FeaturedPick>(loadFeaturedPick());
+
+  // User Premium Management State
+  const [userEmail, setUserEmail] = useState("");
+  const [premiumDays, setPremiumDays] = useState("30");
+  const [isUpdatingPremium, setIsUpdatingPremium] = useState(false);
+
+  const handleGrantPremium = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userEmail.trim()) {
+      toast({ title: "Please enter user email", variant: "destructive" });
+      return;
+    }
+
+    setIsUpdatingPremium(true);
+    try {
+      // 1. Find user by email (using a rpc or searching profiles if exists, 
+      // but here we'll use a direct approach via edge function or direct DB update if allowed)
+      // Since we don't have a direct "find user by email" admin tool here easily,
+      // the best practice is to use the premium_access table directly if we have the UUID,
+      // but usually admins have the email.
+      
+      // Let's implement a robust way: we'll try to invoke a function or direct update
+      // For this project, we'll use the supabase client to update the premium_access table.
+      // We need the user_id. We'll assume the admin knows the user_id or we look it up.
+      
+      const { data: userData, error: userError } = await (supabase as any)
+        .from('profiles')
+        .select('id')
+        .eq('email', userEmail.trim())
+        .single();
+
+      if (userError || !userData) {
+        // Fallback: Try to search in a common table or just use the email if the Edge Function supports it
+        toast({ 
+          title: "User not found", 
+          description: "Make sure the email is correct and the user has signed in at least once.",
+          variant: "destructive" 
+        });
+        setIsUpdatingPremium(false);
+        return;
+      }
+
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + parseInt(premiumDays));
+
+      const { error: updateError } = await (supabase as any)
+        .from('premium_access')
+        .upsert({
+          user_id: userData.id,
+          expires_at: expiresAt.toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (updateError) throw updateError;
+
+      toast({ 
+        title: "Premium Granted! 🎉", 
+        description: `Added ${premiumDays} days for ${userEmail}` 
+      });
+      setUserEmail("");
+    } catch (error: any) {
+      toast({ 
+        title: "Error granting premium", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setIsUpdatingPremium(false);
+    }
+  };
 
   // Tip form
   const [editingTipId, setEditingTipId] = useState<number | null>(null);
@@ -231,6 +302,65 @@ const Admin = () => {
       </header>
 
       <main className="container max-w-5xl mx-auto px-4 py-8 space-y-8">
+        {/* USER PREMIUM MANAGEMENT */}
+        <Card className="bg-card border-border/50 card-glow overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
+            <Crown className="w-24 h-24 text-accent" />
+          </div>
+          <CardContent className="p-6 md:p-8">
+            <h2 className="font-display text-xl font-bold text-foreground mb-6 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
+                <Users className="w-4 h-4 text-accent" />
+              </div>
+              Zarządzaj Premium (Ręcznie)
+            </h2>
+            <form onSubmit={handleGrantPremium} className="grid gap-5 md:grid-cols-3 items-end">
+              <div className="space-y-2 md:col-span-1">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Email Użytkownika</Label>
+                <Input 
+                  type="email"
+                  placeholder="user@example.com" 
+                  value={userEmail} 
+                  onChange={(e) => setUserEmail(e.target.value)} 
+                />
+              </div>
+              <div className="space-y-2 md:col-span-1">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Dni Premium</Label>
+                <Select value={premiumDays} onValueChange={setPremiumDays}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wybierz czas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 Dzień</SelectItem>
+                    <SelectItem value="7">7 Dni</SelectItem>
+                    <SelectItem value="15">15 Dni</SelectItem>
+                    <SelectItem value="30">30 Dni</SelectItem>
+                    <SelectItem value="90">90 Dni</SelectItem>
+                    <SelectItem value="365">1 Rok</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-1">
+                <Button 
+                  type="submit" 
+                  disabled={isUpdatingPremium}
+                  className="w-full gap-2 h-11 font-display uppercase tracking-wider text-xs bg-accent text-accent-foreground hover:bg-accent/90"
+                >
+                  {isUpdatingPremium ? (
+                    <span className="animate-spin">⌛</span>
+                  ) : (
+                    <Crown className="w-4 h-4" />
+                  )}
+                  Nadaj Dostęp
+                </Button>
+              </div>
+            </form>
+            <p className="mt-4 text-[11px] text-muted-foreground italic">
+              * Uwaga: Użytkownik musi istnieć w tabeli 'profiles'. Jeśli nie go nie ma, upewnij się, że zalogował się przynajmniej raz do aplikacji.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* FEATURED PICK EDITOR */}
         <Card className="bg-card border-border/50 card-glow">
           <CardContent className="p-6 md:p-8">

@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 const ADMIN_LOGIN = "123";
-const ADMIN_PASSWORD = "322";
+const ADMIN_PASSWORD = "321";
 
 const Logo = () => {
   const [tapCount, setTapCount] = useState(0);
