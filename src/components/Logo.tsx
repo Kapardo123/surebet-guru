@@ -55,7 +55,7 @@ const Logo = () => {
         className="select-none cursor-pointer flex items-baseline gap-0.5 group" 
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTap(); }}
       >
-        <span className="text-xl font-black tracking-tighter bg-gradient-to-r from-primary via-[hsl(280,80%,65%)] to-accent bg-[length:200%_100%] animate-[shimmer_3s_ease-in-out_infinite] bg-clip-text text-transparent transition-transform group-hover:scale-105 duration-300">
+        <span className="text-xl font-black tracking-tighter bg-gradient-to-r from-primary via-[hsl(280,80%,65%)] to-accent bg-clip-text text-transparent transition-all group-hover:scale-105 duration-300 drop-shadow-[0_0_8px_rgba(155,135,245,0.3)]">
           GREAT
         </span>
         <span className="text-xl font-extralight tracking-[0.15em] text-foreground/80">
