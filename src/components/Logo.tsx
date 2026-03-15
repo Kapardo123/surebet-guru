@@ -52,23 +52,18 @@ const Logo = () => {
   return (
     <>
       <div 
-        className="select-none cursor-pointer flex items-center gap-2 group" 
+        className="select-none cursor-pointer flex items-baseline gap-0.5 group" 
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTap(); }}
       >
-        <LottieLogo size={40} className="md:w-12 md:h-12" />
-        <div className="flex flex-col -space-y-1">
-          <div className="flex items-baseline gap-0.5">
-            <span className="text-lg md:text-xl font-black tracking-tighter bg-gradient-to-r from-primary via-[hsl(280,80%,65%)] to-accent bg-[length:200%_100%] animate-[shimmer_3s_ease-in-out_infinite] bg-clip-text text-transparent transition-transform group-hover:scale-105 duration-300">
-              GREAT
-            </span>
-            <span className="text-lg md:text-xl font-extralight tracking-[0.15em] text-foreground/80">
-              SPORT
-            </span>
-          </div>
-          <span className="text-[8px] md:text-[9px] font-semibold uppercase tracking-[0.35em] text-accent/70">
-            BETS
-          </span>
-        </div>
+        <span className="text-xl font-black tracking-tighter bg-gradient-to-r from-primary via-[hsl(280,80%,65%)] to-accent bg-[length:200%_100%] animate-[shimmer_3s_ease-in-out_infinite] bg-clip-text text-transparent transition-transform group-hover:scale-105 duration-300">
+          GREAT
+        </span>
+        <span className="text-xl font-extralight tracking-[0.15em] text-foreground/80">
+          SPORT
+        </span>
+        <span className="text-[9px] font-semibold uppercase tracking-[0.35em] text-accent/70 ml-1 mb-px">
+          BETS
+        </span>
       </div>
 
       <Dialog open={showLogin} onOpenChange={setShowLogin}>
