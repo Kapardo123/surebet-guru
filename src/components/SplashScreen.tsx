@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
+import LottieLogo from "./LottieLogo";
 
 const SplashScreen = () => {
   const [isVisible, setIsVisible] = useState(true);
@@ -34,7 +35,16 @@ const SplashScreen = () => {
               className="w-full h-full object-cover"
             />
             {/* Overlay for branding on top of fullscreen image */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm">
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="mb-8"
+              >
+                <LottieLogo size={180} className="md:w-[240px] md:h-[240px]" />
+              </motion.div>
+
               <motion.div
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
