@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,9 +21,27 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
   const { toast } = useToast();
-  const [tips, setTips] = useState<Tip[]>(loadTips());
-  const [coupons, setCoupons] = useState<Coupon[]>(loadCoupons());
-  const [featured, setFeatured] = useState<FeaturedPick>(loadFeaturedPick());
+  const [tips, setTips] = useState<Tip[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [featured, setFeatured] = useState<FeaturedPick>({
+    league: "", kickoff: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", confidence: "High"
+  });
+
+  useEffect(() => {
+    refreshData();
+  }, []);
+
+  const refreshData = async () => {
+    const loadedTips = await loadTips();
+    const loadedCoupons = await loadCoupons();
+    const loadedFeatured = await loadFeaturedPick();
+    
+    setTips(loadedTips);
+    setCoupons(loadedCoupons);
+    if (loadedFeatured) {
+      setFeatured(loadedFeatured);
+    }
+  };
 
   // User Premium Management State
   const [userEmail, setUserEmail] = useState("");
@@ -140,7 +158,7 @@ const Admin = () => {
     toast({ title: `Match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.league || !form.homeTeam || !form.awayTeam || !form.prediction || !form.odds || !form.kickoff) {
       toast({ title: "Please fill all fields", variant: "destructive" });
@@ -148,7 +166,7 @@ const Admin = () => {
     }
 
     if (editingTipId !== null) {
-      updateTip({
+      await updateTip({
         id: editingTipId,
         sport: form.sport,
         league: form.league,
@@ -160,11 +178,11 @@ const Admin = () => {
         status: form.status,
         isPremium: form.isPremium,
       });
-      setTips(loadTips());
+      await refreshData();
       resetTipForm();
       toast({ title: "Tip updated! ✅" });
     } else {
-      addTip({
+      await addTip({
         sport: form.sport,
         league: form.league,
         homeTeam: form.homeTeam,
@@ -175,7 +193,7 @@ const Admin = () => {
         status: form.status,
         isPremium: form.isPremium,
       });
-      setTips(loadTips());
+      await refreshData();
       resetTipForm();
       toast({ title: "Tip added! ✅" });
     }
@@ -197,9 +215,9 @@ const Admin = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleDelete = (id: number) => {
-    deleteTip(id);
-    setTips(loadTips());
+  const handleDelete = async (id: number) => {
+    await deleteTip(id);
+    await refreshData();
     toast({ title: "Tip removed" });
   };
 
@@ -222,14 +240,14 @@ const Admin = () => {
     setCouponMatches(couponMatches.filter((_, i) => i !== index));
   };
 
-  const handleCreateOrUpdateCoupon = () => {
+  const handleCreateOrUpdateCoupon = async () => {
     if (!couponName || couponMatches.length < 2) {
       toast({ title: "Name and at least 2 matches required", variant: "destructive" });
       return;
     }
 
     if (editingCouponId !== null) {
-      updateCoupon({
+      await updateCoupon({
         id: editingCouponId,
         name: couponName,
         matches: couponMatches,
@@ -239,18 +257,18 @@ const Admin = () => {
         isPremium: couponIsPremium,
         createdAt: coupons.find(c => c.id === editingCouponId)?.createdAt || new Date().toISOString(),
       });
-      setCoupons(loadCoupons());
+      await refreshData();
       resetCouponForm();
       toast({ title: "Coupon updated! 🎫" });
     } else {
-      addCoupon({
+      await addCoupon({
         name: couponName,
         matches: couponMatches,
         stake: couponStake ? parseFloat(couponStake) : undefined,
         status: "active",
         isPremium: couponIsPremium,
       });
-      setCoupons(loadCoupons());
+      await refreshData();
       resetCouponForm();
       toast({ title: "Coupon created! 🎫" });
     }
@@ -265,9 +283,9 @@ const Admin = () => {
     setCouponMatches([...coupon.matches]);
   };
 
-  const handleDeleteCoupon = (id: number) => {
-    deleteCoupon(id);
-    setCoupons(loadCoupons());
+  const handleDeleteCoupon = async (id: number) => {
+    await deleteCoupon(id);
+    await refreshData();
     toast({ title: "Coupon removed" });
   };
 
@@ -404,8 +422,9 @@ const Admin = () => {
               <div className="flex items-end">
                 <Button
                   className="w-full gap-2 h-11 font-display uppercase tracking-wider text-xs"
-                  onClick={() => {
-                    saveFeaturedPick(featured);
+                  onClick={async () => {
+                    await saveFeaturedPick(featured);
+                    await refreshData();
                     toast({ title: "Featured Pick updated! ⚡" });
                   }}
                 >

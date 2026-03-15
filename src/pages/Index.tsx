@@ -28,9 +28,19 @@ const Index = () => {
   const { user, signOut } = useAuth();
 
   useEffect(() => {
-    setTips(loadTips());
-    setCoupons(loadCoupons());
-    setFeaturedPick(loadFeaturedPick());
+    const fetchData = async () => {
+      const loadedTips = await loadTips();
+      const loadedCoupons = await loadCoupons();
+      const loadedFeatured = await loadFeaturedPick();
+      
+      setTips(loadedTips);
+      setCoupons(loadedCoupons);
+      if (loadedFeatured) {
+        setFeaturedPick(loadedFeatured);
+      }
+    };
+    
+    fetchData();
   }, []);
 
   return (

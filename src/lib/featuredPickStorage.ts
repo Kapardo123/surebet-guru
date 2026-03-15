@@ -1,4 +1,7 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export interface FeaturedPick {
+  id?: number;
   league: string;
   kickoff: string;
   homeTeam: string;
@@ -8,26 +11,44 @@ export interface FeaturedPick {
   confidence: string;
 }
 
-const STORAGE_KEY = "tipstr_featured_pick";
+export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
+  const { data, error } = await supabase
+    .from('featured_picks')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
 
-const defaultPick: FeaturedPick = {
-  league: "Premier League",
-  kickoff: "20:00",
-  homeTeam: "Arsenal",
-  awayTeam: "Chelsea",
-  prediction: "Over 2.5 Goals",
-  odds: "1.85",
-  confidence: "High",
+  if (error) {
+    if (error.code === 'PGRST116') return null; // No rows found
+    console.error("Error loading featured pick:", error);
+    return null;
+  }
+
+  return {
+    id: data.id,
+    league: data.league,
+    kickoff: data.kickoff,
+    homeTeam: data.home_team,
+    awayTeam: data.away_team,
+    prediction: data.prediction,
+    odds: data.odds,
+    confidence: data.confidence
+  };
 };
 
-export const loadFeaturedPick = (): FeaturedPick => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch {}
-  return defaultPick;
-};
+export const saveFeaturedPick = async (pick: FeaturedPick) => {
+  const { error } = await supabase
+    .from('featured_picks')
+    .insert([{
+      league: pick.league,
+      kickoff: pick.kickoff,
+      home_team: pick.homeTeam,
+      away_team: pick.awayTeam,
+      prediction: pick.prediction,
+      odds: pick.odds,
+      confidence: pick.confidence
+    }]);
 
-export const saveFeaturedPick = (pick: FeaturedPick) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(pick));
+  if (error) console.error("Error saving featured pick:", error);
 };

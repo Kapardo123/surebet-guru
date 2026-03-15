@@ -1,4 +1,5 @@
 
+import { supabase } from "@/integrations/supabase/client";
 
 export interface CouponMatch {
   homeTeam: string;
@@ -21,60 +22,88 @@ export interface Coupon {
   isPremium?: boolean;
 }
 
-const STORAGE_KEY = "tipstr_coupons";
-
 export const calculateTotalOdds = (matches: CouponMatch[]): number => {
   if (matches.length === 0) return 0;
   return matches.reduce((acc, m) => acc * m.odds, 1);
 };
 
-const defaultCoupons: Coupon[] = [
-  {
-    id: 1,
-    name: "Weekend Combo 🔥",
-    matches: [
-      { homeTeam: "Barcelona", awayTeam: "Real Madrid", prediction: "Over 2.5 Goals", odds: 1.72, league: "La Liga", sport: "Football", kickoff: "Saturday, 21:00" },
-      { homeTeam: "Manchester City", awayTeam: "Arsenal", prediction: "BTTS Yes", odds: 1.85, league: "Premier League", sport: "Football", kickoff: "Sunday, 17:30" },
-      { homeTeam: "Bayern Munich", awayTeam: "Borussia Dortmund", prediction: "Bayern Win", odds: 1.55, league: "Bundesliga", sport: "Football", kickoff: "Saturday, 18:30" },
-    ],
-    totalOdds: +(1.72 * 1.85 * 1.55).toFixed(2),
-    stake: 10,
-    status: "active",
-    createdAt: new Date().toISOString(),
-    isPremium: false,
-  },
-];
+export const loadCoupons = async (): Promise<Coupon[]> => {
+  const { data, error } = await supabase
+    .from('coupons')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-export const loadCoupons = (): Coupon[] => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch {}
-  return defaultCoupons;
+  if (error) {
+    console.error("Error loading coupons:", error);
+    return [];
+  }
+
+  return (data || []).map(coupon => ({
+    id: coupon.id,
+    name: coupon.name,
+    matches: coupon.matches,
+    totalOdds: coupon.total_odds,
+    stake: coupon.stake,
+    status: coupon.status,
+    createdAt: coupon.created_at,
+    isPremium: coupon.is_premium
+  }));
 };
 
-export const saveCoupons = (coupons: Coupon[]) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(coupons));
-};
+export const addCoupon = async (coupon: Omit<Coupon, "id" | "totalOdds" | "createdAt">): Promise<Coupon | null> => {
+  const totalOdds = calculateTotalOdds(coupon.matches);
+  const { data, error } = await supabase
+    .from('coupons')
+    .insert([{
+      name: coupon.name,
+      matches: coupon.matches,
+      total_odds: totalOdds,
+      stake: coupon.stake,
+      status: coupon.status,
+      is_premium: coupon.isPremium
+    }])
+    .select()
+    .single();
 
-export const addCoupon = (coupon: Omit<Coupon, "id" | "totalOdds" | "createdAt">): Coupon => {
-  const coupons = loadCoupons();
-  const newCoupon: Coupon = {
-    ...coupon,
-    id: Date.now(),
-    totalOdds: calculateTotalOdds(coupon.matches),
-    createdAt: new Date().toISOString(),
+  if (error) {
+    console.error("Error adding coupon:", error);
+    return null;
+  }
+
+  return {
+    id: data.id,
+    name: data.name,
+    matches: data.matches,
+    totalOdds: data.total_odds,
+    stake: data.stake,
+    status: data.status,
+    createdAt: data.created_at,
+    isPremium: data.is_premium
   };
-  saveCoupons([newCoupon, ...coupons]);
-  return newCoupon;
 };
 
-export const deleteCoupon = (id: number) => {
-  const coupons = loadCoupons();
-  saveCoupons(coupons.filter((c) => c.id !== id));
+export const deleteCoupon = async (id: number) => {
+  const { error } = await supabase
+    .from('coupons')
+    .delete()
+    .eq('id', id);
+  
+  if (error) console.error("Error deleting coupon:", error);
 };
 
-export const updateCoupon = (updatedCoupon: Coupon) => {
-  const coupons = loadCoupons();
-  saveCoupons(coupons.map((c) => (c.id === updatedCoupon.id ? updatedCoupon : c)));
+export const updateCoupon = async (updatedCoupon: Coupon) => {
+  const totalOdds = calculateTotalOdds(updatedCoupon.matches);
+  const { error } = await supabase
+    .from('coupons')
+    .update({
+      name: updatedCoupon.name,
+      matches: updatedCoupon.matches,
+      total_odds: totalOdds,
+      stake: updatedCoupon.stake,
+      status: updatedCoupon.status,
+      is_premium: updatedCoupon.isPremium
+    })
+    .eq('id', updatedCoupon.id);
+
+  if (error) console.error("Error updating coupon:", error);
 };
