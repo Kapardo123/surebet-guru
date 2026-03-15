@@ -39,27 +39,29 @@ const Admin = () => {
 
     setIsUpdatingPremium(true);
     try {
-      // 1. Find user by email (using a rpc or searching profiles if exists, 
-      // but here we'll use a direct approach via edge function or direct DB update if allowed)
-      // Since we don't have a direct "find user by email" admin tool here easily,
-      // the best practice is to use the premium_access table directly if we have the UUID,
-      // but usually admins have the email.
+      // Wyszukiwanie użytkownika bezpośrednio w tabeli auth.users nie jest możliwe z poziomu klienta przeglądarkowego.
+      // Najpierw spróbujemy znaleźć użytkownika w tabeli premium_access (jeśli już tam jest).
+      // Ale najlepszym sposobem na powiązanie emaila z ID bez dodatkowej tabeli 'profiles' 
+      // jest skorzystanie z faktu, że Supabase Auth przechowuje dane.
       
-      // Let's implement a robust way: we'll try to invoke a function or direct update
-      // For this project, we'll use the supabase client to update the premium_access table.
-      // We need the user_id. We'll assume the admin knows the user_id or we look it up.
+      // Ponieważ nie mamy pewności co do istnienia tabeli 'profiles', użyjemy bezpieczniejszego podejścia:
+      // Spróbujemy wywołać RPC lub sprawdzić czy użytkownik jest w premium_access (jeśli tam był logowany ID).
+      // JEDNAK najczęstszym powodem błędu jest brak tabeli 'profiles' lub brak uprawnień.
       
+      // ZMIEŃMY TO: Spróbujemy użyć ID użytkownika bezpośrednio, jeśli admin go zna, 
+      // lub spróbujemy znaleźć go w tabeli premium_access jeśli tam istnieje wpis z meta-danymi.
+      
+      // Poprawka: Najpierw sprawdźmy czy tabela profiles w ogóle istnieje i zawiera ten email.
       const { data: userData, error: userError } = await (supabase as any)
-        .from('profiles')
+        .from('profiles') 
         .select('id')
         .eq('email', userEmail.trim())
-        .single();
+        .maybeSingle();
 
       if (userError || !userData) {
-        // Fallback: Try to search in a common table or just use the email if the Edge Function supports it
         toast({ 
-          title: "User not found", 
-          description: "Make sure the email is correct and the user has signed in at least once.",
+          title: "Użytkownik nie odnaleziony", 
+          description: "Upewnij się, że email jest poprawny. Jeśli problem nadal występuje, użytkownik musi się najpierw zalogować.",
           variant: "destructive" 
         });
         setIsUpdatingPremium(false);
