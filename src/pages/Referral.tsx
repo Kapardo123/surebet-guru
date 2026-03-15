@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Copy, Gift, Users, Check, Loader2, Share2, Crown, Lock, Smartphone, Send } from "lucide-react";
+import { ArrowLeft, Copy, Gift, Users, Check, Loader2, Share2, Crown, Lock, Smartphone, Send, Clock } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -74,8 +74,12 @@ const Referral = () => {
       if (fnError) throw new Error("Something went wrong. Please try again.");
       if (data?.error) {
         const friendlyMessages: Record<string, string> = {
-          "You can't use your own code": "Hey, you can't refer yourself! 😄 Ask a friend for their code.",
-          "Invalid or already used code": "This code is invalid or has already been used.",
+          "You can't use your own code! 😄": "Hey, you can't refer yourself! 😄 Ask a friend for their code.",
+          "Invalid or expired code": "This code is invalid or has already expired.",
+          "Please verify your email address before redeeming a code.": "Please verify your email address first! Check your inbox for the confirmation link.",
+          "You have already used a referral code.": "You have already redeemed a referral code before.",
+          "Referral codes can only be used by new accounts (up to 7 days old).": "Sorry, referral codes are only for new users (account must be less than 7 days old).",
+          "This referral code has reached its maximum usage limit.": "This specific code has reached its maximum limit of 10 uses.",
         };
         throw new Error(friendlyMessages[data.error] || data.error);
       }
@@ -241,13 +245,13 @@ const Referral = () => {
         <div className="space-y-4">
           <h2 className="font-display font-bold text-xl text-foreground flex items-center gap-2">
             <div className="w-2 h-8 bg-accent rounded-full" />
-            How it works?
+            Fair Play Rules
           </h2>
           <div className="grid gap-4">
             {[
-              { title: "Share your code", text: "Send your unique code to a friend.", icon: Share2 },
-              { title: "Friend gets 3 days", text: "Your friend enters the code and immediately gets 3 days of Premium.", icon: Gift },
-              { title: "You get 3 days", text: "When your friend enters the code, you also get 3 days for free!", icon: Crown },
+              { title: "Verified Users Only", text: "You must confirm your email to redeem a code.", icon: Check },
+              { title: "New Accounts", text: "Codes work only for accounts created within the last 7 days.", icon: Clock },
+              { title: "Reward Cap", text: "Earn up to 30 free days (10 successful referrals).", icon: Crown },
             ].map((step, i) => (
               <div key={i} className="flex gap-4 p-4 bg-card border border-border/50 rounded-2xl items-center">
                 <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
