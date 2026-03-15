@@ -43,13 +43,19 @@ const Referral = () => {
     if (data) setStats(data);
   };
 
-  const copyCode = async () => {
+  const copyCodeOnly = async () => {
+    if (!myCode) return;
+    await navigator.clipboard.writeText(myCode);
+    setCopied(true);
+    toast({ title: "Code Copied! 📋", description: "Referral code copied to clipboard" });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyFullLink = async () => {
     if (!myCode) return;
     const shareUrl = `${window.location.origin}/referral?code=${myCode}`;
     await navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    toast({ title: "Copied! 📋", description: "Referral link copied to clipboard" });
-    setTimeout(() => setCopied(false), 2000);
+    toast({ title: "Link Copied! 🔗", description: "Full referral link copied to clipboard" });
   };
 
   const shareOnTelegram = () => {
@@ -198,7 +204,7 @@ const Referral = () => {
                   <div className="flex-1 bg-secondary/50 border-2 border-dashed border-border rounded-xl px-4 py-4 font-mono text-2xl text-foreground text-center tracking-[0.2em] font-bold shadow-inner">
                     {myCode || "Loading..."}
                   </div>
-                  <Button onClick={copyCode} variant="outline" className="h-auto px-5 rounded-xl border-border/50 hover:bg-secondary transition-all group" disabled={!myCode}>
+                  <Button onClick={copyCodeOnly} variant="outline" className="h-auto px-5 rounded-xl border-border/50 hover:bg-secondary transition-all group" disabled={!myCode}>
                     {copied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5 group-hover:scale-110 transition-transform" />}
                   </Button>
                 </div>
@@ -212,10 +218,10 @@ const Referral = () => {
                     <Smartphone className="w-4 h-4" />
                     <span className="hidden sm:inline">WhatsApp</span>
                   </Button>
-                  <Button onClick={copyCode} className="gap-2 h-12 bg-primary hover:bg-primary/90 text-primary-foreground">
+                  <Button onClick={copyFullLink} className="gap-2 h-12 bg-primary hover:bg-primary/90 text-primary-foreground">
                     <Share2 className="w-4 h-4" />
-                    <span className="hidden sm:inline">Other</span>
-                    <span className="sm:hidden">Copy</span>
+                    <span className="hidden sm:inline">Copy Link</span>
+                    <span className="sm:hidden">Link</span>
                   </Button>
                 </div>
               </CardContent>
