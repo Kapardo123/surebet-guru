@@ -67,7 +67,9 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <AppContent />
+      <HashRouter> {/* AuthProvider needs to be inside the router to use navigate */}
+        <AppContent />
+      </HashRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );

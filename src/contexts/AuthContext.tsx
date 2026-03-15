@@ -22,10 +22,16 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        if (event === "PASSWORD_RECOVERY") {
+          // When the user clicks the password recovery link, Supabase fires this event.
+          // We can then navigate them to the password update page.
+          navigate("/auth?mode=update-password", { replace: true });
+        }
         setSession(session);
         setLoading(false);
       }
