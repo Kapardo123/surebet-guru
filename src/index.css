@@ -1,0 +1,128 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 260 25% 5%;
+    --foreground: 240 10% 94%;
+
+    --card: 260 22% 8%;
+    --card-foreground: 240 10% 94%;
+
+    --popover: 260 22% 8%;
+    --popover-foreground: 240 10% 94%;
+
+    --primary: 330 90% 60%;
+    --primary-foreground: 260 25% 5%;
+
+    --secondary: 260 16% 13%;
+    --secondary-foreground: 240 8% 65%;
+
+    --muted: 260 16% 11%;
+    --muted-foreground: 250 8% 42%;
+
+    --accent: 200 100% 60%;
+    --accent-foreground: 260 25% 5%;
+
+    --destructive: 0 65% 52%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 260 12% 14%;
+    --input: 260 12% 16%;
+    --ring: 330 90% 60%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 260 22% 8%;
+    --sidebar-foreground: 240 8% 65%;
+    --sidebar-primary: 330 90% 60%;
+    --sidebar-primary-foreground: 260 25% 5%;
+    --sidebar-accent: 260 16% 13%;
+    --sidebar-accent-foreground: 240 8% 65%;
+    --sidebar-border: 260 12% 14%;
+    --sidebar-ring: 330 90% 60%;
+
+    --success: 142 70% 48%;
+    --loss: 0 65% 52%;
+    --draw: 45 90% 55%;
+    --confidence-high: 142 70% 48%;
+    --confidence-medium: 45 90% 55%;
+    --confidence-low: 0 65% 52%;
+
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+
+    --glow-primary: 0 0 30px hsl(330 90% 60% / 0.25), 0 0 60px hsl(330 90% 60% / 0.1);
+    --glow-accent: 0 0 30px hsl(200 100% 60% / 0.25), 0 0 60px hsl(200 100% 60% / 0.1);
+    --card-shadow: 0 2px 16px hsl(0 0% 0% / 0.6), 0 0 0 1px hsl(260 12% 14% / 0.5);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
+@layer utilities {
+  .glow-primary {
+    box-shadow: var(--glow-primary);
+  }
+  .glow-accent {
+    box-shadow: var(--glow-accent);
+  }
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  }
+  .text-gradient-subtle {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--muted-foreground)));
+  }
+  .card-glow {
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .card-glow:hover {
+    box-shadow: var(--glow-primary), var(--card-shadow);
+    transform: translateY(-1px);
+  }
+  .glass {
+    background: hsl(var(--card) / 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .gradient-border {
+    position: relative;
+  }
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.4), hsl(var(--accent) / 0.4));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+@keyframes shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
