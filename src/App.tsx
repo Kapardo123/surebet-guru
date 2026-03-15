@@ -57,9 +57,7 @@ const AppContent = () => {
       <SplashScreen />
       <Toaster />
       <Sonner />
-      <HashRouter>
-        <AnimatedRoutes />
-      </HashRouter>
+      <AnimatedRoutes />
     </AuthProvider>
   );
 };
