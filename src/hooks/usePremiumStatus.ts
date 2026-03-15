@@ -30,21 +30,35 @@ export const usePremiumStatus = () => {
 
     setState((prev) => ({ ...prev, loading: true }));
 
-    const { data, error } = await supabase.functions.invoke("premium-status", {
-      body: {},
-    });
+    try {
+      // Direct query to premium_access table instead of Edge Function
+      const { data, error } = await (supabase as any)
+        .from("premium_access")
+        .select("expires_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-    if (error || data?.error) {
+      if (error) throw error;
+
+      if (!data?.expires_at) {
+        setState({ ...defaultState, loading: false });
+        return;
+      }
+
+      const expiryDate = new Date(data.expires_at);
+      const now = new Date();
+      const daysLeft = Math.max(0, Math.ceil((expiryDate.getTime() - now.getTime()) / 86400000));
+
+      setState({
+        active: daysLeft > 0,
+        daysLeft,
+        expiresAt: data.expires_at,
+        loading: false,
+      });
+    } catch (err) {
+      console.error("Error fetching premium status:", err);
       setState({ ...defaultState, loading: false });
-      return;
     }
-
-    setState({
-      active: Boolean(data?.active),
-      daysLeft: Number(data?.daysLeft ?? 0),
-      expiresAt: data?.expiresAt ?? null,
-      loading: false,
-    });
   }, [authLoading, user]);
 
   useEffect(() => {
