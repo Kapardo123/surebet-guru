@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 export interface CouponMatch {
   homeTeam: string;
@@ -22,6 +23,42 @@ export interface Coupon {
   isPremium?: boolean;
 }
 
+const isCouponStatus = (value: unknown): value is Coupon["status"] =>
+  value === "active" || value === "won" || value === "lost" || value === "pending";
+
+const serializeMatches = (matches: CouponMatch[]): Json => {
+  return matches.map((m) => ({
+    homeTeam: m.homeTeam,
+    awayTeam: m.awayTeam,
+    prediction: m.prediction,
+    odds: m.odds,
+    league: m.league,
+    sport: m.sport,
+    kickoff: m.kickoff,
+  })) as unknown as Json;
+};
+
+const deserializeMatches = (value: Json): CouponMatch[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((raw) => {
+      if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+        const obj = raw as Record<string, unknown>;
+        const homeTeam = typeof obj.homeTeam === "string" ? obj.homeTeam : "";
+        const awayTeam = typeof obj.awayTeam === "string" ? obj.awayTeam : "";
+        const prediction = typeof obj.prediction === "string" ? obj.prediction : "";
+        const odds = typeof obj.odds === "number" ? obj.odds : Number(obj.odds);
+        const league = typeof obj.league === "string" ? obj.league : "";
+        const sport = typeof obj.sport === "string" ? obj.sport : "Football";
+        const kickoff = typeof obj.kickoff === "string" ? obj.kickoff : "";
+        if (!homeTeam || !awayTeam || !prediction || !Number.isFinite(odds)) return null;
+        return { homeTeam, awayTeam, prediction, odds, league, sport, kickoff } satisfies CouponMatch;
+      }
+      return null;
+    })
+    .filter((m): m is CouponMatch => m !== null);
+};
+
 export const calculateTotalOdds = (matches: CouponMatch[]): number => {
   if (matches.length === 0) return 0;
   return matches.reduce((acc, m) => acc * m.odds, 1);
@@ -38,16 +75,19 @@ export const loadCoupons = async (): Promise<Coupon[]> => {
     return [];
   }
 
-  return (data || []).map(coupon => ({
-    id: coupon.id,
-    name: coupon.name,
-    matches: coupon.matches,
-    totalOdds: coupon.total_odds,
-    stake: coupon.stake,
-    status: coupon.status,
-    createdAt: coupon.created_at,
-    isPremium: coupon.is_premium
-  }));
+  return (data || []).map((coupon) => {
+    const status = isCouponStatus(coupon.status) ? coupon.status : "active";
+    return {
+      id: coupon.id,
+      name: coupon.name,
+      matches: deserializeMatches(coupon.matches),
+      totalOdds: Number(coupon.total_odds),
+      stake: coupon.stake ?? undefined,
+      status,
+      createdAt: coupon.created_at,
+      isPremium: coupon.is_premium ?? undefined,
+    };
+  });
 };
 
 export const addCoupon = async (coupon: Omit<Coupon, "id" | "totalOdds" | "createdAt">): Promise<Coupon | null> => {
@@ -56,7 +96,7 @@ export const addCoupon = async (coupon: Omit<Coupon, "id" | "totalOdds" | "creat
     .from('coupons')
     .insert([{
       name: coupon.name,
-      matches: coupon.matches,
+      matches: serializeMatches(coupon.matches),
       total_odds: totalOdds,
       stake: coupon.stake,
       status: coupon.status,
@@ -73,12 +113,12 @@ export const addCoupon = async (coupon: Omit<Coupon, "id" | "totalOdds" | "creat
   return {
     id: data.id,
     name: data.name,
-    matches: data.matches,
-    totalOdds: data.total_odds,
-    stake: data.stake,
-    status: data.status,
+    matches: deserializeMatches(data.matches),
+    totalOdds: Number(data.total_odds),
+    stake: data.stake ?? undefined,
+    status: isCouponStatus(data.status) ? data.status : "active",
     createdAt: data.created_at,
-    isPremium: data.is_premium
+    isPremium: data.is_premium ?? undefined
   };
 };
 
@@ -97,7 +137,7 @@ export const updateCoupon = async (updatedCoupon: Coupon) => {
     .from('coupons')
     .update({
       name: updatedCoupon.name,
-      matches: updatedCoupon.matches,
+      matches: serializeMatches(updatedCoupon.matches),
       total_odds: totalOdds,
       stake: updatedCoupon.stake,
       status: updatedCoupon.status,

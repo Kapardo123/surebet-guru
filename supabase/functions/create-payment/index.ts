@@ -13,7 +13,7 @@ const PRICE_MAP: Record<number, string> = {
   30: "price_1TB3jxCikyY7QwS0PFcUV7N1",
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

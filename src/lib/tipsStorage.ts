@@ -1,6 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Tip } from "@/components/TipCard";
 
+const isTipStatus = (value: unknown): value is Tip["status"] =>
+  value === "upcoming" || value === "won" || value === "lost" || value === "draw";
+
 export const loadTips = async (): Promise<Tip[]> => {
   const { data, error } = await supabase
     .from('tips')
@@ -12,7 +15,7 @@ export const loadTips = async (): Promise<Tip[]> => {
     return [];
   }
 
-  return (data || []).map(tip => ({
+  return (data || []).map((tip) => ({
     id: tip.id,
     sport: tip.sport,
     league: tip.league,
@@ -21,8 +24,8 @@ export const loadTips = async (): Promise<Tip[]> => {
     prediction: tip.prediction,
     odds: tip.odds,
     kickoff: tip.kickoff,
-    status: tip.status,
-    isPremium: tip.is_premium
+    status: isTipStatus(tip.status) ? tip.status : "upcoming",
+    isPremium: tip.is_premium ?? undefined,
   }));
 };
 
@@ -57,8 +60,8 @@ export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
     prediction: data.prediction,
     odds: data.odds,
     kickoff: data.kickoff,
-    status: data.status,
-    isPremium: data.is_premium
+    status: isTipStatus(data.status) ? data.status : "upcoming",
+    isPremium: data.is_premium ?? undefined,
   };
 };
 

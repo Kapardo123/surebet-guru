@@ -5,13 +5,17 @@ import Logo from "@/components/Logo";
 import PageTransition from "@/components/PageTransition";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Settings, Crown, Receipt, ArrowLeft } from "lucide-react";
+import { Crown, Receipt, ArrowLeft } from "lucide-react";
 
 const Coupons = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
 
   useEffect(() => {
-    setCoupons(loadCoupons());
+    const fetchCoupons = async () => {
+      const loaded = await loadCoupons();
+      setCoupons(loaded);
+    };
+    fetchCoupons();
   }, []);
 
   return (

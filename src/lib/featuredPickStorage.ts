@@ -20,7 +20,7 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
     .single();
 
   if (error) {
-    if (error.code === 'PGRST116') return null; // No rows found
+    if (error.code === 'PGRST116') return null;
     console.error("Error loading featured pick:", error);
     return null;
   }

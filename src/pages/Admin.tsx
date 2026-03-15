@@ -158,6 +158,17 @@ const Admin = () => {
     toast({ title: `Match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
 
+  const handleSelectCouponMatch = (match: UpcomingMatch) => {
+    setCouponMatchForm((prev) => ({
+      ...prev,
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      league: match.league,
+      kickoff: `${match.date}, ${match.time}`,
+    }));
+    toast({ title: `Coupon match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.league || !form.homeTeam || !form.awayTeam || !form.prediction || !form.odds || !form.kickoff) {
@@ -636,6 +647,11 @@ const Admin = () => {
                 <div className="grid gap-3 md:grid-cols-2">
                   <Input placeholder="Home Team" value={couponMatchForm.homeTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, homeTeam: e.target.value })} />
                   <Input placeholder="Away Team" value={couponMatchForm.awayTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, awayTeam: e.target.value })} />
+                  
+                  <div className="col-span-full">
+                    <UpcomingMatchesList teamName={couponMatchForm.homeTeam} onSelectMatch={handleSelectCouponMatch} />
+                  </div>
+
                   <Input placeholder="Prediction" value={couponMatchForm.prediction} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, prediction: e.target.value })} />
                   <Input type="number" step="0.01" placeholder="Odds" value={couponMatchForm.odds} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, odds: e.target.value })} />
                   <Input placeholder="League" value={couponMatchForm.league} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, league: e.target.value })} />

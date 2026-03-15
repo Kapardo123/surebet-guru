@@ -92,6 +92,117 @@ export type Database = {
         }
         Relationships: []
       }
+      tips: {
+        Row: {
+          id: number
+          created_at: string
+          sport: string
+          league: string
+          home_team: string
+          away_team: string
+          prediction: string
+          odds: number
+          kickoff: string
+          status: string
+          is_premium: boolean | null
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          sport: string
+          league: string
+          home_team: string
+          away_team: string
+          prediction: string
+          odds: number
+          kickoff: string
+          status: string
+          is_premium?: boolean | null
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          sport?: string
+          league?: string
+          home_team?: string
+          away_team?: string
+          prediction?: string
+          odds?: number
+          kickoff?: string
+          status?: string
+          is_premium?: boolean | null
+        }
+        Relationships: []
+      }
+      coupons: {
+        Row: {
+          id: number
+          created_at: string
+          name: string
+          matches: Json
+          total_odds: number
+          stake: number | null
+          status: string
+          is_premium: boolean | null
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          name: string
+          matches: Json
+          total_odds: number
+          stake?: number | null
+          status: string
+          is_premium?: boolean | null
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          name?: string
+          matches?: Json
+          total_odds?: number
+          stake?: number | null
+          status?: string
+          is_premium?: boolean | null
+        }
+        Relationships: []
+      }
+      featured_picks: {
+        Row: {
+          id: number
+          created_at: string
+          league: string
+          kickoff: string
+          home_team: string
+          away_team: string
+          prediction: string
+          odds: string
+          confidence: string
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          league: string
+          kickoff: string
+          home_team: string
+          away_team: string
+          prediction: string
+          odds: string
+          confidence: string
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          league?: string
+          kickoff?: string
+          home_team?: string
+          away_team?: string
+          prediction?: string
+          odds?: string
+          confidence?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
