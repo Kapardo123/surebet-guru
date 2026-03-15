@@ -10,7 +10,7 @@ import { addTip, loadTips, deleteTip, updateTip } from "@/lib/tipsStorage";
 import { addCoupon, loadCoupons, deleteCoupon, updateCoupon, calculateTotalOdds, CouponMatch, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, saveFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
 import { Tip } from "@/components/TipCard";
-import { Plus, Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, XCircle, Users, Calendar } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, XCircle, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
@@ -39,19 +39,6 @@ const Admin = () => {
 
     setIsUpdatingPremium(true);
     try {
-      // Wyszukiwanie użytkownika bezpośrednio w tabeli auth.users nie jest możliwe z poziomu klienta przeglądarkowego.
-      // Najpierw spróbujemy znaleźć użytkownika w tabeli premium_access (jeśli już tam jest).
-      // Ale najlepszym sposobem na powiązanie emaila z ID bez dodatkowej tabeli 'profiles' 
-      // jest skorzystanie z faktu, że Supabase Auth przechowuje dane.
-      
-      // Ponieważ nie mamy pewności co do istnienia tabeli 'profiles', użyjemy bezpieczniejszego podejścia:
-      // Spróbujemy wywołać RPC lub sprawdzić czy użytkownik jest w premium_access (jeśli tam był logowany ID).
-      // JEDNAK najczęstszym powodem błędu jest brak tabeli 'profiles' lub brak uprawnień.
-      
-      // ZMIEŃMY TO: Spróbujemy użyć ID użytkownika bezpośrednio, jeśli admin go zna, 
-      // lub spróbujemy znaleźć go w tabeli premium_access jeśli tam istnieje wpis z meta-danymi.
-      
-      // Poprawka: Najpierw sprawdźmy czy tabela profiles w ogóle istnieje i zawiera ten email.
       const { data: userData, error: userError } = await (supabase as any)
         .from('profiles') 
         .select('id')
@@ -60,8 +47,8 @@ const Admin = () => {
 
       if (userError || !userData) {
         toast({ 
-          title: "Użytkownik nie odnaleziony", 
-          description: "Upewnij się, że email jest poprawny. Jeśli problem nadal występuje, użytkownik musi się najpierw zalogować.",
+          title: "User not found", 
+          description: "Make sure the email is correct. The user must have logged in at least once.",
           variant: "destructive" 
         });
         setIsUpdatingPremium(false);
@@ -314,11 +301,11 @@ const Admin = () => {
               <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
                 <Users className="w-4 h-4 text-accent" />
               </div>
-              Zarządzaj Premium (Ręcznie)
+              Manage Premium (Manual)
             </h2>
             <form onSubmit={handleGrantPremium} className="grid gap-5 md:grid-cols-3 items-end">
               <div className="space-y-2 md:col-span-1">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Email Użytkownika</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">User Email</Label>
                 <Input 
                   type="email"
                   placeholder="user@example.com" 
@@ -327,18 +314,18 @@ const Admin = () => {
                 />
               </div>
               <div className="space-y-2 md:col-span-1">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Dni Premium</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Premium Days</Label>
                 <Select value={premiumDays} onValueChange={setPremiumDays}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Wybierz czas" />
+                    <SelectValue placeholder="Select duration" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">1 Dzień</SelectItem>
-                    <SelectItem value="7">7 Dni</SelectItem>
-                    <SelectItem value="15">15 Dni</SelectItem>
-                    <SelectItem value="30">30 Dni</SelectItem>
-                    <SelectItem value="90">90 Dni</SelectItem>
-                    <SelectItem value="365">1 Rok</SelectItem>
+                    <SelectItem value="1">1 Day</SelectItem>
+                    <SelectItem value="7">7 Days</SelectItem>
+                    <SelectItem value="15">15 Days</SelectItem>
+                    <SelectItem value="30">30 Days</SelectItem>
+                    <SelectItem value="90">90 Days</SelectItem>
+                    <SelectItem value="365">1 Year</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -353,12 +340,12 @@ const Admin = () => {
                   ) : (
                     <Crown className="w-4 h-4" />
                   )}
-                  Nadaj Dostęp
+                  Grant Access
                 </Button>
               </div>
             </form>
             <p className="mt-4 text-[11px] text-muted-foreground italic">
-              * Uwaga: Użytkownik musi istnieć w tabeli 'profiles'. Jeśli nie go nie ma, upewnij się, że zalogował się przynajmniej raz do aplikacji.
+              * Note: User must exist in 'profiles' table. If not found, ensure they have logged in at least once.
             </p>
           </CardContent>
         </Card>
