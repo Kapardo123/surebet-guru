@@ -12,6 +12,7 @@ import Coupons from "./pages/Coupons";
 import Auth from "./pages/Auth";
 import Referral from "./pages/Referral";
 import NotFound from "./pages/NotFound";
+import SplashScreen from "./components/SplashScreen";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
+        <SplashScreen />
         <Toaster />
         <Sonner />
         <BrowserRouter>
