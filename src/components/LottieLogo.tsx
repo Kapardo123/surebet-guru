@@ -11,10 +11,24 @@ const LottieLogo = ({ size = 100, className = "" }: LottieLogoProps) => {
   const animationUrl = "https://lottie.host/8e2a6d71-558e-4903-8851-90807895e6f3/7W9X9eX0W2.json";
 
   useEffect(() => {
-    fetch(animationUrl)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3-second timeout
+
+    fetch(animationUrl, { signal: controller.signal })
       .then((res) => res.json())
-      .then((data) => setAnimationData(data))
-      .catch((err) => console.error("Error loading Lottie:", err));
+      .then((data) => {
+        setAnimationData(data);
+        clearTimeout(timeoutId);
+      })
+      .catch((err) => {
+        console.error("Error loading Lottie:", err);
+        // Silently fail, the fallback UI (empty div) will show
+      });
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, []);
 
   if (!animationData) {

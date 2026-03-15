@@ -36,7 +36,7 @@ const Index = () => {
   return (
     <PageTransition>
     <div className="min-h-screen bg-background pb-20 md:pb-0 relative">
-      <ParticleBackground />
+      {/* <ParticleBackground /> */}
       <header className="sticky top-0 z-50 glass border-b border-border/50">
         <div className="container max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -164,7 +164,18 @@ const Index = () => {
       </main>
 
       <footer className="border-t border-border/50 mt-16 pb-24 md:pb-0">
-        <div className="container max-w-5xl mx-auto px-4 py-6 flex flex-col items-center justify-center gap-2 text-center">
+        <div className="container max-w-5xl mx-auto px-4 py-8 flex flex-col items-center justify-center gap-4 text-center">
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-2">
+            <Link to="/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4">
+              Privacy Policy
+            </Link>
+            <Link to="/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4">
+              Terms of Service
+            </Link>
+            <Link to="/deletion" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4">
+              Delete Account
+            </Link>
+          </div>
           <a href="mailto:greatsportbets@gmail.com" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
             Help & Collaboration: greatsportbets@gmail.com
           </a>

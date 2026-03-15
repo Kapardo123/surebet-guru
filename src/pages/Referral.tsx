@@ -60,13 +60,13 @@ const Referral = () => {
 
   const shareOnTelegram = () => {
     const shareUrl = `${window.location.origin}/referral?code=${myCode}`;
-    const text = `Join Surebet Guru and get 3 days of Premium for free! My code: ${myCode}`;
+    const text = `Join Great Sport Bets and get 3 days of Premium for free! My code: ${myCode}`;
     window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`, '_blank');
   };
 
   const shareOnWhatsApp = () => {
     const shareUrl = `${window.location.origin}/referral?code=${myCode}`;
-    const text = `Join Surebet Guru and get 3 days of Premium for free! My code: ${myCode}`;
+    const text = `Join Great Sport Bets and get 3 days of Premium for free! My code: ${myCode}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text + " " + shareUrl)}`, '_blank');
   };
 
@@ -120,7 +120,7 @@ const Referral = () => {
           <CardContent className="p-8 text-center space-y-4">
             <Gift className="w-12 h-12 text-accent mx-auto" />
             <h2 className="font-display text-xl font-bold text-foreground">Referral Program</h2>
-            <p className="text-sm text-muted-foreground">Sign in to refer friends and earn free Premium days!</p>
+            <p className="text-sm text-muted-foreground">Sign in to Great Sport Bets to refer friends and earn free Premium days!</p>
             <Link to="/auth?redirect=/referral" className="block">
               <Button className="w-full bg-primary hover:bg-primary/90">Sign In</Button>
             </Link>

@@ -1,4 +1,4 @@
-# Surebet Guru
+# Great Sport Bets
 
 Aplikacja do wyszukiwania i zarządzania typami bukmacherskimi (Surebets), zintegrowana z Supabase i Stripe.
 

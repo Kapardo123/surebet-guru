@@ -30,7 +30,7 @@ const SplashScreen = () => {
                 duration: 1.2, 
                 ease: "easeOut"
               }}
-              src="/splash.png"
+              src="splash.png"
               alt="Great Sport Bets"
               className="w-full h-full object-cover"
             />
@@ -42,7 +42,10 @@ const SplashScreen = () => {
                 transition={{ duration: 0.8, ease: "easeOut" }}
                 className="mb-8"
               >
-                <LottieLogo size={180} className="md:w-[240px] md:h-[240px]" />
+                {/* Simplified logo during splash screen */}
+                <div className="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center border border-primary/50">
+                  <span className="text-4xl font-black text-primary">GSB</span>
+                </div>
               </motion.div>
 
               <motion.div
