@@ -5,7 +5,7 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: "./",
+  base: mode === 'android' ? './' : '/',
   server: {
     host: "::",
     port: 8080,
