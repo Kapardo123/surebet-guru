@@ -29,7 +29,7 @@ const SplashScreen = () => {
                 duration: 1.2, 
                 ease: "easeOut"
               }}
-              src="/logo.png"
+              src="/splash.png"
               alt="Great Sport Bets"
               className="w-full h-full object-cover"
             />
