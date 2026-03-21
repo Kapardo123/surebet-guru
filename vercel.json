@@ -1,13 +1,12 @@
 {
   "cleanUrls": true,
-  "trailingSlash": false,
   "rewrites": [
     {
-      "source": "/.well-known/:path*",
-      "destination": "/.well-known/:path*"
+      "source": "/.well-known/assetlinks.json",
+      "destination": "/assetlinks.json"
     },
     {
-      "source": "/((?!.well-known).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
