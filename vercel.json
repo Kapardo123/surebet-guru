@@ -1,13 +1,16 @@
 {
-  "cleanUrls": true,
-  "rewrites": [
+  "routes": [
     {
-      "source": "/.well-known/assetlinks.json",
-      "destination": "/assetlinks.json"
+      "src": "/.well-known/assetlinks.json",
+      "dest": "/assetlinks.json",
+      "headers": { "content-type": "application/json" }
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
