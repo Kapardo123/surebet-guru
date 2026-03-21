@@ -125,13 +125,8 @@ const Index = () => {
                   <TrendingUp className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <p className="text-muted-foreground font-display text-sm">
-                  No tips yet. Add your first pick in the admin panel.
+                  No tips yet. Check back soon.
                 </p>
-                <Link to="/admin">
-                  <Button variant="outline" size="sm" className="mt-2">
-                    Open Admin Panel
-                  </Button>
-                </Link>
               </div>
             )}
           </TabsContent>
@@ -160,13 +155,8 @@ const Index = () => {
                   <Receipt className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <p className="text-muted-foreground font-display text-sm">
-                  No coupons yet. Create your first coupon in the admin panel.
+                  No coupons yet. Check back soon.
                 </p>
-                <Link to="/admin">
-                  <Button variant="outline" size="sm" className="mt-2">
-                    Open Admin Panel
-                  </Button>
-                </Link>
               </div>
             )}
           </TabsContent>

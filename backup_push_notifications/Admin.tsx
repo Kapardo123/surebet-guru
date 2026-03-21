@@ -43,6 +43,20 @@ const Admin = () => {
     }
   };
 
+  const sendPremiumPush = async (payload: { title: string; body: string; data?: Record<string, string> }) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("send-premium-push", { body: payload });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+    } catch (err: any) {
+      toast({
+        title: "Push notification failed",
+        description: err?.message || "Could not send premium push",
+        variant: "destructive",
+      });
+    }
+  };
+
   // User Premium Management State
   const [userEmail, setUserEmail] = useState("");
   const [premiumDays, setPremiumDays] = useState("30");
@@ -204,6 +218,13 @@ const Admin = () => {
         status: form.status,
         isPremium: form.isPremium,
       });
+      if (created?.isPremium) {
+        await sendPremiumPush({
+          title: "New Premium Tip",
+          body: `${created.homeTeam} vs ${created.awayTeam} • ${created.prediction} @ ${created.odds}`,
+          data: { type: "tip", id: String(created.id) },
+        });
+      }
       await refreshData();
       resetTipForm();
       toast({ title: "Tip added! ✅" });
@@ -279,6 +300,13 @@ const Admin = () => {
         status: "active",
         isPremium: couponIsPremium,
       });
+      if (createdCoupon?.isPremium) {
+        await sendPremiumPush({
+          title: "New Premium Coupon",
+          body: `${createdCoupon.name} • ${createdCoupon.matches.length} matches • Total @ ${createdCoupon.totalOdds.toFixed(2)}`,
+          data: { type: "coupon", id: String(createdCoupon.id) },
+        });
+      }
       await refreshData();
       resetCouponForm();
       toast({ title: "Coupon created! 🎫" });

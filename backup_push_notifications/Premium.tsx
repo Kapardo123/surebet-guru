@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Crown, ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, LogIn, LogOut } from "lucide-react";
+import { Crown, ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, LogIn, LogOut, Bell, Lock, Smartphone } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
@@ -9,6 +9,8 @@ import PageTransition from "@/components/PageTransition";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
+import { Switch } from "@/components/ui/switch";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const plans = [
   {
@@ -44,6 +46,7 @@ const features = [
   { text: "Highest confidence tips", icon: TrendingUp },
   { text: "Early access to picks", icon: Zap },
   { text: "Exclusive match analysis", icon: Star },
+  { text: "Premium push alerts", icon: Bell },
 ];
 
 const Premium = () => {
@@ -54,6 +57,7 @@ const Premium = () => {
   const [loading, setLoading] = useState<number | null>(null);
   const [searchParams] = useSearchParams();
   const handledSessionRef = useRef<string | null>(null);
+  const push = usePushNotifications({ userId: user?.id, premiumActive: active });
 
   useEffect(() => {
     const success = searchParams.get("success");
@@ -121,7 +125,7 @@ const Premium = () => {
     <PageTransition>
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 glass border-b border-border/50">
-        <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="container max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
             <Logo />
           </Link>
@@ -151,7 +155,7 @@ const Premium = () => {
         </div>
       </header>
 
-      <main className="container max-w-4xl mx-auto px-4 py-16 space-y-16">
+      <main className="container max-w-5xl mx-auto px-4 py-16 space-y-16">
         {active && (
           <div className="flex items-center justify-center gap-3 bg-gradient-to-r from-accent/15 to-primary/15 border border-accent/30 rounded-2xl p-5 text-center">
             <Crown className="w-6 h-6 text-accent" />
@@ -164,6 +168,62 @@ const Premium = () => {
           </div>
         )}
 
+        <Card className="bg-card border-border/50 card-glow">
+          <CardContent className="p-6 md:p-8 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Bell className="w-4.5 h-4.5 text-primary" />
+                  </div>
+                  <h2 className="font-display text-lg font-bold text-foreground">Premium Alerts</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Get push notifications when new Premium picks are published.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={push.enabled}
+                  disabled={!user || !active || !push.isNative || push.loading}
+                  onCheckedChange={(checked) => {
+                    push
+                      .setPushEnabled(checked)
+                      .catch((err: any) => {
+                        toast({
+                          title: "Push setup failed",
+                          description: err?.message || "Could not update notifications",
+                          variant: "destructive",
+                        });
+                      });
+                  }}
+                />
+              </div>
+            </div>
+
+            {!user && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Lock className="w-3.5 h-3.5" />
+                Sign in to enable alerts.
+              </div>
+            )}
+
+            {user && !active && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Crown className="w-3.5 h-3.5 text-accent" />
+                Activate Premium to enable push alerts.
+              </div>
+            )}
+
+            {user && active && !push.isNative && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Smartphone className="w-3.5 h-3.5" />
+                Available in the Android app. Open the mobile app to enable alerts.
+              </div>
+            )}
+          </CardContent>
+        </Card>
         <div className="text-center space-y-6 relative">
           <div className="absolute inset-0 -z-10">
             <div className="w-96 h-96 bg-accent/8 rounded-full blur-[120px] mx-auto -translate-y-1/3" />

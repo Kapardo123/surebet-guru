@@ -68,13 +68,8 @@ const Coupons = () => {
               <Receipt className="w-6 h-6 text-muted-foreground" />
             </div>
             <p className="text-muted-foreground font-display text-sm">
-               No coupons yet. Add your first coupon in the admin panel.
+               No coupons yet. Check back soon.
             </p>
-            <Link to="/admin">
-              <Button variant="outline" size="sm" className="mt-2">
-                Open Admin Panel
-              </Button>
-            </Link>
           </div>
         )}
       </main>
