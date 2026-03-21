@@ -1,20 +1,18 @@
 {
-  "routes": [
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
     {
-      "src": "/.well-known/assetlinks.json",
-      "dest": "/.well-known/assetlinks.json",
-      "headers": {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-        "Access-Control-Allow-Origin": "*"
-      }
+      "source": "/.well-known/assetlinks.json",
+      "destination": "/.well-known/assetlinks.json"
     },
     {
-      "handle": "filesystem"
+      "source": "/test-json.json",
+      "destination": "/test-json.json"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/((?!.well-known|test-json).*)",
+      "destination": "/index.html"
     }
   ]
 }
