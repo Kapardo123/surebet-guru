@@ -61,8 +61,21 @@ const Premium = () => {
   useEffect(() => {
     const fetchRC = async () => {
       if (Capacitor.getPlatform() !== 'web') {
-        const offerings = await getOfferings();
-        if (offerings) setRcOfferings(offerings);
+        console.log('Próba pobrania ofert z RevenueCat...');
+        try {
+          const offerings = await getOfferings();
+          if (offerings) {
+            console.log('Otrzymane oferty z RevenueCat:', JSON.stringify(offerings));
+            if (!offerings.current) {
+              console.warn('Otrzymano oferty, ale brak "Current Offering" w panelu RevenueCat!');
+            }
+            setRcOfferings(offerings);
+          } else {
+            console.error('getOfferings() zwróciło null');
+          }
+        } catch (e) {
+          console.error('Błąd w fetchRC:', e);
+        }
       }
     };
     fetchRC();
