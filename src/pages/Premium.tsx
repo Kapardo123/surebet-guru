@@ -9,6 +9,8 @@ import PageTransition from "@/components/PageTransition";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
+import { Capacitor } from "@capacitor/core";
+import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from "@/integrations/revenuecat";
 
 const plans = [
   {
@@ -52,8 +54,19 @@ const Premium = () => {
   const { toast } = useToast();
   const { active, daysLeft, refresh } = usePremiumStatus();
   const [loading, setLoading] = useState<number | null>(null);
+  const [rcOfferings, setRcOfferings] = useState<any>(null);
   const [searchParams] = useSearchParams();
   const handledSessionRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const fetchRC = async () => {
+      if (Capacitor.getPlatform() !== 'web') {
+        const offerings = await getOfferings();
+        if (offerings) setRcOfferings(offerings);
+      }
+    };
+    fetchRC();
+  }, []);
 
   useEffect(() => {
     const success = searchParams.get("success");
@@ -92,29 +105,143 @@ const Premium = () => {
     verifyAndActivate();
   }, [navigate, refresh, searchParams, toast]);
 
-  const handleBuy = async (duration: number) => {
+  const handleBuy = async (duration: number, paymentLink?: string) => {
+    console.log('Kliknięto przycisk zakupu:', duration);
     if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to purchase premium access.",
+      });
       navigate("/auth?redirect=/premium");
       return;
     }
+
     setLoading(duration);
+    
     try {
-      const { data, error } = await supabase.functions.invoke("create-payment", {
-        body: { duration, origin: window.location.origin },
-      });
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
+      // 1. Obsługa Płatności Natywnych (RevenueCat / Google Play)
+      if (Capacitor.getPlatform() !== 'web') {
+        console.log('Platforma mobilna wykryta, sprawdzam ofertę RC...');
+        
+        // POKAZUJEMY PAYWALL REVENUECAT - To najpewniejsza metoda na Androidzie
+        console.log('Uruchamiam presentPaywall()...');
+        toast({
+          title: "Connecting...",
+          description: "Opening secure payment window...",
+        });
+
+        const info = await presentPaywall();
+        
+        if (info) {
+          console.log('Paywall zwrócił info - sukces!');
+          toast({
+            title: "Success! 🎉",
+            description: "Premium access granted via Google Play.",
+          });
+          await refresh();
+          return;
+        } else {
+          console.log('Paywall zamknięty bez zakupu lub wystąpił błąd');
+          // Jeśli Paywall nie zadziałał, spróbujmy bezpośredniego zakupu pakietu
+          if (rcOfferings?.current) {
+            let rcPackage = null;
+            if (duration === 7) rcPackage = rcOfferings.current.weekly;
+            else if (duration === 30) rcPackage = rcOfferings.current.monthly;
+            else if (duration === 15) {
+              rcPackage = rcOfferings.current.availablePackages.find((p: any) => 
+                p.identifier.includes('15') || p.identifier.includes('half')
+              );
+            }
+
+            if (rcPackage) {
+              console.log('Próba zakupu bezpośredniego pakietu:', rcPackage.identifier);
+              const directInfo = await purchasePackage(rcPackage);
+              if (directInfo) {
+                toast({
+                  title: "Success! 🎉",
+                  description: `Premium access granted for ${duration} days.`,
+                });
+                await refresh();
+                return;
+              }
+            }
+          }
+        }
+        return;
       }
-    } catch (err: any) {
+
+      // 2. Obsługa Płatności Webowych (Stripe)
+      console.log('Platforma webowa, przekierowanie do Stripe:', paymentLink);
+      if (paymentLink) {
+        window.location.href = `${paymentLink}?client_reference_id=${user.id}&customer_email=${encodeURIComponent(user.email || "")}`;
+      }
+    } catch (error: any) {
+      console.error('Błąd podczas procesowania zakupu:', error);
       toast({
-        title: "Payment Error",
-        description: err.message || "Something went wrong",
+        title: "Store Error",
+        description: error.message || "Could not open payment window. Check your internet connection.",
         variant: "destructive",
       });
     } finally {
       setLoading(null);
     }
+  };
+
+  const handleRestore = async () => {
+    if (!user) {
+      navigate("/auth?redirect=/premium");
+      return;
+    }
+
+    setLoading(0); // 0 to indicate restore loading
+    try {
+      const info = await restorePurchases();
+      if (info && Object.keys(info.entitlements.active).length > 0) {
+        toast({
+          title: "Purchases Restored! 🎉",
+          description: "Your premium access has been successfully restored.",
+        });
+        await refresh();
+      } else {
+        toast({
+          title: "No active purchases found",
+          description: "We couldn't find any active premium subscriptions for your account.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error restoring purchases:', error);
+      toast({
+        title: "Error",
+        description: "Failed to restore purchases. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const getPlanDetails = (plan: any) => {
+    // Jeśli jesteśmy na urządzeniu mobilnym i mamy dane z RevenueCat, użyj ich cen i etykiet
+    if (Capacitor.getPlatform() !== 'web' && rcOfferings?.current) {
+      let rcPackage = null;
+      if (plan.duration === 7) rcPackage = rcOfferings.current.weekly;
+      else if (plan.duration === 30) rcPackage = rcOfferings.current.monthly;
+      else if (plan.duration === 15) {
+        rcPackage = rcOfferings.current.availablePackages.find((p: any) => 
+          p.identifier.includes('15') || p.identifier.includes('half')
+        );
+      }
+
+      if (rcPackage) {
+        return {
+          ...plan,
+          price: rcPackage.product.priceString,
+          // Jeśli RevenueCat ma cenę za dzień w obiekcie produktu, moglibyśmy ją tu wyliczyć
+        };
+      }
+    }
+    return plan;
   };
 
   return (
@@ -195,72 +322,86 @@ const Premium = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {plans.map((plan) => (
-            <Card
-              key={plan.duration}
-              className={`bg-card border-border/50 card-glow relative overflow-hidden ${
-                plan.popular ? "gradient-border ring-1 ring-accent/20 scale-[1.02] md:scale-105" : ""
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-accent to-accent/80 text-accent-foreground text-center py-1.5 text-xs font-display font-bold uppercase tracking-[0.15em] flex items-center justify-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5" />
-                  Most Popular
-                </div>
-              )}
-              <CardContent className={`p-8 text-center space-y-6 ${plan.popular ? "pt-12" : ""}`}>
-                <div className="space-y-1">
-                  <p className="font-display text-lg font-bold text-foreground">{plan.label}</p>
-                  <p className="text-xs text-muted-foreground">{plan.perDay}</p>
-                </div>
+          {plans.map((p) => {
+            const plan = getPlanDetails(p);
+            return (
+              <Card
+                key={plan.duration}
+                className={`bg-card border-border/50 card-glow relative overflow-hidden ${
+                  plan.popular ? "gradient-border ring-1 ring-accent/20 scale-[1.02] md:scale-105" : ""
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-accent to-accent/80 text-accent-foreground text-center py-1.5 text-xs font-display font-bold uppercase tracking-[0.15em] flex items-center justify-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5" />
+                    Most Popular
+                  </div>
+                )}
+                <CardContent className={`p-8 text-center space-y-6 ${plan.popular ? "pt-12" : ""}`}>
+                  <div className="space-y-1">
+                    <p className="font-display text-lg font-bold text-foreground">{plan.label}</p>
+                    <p className="text-xs text-muted-foreground">{plan.perDay}</p>
+                  </div>
 
-                <div className="space-y-0">
-                  <p className="font-display text-5xl font-bold text-foreground tracking-tight">{plan.price}</p>
-                  {plan.save && (
-                    <span className="inline-block mt-2 text-[10px] font-display font-bold uppercase tracking-wider bg-primary/15 text-primary px-2.5 py-0.5 rounded-full">
-                      {plan.save}
-                    </span>
-                  )}
-                </div>
+                  <div className="space-y-0">
+                    <p className="font-display text-5xl font-bold text-foreground tracking-tight">{plan.price}</p>
+                    {plan.save && (
+                      <span className="inline-block mt-2 text-[10px] font-display font-bold uppercase tracking-wider bg-primary/15 text-primary px-2.5 py-0.5 rounded-full">
+                        {plan.save}
+                      </span>
+                    )}
+                  </div>
 
-                <Button
-                  onClick={() => {
-                    if (plan.paymentLink) {
-                      window.open(plan.paymentLink, "_blank");
-                    } else {
-                      handleBuy(plan.duration);
-                    }
-                  }}
-                  disabled={loading !== null}
-                  className={`w-full gap-2 h-11 font-display uppercase tracking-wider text-xs ${
-                    plan.popular
-                      ? "bg-gradient-to-r from-accent to-accent/80 text-accent-foreground hover:from-accent/90 hover:to-accent/70 shadow-lg shadow-accent/20"
-                      : ""
-                  }`}
-                  variant={plan.popular ? "default" : "outline"}
-                >
-                  {loading === plan.duration ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Crown className="w-4 h-4" />
-                  )}
-                  {loading === plan.duration ? "Processing..." : "Get Premium"}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+                  <Button
+                    onClick={() => handleBuy(plan.duration, plan.paymentLink)}
+                    disabled={loading !== null}
+                    className={`w-full gap-2 h-11 font-display uppercase tracking-wider text-xs ${
+                      plan.popular
+                        ? "bg-gradient-to-r from-accent to-accent/80 text-accent-foreground hover:from-accent/90 hover:to-accent/70 shadow-lg shadow-accent/20"
+                        : ""
+                    }`}
+                    variant={plan.popular ? "default" : "outline"}
+                  >
+                    {loading === plan.duration ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Crown className="w-4 h-4" />
+                    )}
+                    {loading === plan.duration ? "Processing..." : "Get Premium"}
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
-        <div className="flex items-center justify-center gap-6 text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-center gap-6 text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Shield className="w-4 h-4" />
-            <span className="text-xs">Secure payments via Stripe</span>
+            <span className="text-xs">
+              {Capacitor.getPlatform() === 'web' 
+                ? "Secure payments via Stripe" 
+                : "Secure payments via App Store / Google Play"}
+            </span>
           </div>
           <div className="w-px h-4 bg-border" />
           <span className="text-xs">Cancel anytime</span>
           <div className="w-px h-4 bg-border" />
           <span className="text-xs">Instant access</span>
         </div>
+
+        {Capacitor.getPlatform() !== 'web' && (
+          <div className="flex justify-center mt-4">
+            <Button 
+              variant="link" 
+              onClick={handleRestore}
+              className="text-xs text-muted-foreground hover:text-accent font-normal"
+              disabled={loading !== null}
+            >
+              Restore Purchases
+            </Button>
+          </div>
+        )}
       </main>
     </div>
     </PageTransition>

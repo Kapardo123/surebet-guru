@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { loginRevenueCat, logoutRevenueCat } from "@/integrations/revenuecat";
 
 
 interface AuthContextType {
@@ -27,18 +28,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (event === "PASSWORD_RECOVERY") {
           // When the user clicks the password recovery link, Supabase fires this event.
           // We can then navigate them to the password update page.
           navigate("/auth?mode=update-password", { replace: true });
         }
+        
+        if (session?.user) {
+          // Logowanie w RevenueCat po zalogowaniu w Supabase
+          await loginRevenueCat(session.user.id);
+        } else if (event === 'SIGNED_OUT') {
+          // Wylogowanie z RevenueCat
+          await logoutRevenueCat();
+        }
+
         setSession(session);
         setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        await loginRevenueCat(session.user.id);
+      }
       setSession(session);
       setLoading(false);
     });
@@ -47,6 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = async () => {
+    await logoutRevenueCat();
     await supabase.auth.signOut();
   };
 

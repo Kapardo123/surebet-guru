@@ -17,6 +17,7 @@ import DataDeletion from "./pages/DataDeletion";
 import NotFound from "./pages/NotFound";
 import SplashScreen from "./components/SplashScreen";
 import { useEffect, useState } from "react";
+import { initRevenueCat } from "@/integrations/revenuecat";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,9 @@ const AppContent = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Inicjalizacja RevenueCat dla płatności natywnych
+    initRevenueCat();
+
     // Log any global errors to the console
     const errorHandler = (msg: any, url: any, line: any, col: any, err: any) => {
       const errorMsg = `Error: ${msg} at ${line}:${col}`;
