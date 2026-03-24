@@ -130,42 +130,53 @@ const Premium = () => {
           description: "Opening secure payment window...",
         });
 
-        const info = await presentPaywall();
-        
-        if (info) {
-          console.log('Paywall zwrócił info - sukces!');
-          toast({
-            title: "Success! 🎉",
-            description: "Premium access granted via Google Play.",
-          });
-          await refresh();
-          return;
-        } else {
-          console.log('Paywall zamknięty bez zakupu lub wystąpił błąd');
-          // Jeśli Paywall nie zadziałał, spróbujmy bezpośredniego zakupu pakietu
-          if (rcOfferings?.current) {
-            let rcPackage = null;
-            if (duration === 7) rcPackage = rcOfferings.current.weekly;
-            else if (duration === 30) rcPackage = rcOfferings.current.monthly;
-            else if (duration === 15) {
-              rcPackage = rcOfferings.current.availablePackages.find((p: any) => 
-                p.identifier.includes('15') || p.identifier.includes('half')
-              );
-            }
+        try {
+          const info = await presentPaywall();
+          
+          if (info) {
+            console.log('Paywall zwrócił info - sukces!');
+            toast({
+              title: "Success! 🎉",
+              description: "Premium access granted via Google Play.",
+            });
+            await refresh();
+            return;
+          } else {
+            console.log('Paywall zamknięty bez zakupu lub wystąpił błąd');
+            // Próba zakupu bezpośredniego jeśli paywall nie zadziałał
+            if (rcOfferings?.current) {
+              let rcPackage = null;
+              if (duration === 7) rcPackage = rcOfferings.current.weekly;
+              else if (duration === 30) rcPackage = rcOfferings.current.monthly;
+              else if (duration === 15) {
+                rcPackage = rcOfferings.current.availablePackages.find((p: any) => 
+                  p.identifier.includes('15') || p.identifier.includes('half')
+                );
+              }
 
-            if (rcPackage) {
-              console.log('Próba zakupu bezpośredniego pakietu:', rcPackage.identifier);
-              const directInfo = await purchasePackage(rcPackage);
-              if (directInfo) {
-                toast({
-                  title: "Success! 🎉",
-                  description: `Premium access granted for ${duration} days.`,
-                });
-                await refresh();
-                return;
+              if (rcPackage) {
+                const directInfo = await purchasePackage(rcPackage);
+                if (directInfo) {
+                  toast({
+                    title: "Success! 🎉",
+                    description: `Premium access granted for ${duration} days.`,
+                  });
+                  await refresh();
+                  return;
+                }
               }
             }
           }
+        } catch (e: any) {
+          console.error('Błąd RevenueCat:', e);
+          // WYŚWIETLAMY DOKŁADNY BŁĄD UŻYTKOWNIKOWI
+          toast({
+            title: "RevenueCat Error",
+            description: e.message || "Unknown error from RevenueCat",
+            variant: "destructive",
+          });
+          // Dodatkowy alert dla pewności, że błąd zostanie zauważony
+          alert("Błąd RevenueCat: " + (e.message || JSON.stringify(e)));
         }
         return;
       }
