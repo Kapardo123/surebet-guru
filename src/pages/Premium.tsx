@@ -249,19 +249,33 @@ const Premium = () => {
     // Jeśli jesteśmy na urządzeniu mobilnym i mamy dane z RevenueCat, użyj ich cen i etykiet
     if (Capacitor.getPlatform() !== 'web' && rcOfferings?.current) {
       let rcPackage = null;
+      
+      // 1. Szukamy według standardowych pól
       if (plan.duration === 7) rcPackage = rcOfferings.current.weekly;
       else if (plan.duration === 30) rcPackage = rcOfferings.current.monthly;
-      else if (plan.duration === 15) {
-        rcPackage = rcOfferings.current.availablePackages.find((p: any) => 
-          p.identifier.includes('15') || p.identifier.includes('half')
-        );
+      
+      // 2. Jeśli nie znaleziono lub to pakiet 15 dni, szukamy w dostępnych pakietach po identyfikatorze
+      if (!rcPackage) {
+        rcPackage = rcOfferings.current.availablePackages.find((p: any) => {
+          const id = p.identifier.toLowerCase();
+          if (plan.duration === 7) return id.includes('7') || id.includes('week');
+          if (plan.duration === 15) return id.includes('15') || id.includes('half');
+          if (plan.duration === 30) return id.includes('30') || id.includes('month');
+          return false;
+        });
       }
 
-      if (rcPackage) {
+      if (rcPackage && rcPackage.product) {
+        const price = rcPackage.product.price; // Liczba (np. 3.99)
+        const currencySymbol = rcPackage.product.priceString.replace(/[0-9.,\s]/g, '');
+        
+        // Wyliczamy cenę za dzień na podstawie ceny ze sklepu
+        const dailyPrice = (price / plan.duration).toFixed(2);
+        
         return {
           ...plan,
           price: rcPackage.product.priceString,
-          // Jeśli RevenueCat ma cenę za dzień w obiekcie produktu, moglibyśmy ją tu wyliczyć
+          perDay: `${currencySymbol}${dailyPrice}/day`,
         };
       }
     }
