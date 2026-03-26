@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Crown, ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, LogIn, LogOut } from "lucide-react";
+import { Crown, ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, LogIn, LogOut, Bell, Lock, Smartphone } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
@@ -9,6 +9,8 @@ import PageTransition from "@/components/PageTransition";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
+import { Switch } from "@/components/ui/switch";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Capacitor } from "@capacitor/core";
 import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from "@/integrations/revenuecat";
 
@@ -57,6 +59,7 @@ const Premium = () => {
   const [rcOfferings, setRcOfferings] = useState<any>(null);
   const [searchParams] = useSearchParams();
   const handledSessionRef = useRef<string | null>(null);
+  const push = usePushNotifications({ userId: user?.id, premiumActive: active });
 
   useEffect(() => {
     const fetchRC = async () => {
@@ -320,14 +323,52 @@ const Premium = () => {
 
       <main className="container max-w-4xl mx-auto px-4 py-16 space-y-16">
         {active && (
-          <div className="flex items-center justify-center gap-3 bg-gradient-to-r from-accent/15 to-primary/15 border border-accent/30 rounded-2xl p-5 text-center">
-            <Crown className="w-6 h-6 text-accent" />
-            <div>
-              <p className="font-display font-bold text-foreground text-lg">Premium Active</p>
-              <p className="text-sm text-muted-foreground">
-                <span className="text-accent font-bold">{daysLeft}</span> days remaining
-              </p>
+          <div className="space-y-4">
+            <div className="flex items-center justify-center gap-3 bg-gradient-to-r from-accent/15 to-primary/15 border border-accent/30 rounded-2xl p-5 text-center">
+              <Crown className="w-6 h-6 text-accent" />
+              <div>
+                <p className="font-display font-bold text-foreground text-lg">Premium Active</p>
+                <p className="text-sm text-muted-foreground">
+                  <span className="text-accent font-bold">{daysLeft}</span> days remaining
+                </p>
+              </div>
             </div>
+
+            <Card className="glass border-border/50 overflow-hidden">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+                      <Bell className="w-5 h-5 text-accent" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm">Push Notifications</h3>
+                      <p className="text-xs text-muted-foreground">Get instant alerts for new premium picks</p>
+                    </div>
+                  </div>
+                  <Switch 
+                    checked={push.enabled}
+                    disabled={push.loading || !push.isNative}
+                    onCheckedChange={(checked) => {
+                      push.setPushEnabled(checked).catch(err => {
+                        toast({
+                          title: "Push error",
+                          description: err.message,
+                          variant: "destructive"
+                        });
+                      });
+                    }}
+                  />
+                </div>
+                
+                {!push.isNative && (
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground bg-muted/30 p-2 rounded-lg">
+                    <Smartphone className="w-3 h-3" />
+                    Available in the Android app. Open the app to enable alerts.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
 
