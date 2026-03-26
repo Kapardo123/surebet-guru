@@ -22,7 +22,7 @@ export const usePremiumStatus = () => {
   const { user, loading: authLoading } = useAuth();
   const [state, setState] = useState<PremiumStatusState>(defaultState);
 
-  const refresh = useCallback(async (providedInfo?: any) => {
+  const refresh = useCallback(async (providedInfo?: any, manualDuration?: number) => {
     if (authLoading) return;
 
     if (!user) {
@@ -54,10 +54,21 @@ export const usePremiumStatus = () => {
           if (entitlement) {
             active = true;
             expiresAt = entitlement.expirationDate;
+
+            // Jeśli RevenueCat nie zwraca daty wygaśnięcia (bo produkt jest jednorazowy/In-app),
+            // a mamy podany czas trwania (7, 15, 30), to wyliczamy ją sami.
+            if (!expiresAt && manualDuration) {
+              console.log(`Wyliczanie daty wygaśnięcia ręcznie dla ${manualDuration} dni`);
+              const expiryDate = new Date();
+              expiryDate.setDate(expiryDate.getDate() + manualDuration);
+              expiresAt = expiryDate.toISOString();
+            }
+
             if (expiresAt) {
               const expiryDate = new Date(expiresAt);
               daysLeft = Math.max(0, Math.ceil((expiryDate.getTime() - Date.now()) / 86400000));
             } else {
+              // Jeśli nadal brak daty (lifetime), dajemy Lifetime
               daysLeft = 999;
             }
 

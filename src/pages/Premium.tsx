@@ -148,11 +148,12 @@ const Premium = () => {
         
         if (info) {
           console.log('Paywall zwrócił info - sukces!');
-          toast({
+          toast({ 
             title: "Success! 🎉",
             description: "Premium access granted via Google Play.",
           });
-          await refresh(info);
+          // Przekazujemy info i czas trwania bezpośrednio, żeby uniknąć opóźnień
+          await refresh(info, duration);
           return;
         } else {
           console.log('Paywall zamknięty bez zakupu lub wystąpił błąd');
@@ -168,13 +169,14 @@ const Premium = () => {
             }
 
             if (rcPackage) {
+              console.log('Próba zakupu bezpośredniego pakietu:', rcPackage.identifier);
               const directInfo = await purchasePackage(rcPackage);
               if (directInfo) {
                 toast({
                   title: "Success! 🎉",
                   description: `Premium access granted for ${duration} days.`,
                 });
-                await refresh(directInfo);
+                await refresh(directInfo, duration);
                 return;
               }
             }
