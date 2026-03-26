@@ -10,7 +10,7 @@ import { addTip, loadTips, deleteTip, updateTip } from "@/lib/tipsStorage";
 import { addCoupon, loadCoupons, deleteCoupon, updateCoupon, calculateTotalOdds, CouponMatch, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, saveFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
 import { Tip } from "@/components/TipCard";
-import { Plus, Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, XCircle, Users } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, XCircle, Users, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
@@ -47,6 +47,59 @@ const Admin = () => {
   const [userEmail, setUserEmail] = useState("");
   const [premiumDays, setPremiumDays] = useState("30");
   const [isUpdatingPremium, setIsUpdatingPremium] = useState(false);
+
+  // Push Notification State
+  const [pushTitle, setPushTitle] = useState("");
+  const [pushMessage, setPushMessage] = useState("");
+  const [isSendingPush, setIsSendingPush] = useState(false);
+
+  const sendPremiumPush = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pushTitle.trim() || !pushMessage.trim()) {
+      toast({ title: "Please enter title and message", variant: "destructive" });
+      return;
+    }
+
+    setIsSendingPush(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-premium-push", {
+        body: { 
+          title: pushTitle.trim(), 
+          message: pushMessage.trim() 
+        }
+      });
+
+      if (error) {
+        // Próba wyciągnięcia wiadomości z błędu Edge Function
+        let errorMsg = error.message;
+        try {
+          const body = await error.response?.json();
+          if (body?.error) errorMsg = body.error;
+        } catch (e) {}
+        
+        throw new Error(errorMsg);
+      }
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast({ 
+        title: "Push Sent! 🚀", 
+        description: `Notification sent to ${data?.success || 0} premium users.` 
+      });
+      setPushTitle("");
+      setPushMessage("");
+    } catch (error: any) {
+      toast({ 
+        title: "Error sending push", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setIsSendingPush(false);
+    }
+  };
 
   const handleGrantPremium = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,6 +257,23 @@ const Admin = () => {
         status: form.status,
         isPremium: form.isPremium,
       });
+      
+      if (created && form.isPremium) {
+        // Automatically send push notification for new premium tip
+        try {
+          await supabase.functions.invoke("send-premium-push", {
+            body: { 
+              title: "New Premium Tip! 🔥", 
+              message: `${form.homeTeam} vs ${form.awayTeam} - ${form.prediction}` 
+            }
+          });
+          toast({ title: "Premium push sent! 🚀" });
+        } catch (pushError) {
+          console.error("Failed to send automatic push:", pushError);
+          // Don't show error toast here to not confuse user if tip was added successfully
+        }
+      }
+      
       await refreshData();
       resetTipForm();
       toast({ title: "Tip added! ✅" });
@@ -279,6 +349,22 @@ const Admin = () => {
         status: "active",
         isPremium: couponIsPremium,
       });
+
+      if (createdCoupon && couponIsPremium) {
+        // Automatically send push notification for new premium coupon
+        try {
+          await supabase.functions.invoke("send-premium-push", {
+            body: { 
+              title: "New Premium Coupon! 🎫", 
+              message: `${couponName} with total odds ${calculateTotalOdds(couponMatches).toFixed(2)}` 
+            }
+          });
+          toast({ title: "Premium push sent! 🚀" });
+        } catch (pushError) {
+          console.error("Failed to send automatic push for coupon:", pushError);
+        }
+      }
+
       await refreshData();
       resetCouponForm();
       toast({ title: "Coupon created! 🎫" });
@@ -376,6 +462,55 @@ const Admin = () => {
             <p className="mt-4 text-[11px] text-muted-foreground italic">
               * Note: User must exist in 'profiles' table. If not found, ensure they have logged in at least once.
             </p>
+          </CardContent>
+        </Card>
+
+        {/* PUSH NOTIFICATIONS */}
+        <Card className="bg-card border-border/50 card-glow overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
+            <Bell className="w-24 h-24 text-accent" />
+          </div>
+          <CardContent className="p-6 md:p-8">
+            <h2 className="font-display text-xl font-bold text-foreground mb-6 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
+                <Bell className="w-4 h-4 text-accent" />
+              </div>
+              Send Premium Push Notification
+            </h2>
+            <form onSubmit={sendPremiumPush} className="grid gap-5">
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Notification Title</Label>
+                  <Input 
+                    placeholder="e.g. New Premium Tip! 🔥" 
+                    value={pushTitle} 
+                    onChange={(e) => setPushTitle(e.target.value)} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Notification Message</Label>
+                  <Input 
+                    placeholder="e.g. A new high-confidence tip has been added." 
+                    value={pushMessage} 
+                    onChange={(e) => setPushMessage(e.target.value)} 
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button 
+                  type="submit" 
+                  disabled={isSendingPush}
+                  className="w-full md:w-auto min-w-[200px] gap-2 h-11 font-display uppercase tracking-wider text-xs bg-accent text-accent-foreground hover:bg-accent/90"
+                >
+                  {isSendingPush ? (
+                    <span className="animate-spin">⌛</span>
+                  ) : (
+                    <Bell className="w-4 h-4" />
+                  )}
+                  Send to All Premium Users
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
 
