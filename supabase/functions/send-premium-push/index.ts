@@ -21,20 +21,31 @@ serve(async (req: Request) => {
     const serviceAccountJson = Deno.env.get("FCM_SERVICE_ACCOUNT");
     const adminEmail = (Deno.env.get("ADMIN_EMAIL") ?? "").toLowerCase();
 
-    if (!serviceAccountJson) throw new Error("Missing FCM_SERVICE_ACCOUNT secret");
+    if (!serviceAccountJson) {
+      throw new Error("Brak sekretu FCM_SERVICE_ACCOUNT w ustawieniach Supabase.");
+    }
+
+    let serviceAccount;
+    try {
+      // Próba naprawy JSONa jeśli został błędnie zapisany z dodatkowymi cudzysłowami
+      let cleanJson = serviceAccountJson.trim();
+      if (cleanJson.startsWith("'") && cleanJson.endsWith("'")) {
+        cleanJson = cleanJson.substring(1, cleanJson.length - 1);
+      }
+      serviceAccount = JSON.parse(cleanJson);
+    } catch (e) {
+      console.error("JSON Parse Error details:", e.message);
+      console.error("Secret value starts with:", serviceAccountJson.substring(0, 20));
+      throw new Error(`Błąd formatu JSON w sekrecie FCM_SERVICE_ACCOUNT: ${e.message}. Sprawdź ustawienia Secrets w panelu Supabase.`);
+    }
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
+      return new Response(JSON.stringify({ error: "Brak nagłówka Authorization." }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // Initialize clients
-    const serviceClient = createClient(supabaseUrl, serviceRoleKey);
-    
-    // Get user using the standard Supabase method (most reliable)
-    // We use the anon key client but pass the user's token
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } }
     });
@@ -42,18 +53,13 @@ serve(async (req: Request) => {
     const { data: { user }, error: authError } = await userClient.auth.getUser();
 
     if (authError || !user) {
-      console.error("Auth error:", authError);
-      return new Response(JSON.stringify({ error: "Nieprawidłowa sesja. Zaloguj się ponownie." }), {
+      return new Response(JSON.stringify({ error: "Sesja wygasła. Zaloguj się ponownie." }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    console.log(`User verified: ${user.email}`);
-
-    // Admin Check
     if (adminEmail && user.email?.toLowerCase() !== adminEmail) {
-      console.warn(`Unauthorized access attempt by ${user.email}`);
-      return new Response(JSON.stringify({ error: `Brak uprawnień administratora. Zalogowany jako: ${user.email}` }), {
+      return new Response(JSON.stringify({ error: `Brak uprawnień admina. Zalogowany jako: ${user.email}` }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
@@ -62,8 +68,6 @@ serve(async (req: Request) => {
     const title = body?.title || "New Premium Tip!";
     const message = body?.message || body?.body || "Check out the new content.";
 
-    // FCM Setup
-    const serviceAccount = JSON.parse(serviceAccountJson);
     const auth = new GoogleAuth({
       credentials: serviceAccount,
       scopes: ["https://www.googleapis.com/auth/firebase.messaging"],
@@ -72,36 +76,27 @@ serve(async (req: Request) => {
     const tokenResponse = await authClient.getAccessToken();
     const accessToken = tokenResponse.token;
 
-    // Fetch Premium Users
+    const serviceClient = createClient(supabaseUrl, serviceRoleKey);
     const nowIso = new Date().toISOString();
-    const { data: premiumUsers, error: premiumErr } = await serviceClient
+    const { data: premiumUsers } = await serviceClient
       .from("premium_access")
       .select("user_id")
       .gt("expires_at", nowIso);
 
-    if (premiumErr) throw premiumErr;
-
     const userIds = premiumUsers?.map(u => u.user_id).filter(Boolean) || [];
-    console.log(`Found ${userIds.length} premium users.`);
-
     if (userIds.length === 0) {
       return new Response(JSON.stringify({ ok: true, success: 0, reason: "Brak aktywnych użytkowników Premium." }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // Fetch Tokens
-    const { data: pushTokens, error: tokenErr } = await serviceClient
+    const { data: pushTokens } = await serviceClient
       .from("push_tokens")
       .select("token")
       .eq("enabled", true)
       .in("user_id", userIds);
 
-    if (tokenErr) throw tokenErr;
-
     const tokens = pushTokens?.map(t => t.token).filter(Boolean) || [];
-    console.log(`Found ${tokens.length} tokens to notify.`);
-
     if (tokens.length === 0) {
       return new Response(JSON.stringify({ ok: true, success: 0, reason: "Użytkownicy nie mają włączonych powiadomień." }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -118,20 +113,15 @@ serve(async (req: Request) => {
             message: {
               token,
               notification: { title, body: message },
-              android: { 
-                priority: "high", 
-                notification: { sound: "default", click_action: "FCM_PLUGIN_ACTIVITY" } 
-              },
+              android: { priority: "high", notification: { sound: "default", click_action: "FCM_PLUGIN_ACTIVITY" } },
             },
           }),
         });
         if (res.ok) successCount++;
       } catch (e) {
-        console.error(`Error sending to token ${token.substring(0, 10)}:`, e);
+        console.error("FCM Error:", e);
       }
     }
-
-    console.log(`Successfully sent ${successCount} notifications.`);
 
     return new Response(JSON.stringify({ ok: true, success: successCount }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -139,7 +129,7 @@ serve(async (req: Request) => {
 
   } catch (error) {
     console.error("Critical Function error:", error.message);
-    return new Response(JSON.stringify({ error: `Błąd serwera: ${error.message}` }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
