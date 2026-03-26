@@ -62,33 +62,32 @@ const Admin = () => {
 
     setIsSendingPush(true);
     try {
-      // Pobieramy aktualną sesję, aby mieć pewność, że przesyłamy token admina
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
         throw new Error("Twoja sesja wygasła. Wyloguj się i zaloguj ponownie.");
       }
 
-      const { data, error } = await supabase.functions.invoke("send-premium-push", {
-        body: { 
+      // Używamy bezpośredniego fetch zamiast supabase.functions.invoke
+      // aby mieć pełną kontrolę nad nagłówkami i uniknąć błędów 401
+      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-premium-push`;
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ 
           title: pushTitle.trim(), 
           message: pushMessage.trim() 
-        },
-        headers: {
-          "Authorization": `Bearer ${session.access_token}`,
-          "apikey": (supabase as any).supabaseKey
-        }
+        })
       });
 
-      if (error) {
-        // Próba wyciągnięcia wiadomości z błędu Edge Function
-        let errorMsg = error.message;
-        try {
-          const body = await error.response?.json();
-          if (body?.error) errorMsg = body.error;
-        } catch (e) {}
-        
-        throw new Error(errorMsg);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Błąd serwera: ${response.status}`);
       }
       
       if (data?.error) {
