@@ -44,7 +44,6 @@ export const usePremiumStatus = () => {
         
         // Sprawdzamy aktywne uprawnienia
         if (info && info.entitlements && info.entitlements.active) {
-          // Wyciągamy wszystkie aktywne uprawnienia dla debugowania
           const activeEntitlements = Object.keys(info.entitlements.active);
           console.log('Aktywne uprawnienia:', activeEntitlements);
 
@@ -60,14 +59,31 @@ export const usePremiumStatus = () => {
               const now = new Date();
               daysLeft = Math.max(0, Math.ceil((expiryDate.getTime() - now.getTime()) / 86400000));
             } else {
-              // Lifetime access lub brak daty wygaśnięcia
               daysLeft = 999;
             }
+
+            // SYNCHRONIZACJA Z SUPABASE
+            // Jeśli wykryliśmy aktywny zakup w RC, zaktualizujmy bazę danych
+            try {
+              const { error: syncError } = await supabase
+                .from("premium_access")
+                .upsert({
+                  user_id: user.id,
+                  expires_at: expiresAt || new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString(), // 10 lat jeśli lifetime
+                  updated_at: new Date().toISOString(),
+                }, { onConflict: 'user_id' });
+              
+              if (syncError) {
+                console.warn('Błąd synchronizacji RC -> Supabase:', syncError);
+              } else {
+                console.log('Zsynchronizowano status RevenueCat z bazą Supabase');
+              }
+            } catch (syncErr) {
+              console.error('Wyjątek podczas synchronizacji:', syncErr);
+            }
+
           } else if (activeEntitlements.length > 0) {
-            // Jeśli są JAKIEŚ aktywne uprawnienia, ale nie to konkretne, 
-            // to może być błąd w nazwie ID uprawnienia w kodzie
             console.warn('Użytkownik ma aktywne inne uprawnienia:', activeEntitlements);
-            // Dla bezpieczeństwa: jeśli jest jakiekolwiek aktywne uprawnienie, uznajmy go za Premium
             active = true;
             daysLeft = 999;
           }
