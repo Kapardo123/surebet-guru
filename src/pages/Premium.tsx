@@ -145,41 +145,41 @@ const Premium = () => {
 
         try {
           const info = await presentPaywall();
-          
-          if (info) {
-            console.log('Paywall zwrócił info - sukces!');
-            toast({
-              title: "Success! 🎉",
-              description: "Premium access granted via Google Play.",
-            });
-            await refresh();
-            return;
-          } else {
-            console.log('Paywall zamknięty bez zakupu lub wystąpił błąd');
-            // Próba zakupu bezpośredniego jeśli paywall nie zadziałał
-            if (rcOfferings?.current) {
-              let rcPackage = null;
-              if (duration === 7) rcPackage = rcOfferings.current.weekly;
-              else if (duration === 30) rcPackage = rcOfferings.current.monthly;
-              else if (duration === 15) {
-                rcPackage = rcOfferings.current.availablePackages.find((p: any) => 
-                  p.identifier.includes('15') || p.identifier.includes('half')
-                );
-              }
+        
+        if (info) {
+          console.log('Paywall zwrócił info - sukces!');
+          toast({
+            title: "Success! 🎉",
+            description: "Premium access granted via Google Play.",
+          });
+          await refresh(info);
+          return;
+        } else {
+          console.log('Paywall zamknięty bez zakupu lub wystąpił błąd');
+          // Próba zakupu bezpośredniego jeśli paywall nie zadziałał
+          if (rcOfferings?.current) {
+            let rcPackage = null;
+            if (duration === 7) rcPackage = rcOfferings.current.weekly;
+            else if (duration === 30) rcPackage = rcOfferings.current.monthly;
+            else if (duration === 15) {
+              rcPackage = rcOfferings.current.availablePackages.find((p: any) => 
+                p.identifier.includes('15') || p.identifier.includes('half')
+              );
+            }
 
-              if (rcPackage) {
-                const directInfo = await purchasePackage(rcPackage);
-                if (directInfo) {
-                  toast({
-                    title: "Success! 🎉",
-                    description: `Premium access granted for ${duration} days.`,
-                  });
-                  await refresh();
-                  return;
-                }
+            if (rcPackage) {
+              const directInfo = await purchasePackage(rcPackage);
+              if (directInfo) {
+                toast({
+                  title: "Success! 🎉",
+                  description: `Premium access granted for ${duration} days.`,
+                });
+                await refresh(directInfo);
+                return;
               }
             }
           }
+        }
         } catch (e: any) {
           console.error('Błąd RevenueCat:', e);
           // WYŚWIETLAMY DOKŁADNY BŁĄD UŻYTKOWNIKOWI

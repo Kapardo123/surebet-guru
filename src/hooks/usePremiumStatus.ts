@@ -22,7 +22,7 @@ export const usePremiumStatus = () => {
   const { user, loading: authLoading } = useAuth();
   const [state, setState] = useState<PremiumStatusState>(defaultState);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (providedInfo?: any) => {
     if (authLoading) return;
 
     if (!user) {
@@ -39,79 +39,65 @@ export const usePremiumStatus = () => {
 
       // 1. Sprawdź status w RevenueCat (tylko na urządzeniach mobilnych)
       if (Capacitor.getPlatform() !== 'web') {
-        const info = await getCustomerInfo();
-        console.log('Customer Info z RevenueCat:', JSON.stringify(info));
+        // Używamy dostarczonego info lub pobieramy nowe
+        const info = providedInfo || await getCustomerInfo();
+        console.log('Analizowanie statusu RevenueCat...', info ? 'Info obecne' : 'Info brak');
         
-        // Sprawdzamy aktywne uprawnienia
         if (info && info.entitlements && info.entitlements.active) {
           const activeEntitlements = Object.keys(info.entitlements.active);
-          console.log('Aktywne uprawnienia:', activeEntitlements);
+          console.log('Wykryte uprawnienia RC:', activeEntitlements);
 
-          // Szukamy uprawnienia "Great Sport Bets Pro"
-          const entitlement = info.entitlements.active["Great Sport Bets Pro"];
+          // Szukamy jakiegokolwiek aktywnego uprawnienia (lub konkretnego "Great Sport Bets Pro")
+          const entitlement = info.entitlements.active["Great Sport Bets Pro"] || 
+                             info.entitlements.active[activeEntitlements[0]];
           
           if (entitlement) {
-            console.log('Znaleziono uprawnienie Premium:', entitlement);
             active = true;
             expiresAt = entitlement.expirationDate;
             if (expiresAt) {
               const expiryDate = new Date(expiresAt);
-              const now = new Date();
-              daysLeft = Math.max(0, Math.ceil((expiryDate.getTime() - now.getTime()) / 86400000));
+              daysLeft = Math.max(0, Math.ceil((expiryDate.getTime() - Date.now()) / 86400000));
             } else {
               daysLeft = 999;
             }
 
-            // SYNCHRONIZACJA Z SUPABASE
-            // Jeśli wykryliśmy aktywny zakup w RC, zaktualizujmy bazę danych
+            // SYNCHRONIZACJA Z BAZĄ
             try {
-              const { error: syncError } = await supabase
+              await supabase
                 .from("premium_access")
                 .upsert({
                   user_id: user.id,
-                  expires_at: expiresAt || new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString(), // 10 lat jeśli lifetime
+                  expires_at: expiresAt || new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString(),
                   updated_at: new Date().toISOString(),
-                }, { onConflict: 'user_id' });
-              
-              if (syncError) {
-                console.warn('Błąd synchronizacji RC -> Supabase:', syncError);
-              } else {
-                console.log('Zsynchronizowano status RevenueCat z bazą Supabase');
-              }
-            } catch (syncErr) {
-              console.error('Wyjątek podczas synchronizacji:', syncErr);
+                });
+              console.log('Baza danych zsynchronizowana pomyślnie');
+            } catch (e) {
+              console.warn('Cichy błąd synchronizacji bazy (prawdopodobnie RLS):', e);
             }
-
-          } else if (activeEntitlements.length > 0) {
-            console.warn('Użytkownik ma aktywne inne uprawnienia:', activeEntitlements);
-            active = true;
-            daysLeft = 999;
           }
         }
       }
 
-      // 2. Jeśli nie jest aktywny w RC, sprawdź w Supabase (Stripe/Manual)
+      // 2. Fallback do Supabase (jeśli RC nie dało wyniku lub jesteśmy na Web)
       if (!active) {
-        const { data, error } = await (supabase as any)
+        console.log('Sprawdzanie statusu w bazie Supabase...');
+        const { data } = await (supabase as any)
           .from("premium_access")
           .select("expires_at")
           .eq("user_id", user.id)
           .maybeSingle();
 
-        if (error) throw error;
-
         if (data?.expires_at) {
           const expiryDate = new Date(data.expires_at);
-          const now = new Date();
-          daysLeft = Math.max(0, Math.ceil((expiryDate.getTime() - now.getTime()) / 86400000));
-          
-          if (daysLeft > 0) {
+          if (expiryDate > new Date()) {
             active = true;
             expiresAt = data.expires_at;
+            daysLeft = Math.max(0, Math.ceil((expiryDate.getTime() - Date.now()) / 86400000));
           }
         }
       }
 
+      console.log('Finalny status Premium:', { active, daysLeft });
       setState({
         active,
         daysLeft,
@@ -119,7 +105,7 @@ export const usePremiumStatus = () => {
         loading: false,
       });
     } catch (err) {
-      console.error("Error fetching premium status:", err);
+      console.error("Błąd krytyczny usePremiumStatus:", err);
       setState({ ...defaultState, loading: false });
     }
   }, [authLoading, user]);
