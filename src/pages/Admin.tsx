@@ -62,14 +62,20 @@ const Admin = () => {
 
     setIsSendingPush(true);
     try {
-      // Pobieramy anon key bezpośrednio z klienta supabase
+      // Pobieramy aktualną sesję, aby mieć pewność, że przesyłamy token admina
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error("Twoja sesja wygasła. Wyloguj się i zaloguj ponownie.");
+      }
+
       const { data, error } = await supabase.functions.invoke("send-premium-push", {
         body: { 
           title: pushTitle.trim(), 
           message: pushMessage.trim() 
         },
         headers: {
-          // Supabase Edge Functions często wymagają apikey (anon key) do poprawnego routingu
+          "Authorization": `Bearer ${session.access_token}`,
           "apikey": (supabase as any).supabaseKey
         }
       });

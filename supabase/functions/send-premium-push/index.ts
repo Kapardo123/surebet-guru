@@ -9,7 +9,6 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
-  // 1. Handle CORS
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -20,51 +19,54 @@ serve(async (req: Request) => {
     const serviceAccountJson = Deno.env.get("FCM_SERVICE_ACCOUNT");
     const adminEmail = (Deno.env.get("ADMIN_EMAIL") ?? "").toLowerCase();
 
-    if (!serviceAccountJson) {
-      throw new Error("Missing FCM_SERVICE_ACCOUNT secret");
-    }
+    if (!serviceAccountJson) throw new Error("Missing FCM_SERVICE_ACCOUNT secret");
 
-    // 2. Initialize Service Client
-    const serviceClient = createClient(supabaseUrl, serviceRoleKey);
-
-    // 3. Get User from the verified JWT (verify_jwt=true handles the verification)
     const authHeader = req.headers.get("Authorization")?.replace("Bearer ", "");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: "Brak nagłówka autoryzacji. Zaloguj się ponownie." }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // We get the user data using service_role to be absolutely sure we can read it
-    const { data: { user }, error: authError } = await serviceClient.auth.admin.getUserById(
-      // The 'sub' claim in JWT is the user ID
-      JSON.parse(atob(authHeader.split(".")[1])).sub
-    );
+    const serviceClient = createClient(supabaseUrl, serviceRoleKey);
+
+    // Bezpieczne dekodowanie ID użytkownika z tokena
+    let userId;
+    try {
+      const payloadBase64 = authHeader.split(".")[1];
+      const decodedPayload = JSON.parse(atob(payloadBase64));
+      userId = decodedPayload.sub;
+      
+      if (decodedPayload.role === "anon") {
+        return new Response(JSON.stringify({ error: "Używasz klucza anonimowego. Wyloguj się i zaloguj jako Admin." }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Nieprawidłowy token sesji. Zaloguj się ponownie." }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Pobranie pełnych danych użytkownika kluczem serwisu
+    const { data: { user }, error: authError } = await serviceClient.auth.admin.getUserById(userId);
 
     if (authError || !user) {
-      console.error("Auth error:", authError);
-      return new Response(JSON.stringify({ error: "User not found or session invalid" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: "Nie znaleziono użytkownika lub sesja wygasła." }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // 4. Admin Check
     if (adminEmail && user.email?.toLowerCase() !== adminEmail) {
-      console.warn(`Access denied for ${user.email}`);
-      return new Response(JSON.stringify({ error: "Forbidden: Not an admin" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: `Brak uprawnień. Zalogowany jako: ${user.email}` }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // 5. Parse Request Body
     const body = await req.json();
     const title = body?.title || "New Premium Tip!";
-    const message = body?.message || body?.body || "Check out the new premium content.";
+    const message = body?.message || body?.body || "Check out the new content.";
 
-    // 6. Initialize Google FCM
     const serviceAccount = JSON.parse(serviceAccountJson);
     const auth = new GoogleAuth({
       credentials: serviceAccount,
@@ -74,22 +76,20 @@ serve(async (req: Request) => {
     const tokenResponse = await authClient.getAccessToken();
     const accessToken = tokenResponse.token;
 
-    // 7. Fetch Premium Users
-    const nowIso = new Date().toISOString();
+    // Pobieranie aktywnych użytkowników Premium
     const { data: premiumUsers } = await serviceClient
       .from("premium_access")
       .select("user_id")
-      .gt("expires_at", nowIso);
+      .gt("expires_at", new Date().toISOString());
 
     const userIds = premiumUsers?.map(u => u.user_id) || [];
     if (userIds.length === 0) {
-      return new Response(JSON.stringify({ ok: true, sent: 0, reason: "no_premium_users" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ ok: true, success: 0, reason: "Brak aktywnych użytkowników Premium." }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // 8. Fetch Tokens
+    // Pobieranie tokenów
     const { data: pushTokens } = await serviceClient
       .from("push_tokens")
       .select("token")
@@ -98,56 +98,35 @@ serve(async (req: Request) => {
 
     const tokens = pushTokens?.map(t => t.token) || [];
     if (tokens.length === 0) {
-      return new Response(JSON.stringify({ ok: true, sent: 0, reason: "no_tokens" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ ok: true, success: 0, reason: "Użytkownicy Premium nie mają włączonych powiadomień." }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // 9. Send Pushes via FCM v1
     let successCount = 0;
     for (const token of tokens) {
-      try {
-        const res = await fetch(`https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
+      const res = await fetch(`https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({
+          message: {
+            token,
+            notification: { title, body: message },
+            android: { priority: "high", notification: { sound: "default", click_action: "FCM_PLUGIN_ACTIVITY" } },
           },
-          body: JSON.stringify({
-            message: {
-              token,
-              notification: { title, body: message },
-              android: { 
-                priority: "high", 
-                notification: { 
-                  sound: "default",
-                  click_action: "FCM_PLUGIN_ACTIVITY"
-                } 
-              },
-            },
-          }),
-        });
-        if (res.ok) successCount++;
-        else {
-          const err = await res.json();
-          console.error("FCM Send Error:", err);
-        }
-      } catch (err) {
-        console.error("FCM Network Error:", err);
-      }
+        }),
+      });
+      if (res.ok) successCount++;
     }
 
     return new Response(JSON.stringify({ ok: true, success: successCount }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 
   } catch (error) {
     console.error("Critical Function error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ error: `Błąd serwera: ${error.message}` }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
 });
