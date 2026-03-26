@@ -62,10 +62,15 @@ const Admin = () => {
 
     setIsSendingPush(true);
     try {
+      // Pobieramy anon key bezpośrednio z klienta supabase
       const { data, error } = await supabase.functions.invoke("send-premium-push", {
         body: { 
           title: pushTitle.trim(), 
           message: pushMessage.trim() 
+        },
+        headers: {
+          // Supabase Edge Functions często wymagają apikey (anon key) do poprawnego routingu
+          "apikey": (supabase as any).supabaseKey
         }
       });
 
