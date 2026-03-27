@@ -50,35 +50,40 @@ const features = [
 ];
 
 const Premium = () => {
-  // Final version 1.7.4 - No animations
+  console.log("PREMIUM: Render start");
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { active, daysLeft, refresh } = usePremiumStatus();
+  const { active, daysLeft, refresh, loading: statusLoading } = usePremiumStatus();
   const [loading, setLoading] = useState<number | null>(null);
   const [rcOfferings, setRcOfferings] = useState<any>(null);
   const [searchParams] = useSearchParams();
   const handledSessionRef = useRef<string | null>(null);
-  const push = usePushNotifications({ userId: user?.id, premiumActive: active });
+  
+  // Commenting out push for debugging
+  // const push = usePushNotifications({ userId: user?.id, premiumActive: active });
+  const push = { enabled: false, loading: false, isNative: Capacitor.isNativePlatform(), setPushEnabled: async () => {} };
 
   useEffect(() => {
+    console.log("PREMIUM: Mounted");
     const fetchRC = async () => {
       if (Capacitor.getPlatform() !== 'web') {
+        console.log("PREMIUM: Fetching RC offerings...");
         try {
           const offerings = await getOfferings();
+          console.log("PREMIUM: RC offerings result:", offerings ? "Success" : "Null");
           if (offerings) {
-            if (!offerings.current) {
-              console.warn('Otrzymano oferty, ale brak "Current Offering" w panelu RevenueCat!');
-            }
             setRcOfferings(offerings);
           }
         } catch (e) {
-          console.error('Błąd w fetchRC:', e);
+          console.error('PREMIUM: RC Fetch error:', e);
         }
       }
     };
     fetchRC();
   }, []);
+
+  console.log("PREMIUM: Render state", { hasUser: !!user, active, statusLoading });
 
   useEffect(() => {
     const success = searchParams.get("success");
