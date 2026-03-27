@@ -50,6 +50,7 @@ const features = [
 ];
 
 const Premium = () => {
+  // Final version 1.7.4 - No animations
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
