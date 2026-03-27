@@ -34,10 +34,18 @@ export default function Premium() {
   const push = usePushNotifications({ userId: user?.id, premiumActive: active });
 
   useEffect(() => {
+    if (active) {
+      addLog(push.enabled ? "Push: ON" : "Push: OFF");
+    }
+  }, [push.enabled, active]);
+
+  useEffect(() => {
     addLog("Mounted");
     const statusTimer = setTimeout(() => {
       addLog("Refreshing status...");
-      refresh().catch(e => addLog("Status error"));
+      refresh()
+        .then(() => addLog("Status OK"))
+        .catch(e => addLog("Status ERR"));
     }, 500);
 
     const rcTimer = setTimeout(() => {
@@ -51,6 +59,8 @@ export default function Premium() {
           } catch (e) {
             addLog("RC Catch");
           }
+        } else {
+          addLog("Web: skip RC");
         }
       };
       fetchRC();
@@ -149,9 +159,39 @@ export default function Premium() {
         </div>
 
         {active && (
-          <Card className="glass border-accent/30"><CardContent className="p-6 text-center font-bold text-accent">
-            Active: {daysLeft} days left
-          </CardContent></Card>
+          <div className="space-y-6">
+            <Card className="glass border-accent/30">
+              <CardContent className="p-6 text-center font-bold text-accent">
+                Active: {daysLeft} days left
+              </CardContent>
+            </Card>
+
+            <Card className="glass border-white/10">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="font-bold flex items-center gap-2">
+                      <Icons.Bell className="w-4 h-4 text-primary" />
+                      Push Notifications
+                    </p>
+                    <p className="text-xs text-muted-foreground">Get daily picks and alerts</p>
+                  </div>
+                  <Switch 
+                    checked={push.enabled} 
+                    onCheckedChange={async (val) => {
+                      try {
+                        await push.setPushEnabled(val);
+                        toast({ title: val ? "Notifications enabled! 🔔" : "Notifications disabled" });
+                      } catch (e: any) {
+                        toast({ title: "Error", description: e.message, variant: "destructive" });
+                      }
+                    }}
+                    disabled={push.loading}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         <div className="grid gap-4 md:grid-cols-3">
