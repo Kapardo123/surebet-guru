@@ -130,7 +130,11 @@ export const usePremiumStatus = () => {
   }, [authLoading, user]);
 
   useEffect(() => {
-    refresh();
+    // Na Androidzie nie odświeżamy automatycznie przy montowaniu, 
+    // aby nie blokować renderu strony. Zrobimy to ręcznie w komponencie.
+    if (Capacitor.getPlatform() === 'web') {
+      refresh();
+    }
   }, [refresh]);
 
   return {

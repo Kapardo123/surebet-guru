@@ -63,8 +63,15 @@ const Premium = () => {
 
   useEffect(() => {
     console.log("PREMIUM: Mounted");
-    // Opóźniamy wywołania natywne, aby dać stronie czas na render
-    const timer = setTimeout(() => {
+    
+    // 1. Odświeżamy status premium z lekkim opóźnieniem
+    const statusTimer = setTimeout(() => {
+      console.log("PREMIUM: Refreshing status...");
+      refresh().catch(e => console.error("Status refresh error:", e));
+    }, 500);
+
+    // 2. Pobieramy oferty RevenueCat jeszcze później
+    const rcTimer = setTimeout(() => {
       const fetchRC = async () => {
         if (Capacitor.getPlatform() !== 'web') {
           console.log("PREMIUM: Fetching RC offerings (delayed)...");
@@ -79,9 +86,13 @@ const Premium = () => {
         }
       };
       fetchRC();
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    }, 2000);
+
+    return () => {
+      clearTimeout(statusTimer);
+      clearTimeout(rcTimer);
+    };
+  }, [refresh]);
 
   console.log("PREMIUM: Render state", { hasUser: !!user, active, statusLoading });
 
