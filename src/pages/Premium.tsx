@@ -11,10 +11,10 @@ import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Capacitor } from "@capacitor/core";
-import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from "@/integrations/revenuecat";
+import { getOfferings, purchasePackage, presentPaywall } from "@/integrations/revenuecat";
 
 export default function Premium() {
-  const [logs, setLogs] = useState<string[]>(["v1.8.8 Init"]);
+  const [logs, setLogs] = useState<string[]>(["v1.8.9 Init"]);
   const addLog = (m: string) => setLogs(p => [...p, `${new Date().toLocaleTimeString()}: ${m}`].slice(-10));
 
   const { user, signOut } = useAuth();
@@ -24,20 +24,8 @@ export default function Premium() {
   const [loading, setLoading] = useState<number | null>(null);
   const [rcOfferings, setRcOfferings] = useState<any>(null);
   const [searchParams] = useSearchParams();
-  const handledSessionRef = useRef<string | null>(null);
   
-  // Use icons from lucide-react inside the component to avoid TDZ errors during minification
-  const Icons = {
-    Crown, ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, LogIn, LogOut, Bell, Smartphone
-  };
-
   const push = usePushNotifications({ userId: user?.id, premiumActive: active });
-
-  useEffect(() => {
-    if (active) {
-      addLog(push.enabled ? "Push: ON" : "Push: OFF");
-    }
-  }, [push.enabled, active]);
 
   useEffect(() => {
     addLog("Mounted");
@@ -105,31 +93,6 @@ export default function Premium() {
     }
   };
 
-  const getPlanDetails = (plan: any) => {
-    if (Capacitor.getPlatform() !== 'web' && rcOfferings?.current) {
-      let rcPackage = null;
-      if (plan.duration === 7) rcPackage = rcOfferings.current.weekly;
-      if (plan.duration === 30) rcPackage = rcOfferings.current.monthly;
-      if (!rcPackage && Array.isArray(rcOfferings.current.availablePackages)) {
-        rcPackage = rcOfferings.current.availablePackages.find((p: any) => {
-          const id = p.identifier.toLowerCase();
-          if (plan.duration === 7) return id.includes('7') || id.includes('week');
-          if (plan.duration === 15) return id.includes('15') || id.includes('half');
-          if (plan.duration === 30) return id.includes('30') || id.includes('month');
-          return false;
-        });
-      }
-      if (rcPackage && rcPackage.product) {
-        return {
-          ...plan,
-          price: rcPackage.product.priceString || plan.price,
-          perDay: `${(rcPackage.product.price / plan.duration).toFixed(2)}$/day`,
-        };
-      }
-    }
-    return plan;
-  };
-
   const plans = [
     { duration: 7, label: "7 Days", price: "$3.99", paymentLink: "https://buy.stripe.com/aFafZg6dW6kP3Ga5TX6EU03" },
     { duration: 15, label: "15 Days", price: "$6.99", popular: true, paymentLink: "https://buy.stripe.com/4gM3cu59SdNh4Ke0zD6EU04" },
@@ -137,51 +100,51 @@ export default function Premium() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 glass border-b border-border/50">
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
         <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/"><Logo /></Link>
           <div className="flex items-center gap-2">
             {user ? (
-              <Button variant="ghost" size="sm" onClick={signOut}><Icons.LogOut className="w-4 h-4" /></Button>
+              <Button variant="ghost" size="sm" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
             ) : (
               <Link to="/auth?redirect=/premium"><Button variant="ghost" size="sm">Sign In</Button></Link>
             )}
-            <Link to="/"><Button variant="ghost" size="sm"><Icons.ArrowLeft className="w-4 h-4" /></Button></Link>
+            <Link to="/"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4" /></Button></Link>
           </div>
         </div>
       </header>
 
       <main className="container max-w-4xl mx-auto px-4 py-10 space-y-10">
         <div className="text-center space-y-4">
-          <Icons.Crown className="w-12 h-12 text-accent mx-auto" />
+          <Crown className="w-12 h-12 text-accent mx-auto" />
           <h1 className="text-3xl font-bold">Go Premium</h1>
         </div>
 
         {active && (
           <div className="space-y-6">
-            <Card className="glass border-accent/30">
+            <Card className="border-accent/30">
               <CardContent className="p-6 text-center font-bold text-accent">
                 Active: {daysLeft} days left
               </CardContent>
             </Card>
 
-            <Card className="glass border-white/10">
+            <Card className="border-white/10">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <p className="font-bold flex items-center gap-2">
-                      <Icons.Bell className="w-4 h-4 text-primary" />
+                      <Bell className="w-4 h-4 text-primary" />
                       Push Notifications
                     </p>
-                    <p className="text-xs text-muted-foreground">Get daily picks and alerts</p>
+                    <p className="text-xs text-muted-foreground">Daily picks and alerts</p>
                   </div>
                   <Switch 
                     checked={push.enabled} 
                     onCheckedChange={async (val) => {
                       try {
                         await push.setPushEnabled(val);
-                        toast({ title: val ? "Notifications enabled! 🔔" : "Notifications disabled" });
+                        toast({ title: val ? "Enabled! 🔔" : "Disabled" });
                       } catch (e: any) {
                         toast({ title: "Error", description: e.message, variant: "destructive" });
                       }
@@ -195,24 +158,26 @@ export default function Premium() {
         )}
 
         <div className="grid gap-4 md:grid-cols-3">
-          {plans.map((p) => {
-            const plan = getPlanDetails(p);
-            return (
-              <Card key={plan.duration} className="bg-card">
-                <CardContent className="p-6 text-center space-y-4">
-                  <p className="font-bold">{plan.label}</p>
-                  <p className="text-3xl font-bold">{plan.price}</p>
-                  <Button onClick={() => handleBuy(plan.duration, plan.paymentLink)} disabled={loading !== null} className="w-full">
-                    {loading === plan.duration ? <Icons.Loader2 className="animate-spin" /> : "Buy Now"}
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {plans.map((plan) => (
+            <Card key={plan.duration} className="bg-card border-border/50">
+              <CardContent className="p-6 text-center space-y-4">
+                <p className="font-bold">{plan.label}</p>
+                <p className="text-3xl font-bold">{plan.price}</p>
+                <Button 
+                  onClick={() => handleBuy(plan.duration, plan.paymentLink)} 
+                  disabled={loading !== null} 
+                  className="w-full"
+                >
+                  {loading === plan.duration ? "Loading..." : "Buy Now"}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </main>
 
-      <div style={{ position: 'fixed', bottom: 0, width: '100%', background: '#000', color: '#0f0', fontSize: '9px', padding: '5px', zIndex: 9999 }}>
+      {/* Debug Footer */}
+      <div className="fixed bottom-0 left-0 right-0 bg-black text-[#0f0] text-[8px] p-1 z-[10000] opacity-80 pointer-events-none max-h-20 overflow-hidden">
         {logs.map((l, i) => <div key={i}>{l}</div>)}
       </div>
     </div>

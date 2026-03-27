@@ -20,6 +20,17 @@ import { initRevenueCat } from "@/integrations/revenuecat";
 
 const queryClient = new QueryClient();
 
+// Global error tracking before any React render
+let globalError: string | null = null;
+window.onerror = (msg, url, line, col, err) => {
+  globalError = `Global Error: ${msg} at ${line}:${col}`;
+  console.error(globalError, err);
+  if (window.dispatchEvent) {
+    window.dispatchEvent(new CustomEvent('app-error', { detail: globalError }));
+  }
+  return false;
+};
+
 const AnimatedRoutes = () => {
   return (
     <Routes>
@@ -37,12 +48,14 @@ const AnimatedRoutes = () => {
   );
 };
 
-// Simple Error Boundary and Debug UI
 const AppContent = () => {
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(globalError);
 
   useEffect(() => {
-    // Inicjalizacja RevenueCat dla płatności natywnych
+    const handleAppError = (e: any) => setError(e.detail);
+    window.addEventListener('app-error', handleAppError);
+    
+    // Inicjalizacja RevenueCat
     const init = async () => {
       try {
         await initRevenueCat();
@@ -52,39 +65,22 @@ const AppContent = () => {
     };
     init();
 
-    // Log any global errors to the console
-    const errorHandler = (msg: any, url: any, line: any, col: any, err: any) => {
-      const errorMsg = `Error: ${msg} at ${line}:${col}`;
-      console.error("GLOBAL ERROR:", errorMsg, err);
-      setError(errorMsg);
-      return false;
-    };
-
-    const rejectionHandler = (event: PromiseRejectionEvent) => {
-      const errorMsg = `Unhandled Rejection: ${event.reason}`;
-      console.error(errorMsg);
-      setError(errorMsg);
-    };
-
-    window.onerror = errorHandler;
-    window.onunhandledrejection = rejectionHandler;
-
-    return () => {
-      window.onerror = null;
-      window.onunhandledrejection = null;
-    };
+    return () => window.removeEventListener('app-error', handleAppError);
   }, []);
 
   if (error) {
     return (
       <div className="min-h-screen bg-black text-white p-8 flex flex-col items-center justify-center text-center space-y-4">
-        <h1 className="text-2xl font-bold text-red-500">Application Error</h1>
-        <p className="text-gray-400 max-w-md">{error}</p>
+        <h1 className="text-2xl font-bold text-red-500">Critical Error</h1>
+        <p className="text-gray-400 font-mono text-xs max-w-md break-all">{error}</p>
         <button 
-          onClick={() => window.location.reload()} 
+          onClick={() => {
+            globalError = null;
+            window.location.reload();
+          }} 
           className="px-4 py-2 bg-primary rounded-lg text-white"
         >
-          Reload Application
+          Reload
         </button>
       </div>
     );
@@ -103,7 +99,7 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <HashRouter> {/* AuthProvider needs to be inside the router to use navigate */}
+      <HashRouter>
         <AppContent />
       </HashRouter>
     </TooltipProvider>
