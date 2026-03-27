@@ -39,9 +39,14 @@ export const usePremiumStatus = () => {
 
       // 1. Sprawdź status w RevenueCat (tylko na urządzeniach mobilnych)
       if (Capacitor.getPlatform() !== 'web') {
-        // Używamy dostarczonego info lub pobieramy nowe
-        const info = providedInfo || await getCustomerInfo();
-        console.log('Analizowanie statusu RevenueCat...', info ? 'Info obecne' : 'Info brak');
+        try {
+          // Dodajemy timeout dla wywołania natywnego, aby nie blokowało renderu
+          const info = await Promise.race([
+            providedInfo || getCustomerInfo(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("RC Timeout")), 5000))
+          ]);
+          
+          console.log('Analizowanie statusu RevenueCat...', info ? 'Info obecne' : 'Info brak');
         
         if (info && info.entitlements && info.entitlements.active) {
           const activeEntitlements = Object.keys(info.entitlements.active);
