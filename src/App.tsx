@@ -24,7 +24,7 @@ const queryClient = new QueryClient();
 const AnimatedRoutes = () => {
   const location = useLocation();
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence>
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Index />} />
         <Route path="/admin" element={<Admin />} />
@@ -47,7 +47,14 @@ const AppContent = () => {
 
   useEffect(() => {
     // Inicjalizacja RevenueCat dla płatności natywnych
-    initRevenueCat();
+    const init = async () => {
+      try {
+        await initRevenueCat();
+      } catch (e) {
+        console.error("RevenueCat init failed:", e);
+      }
+    };
+    init();
 
     // Log any global errors to the console
     const errorHandler = (msg: any, url: any, line: any, col: any, err: any) => {

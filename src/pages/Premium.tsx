@@ -68,7 +68,7 @@ const Premium = () => {
         try {
           const offerings = await getOfferings();
           if (offerings) {
-            console.log('Otrzymane oferty z RevenueCat:', JSON.stringify(offerings));
+            console.log('Otrzymane oferty z RevenueCat');
             if (!offerings.current) {
               console.warn('Otrzymano oferty, ale brak "Current Offering" w panelu RevenueCat!');
             }
@@ -260,7 +260,7 @@ const Premium = () => {
       else if (plan.duration === 30) rcPackage = rcOfferings.current.monthly;
       
       // 2. Jeśli nie znaleziono lub to pakiet 15 dni, szukamy w dostępnych pakietach po identyfikatorze
-      if (!rcPackage) {
+      if (!rcPackage && Array.isArray(rcOfferings.current.availablePackages)) {
         rcPackage = rcOfferings.current.availablePackages.find((p: any) => {
           const id = p.identifier.toLowerCase();
           if (plan.duration === 7) return id.includes('7') || id.includes('week');
@@ -272,14 +272,15 @@ const Premium = () => {
 
       if (rcPackage && rcPackage.product) {
         const price = rcPackage.product.price; // Liczba (np. 3.99)
-        const currencySymbol = rcPackage.product.priceString.replace(/[0-9.,\s]/g, '');
+        const priceString = rcPackage.product.priceString || "";
+        const currencySymbol = priceString.replace(/[0-9.,\s]/g, '') || "$";
         
         // Wyliczamy cenę za dzień na podstawie ceny ze sklepu
-        const dailyPrice = (price / plan.duration).toFixed(2);
+        const dailyPrice = price ? (price / plan.duration).toFixed(2) : "0.00";
         
         return {
           ...plan,
-          price: rcPackage.product.priceString,
+          price: priceString || plan.price,
           perDay: `${currencySymbol}${dailyPrice}/day`,
         };
       }

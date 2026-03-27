@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,10 +47,13 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
     }
   }, [isNative, platform, premiumActive, userId]);
 
+  const hasAutoRegistered = useRef(false);
+
   useEffect(() => {
     loadEnabled();
     
-    if (isNative && userId && premiumActive) {
+    if (isNative && userId && premiumActive && !hasAutoRegistered.current) {
+      hasAutoRegistered.current = true;
       // Automatyczna rejestracja dla użytkowników premium przy starcie aplikacji
       const autoRegister = async () => {
         try {
