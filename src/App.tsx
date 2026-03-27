@@ -93,7 +93,7 @@ const AppContent = () => {
 
   return (
     <AuthProvider>
-      {/* <SplashScreen /> */}
+      <SplashScreen />
       <Toaster />
       <Sonner />
       <AnimatedRoutes />
