@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Crown, ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, LogIn, LogOut, Bell, Lock, Smartphone } from "lucide-react";
+import { Crown, ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, LogIn, LogOut, Bell, Smartphone } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
@@ -12,42 +12,6 @@ import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Capacitor } from "@capacitor/core";
 import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from "@/integrations/revenuecat";
-
-const plans = [
-  {
-    duration: 7,
-    label: "7 Days",
-    price: "$3.99",
-    perDay: "$0.57/day",
-    popular: false,
-    paymentLink: "https://buy.stripe.com/aFafZg6dW6kP3Ga5TX6EU03",
-  },
-  {
-    duration: 15,
-    label: "15 Days",
-    price: "$6.99",
-    perDay: "$0.47/day",
-    popular: true,
-    save: "Save 18%",
-    paymentLink: "https://buy.stripe.com/4gM3cu59SdNh4Ke0zD6EU04",
-  },
-  {
-    duration: 30,
-    label: "30 Days",
-    price: "$9.99",
-    perDay: "$0.33/day",
-    popular: false,
-    save: "Best Value",
-    paymentLink: "https://buy.stripe.com/aFa28q59S10v0tYgyB6EU05",
-  },
-];
-
-const features = [
-  { text: "Access all Premium picks", icon: Crown },
-  { text: "Highest confidence tips", icon: TrendingUp },
-  { text: "Early access to picks", icon: Zap },
-  { text: "Exclusive match analysis", icon: Star },
-];
 
 const Premium = () => {
   console.log("PREMIUM: Render start");
@@ -61,16 +25,51 @@ const Premium = () => {
   const handledSessionRef = useRef<string | null>(null);
   const push = usePushNotifications({ userId: user?.id, premiumActive: active });
 
+  // Move constants inside useMemo to avoid ReferenceError during initialization
+  const plans = useMemo(() => [
+    {
+      duration: 7,
+      label: "7 Days",
+      price: "$3.99",
+      perDay: "$0.57/day",
+      popular: false,
+      paymentLink: "https://buy.stripe.com/aFafZg6dW6kP3Ga5TX6EU03",
+    },
+    {
+      duration: 15,
+      label: "15 Days",
+      price: "$6.99",
+      perDay: "$0.47/day",
+      popular: true,
+      save: "Save 18%",
+      paymentLink: "https://buy.stripe.com/4gM3cu59SdNh4Ke0zD6EU04",
+    },
+    {
+      duration: 30,
+      label: "30 Days",
+      price: "$9.99",
+      perDay: "$0.33/day",
+      popular: false,
+      save: "Best Value",
+      paymentLink: "https://buy.stripe.com/aFa28q59S10v0tYgyB6EU05",
+    },
+  ], []);
+
+  const features = useMemo(() => [
+    { text: "Access all Premium picks", icon: Crown },
+    { text: "Highest confidence tips", icon: TrendingUp },
+    { text: "Early access to picks", icon: Zap },
+    { text: "Exclusive match analysis", icon: Star },
+  ], []);
+
   useEffect(() => {
     console.log("PREMIUM: Mounted");
     
-    // 1. Odświeżamy status premium z lekkim opóźnieniem
     const statusTimer = setTimeout(() => {
       console.log("PREMIUM: Refreshing status...");
       refresh().catch(e => console.error("Status refresh error:", e));
     }, 500);
 
-    // 2. Pobieramy oferty RevenueCat jeszcze później
     const rcTimer = setTimeout(() => {
       const fetchRC = async () => {
         if (Capacitor.getPlatform() !== 'web') {
