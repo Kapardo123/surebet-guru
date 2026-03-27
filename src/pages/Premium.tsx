@@ -59,10 +59,7 @@ const Premium = () => {
   const [rcOfferings, setRcOfferings] = useState<any>(null);
   const [searchParams] = useSearchParams();
   const handledSessionRef = useRef<string | null>(null);
-  
-  // Commenting out push for debugging
-  // const push = usePushNotifications({ userId: user?.id, premiumActive: active });
-  const push = { enabled: false, loading: false, isNative: Capacitor.isNativePlatform(), setPushEnabled: async () => {} };
+  const push = usePushNotifications({ userId: user?.id, premiumActive: active });
 
   useEffect(() => {
     console.log("PREMIUM: Mounted");
@@ -270,7 +267,6 @@ const Premium = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="bg-red-500 text-[10px] text-white text-center py-0.5">DEBUG: v1.7.7 - NO ANIMATIONS</div>
       <header className="sticky top-0 z-50 glass border-b border-border/50">
         <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
