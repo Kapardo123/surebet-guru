@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Crown, ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, LogIn, LogOut, Bell, Smartphone } from "lucide-react";
+import { Crown, ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, LogIn, LogOut, Bell, Smartphone, AlertTriangle } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
@@ -13,8 +13,49 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Capacitor } from "@capacitor/core";
 import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from "@/integrations/revenuecat";
 
+// DEBUG COMPONENT
+const DebugOverlay = ({ logs, errors }: { logs: string[], errors: string[] }) => (
+  <div style={{
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '40vh',
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    color: '#00ff00',
+    fontSize: '10px',
+    fontFamily: 'monospace',
+    overflowY: 'auto',
+    zIndex: 99999,
+    padding: '10px',
+    borderTop: '2px solid #333',
+    pointerEvents: 'auto'
+  }}>
+    <div style={{ color: '#ff0000', fontWeight: 'bold', marginBottom: '5px' }}>
+      ERRORS ({errors.length}):
+      {errors.map((err, i) => <div key={i} style={{ borderBottom: '1px solid #500', padding: '2px 0' }}>{err}</div>)}
+    </div>
+    <div style={{ color: '#aaa', fontWeight: 'bold', marginTop: '10px' }}>
+      LOGS ({logs.length}):
+      {logs.slice().reverse().map((log, i) => <div key={i}>{log}</div>)}
+    </div>
+  </div>
+);
+
 const Premium = () => {
-  console.log("PREMIUM: Render start v1.8.4");
+  const [debugLogs, setDebugLogs] = useState<string[]>(["Initial render v1.8.5"]);
+  const [debugErrors, setDebugErrors] = useState<string[]>([]);
+  
+  const addLog = (msg: string) => setDebugLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
+  const addError = (msg: string) => setDebugErrors(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
+
+  // Global error capture
+  useEffect(() => {
+    const handleError = (e: ErrorEvent) => addError(`Global: ${e.message} at ${e.filename}:${e.lineno}`);
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -25,7 +66,6 @@ const Premium = () => {
   const handledSessionRef = useRef<string | null>(null);
   const push = usePushNotifications({ userId: user?.id, premiumActive: active });
 
-  // Safe initialization of constants inside the component
   const plans = useMemo(() => [
     {
       duration: 7,
@@ -63,24 +103,23 @@ const Premium = () => {
   ], []);
 
   useEffect(() => {
-    console.log("PREMIUM: Mounted");
+    addLog("Premium Mounted");
     
     const statusTimer = setTimeout(() => {
-      console.log("PREMIUM: Refreshing status...");
-      refresh().catch(e => console.error("Status refresh error:", e));
+      addLog("Refreshing status...");
+      refresh().catch(e => addError(`Status Error: ${e.message}`));
     }, 500);
 
     const rcTimer = setTimeout(() => {
       const fetchRC = async () => {
         if (Capacitor.getPlatform() !== 'web') {
-          console.log("PREMIUM: Fetching RC offerings (delayed)...");
+          addLog("Fetching RC offerings...");
           try {
             const offerings = await getOfferings();
-            if (offerings) {
-              setRcOfferings(offerings);
-            }
-          } catch (e) {
-            console.error('PREMIUM: RC Fetch error:', e);
+            addLog(offerings ? "RC Success" : "RC Null");
+            if (offerings) setRcOfferings(offerings);
+          } catch (e: any) {
+            addError(`RC Fetch Error: ${e.message}`);
           }
         }
       };
@@ -93,73 +132,26 @@ const Premium = () => {
     };
   }, [refresh]);
 
-  useEffect(() => {
-    const success = searchParams.get("success");
-    const sessionId = searchParams.get("session_id");
-
-    if (success !== "true" || !sessionId || handledSessionRef.current === sessionId) {
-      return;
-    }
-
-    handledSessionRef.current = sessionId;
-
-    const verifyAndActivate = async () => {
-      const { data, error } = await supabase.functions.invoke("verify-payment", {
-        body: { sessionId },
-      });
-
-      if (error || data?.error) {
-        toast({
-          title: "Payment Error",
-          description: data?.error || error?.message || "Could not verify payment",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      await refresh();
-
-      toast({
-        title: "Premium Activated! 🎉",
-        description: "Payment confirmed and added to your account.",
-      });
-
-      navigate("/premium", { replace: true });
-    };
-
-    verifyAndActivate();
-  }, [navigate, refresh, searchParams, toast]);
-
   const handleBuy = async (duration: number, paymentLink?: string) => {
     if (!user) {
-      toast({
-        title: "Login Required",
-        description: "Please log in to purchase premium access.",
-      });
+      toast({ title: "Login Required", description: "Please log in to purchase premium access." });
       navigate("/auth?redirect=/premium");
       return;
     }
 
     setLoading(duration);
+    addLog(`Initiating purchase: ${duration} days`);
     
     try {
       if (Capacitor.getPlatform() !== 'web') {
-        toast({
-          title: "Connecting...",
-          description: "Opening secure payment window...",
-        });
-
         try {
           const info = await presentPaywall();
-        
           if (info) {
-            toast({ 
-              title: "Success! 🎉",
-              description: "Premium access granted via Google Play.",
-            });
+            addLog("Purchase success from paywall");
             await refresh(info, duration);
             return;
           } else if (rcOfferings?.current) {
+            addLog("Paywall closed, trying direct package...");
             let rcPackage = null;
             if (duration === 7) rcPackage = rcOfferings.current.weekly;
             else if (duration === 30) rcPackage = rcOfferings.current.monthly;
@@ -172,22 +164,15 @@ const Premium = () => {
             if (rcPackage) {
               const directInfo = await purchasePackage(rcPackage);
               if (directInfo) {
-                toast({
-                  title: "Success! 🎉",
-                  description: `Premium access granted for ${duration} days.`,
-                });
+                addLog("Direct purchase success");
                 await refresh(directInfo, duration);
                 return;
               }
             }
           }
         } catch (e: any) {
-          console.error('Błąd RevenueCat:', e);
-          toast({
-            title: "RevenueCat Error",
-            description: e.message || "Unknown error from RevenueCat",
-            variant: "destructive",
-          });
+          addError(`RC Purchase Error: ${e.message}`);
+          toast({ title: "RevenueCat Error", description: e.message, variant: "destructive" });
         }
         return;
       }
@@ -196,46 +181,7 @@ const Premium = () => {
         window.location.href = `${paymentLink}?client_reference_id=${user.id}&customer_email=${encodeURIComponent(user.email || "")}`;
       }
     } catch (error: any) {
-      console.error('Błąd podczas procesowania zakupu:', error);
-      toast({
-        title: "Store Error",
-        description: error.message || "Could not open payment window. Check your internet connection.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const handleRestore = async () => {
-    if (!user) {
-      navigate("/auth?redirect=/premium");
-      return;
-    }
-
-    setLoading(0);
-    try {
-      const info = await restorePurchases();
-      if (info && Object.keys(info.entitlements.active).length > 0) {
-        toast({
-          title: "Purchases Restored! 🎉",
-          description: "Your premium access has been successfully restored.",
-        });
-        await refresh();
-      } else {
-        toast({
-          title: "No active purchases found",
-          description: "We couldn't find any active premium subscriptions for your account.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Error restoring purchases:', error);
-      toast({
-        title: "Error",
-        description: "Failed to restore purchases. Please try again later.",
-        variant: "destructive",
-      });
+      addError(`Buy Error: ${error.message}`);
     } finally {
       setLoading(null);
     }
@@ -258,15 +204,10 @@ const Premium = () => {
       }
 
       if (rcPackage && rcPackage.product) {
-        const price = rcPackage.product.price;
-        const priceString = rcPackage.product.priceString || "";
-        const currencySymbol = priceString.replace(/[0-9.,\s]/g, '') || "$";
-        const dailyPrice = price ? (price / plan.duration).toFixed(2) : "0.00";
-        
         return {
           ...plan,
-          price: priceString || plan.price,
-          perDay: `${currencySymbol}${dailyPrice}/day`,
+          price: rcPackage.product.priceString || plan.price,
+          perDay: `${(rcPackage.product.price / plan.duration).toFixed(2)}$/day`,
         };
       }
     }
@@ -274,7 +215,7 @@ const Premium = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-[40vh]">
       <header className="sticky top-0 z-50 glass border-b border-border/50">
         <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
@@ -282,208 +223,49 @@ const Premium = () => {
           </Link>
           <div className="flex items-center gap-2">
             {user ? (
-              <>
-                <span className="text-xs text-muted-foreground hidden sm:inline">{user.email}</span>
-                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={signOut}>
-                  <LogOut className="w-4 h-4" />
-                </Button>
-              </>
+              <Button variant="ghost" size="sm" onClick={signOut}><LogOut className="w-4 h-4" /></Button>
             ) : (
-              <Link to="/auth?redirect=/premium">
-                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
-                  <LogIn className="w-4 h-4" />
-                  Sign In
-                </Button>
-              </Link>
+              <Link to="/auth?redirect=/premium"><Button variant="ghost" size="sm">Sign In</Button></Link>
             )}
-            <Link to="/">
-              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </Button>
-            </Link>
+            <Link to="/"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4" /></Button></Link>
           </div>
         </div>
       </header>
 
-      <main className="container max-w-4xl mx-auto px-4 py-16 space-y-16">
-        {active && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-center gap-3 bg-gradient-to-r from-accent/15 to-primary/15 border border-accent/30 rounded-2xl p-5 text-center">
-              <Crown className="w-6 h-6 text-accent" />
-              <div>
-                <p className="font-display font-bold text-foreground text-lg">Premium Active</p>
-                <p className="text-sm text-muted-foreground">
-                  <span className="text-accent font-bold">{daysLeft}</span> days remaining
-                </p>
-              </div>
-            </div>
+      <main className="container max-w-4xl mx-auto px-4 py-10 space-y-10">
+        <div className="text-center space-y-4">
+          <Crown className="w-12 h-12 text-accent mx-auto" />
+          <h1 className="text-3xl font-bold">Go Premium</h1>
+          <p className="text-muted-foreground">Unlock exclusive analysts picks</p>
+        </div>
 
-            <Card className="glass border-border/50 overflow-hidden">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
-                      <Bell className="w-5 h-5 text-accent" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-sm">Push Notifications</h3>
-                      <p className="text-xs text-muted-foreground">Get instant alerts for new premium picks</p>
-                    </div>
-                  </div>
-                  <Switch 
-                    checked={push.enabled}
-                    disabled={push.loading}
-                    onCheckedChange={async (checked) => {
-                      if (!push.isNative) {
-                        toast({
-                          title: "Mobile App Required",
-                          description: "Please open the app on Android to enable push notifications.",
-                          variant: "destructive"
-                        });
-                        return;
-                      }
-                      
-                      try {
-                        await push.setPushEnabled(checked);
-                        toast({
-                          title: checked ? "Notifications Enabled! 🔔" : "Notifications Disabled",
-                          description: checked ? "You will now receive alerts for new premium picks." : "You have successfully unsubscribed from alerts.",
-                        });
-                      } catch (err: any) {
-                        toast({
-                          title: "Push error",
-                          description: err.message || "Could not update push notification settings",
-                          variant: "destructive"
-                        });
-                      }
-                    }}
-                  />
-                </div>
-                
-                {!push.isNative && (
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground bg-muted/30 p-2 rounded-lg">
-                    <Smartphone className="w-3 h-3" />
-                    Available in the Android app. Open the app to enable alerts.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+        {active && (
+          <Card className="glass border-accent/30">
+            <CardContent className="p-6 text-center">
+              <p className="font-bold text-accent">Premium Active: {daysLeft} days left</p>
+            </CardContent>
+          </Card>
         )}
 
-        <div className="text-center space-y-6 relative">
-          <div className="absolute inset-0 -z-10">
-            <div className="w-96 h-96 bg-accent/8 rounded-full blur-[120px] mx-auto -translate-y-1/3" />
-          </div>
-          <div className="flex justify-center">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-accent/30 to-accent/10 flex items-center justify-center gradient-border">
-              <Crown className="w-10 h-10 text-accent" />
-            </div>
-          </div>
-          <div>
-            <h1 className="font-display text-4xl md:text-6xl font-bold tracking-tight mb-3">
-              <span className="text-gradient">Go Premium</span>
-            </h1>
-            <p className="text-muted-foreground max-w-lg mx-auto text-base leading-relaxed">
-              Unlock exclusive picks from our top analysts and maximize your winning potential
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {features.map(({ text, icon: Icon }) => (
-            <div key={text} className="flex flex-col items-center gap-3 bg-card border border-border/50 rounded-xl px-4 py-5 card-glow text-center">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Icon className="w-5 h-5 text-primary" />
-              </div>
-              <span className="text-sm text-foreground font-medium leading-snug">{text}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3">
           {plans.map((p) => {
             const plan = getPlanDetails(p);
             return (
-              <Card
-                key={plan.duration}
-                className={`bg-card border-border/50 card-glow relative overflow-hidden ${
-                  plan.popular ? "gradient-border ring-1 ring-accent/20 scale-[1.02] md:scale-105" : ""
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-accent to-accent/80 text-accent-foreground text-center py-1.5 text-xs font-display font-bold uppercase tracking-[0.15em] flex items-center justify-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5" />
-                    Most Popular
-                  </div>
-                )}
-                <CardContent className={`p-8 text-center space-y-6 ${plan.popular ? "pt-12" : ""}`}>
-                  <div className="space-y-1">
-                    <p className="font-display text-lg font-bold text-foreground">{plan.label}</p>
-                    <p className="text-xs text-muted-foreground">{plan.perDay}</p>
-                  </div>
-
-                  <div className="space-y-0">
-                    <p className="font-display text-5xl font-bold text-foreground tracking-tight">{plan.price}</p>
-                    {plan.save && (
-                      <span className="inline-block mt-2 text-[10px] font-display font-bold uppercase tracking-wider bg-primary/15 text-primary px-2.5 py-0.5 rounded-full">
-                        {plan.save}
-                      </span>
-                    )}
-                  </div>
-
-                  <Button
-                    onClick={() => handleBuy(plan.duration, plan.paymentLink)}
-                    disabled={loading !== null}
-                    className={`w-full gap-2 h-11 font-display uppercase tracking-wider text-xs ${
-                      plan.popular
-                        ? "bg-gradient-to-r from-accent to-accent/80 text-accent-foreground hover:from-accent/90 hover:to-accent/70 shadow-lg shadow-accent/20"
-                        : ""
-                    }`}
-                    variant={plan.popular ? "default" : "outline"}
-                  >
-                    {loading === plan.duration ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Crown className="w-4 h-4" />
-                    )}
-                    {loading === plan.duration ? "Processing..." : "Get Premium"}
+              <Card key={plan.duration} className="bg-card">
+                <CardContent className="p-6 text-center space-y-4">
+                  <p className="font-bold">{plan.label}</p>
+                  <p className="text-3xl font-bold">{plan.price}</p>
+                  <Button onClick={() => handleBuy(plan.duration, plan.paymentLink)} disabled={loading !== null} className="w-full">
+                    {loading === plan.duration ? <Loader2 className="animate-spin" /> : "Buy Now"}
                   </Button>
                 </CardContent>
               </Card>
             );
           })}
         </div>
-
-        <div className="flex flex-wrap items-center justify-center gap-6 text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <Shield className="w-4 h-4" />
-            <span className="text-xs">
-              {Capacitor.getPlatform() === 'web' 
-                ? "Secure payments via Stripe" 
-                : "Secure payments via App Store / Google Play"}
-            </span>
-          </div>
-          <div className="w-px h-4 bg-border" />
-          <span className="text-xs">Cancel anytime</span>
-          <div className="w-px h-4 bg-border" />
-          <span className="text-xs">Instant access</span>
-        </div>
-
-        {Capacitor.getPlatform() !== 'web' && (
-          <div className="flex justify-center mt-4">
-            <Button 
-              variant="link" 
-              onClick={handleRestore}
-              className="text-xs text-muted-foreground hover:text-accent font-normal"
-              disabled={loading !== null}
-            >
-              Restore Purchases
-            </Button>
-          </div>
-        )}
       </main>
+
+      <DebugOverlay logs={debugLogs} errors={debugErrors} />
     </div>
   );
 };
