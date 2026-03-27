@@ -50,11 +50,10 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
   const hasAutoRegistered = useRef(false);
 
   useEffect(() => {
-    loadEnabled();
+    if (!isNative || !userId || !premiumActive || hasAutoRegistered.current) return;
     
-    if (isNative && userId && premiumActive && !hasAutoRegistered.current) {
+    const timer = setTimeout(() => {
       hasAutoRegistered.current = true;
-      // Automatyczna rejestracja dla użytkowników premium przy starcie aplikacji
       const autoRegister = async () => {
         try {
           const permStatus = await PushNotifications.checkPermissions();
@@ -66,44 +65,59 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
         }
       };
       autoRegister();
-    }
-  }, [isNative, userId, premiumActive, registerAndUpsert, loadEnabled]);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [isNative, userId, premiumActive, registerAndUpsert]);
+
+  // Removed direct call to loadEnabled from useEffect to make it lazy
+  useEffect(() => {
+    const timer = setTimeout(loadEnabled, 1500);
+    return () => clearTimeout(timer);
+  }, [loadEnabled]);
 
   useEffect(() => {
-    if (!isNative) return;
+    if (!isNative || !userId) return;
 
     let receivedHandle: PluginListenerHandle | null = null;
     let actionHandle: PluginListenerHandle | null = null;
 
     const setupListeners = async () => {
-      // Create channel for Android
-      if (Capacitor.getPlatform() === 'android') {
-        await PushNotifications.createChannel({
-          id: 'fcm_default_channel',
-          name: 'Default',
-          description: 'Default notification channel',
-          importance: 5,
-          visibility: 1,
-          sound: 'default'
-        }).catch(err => console.error("Error creating channel:", err));
+      try {
+        console.log('PUSH: Setting up listeners (delayed)...');
+        // Create channel for Android
+        if (Capacitor.getPlatform() === 'android') {
+          await PushNotifications.createChannel({
+            id: 'fcm_default_channel',
+            name: 'Default',
+            description: 'Default notification channel',
+            importance: 5,
+            visibility: 1,
+            sound: 'default'
+          }).catch(err => console.error("Error creating channel:", err));
+        }
+
+        receivedHandle = await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          console.log('Push received in foreground:', notification);
+        });
+
+        actionHandle = await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+          console.log('Push action performed:', action);
+        });
+      } catch (e) {
+        console.error("PUSH: Error in setupListeners:", e);
       }
-
-      receivedHandle = await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        console.log('Push received in foreground:', notification);
-      });
-
-      actionHandle = await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-        console.log('Push action performed:', action);
-      });
     };
 
-    setupListeners();
+    // Delay setup to prevent blocking main thread
+    const timer = setTimeout(setupListeners, 2000);
 
     return () => {
+      clearTimeout(timer);
       receivedHandle?.remove();
       actionHandle?.remove();
     };
-  }, [isNative]);
+  }, [isNative, userId]);
 
   const registerAndUpsert = useCallback(async () => {
     if (!userId) throw new Error("Not authenticated");
