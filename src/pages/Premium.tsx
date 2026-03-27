@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Crown, ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, LogIn, LogOut, Bell, Smartphone } from "lucide-react";
@@ -14,7 +14,7 @@ import { Capacitor } from "@capacitor/core";
 import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from "@/integrations/revenuecat";
 
 const Premium = () => {
-  console.log("PREMIUM: Render start v1.8.3");
+  console.log("PREMIUM: Render start v1.8.4");
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -24,6 +24,43 @@ const Premium = () => {
   const [searchParams] = useSearchParams();
   const handledSessionRef = useRef<string | null>(null);
   const push = usePushNotifications({ userId: user?.id, premiumActive: active });
+
+  // Safe initialization of constants inside the component
+  const plans = useMemo(() => [
+    {
+      duration: 7,
+      label: "7 Days",
+      price: "$3.99",
+      perDay: "$0.57/day",
+      popular: false,
+      paymentLink: "https://buy.stripe.com/aFafZg6dW6kP3Ga5TX6EU03",
+    },
+    {
+      duration: 15,
+      label: "15 Days",
+      price: "$6.99",
+      perDay: "$0.47/day",
+      popular: true,
+      save: "Save 18%",
+      paymentLink: "https://buy.stripe.com/4gM3cu59SdNh4Ke0zD6EU04",
+    },
+    {
+      duration: 30,
+      label: "30 Days",
+      price: "$9.99",
+      perDay: "$0.33/day",
+      popular: false,
+      save: "Best Value",
+      paymentLink: "https://buy.stripe.com/aFa28q59S10v0tYgyB6EU05",
+    },
+  ], []);
+
+  const features = useMemo(() => [
+    { text: "Access all Premium picks", icon: Crown },
+    { text: "Highest confidence tips", icon: TrendingUp },
+    { text: "Early access to picks", icon: Zap },
+    { text: "Exclusive match analysis", icon: Star },
+  ], []);
 
   useEffect(() => {
     console.log("PREMIUM: Mounted");
@@ -355,12 +392,7 @@ const Premium = () => {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { text: "Access all Premium picks", icon: Crown },
-            { text: "Highest confidence tips", icon: TrendingUp },
-            { text: "Early access to picks", icon: Zap },
-            { text: "Exclusive match analysis", icon: Star },
-          ].map(({ text, icon: Icon }) => (
+          {features.map(({ text, icon: Icon }) => (
             <div key={text} className="flex flex-col items-center gap-3 bg-card border border-border/50 rounded-xl px-4 py-5 card-glow text-center">
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Icon className="w-5 h-5 text-primary" />
@@ -371,34 +403,7 @@ const Premium = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {[
-            {
-              duration: 7,
-              label: "7 Days",
-              price: "$3.99",
-              perDay: "$0.57/day",
-              popular: false,
-              paymentLink: "https://buy.stripe.com/aFafZg6dW6kP3Ga5TX6EU03",
-            },
-            {
-              duration: 15,
-              label: "15 Days",
-              price: "$6.99",
-              perDay: "$0.47/day",
-              popular: true,
-              save: "Save 18%",
-              paymentLink: "https://buy.stripe.com/4gM3cu59SdNh4Ke0zD6EU04",
-            },
-            {
-              duration: 30,
-              label: "30 Days",
-              price: "$9.99",
-              perDay: "$0.33/day",
-              popular: false,
-              save: "Best Value",
-              paymentLink: "https://buy.stripe.com/aFa28q59S10v0tYgyB6EU05",
-            },
-          ].map((p) => {
+          {plans.map((p) => {
             const plan = getPlanDetails(p);
             return (
               <Card
