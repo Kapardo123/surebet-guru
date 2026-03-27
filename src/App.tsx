@@ -22,22 +22,19 @@ import { initRevenueCat } from "@/integrations/revenuecat";
 const queryClient = new QueryClient();
 
 const AnimatedRoutes = () => {
-  const location = useLocation();
   return (
-    <AnimatePresence>
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Index />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/premium" element={<Premium />} />
-        <Route path="/coupons" element={<Coupons />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/referral" element={<Referral />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/deletion" element={<DataDeletion />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </AnimatePresence>
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="/premium" element={<Premium />} />
+      <Route path="/coupons" element={<Coupons />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/referral" element={<Referral />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/deletion" element={<DataDeletion />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 };
 

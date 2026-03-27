@@ -289,7 +289,6 @@ const Premium = () => {
   };
 
   return (
-    <PageTransition>
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 glass border-b border-border/50">
         <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -486,7 +485,6 @@ const Premium = () => {
         )}
       </main>
     </div>
-    </PageTransition>
   );
 };
 

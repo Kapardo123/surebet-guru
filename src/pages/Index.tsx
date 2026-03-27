@@ -44,7 +44,6 @@ const Index = () => {
   }, []);
 
   return (
-    <PageTransition>
     <div className="min-h-screen bg-background pb-20 md:pb-0 relative">
       {/* <ParticleBackground /> */}
       <header className="sticky top-0 z-50 glass border-b border-border/50">
@@ -185,7 +184,6 @@ const Index = () => {
 
       <BottomNav onTabChange={setActiveTab} />
     </div>
-    </PageTransition>
   );
 };
 
