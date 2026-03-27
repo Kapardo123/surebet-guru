@@ -325,15 +325,32 @@ const Premium = () => {
                   </div>
                   <Switch 
                     checked={push.enabled}
-                    disabled={push.loading || !push.isNative}
-                    onCheckedChange={(checked) => {
-                      push.setPushEnabled(checked).catch(err => {
+                    disabled={push.loading}
+                    onCheckedChange={async (checked) => {
+                      console.log("Push toggle clicked:", checked);
+                      if (!push.isNative) {
                         toast({
-                          title: "Push error",
-                          description: err.message,
+                          title: "Mobile App Required",
+                          description: "Please open the Great Sport Bets app on Android to enable push notifications.",
                           variant: "destructive"
                         });
-                      });
+                        return;
+                      }
+                      
+                      try {
+                        await push.setPushEnabled(checked);
+                        toast({
+                          title: checked ? "Notifications Enabled! 🔔" : "Notifications Disabled",
+                          description: checked ? "You will now receive alerts for new premium picks." : "You have successfully unsubscribed from alerts.",
+                        });
+                      } catch (err: any) {
+                        console.error("Push error:", err);
+                        toast({
+                          title: "Push error",
+                          description: err.message || "Could not update push notification settings",
+                          variant: "destructive"
+                        });
+                      }
                     }}
                   />
                 </div>
