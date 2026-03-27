@@ -94,10 +94,18 @@ const Admin = () => {
         throw new Error(data.error);
       }
 
-      toast({ 
-        title: "Push Sent! 🚀", 
-        description: `Notification sent to ${data?.success || 0} premium users.` 
-      });
+      if (data.success === 0) {
+        toast({ 
+          title: "Push not sent", 
+          description: data.reason || "No eligible users found with active premium and push enabled.",
+          variant: "default"
+        });
+      } else {
+        toast({ 
+          title: "Push Sent! 🚀", 
+          description: `Notification sent to ${data.success} premium users.` 
+        });
+      }
       setPushTitle("");
       setPushMessage("");
     } catch (error: any) {

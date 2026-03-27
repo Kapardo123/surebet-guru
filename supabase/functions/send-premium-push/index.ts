@@ -106,6 +106,7 @@ serve(async (req: Request) => {
     let successCount = 0;
     for (const token of tokens) {
       try {
+        console.log(`Sending push to token: ${token.substring(0, 10)}...`);
         const res = await fetch(`https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
@@ -113,7 +114,27 @@ serve(async (req: Request) => {
             message: {
               token,
               notification: { title, body: message },
-              android: { priority: "high", notification: { sound: "default", click_action: "FCM_PLUGIN_ACTIVITY" } },
+              data: {
+                title,
+                body: message,
+                click_action: "FCM_PLUGIN_ACTIVITY"
+              },
+              android: { 
+                priority: "high", 
+                notification: { 
+                  sound: "default", 
+                  click_action: "FCM_PLUGIN_ACTIVITY",
+                  channel_id: "fcm_default_channel"
+                } 
+              },
+              apns: {
+                payload: {
+                  aps: {
+                    sound: "default",
+                    badge: 1
+                  }
+                }
+              }
             },
           }),
         });

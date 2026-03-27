@@ -49,7 +49,58 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
 
   useEffect(() => {
     loadEnabled();
-  }, [loadEnabled]);
+    
+    if (isNative && userId && premiumActive) {
+      // Automatyczna rejestracja dla użytkowników premium przy starcie aplikacji
+      const autoRegister = async () => {
+        try {
+          const permStatus = await PushNotifications.checkPermissions();
+          if (permStatus.receive === 'granted') {
+            await registerAndUpsert();
+          }
+        } catch (e) {
+          console.error("Auto-registration failed:", e);
+        }
+      };
+      autoRegister();
+    }
+  }, [isNative, userId, premiumActive, registerAndUpsert, loadEnabled]);
+
+  useEffect(() => {
+    if (!isNative) return;
+
+    let receivedHandle: PluginListenerHandle | null = null;
+    let actionHandle: PluginListenerHandle | null = null;
+
+    const setupListeners = async () => {
+      // Create channel for Android
+      if (Capacitor.getPlatform() === 'android') {
+        await PushNotifications.createChannel({
+          id: 'fcm_default_channel',
+          name: 'Default',
+          description: 'Default notification channel',
+          importance: 5,
+          visibility: 1,
+          sound: 'default'
+        }).catch(err => console.error("Error creating channel:", err));
+      }
+
+      receivedHandle = await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        console.log('Push received in foreground:', notification);
+      });
+
+      actionHandle = await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+        console.log('Push action performed:', action);
+      });
+    };
+
+    setupListeners();
+
+    return () => {
+      receivedHandle?.remove();
+      actionHandle?.remove();
+    };
+  }, [isNative]);
 
   const registerAndUpsert = useCallback(async () => {
     if (!userId) throw new Error("Not authenticated");
@@ -113,6 +164,18 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
     });
 
     localStorage.setItem(TOKEN_STORAGE_KEY, token);
+
+    // Create a notification channel for Android (required for high priority)
+    if (Capacitor.getPlatform() === 'android') {
+      await PushNotifications.createChannel({
+        id: 'fcm_default_channel',
+        name: 'Default',
+        description: 'Default notification channel',
+        importance: 5, // high
+        visibility: 1,
+        sound: 'default'
+      }).catch(err => console.error("Error creating channel:", err));
+    }
 
     const { error } = await supabase.from("push_tokens").upsert(
       {
