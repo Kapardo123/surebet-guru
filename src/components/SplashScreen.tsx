@@ -1,6 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import LottieLogo from "./LottieLogo";
 
 const SplashScreen = () => {
   const [isVisible, setIsVisible] = useState(true);

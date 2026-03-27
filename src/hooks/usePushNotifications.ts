@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
-import { PushNotifications } from "@capacitor/push-notifications";
+import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 
 type Platform = "android" | "ios" | "web";
@@ -19,7 +18,6 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
     if (!userId) return;
     if (!isNative) return;
     
-    // Jeśli użytkownik nie jest premium, wyłączamy powiadomienia wizualnie
     if (!premiumActive) {
       setEnabled(false);
       return;
@@ -56,6 +54,7 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
       hasAutoRegistered.current = true;
       const autoRegister = async () => {
         try {
+          const { PushNotifications } = await import('@capacitor/push-notifications');
           const permStatus = await PushNotifications.checkPermissions();
           if (permStatus.receive === 'granted') {
             await registerAndUpsert();
@@ -68,9 +67,8 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [isNative, userId, premiumActive, registerAndUpsert]);
+  }, [isNative, userId, premiumActive]);
 
-  // Removed direct call to loadEnabled from useEffect to make it lazy
   useEffect(() => {
     const timer = setTimeout(loadEnabled, 1500);
     return () => clearTimeout(timer);
@@ -79,13 +77,14 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
   useEffect(() => {
     if (!isNative || !userId) return;
 
-    let receivedHandle: PluginListenerHandle | null = null;
-    let actionHandle: PluginListenerHandle | null = null;
+    let receivedHandle: any = null;
+    let actionHandle: any = null;
 
     const setupListeners = async () => {
       try {
         console.log('PUSH: Setting up listeners (delayed)...');
-        // Create channel for Android
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+        
         if (Capacitor.getPlatform() === 'android') {
           await PushNotifications.createChannel({
             id: 'fcm_default_channel',
@@ -109,7 +108,6 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
       }
     };
 
-    // Delay setup to prevent blocking main thread
     const timer = setTimeout(setupListeners, 2000);
 
     return () => {
@@ -119,129 +117,88 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
     };
   }, [isNative, userId]);
 
-  const registerAndUpsert = useCallback(async () => {
+  const registerAndUpsert = async () => {
     if (!userId) throw new Error("Not authenticated");
     if (!isNative) throw new Error("Push notifications are available only in the mobile app");
-    
-    // Kluczowa blokada dla użytkowników non-premium
     if (!premiumActive) throw new Error("Push notifications are available for Premium users only");
 
-    const permStatus = await PushNotifications.requestPermissions();
-    if (permStatus.receive !== "granted") {
-      throw new Error("Permission denied. Enable notifications in system settings.");
+    try {
+      setLoading(true);
+      const { PushNotifications } = await import('@capacitor/push-notifications');
+      
+      let permStatus = await PushNotifications.checkPermissions();
+      if (permStatus.receive === 'prompt') {
+        permStatus = await PushNotifications.requestPermissions();
+      }
+
+      if (permStatus.receive !== 'granted') {
+        throw new Error("Push permission not granted");
+      }
+
+      await PushNotifications.register();
+
+      return new Promise((resolve, reject) => {
+        const successListener = PushNotifications.addListener('registration', async ({ value: token }) => {
+          try {
+            localStorage.setItem(TOKEN_STORAGE_KEY, token);
+            const { error } = await supabase.from("push_tokens").upsert({
+              user_id: userId,
+              token,
+              platform,
+              enabled: true,
+              updated_at: new Date().toISOString(),
+            });
+
+            if (error) throw error;
+            setEnabled(true);
+            successListener.remove();
+            resolve(token);
+          } catch (err) {
+            reject(err);
+          }
+        });
+
+        const errorListener = PushNotifications.addListener('registrationError', (err) => {
+          errorListener.remove();
+          reject(new Error(err.error));
+        });
+
+        setTimeout(() => {
+          successListener.remove();
+          errorListener.remove();
+          reject(new Error("Timed out waiting for token"));
+        }, 10000);
+      });
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const token = await new Promise<string>((resolve, reject) => {
-      let regHandle: PluginListenerHandle | null = null;
-      let errHandle: PluginListenerHandle | null = null;
-      let settled = false;
-
-      const cleanup = () => {
-        const tasks: Promise<void>[] = [];
-        if (regHandle) tasks.push(regHandle.remove());
-        if (errHandle) tasks.push(errHandle.remove());
-        return Promise.all(tasks).then(() => undefined);
-      };
-
-      const timeoutId = window.setTimeout(() => {
-        if (settled) return;
-        settled = true;
-        cleanup().finally(() => reject(new Error("Timed out waiting for push token. Is Firebase configured?")));
-      }, 15000);
-
-      const settleOk = (value: string) => {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timeoutId);
-        cleanup().finally(() => resolve(value));
-      };
-
-      const settleErr = (error: unknown) => {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timeoutId);
-        cleanup().finally(() =>
-          reject(new Error(typeof error === "string" ? error : JSON.stringify(error))),
-        );
-      };
-
-      void PushNotifications.addListener("registration", (t) => settleOk(t.value))
-        .then((h) => {
-          regHandle = h;
-        })
-        .catch(settleErr);
-
-      void PushNotifications.addListener("registrationError", (e) => settleErr(e))
-        .then((h) => {
-          errHandle = h;
-        })
-        .catch(settleErr);
-
-      PushNotifications.register().catch(settleErr);
-    });
-
-    localStorage.setItem(TOKEN_STORAGE_KEY, token);
-
-    // Create a notification channel for Android (required for high priority)
-    if (Capacitor.getPlatform() === 'android') {
-      await PushNotifications.createChannel({
-        id: 'fcm_default_channel',
-        name: 'Default',
-        description: 'Default notification channel',
-        importance: 5, // high
-        visibility: 1,
-        sound: 'default'
-      }).catch(err => console.error("Error creating channel:", err));
-    }
-
-    const { error } = await supabase.from("push_tokens").upsert(
-      {
-        user_id: userId,
-        token,
-        platform,
-        enabled: true,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "token" }
-    );
-    
-    if (error) throw error;
-  }, [isNative, platform, premiumActive, userId]);
-
-  const disableToken = useCallback(async () => {
-    if (!userId) return;
-    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-    if (!token) return;
+  const setPushEnabled = async (shouldEnable: boolean) => {
+    if (!userId) throw new Error("Not authenticated");
+    if (!isNative) return;
 
     try {
-      await PushNotifications.unregister().catch(() => {});
-      await supabase
-        .from("push_tokens")
-        .update({ enabled: false, updated_at: new Date().toISOString() })
-        .eq("user_id", userId)
-        .eq("token", token);
-    } catch (error) {
-      console.error("Error disabling push:", error);
-    }
-  }, [userId]);
-
-  const setPushEnabled = useCallback(
-    async (next: boolean) => {
       setLoading(true);
-      try {
-        if (next) {
-          await registerAndUpsert();
-          setEnabled(true);
-        } else {
-          await disableToken();
-          setEnabled(false);
-        }
-      } finally {
-        setLoading(false);
-      }
-    },
-    [disableToken, registerAndUpsert],
-  );
+      if (shouldEnable) {
+        await registerAndUpsert();
+      } else {
+        const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+        const { error } = await supabase.from("push_tokens").upsert({
+          user_id: userId,
+          token: token || "unknown",
+          platform,
+          enabled: false,
+          updated_at: new Date().toISOString(),
+        });
 
-  return { enabled, loading, platform, isNative, refresh: loadEnabled, setPushEnabled };
+        if (error) throw error;
+        setEnabled(false);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { enabled, loading, isNative, setPushEnabled };
 };
