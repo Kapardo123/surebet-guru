@@ -92,10 +92,13 @@ export const usePremiumStatus = () => {
             }
           }
         }
+      } catch (e) {
+        console.error('Błąd RevenueCat w usePremiumStatus:', e);
       }
+    }
 
-      // 2. Fallback do Supabase (jeśli RC nie dało wyniku lub jesteśmy na Web)
-      if (!active) {
+    // 2. Fallback do Supabase (jeśli RC nie dało wyniku lub jesteśmy na Web)
+    if (!active) {
         console.log('Sprawdzanie statusu w bazie Supabase...');
         const { data } = await (supabase as any)
           .from("premium_access")

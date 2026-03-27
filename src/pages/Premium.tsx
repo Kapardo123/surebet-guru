@@ -66,21 +66,24 @@ const Premium = () => {
 
   useEffect(() => {
     console.log("PREMIUM: Mounted");
-    const fetchRC = async () => {
-      if (Capacitor.getPlatform() !== 'web') {
-        console.log("PREMIUM: Fetching RC offerings...");
-        try {
-          const offerings = await getOfferings();
-          console.log("PREMIUM: RC offerings result:", offerings ? "Success" : "Null");
-          if (offerings) {
-            setRcOfferings(offerings);
+    // Opóźniamy wywołania natywne, aby dać stronie czas na render
+    const timer = setTimeout(() => {
+      const fetchRC = async () => {
+        if (Capacitor.getPlatform() !== 'web') {
+          console.log("PREMIUM: Fetching RC offerings (delayed)...");
+          try {
+            const offerings = await getOfferings();
+            if (offerings) {
+              setRcOfferings(offerings);
+            }
+          } catch (e) {
+            console.error('PREMIUM: RC Fetch error:', e);
           }
-        } catch (e) {
-          console.error('PREMIUM: RC Fetch error:', e);
         }
-      }
-    };
-    fetchRC();
+      };
+      fetchRC();
+    }, 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   console.log("PREMIUM: Render state", { hasUser: !!user, active, statusLoading });
@@ -267,6 +270,7 @@ const Premium = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <div className="bg-red-500 text-[10px] text-white text-center py-0.5">DEBUG: v1.7.7 - NO ANIMATIONS</div>
       <header className="sticky top-0 z-50 glass border-b border-border/50">
         <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
