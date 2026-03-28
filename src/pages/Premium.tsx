@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Crown, ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, 
-  LogIn, LogOut, Bell, Smartphone, Check, Clock, Globe, X 
+  LogIn, LogOut, Bell, Smartphone, Check, Clock, Globe, X, Home
 } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -49,7 +49,8 @@ export default function Premium() {
   }, [refresh]);
 
   const handleBack = () => {
-    navigate("/");
+    // Force a complete reload to "/" to avoid any potential WebView history/state hanging
+    window.location.href = "/";
   };
 
   const handleRestore = async () => {
@@ -148,7 +149,7 @@ export default function Premium() {
               </Link>
             )}
             <Button variant="ghost" size="sm" onClick={handleBack} className="text-muted-foreground hover:text-foreground">
-              <X className="w-5 h-5" />
+              <Home className="w-5 h-5" />
             </Button>
           </div>
         </div>
@@ -266,21 +267,6 @@ export default function Premium() {
                     </div>
                     <p className="text-[10px] text-accent font-bold uppercase tracking-widest mt-1">{plan.perDay}</p>
                   </div>
-
-                  <ul className="space-y-3 mb-8 text-left w-full">
-                    <li className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Check className="w-3 h-3 text-green-500" /> Exclusive Premium Picks
-                    </li>
-                    <li className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Check className="w-3 h-3 text-green-500" /> Instant Push Alerts
-                    </li>
-                    <li className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Check className="w-3 h-3 text-green-500" /> AI Match Analytics
-                    </li>
-                    <li className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Check className="w-3 h-3 text-green-500" /> No Advertisements
-                    </li>
-                  </ul>
 
                   <Button 
                     onClick={() => handleBuy(plan.duration, plan.paymentLink)} 

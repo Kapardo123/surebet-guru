@@ -44,12 +44,6 @@ const SplashScreen = () => {
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center">
-        <div className="mb-12">
-          <div className="w-24 h-24 rounded-3xl bg-primary/20 flex items-center justify-center border border-primary/30 shadow-[0_0_30px_rgba(155,135,245,0.2)]">
-            <span className="text-4xl font-black text-primary">GSB</span>
-          </div>
-        </div>
-
         <div className="flex flex-col items-center space-y-1">
           <div className="flex items-baseline gap-1.5">
             <span className="text-4xl font-black tracking-tighter text-white">
