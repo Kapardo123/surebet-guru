@@ -10,7 +10,26 @@ export interface CouponMatch {
   league: string;
   sport: string;
   kickoff: string;
+  homeTeamLogo?: string | null;
+  awayTeamLogo?: string | null;
 }
+
+const COUPONS_CACHE_KEY = "gsb_coupons_cache";
+
+const getCachedCoupons = (): Coupon[] => {
+  try {
+    const cached = localStorage.getItem(COUPONS_CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+const setCachedCoupons = (coupons: Coupon[]) => {
+  try {
+    localStorage.setItem(COUPONS_CACHE_KEY, JSON.stringify(coupons));
+  } catch (e) {}
+};
 
 export interface Coupon {
   id: number;
@@ -35,6 +54,8 @@ const serializeMatches = (matches: CouponMatch[]): Json => {
     league: m.league,
     sport: m.sport,
     kickoff: m.kickoff,
+    homeTeamLogo: m.homeTeamLogo,
+    awayTeamLogo: m.awayTeamLogo,
   })) as unknown as Json;
 };
 
@@ -51,8 +72,13 @@ const deserializeMatches = (value: Json): CouponMatch[] => {
         const league = typeof obj.league === "string" ? obj.league : "";
         const sport = typeof obj.sport === "string" ? obj.sport : "Football";
         const kickoff = typeof obj.kickoff === "string" ? obj.kickoff : "";
+        const homeTeamLogo = typeof obj.homeTeamLogo === "string" ? obj.homeTeamLogo : null;
+        const awayTeamLogo = typeof obj.awayTeamLogo === "string" ? obj.awayTeamLogo : null;
         if (!homeTeam || !awayTeam || !prediction || !Number.isFinite(odds)) return null;
-        return { homeTeam, awayTeam, prediction, odds, league, sport, kickoff } satisfies CouponMatch;
+        return { 
+          homeTeam, awayTeam, prediction, odds, league, sport, kickoff,
+          homeTeamLogo, awayTeamLogo 
+        } satisfies CouponMatch;
       }
       return null;
     })
@@ -65,6 +91,8 @@ export const calculateTotalOdds = (matches: CouponMatch[]): number => {
 };
 
 export const loadCoupons = async (): Promise<Coupon[]> => {
+  const cached = getCachedCoupons();
+
   const { data, error } = await supabase
     .from('coupons')
     .select('*')
@@ -73,10 +101,10 @@ export const loadCoupons = async (): Promise<Coupon[]> => {
 
   if (error) {
     console.error("Error loading coupons:", error);
-    return [];
+    return cached;
   }
 
-  return (data || []).map((coupon) => {
+  const coupons = (data || []).map((coupon) => {
     const status = isCouponStatus(coupon.status) ? coupon.status : "active";
     return {
       id: coupon.id,
@@ -89,6 +117,9 @@ export const loadCoupons = async (): Promise<Coupon[]> => {
       isPremium: coupon.is_premium ?? undefined,
     };
   });
+
+  setCachedCoupons(coupons);
+  return coupons;
 };
 
 export const addCoupon = async (coupon: Omit<Coupon, "id" | "totalOdds" | "createdAt">): Promise<Coupon | null> => {

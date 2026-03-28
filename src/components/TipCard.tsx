@@ -15,6 +15,8 @@ export interface Tip {
   kickoff: string;
   status: "upcoming" | "won" | "lost" | "draw";
   isPremium?: boolean;
+  homeTeamLogo?: string | null;
+  awayTeamLogo?: string | null;
 }
 
 const statusVariant = {
@@ -77,7 +79,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
           <div className="flex items-center justify-between py-2">
             <div className="flex items-center gap-3 flex-1">
               <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center ring-1 ring-border/50">
-                <TeamLogo teamName={tip.homeTeam} size={28} />
+                <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={28} />
               </div>
               <span className="font-display font-bold text-foreground text-sm leading-tight">{tip.homeTeam}</span>
             </div>
@@ -89,7 +91,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
             <div className="flex items-center gap-3 flex-1 justify-end text-right">
               <span className="font-display font-bold text-foreground text-sm leading-tight">{tip.awayTeam}</span>
               <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center ring-1 ring-border/50">
-                <TeamLogo teamName={tip.awayTeam} size={28} />
+                <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={28} />
               </div>
             </div>
           </div>

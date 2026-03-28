@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { addTip, loadTips, deleteTip, updateTip } from "@/lib/tipsStorage";
 import { addCoupon, loadCoupons, deleteCoupon, updateCoupon, calculateTotalOdds, CouponMatch, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, saveFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
+import { fetchTeamLogoUrl } from "@/lib/logoFetcher";
 import { Tip } from "@/components/TipCard";
 import { Plus, Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, XCircle, Users, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -40,6 +41,12 @@ const Admin = () => {
     setCoupons(loadedCoupons);
     if (loadedFeatured) {
       setFeatured(loadedFeatured);
+    }
+    
+    // Check if logos are being stored
+    const hasLogos = loadedTips.some(t => t.homeTeamLogo || t.awayTeamLogo);
+    if (loadedTips.length > 0 && !hasLogos) {
+      console.warn("SQL Migration needed: ALTER TABLE tips ADD COLUMN home_team_logo TEXT, ADD COLUMN away_team_logo TEXT;");
     }
   };
 
@@ -248,6 +255,11 @@ const Admin = () => {
     }
 
     if (editingTipId !== null) {
+      // Find current logos if not changed
+      const current = tips.find(t => t.id === editingTipId);
+      const homeLogo = current?.homeTeamLogo || await fetchTeamLogoUrl(form.homeTeam);
+      const awayLogo = current?.awayTeamLogo || await fetchTeamLogoUrl(form.awayTeam);
+
       await updateTip({
         id: editingTipId,
         sport: form.sport,
@@ -259,11 +271,17 @@ const Admin = () => {
         kickoff: form.kickoff,
         status: form.status,
         isPremium: form.isPremium,
+        homeTeamLogo: homeLogo,
+        awayTeamLogo: awayLogo,
       });
       await refreshData();
       resetTipForm();
       toast({ title: "Tip updated! ✅" });
     } else {
+      // Fetch logos on add
+      const homeLogo = await fetchTeamLogoUrl(form.homeTeam);
+      const awayLogo = await fetchTeamLogoUrl(form.awayTeam);
+
       const created = await addTip({
         sport: form.sport,
         league: form.league,
@@ -274,6 +292,8 @@ const Admin = () => {
         kickoff: form.kickoff,
         status: form.status,
         isPremium: form.isPremium,
+        homeTeamLogo: homeLogo,
+        awayTeamLogo: awayLogo,
       });
       
       if (created && form.isPremium) {
@@ -320,16 +340,23 @@ const Admin = () => {
     toast({ title: "Tip removed" });
   };
 
-  const handleAddCouponMatch = () => {
+  const handleAddCouponMatch = async () => {
     const { homeTeam, awayTeam, prediction, odds, league, sport, kickoff } = couponMatchForm;
     if (!homeTeam || !awayTeam || !prediction || !odds) {
       toast({ title: "Fill match fields", variant: "destructive" });
       return;
     }
+    
+    // Fetch logos for each match in the coupon
+    const homeLogo = await fetchTeamLogoUrl(homeTeam);
+    const awayLogo = await fetchTeamLogoUrl(awayTeam);
+
     setCouponMatches([...couponMatches, {
       homeTeam, awayTeam, prediction,
       odds: parseFloat(odds),
       league, sport, kickoff,
+      homeTeamLogo: homeLogo,
+      awayTeamLogo: awayLogo,
     }]);
     setCouponMatchForm({ homeTeam: "", awayTeam: "", prediction: "", odds: "", league: "", sport: "Football", kickoff: "" });
     toast({ title: "Match added to coupon ✅" });

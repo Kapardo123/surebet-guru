@@ -17,7 +17,16 @@ import { Capacitor } from "@capacitor/core";
 import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from "@/integrations/revenuecat";
 
 export default function Premium() {
+  // v1.9.5
   const { user, signOut, loading: authLoading } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
   const navigate = useNavigate();
   const { toast } = useToast();
   const { active, daysLeft, refresh } = usePremiumStatus();

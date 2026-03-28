@@ -92,13 +92,13 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
                       <div className="flex flex-col gap-2.5 min-w-0">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center ring-1 ring-border/50 shrink-0">
-                            <TeamLogo teamName={match.homeTeam} size={18} />
+                            <TeamLogo teamName={match.homeTeam} logoUrl={match.homeTeamLogo} size={18} />
                           </div>
                           <span className="text-xs font-medium text-foreground">{match.homeTeam}</span>
                         </div>
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center ring-1 ring-border/50 shrink-0">
-                            <TeamLogo teamName={match.awayTeam} size={18} />
+                            <TeamLogo teamName={match.awayTeam} logoUrl={match.awayTeamLogo} size={18} />
                           </div>
                           <span className="text-xs font-medium text-foreground">{match.awayTeam}</span>
                         </div>

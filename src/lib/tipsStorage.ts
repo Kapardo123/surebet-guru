@@ -4,7 +4,30 @@ import { Tip } from "@/components/TipCard";
 const isTipStatus = (value: unknown): value is Tip["status"] =>
   value === "upcoming" || value === "won" || value === "lost" || value === "draw";
 
+const TIPS_CACHE_KEY = "gsb_tips_cache";
+
+const getCachedTips = (): Tip[] => {
+  try {
+    const cached = localStorage.getItem(TIPS_CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+const setCachedTips = (tips: Tip[]) => {
+  try {
+    localStorage.setItem(TIPS_CACHE_KEY, JSON.stringify(tips));
+  } catch (e) {}
+};
+
 export const loadTips = async (): Promise<Tip[]> => {
+  // Return cached data first for instant UI
+  const cached = getCachedTips();
+  
+  // Return cached immediately if we have it, then fetch in background
+  // but for simplicity we'll just handle the fetch
+  
   const { data, error } = await supabase
     .from('tips')
     .select('*')
@@ -13,10 +36,10 @@ export const loadTips = async (): Promise<Tip[]> => {
   
   if (error) {
     console.error("Error loading tips:", error);
-    return [];
+    return cached; // Return cached on error
   }
 
-  return (data || []).map((tip) => ({
+  const tips = (data || []).map((tip: any) => ({
     id: tip.id,
     sport: tip.sport,
     league: tip.league,
@@ -27,7 +50,12 @@ export const loadTips = async (): Promise<Tip[]> => {
     kickoff: tip.kickoff,
     status: isTipStatus(tip.status) ? tip.status : "upcoming",
     isPremium: tip.is_premium ?? undefined,
+    homeTeamLogo: tip.home_team_logo || null,
+    awayTeamLogo: tip.away_team_logo || null,
   }));
+
+  setCachedTips(tips);
+  return tips;
 };
 
 export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
@@ -42,7 +70,9 @@ export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
       odds: tip.odds,
       kickoff: tip.kickoff,
       status: tip.status,
-      is_premium: tip.isPremium
+      is_premium: tip.isPremium,
+      home_team_logo: tip.homeTeamLogo,
+      away_team_logo: tip.awayTeamLogo
     }])
     .select()
     .single();
@@ -63,6 +93,8 @@ export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
     kickoff: data.kickoff,
     status: isTipStatus(data.status) ? data.status : "upcoming",
     isPremium: data.is_premium ?? undefined,
+    homeTeamLogo: data.home_team_logo,
+    awayTeamLogo: data.away_team_logo
   };
 };
 
@@ -87,7 +119,9 @@ export const updateTip = async (updatedTip: Tip) => {
       odds: updatedTip.odds,
       kickoff: updatedTip.kickoff,
       status: updatedTip.status,
-      is_premium: updatedTip.isPremium
+      is_premium: updatedTip.isPremium,
+      home_team_logo: updatedTip.homeTeamLogo,
+      away_team_logo: updatedTip.awayTeamLogo
     })
     .eq('id', updatedTip.id);
 
