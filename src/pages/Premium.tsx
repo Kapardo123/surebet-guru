@@ -38,27 +38,19 @@ export default function Premium() {
   const push = usePushNotifications({ userId: user?.id, premiumActive: active });
 
   useEffect(() => {
-    const statusTimer = setTimeout(() => {
-      refresh().catch(() => {});
-    }, 500);
+    // Immediate status check and RC offering fetch
+    refresh().catch(() => {});
 
-    const rcTimer = setTimeout(() => {
-      const fetchRC = async () => {
-        if (Capacitor.getPlatform() !== 'web') {
-          try {
-            const offerings = await getOfferings();
-            if (offerings) setRcOfferings(offerings);
-          } catch (e) {}
-        }
-      };
-      fetchRC();
-    }, 2000);
-
-    return () => {
-      clearTimeout(statusTimer);
-      clearTimeout(rcTimer);
-    };
+    if (Capacitor.getPlatform() !== 'web') {
+      getOfferings().then(offerings => {
+        if (offerings) setRcOfferings(offerings);
+      }).catch(() => {});
+    }
   }, [refresh]);
+
+  const handleBack = () => {
+    navigate("/");
+  };
 
   const handleRestore = async () => {
     setRestoring(true);
@@ -155,11 +147,9 @@ export default function Premium() {
                 <Button variant="ghost" size="sm" className="font-display uppercase tracking-wider text-[10px]">Sign In</Button>
               </Link>
             )}
-            <Link to="/">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-            </Link>
+            <Button variant="ghost" size="sm" onClick={handleBack} className="text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </header>
