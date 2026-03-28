@@ -59,7 +59,7 @@ export const loadTips = async (): Promise<Tip[]> => {
 };
 
 export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('tips')
     .insert([{
       sport: tip.sport,
@@ -82,19 +82,21 @@ export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
     return null;
   }
 
+  const record = data as any;
+
   return {
-    id: data.id,
-    sport: data.sport,
-    league: data.league,
-    homeTeam: data.home_team,
-    awayTeam: data.away_team,
-    prediction: data.prediction,
-    odds: data.odds,
-    kickoff: data.kickoff,
-    status: isTipStatus(data.status) ? data.status : "upcoming",
-    isPremium: data.is_premium ?? undefined,
-    homeTeamLogo: data.home_team_logo,
-    awayTeamLogo: data.away_team_logo
+    id: record.id,
+    sport: record.sport,
+    league: record.league,
+    homeTeam: record.home_team,
+    awayTeam: record.away_team,
+    prediction: record.prediction,
+    odds: record.odds,
+    kickoff: record.kickoff,
+    status: isTipStatus(record.status) ? record.status : "upcoming",
+    isPremium: record.is_premium ?? undefined,
+    homeTeamLogo: record.home_team_logo,
+    awayTeamLogo: record.away_team_logo
   };
 };
 
@@ -108,7 +110,7 @@ export const deleteTip = async (id: number) => {
 };
 
 export const updateTip = async (updatedTip: Tip) => {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('tips')
     .update({
       sport: updatedTip.sport,
