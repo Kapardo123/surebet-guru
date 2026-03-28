@@ -24,7 +24,7 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
     }
 
     try {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("push_tokens")
         .select("enabled, token")
         .eq("user_id", userId)
@@ -112,8 +112,8 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
 
     return () => {
       clearTimeout(timer);
-      receivedHandle?.remove();
-      actionHandle?.remove();
+      if (receivedHandle) receivedHandle.then((h: any) => h.remove());
+      if (actionHandle) actionHandle.then((h: any) => h.remove());
     };
   }, [isNative, userId]);
 
@@ -138,10 +138,18 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
       await PushNotifications.register();
 
       return new Promise((resolve, reject) => {
-        const successListener = PushNotifications.addListener('registration', async ({ value: token }) => {
+        let successListener: any = null;
+        let errorListener: any = null;
+
+        const cleanup = () => {
+          if (successListener) successListener.then((h: any) => h.remove());
+          if (errorListener) errorListener.then((h: any) => h.remove());
+        };
+
+        successListener = PushNotifications.addListener('registration', async ({ value: token }) => {
           try {
             localStorage.setItem(TOKEN_STORAGE_KEY, token);
-            const { error } = await supabase.from("push_tokens").upsert({
+            const { error } = await (supabase as any).from("push_tokens").upsert({
               user_id: userId,
               token,
               platform,
@@ -151,21 +159,21 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
 
             if (error) throw error;
             setEnabled(true);
-            successListener.remove();
             resolve(token);
           } catch (err) {
             reject(err);
+          } finally {
+            cleanup();
           }
         });
 
-        const errorListener = PushNotifications.addListener('registrationError', (err) => {
-          errorListener.remove();
+        errorListener = PushNotifications.addListener('registrationError', (err) => {
           reject(new Error(err.error));
+          cleanup();
         });
 
         setTimeout(() => {
-          successListener.remove();
-          errorListener.remove();
+          cleanup();
           reject(new Error("Timed out waiting for token"));
         }, 10000);
       });
@@ -184,7 +192,7 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
         await registerAndUpsert();
       } else {
         const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-        const { error } = await supabase.from("push_tokens").upsert({
+        const { error } = await (supabase as any).from("push_tokens").upsert({
           user_id: userId,
           token: token || "unknown",
           platform,

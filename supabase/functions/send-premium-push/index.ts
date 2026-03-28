@@ -1,5 +1,8 @@
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+// @ts-ignore
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+// @ts-ignore
 import { GoogleAuth } from "npm:google-auth-library@9.0.0";
 
 const corsHeaders = {
@@ -8,6 +11,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// @ts-ignore
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -15,10 +19,15 @@ serve(async (req: Request) => {
 
   try {
     console.log("Function started...");
+    // @ts-ignore
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    // @ts-ignore
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    // @ts-ignore
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    // @ts-ignore
     const serviceAccountJson = Deno.env.get("FCM_SERVICE_ACCOUNT");
+    // @ts-ignore
     const adminEmail = (Deno.env.get("ADMIN_EMAIL") ?? "").toLowerCase();
 
     if (!serviceAccountJson) {
@@ -33,7 +42,7 @@ serve(async (req: Request) => {
         cleanJson = cleanJson.substring(1, cleanJson.length - 1);
       }
       serviceAccount = JSON.parse(cleanJson);
-    } catch (e) {
+    } catch (e: any) {
       console.error("JSON Parse Error details:", e.message);
       console.error("Secret value starts with:", serviceAccountJson.substring(0, 20));
       throw new Error(`Błąd formatu JSON w sekrecie FCM_SERVICE_ACCOUNT: ${e.message}. Sprawdź ustawienia Secrets w panelu Supabase.`);
@@ -83,7 +92,7 @@ serve(async (req: Request) => {
       .select("user_id")
       .gt("expires_at", nowIso);
 
-    const userIds = premiumUsers?.map(u => u.user_id).filter(Boolean) || [];
+    const userIds = premiumUsers?.map((u: any) => u.user_id).filter(Boolean) || [];
     if (userIds.length === 0) {
       return new Response(JSON.stringify({ ok: true, success: 0, reason: "Brak aktywnych użytkowników Premium." }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -96,7 +105,7 @@ serve(async (req: Request) => {
       .eq("enabled", true)
       .in("user_id", userIds);
 
-    const tokens = pushTokens?.map(t => t.token).filter(Boolean) || [];
+    const tokens = pushTokens?.map((t: any) => t.token).filter(Boolean) || [];
     if (tokens.length === 0) {
       return new Response(JSON.stringify({ ok: true, success: 0, reason: "Użytkownicy nie mają włączonych powiadomień." }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -148,7 +157,7 @@ serve(async (req: Request) => {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Critical Function error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }

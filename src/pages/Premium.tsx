@@ -17,7 +17,7 @@ import { Capacitor } from "@capacitor/core";
 import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from "@/integrations/revenuecat";
 
 export default function Premium() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { active, daysLeft, refresh } = usePremiumStatus();
