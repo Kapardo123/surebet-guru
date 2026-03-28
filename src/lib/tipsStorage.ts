@@ -8,7 +8,8 @@ export const loadTips = async (): Promise<Tip[]> => {
   const { data, error } = await supabase
     .from('tips')
     .select('*')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(50);
   
   if (error) {
     console.error("Error loading tips:", error);

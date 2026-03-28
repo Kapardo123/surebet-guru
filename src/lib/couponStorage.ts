@@ -68,7 +68,8 @@ export const loadCoupons = async (): Promise<Coupon[]> => {
   const { data, error } = await supabase
     .from('coupons')
     .select('*')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(30);
 
   if (error) {
     console.error("Error loading coupons:", error);

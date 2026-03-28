@@ -14,7 +14,7 @@ import { Capacitor } from "@capacitor/core";
 import { getOfferings, purchasePackage, presentPaywall } from "@/integrations/revenuecat";
 
 export default function Premium() {
-  const [logs, setLogs] = useState<string[]>(["v1.8.9 Init"]);
+  const [logs, setLogs] = useState<string[]>(["v1.9.0 Init"]);
   const addLog = (m: string) => setLogs(p => [...p, `${new Date().toLocaleTimeString()}: ${m}`].slice(-10));
 
   const { user, signOut } = useAuth();
