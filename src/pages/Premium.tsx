@@ -8,6 +8,7 @@ import {
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
+import PageTransition from "@/components/PageTransition";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
@@ -47,11 +48,6 @@ export default function Premium() {
       }).catch(() => {});
     }
   }, [refresh]);
-
-  const handleBack = () => {
-    // Force a complete reload to "/" to avoid any potential WebView history/state hanging
-    window.location.href = "/";
-  };
 
   const handleRestore = async () => {
     setRestoring(true);
@@ -112,9 +108,9 @@ export default function Premium() {
   ];
 
   const plans = [
-    { duration: 7, label: "Weekly Pass", price: "$3.99", paymentLink: "https://buy.stripe.com/aFafZg6dW6kP3Ga5TX6EU03", perDay: "$0.57/day" },
-    { duration: 15, label: "Pro Access", price: "$6.99", popular: true, paymentLink: "https://buy.stripe.com/4gM3cu59SdNh4Ke0zD6EU04", perDay: "$0.46/day", save: "15% OFF" },
-    { duration: 30, label: "Monthly VIP", price: "$9.99", paymentLink: "https://buy.stripe.com/aFa28q59S10v0tYgyB6EU05", perDay: "$0.33/day", save: "40% OFF" },
+    { duration: 7, label: "Weekly Pass", days: "7 Days", price: "$3.99", paymentLink: "https://buy.stripe.com/aFafZg6dW6kP3Ga5TX6EU03", perDay: "$0.57/day" },
+    { duration: 15, label: "Pro Access", days: "15 Days", price: "$6.99", popular: true, paymentLink: "https://buy.stripe.com/4gM3cu59SdNh4Ke0zD6EU04", perDay: "$0.46/day", save: "15% OFF" },
+    { duration: 30, label: "Monthly VIP", days: "30 Days", price: "$9.99", paymentLink: "https://buy.stripe.com/aFa28q59S10v0tYgyB6EU05", perDay: "$0.33/day", save: "40% OFF" },
   ];
 
   // Helper to get localized price from RC
@@ -134,6 +130,7 @@ export default function Premium() {
   };
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background text-foreground pb-12">
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
         <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -148,9 +145,12 @@ export default function Premium() {
                 <Button variant="ghost" size="sm" className="font-display uppercase tracking-wider text-[10px]">Sign In</Button>
               </Link>
             )}
-            <Button variant="ghost" size="sm" onClick={handleBack} className="text-muted-foreground hover:text-foreground">
-              <Home className="w-5 h-5" />
-            </Button>
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -262,10 +262,11 @@ export default function Premium() {
                 <CardContent className="p-8 flex flex-col items-center text-center h-full">
                   <div className="space-y-1 mb-6">
                     <p className="font-display font-black text-sm uppercase tracking-widest text-muted-foreground">{plan.label}</p>
-                    <div className="flex items-baseline justify-center gap-1">
+                    <p className="text-[10px] font-bold text-accent uppercase tracking-[0.2em]">{plan.days}</p>
+                    <div className="flex items-baseline justify-center gap-1 mt-2">
                       <span className="text-4xl font-black">{getPlanPrice(plan)}</span>
                     </div>
-                    <p className="text-[10px] text-accent font-bold uppercase tracking-widest mt-1">{plan.perDay}</p>
+                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest mt-1">{plan.perDay}</p>
                   </div>
 
                   <Button 
@@ -311,5 +312,6 @@ export default function Premium() {
         </section>
       </main>
     </div>
+    </PageTransition>
   );
 }
