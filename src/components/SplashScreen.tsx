@@ -2,13 +2,29 @@ import { useEffect, useState } from "react";
 
 const SplashScreen = () => {
   const [isVisible, setIsVisible] = useState(true);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-    }, 2500); // Display for 2.5 seconds
+    // Progress bar animation logic
+    const duration = 2500; // 2.5 seconds
+    const interval = 20; // Update every 20ms
+    const step = 100 / (duration / interval);
 
-    return () => clearTimeout(timer);
+    const progressTimer = setInterval(() => {
+      setProgress((prev) => {
+        const next = prev + step;
+        return next >= 100 ? 100 : next;
+      });
+    }, interval);
+
+    const hideTimer = setTimeout(() => {
+      setIsVisible(false);
+    }, duration);
+
+    return () => {
+      clearInterval(progressTimer);
+      clearTimeout(hideTimer);
+    };
   }, []);
 
   if (!isVisible) return null;
@@ -26,7 +42,7 @@ const SplashScreen = () => {
           <div className="mb-8">
             {/* Simplified logo during splash screen */}
             <div className="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center border border-primary/50">
-              <span className="text-4xl font-black text-primary">GSB</span>
+              <span className="text-4xl font-black text-primary animate-pulse">GSB</span>
             </div>
           </div>
 
@@ -46,9 +62,18 @@ const SplashScreen = () => {
         </div>
       </div>
 
-      {/* Loading bar */}
-      <div className="absolute bottom-16 w-48 h-1 bg-muted rounded-full overflow-hidden">
-        <div className="w-full h-full bg-gradient-to-r from-primary to-accent animate-pulse" />
+      {/* Improved Loading bar with real progress */}
+      <div className="absolute bottom-16 w-64 h-1.5 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm border border-white/5">
+        <div 
+          className="h-full bg-gradient-to-r from-primary via-accent to-primary transition-all duration-75 ease-linear shadow-[0_0_10px_rgba(155,135,245,0.5)]"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      
+      <div className="absolute bottom-10">
+        <span className="text-[10px] text-white/40 uppercase tracking-[0.3em] font-medium">
+          Loading Data... {Math.round(progress)}%
+        </span>
       </div>
     </div>
   );
