@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Crown, ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, 
-  LogIn, LogOut, Bell, Smartphone, Check, Clock, Globe 
+  LogIn, LogOut, Bell, Smartphone, Check, Clock, Globe, X 
 } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -148,7 +148,7 @@ export default function Premium() {
               </Link>
             )}
             <Button variant="ghost" size="sm" onClick={handleBack} className="text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </Button>
           </div>
         </div>
@@ -282,9 +282,13 @@ export default function Premium() {
                   <Button 
                     onClick={() => handleBuy(plan.duration, plan.paymentLink)} 
                     disabled={loading !== null} 
-                    className={`w-full h-11 font-black uppercase tracking-widest text-[11px] mt-auto ${plan.popular ? 'bg-accent text-accent-foreground hover:bg-accent/90' : 'bg-white/5 hover:bg-white/10'}`}
+                    className={`w-full h-11 font-black uppercase tracking-widest text-[11px] mt-auto transition-all active:scale-95 ${
+                      plan.popular 
+                        ? 'bg-accent text-accent-foreground hover:bg-accent/90 shadow-[0_0_20px_rgba(255,215,0,0.3)]' 
+                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    }`}
                   >
-                    {loading === plan.duration ? <Loader2 className="animate-spin" /> : "Subscribe Now"}
+                    {loading === plan.duration ? <Loader2 className="animate-spin" /> : "Get it now"}
                   </Button>
                 </CardContent>
               </Card>

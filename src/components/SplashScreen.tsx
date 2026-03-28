@@ -5,9 +5,8 @@ const SplashScreen = () => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Progress bar animation logic
-    const duration = 2500; // 2.5 seconds
-    const interval = 20; // Update every 20ms
+    const duration = 2500; 
+    const interval = 30; 
     const step = 100 / (duration / interval);
 
     const progressTimer = setInterval(() => {
@@ -19,7 +18,7 @@ const SplashScreen = () => {
 
     const hideTimer = setTimeout(() => {
       setIsVisible(false);
-    }, duration);
+    }, duration + 100);
 
     return () => {
       clearInterval(progressTimer);
@@ -30,50 +29,54 @@ const SplashScreen = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background">
-      <div className="relative w-full h-full">
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0a0a0a]">
+      {/* Background with fallback color */}
+      <div className="absolute inset-0 z-0">
         <img
           src="splash.png"
-          alt="Great Sport Bets"
-          className="w-full h-full object-cover"
+          alt=""
+          className="w-full h-full object-cover opacity-40"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
         />
-        {/* Overlay for branding on top of fullscreen image */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-[2px]">
-          <div className="mb-8">
-            {/* Simplified logo during splash screen */}
-            <div className="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center border border-primary/50">
-              <span className="text-4xl font-black text-primary animate-pulse">GSB</span>
-            </div>
-          </div>
+      </div>
 
-          <div className="flex flex-col items-center">
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl md:text-6xl font-black tracking-tighter bg-gradient-to-r from-primary via-[hsl(280,80%,65%)] to-accent bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
-                GREAT
-              </span>
-              <span className="text-4xl md:text-6xl font-extralight tracking-[0.15em] text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
-                SPORT
-              </span>
-            </div>
-            <span className="text-sm md:text-lg font-semibold uppercase tracking-[0.5em] text-accent/90 mt-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
-              BETS
-            </span>
+      {/* Content */}
+      <div className="relative z-10 flex flex-col items-center">
+        <div className="mb-12">
+          <div className="w-24 h-24 rounded-3xl bg-primary/20 flex items-center justify-center border border-primary/30 shadow-[0_0_30px_rgba(155,135,245,0.2)]">
+            <span className="text-4xl font-black text-primary">GSB</span>
           </div>
         </div>
-      </div>
 
-      {/* Improved Loading bar with real progress */}
-      <div className="absolute bottom-16 w-64 h-1.5 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm border border-white/5">
-        <div 
-          className="h-full bg-gradient-to-r from-primary via-accent to-primary transition-all duration-75 ease-linear shadow-[0_0_10px_rgba(155,135,245,0.5)]"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-      
-      <div className="absolute bottom-10">
-        <span className="text-[10px] text-white/40 uppercase tracking-[0.3em] font-medium">
-          Loading Data... {Math.round(progress)}%
-        </span>
+        <div className="flex flex-col items-center space-y-1">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-4xl font-black tracking-tighter text-white">
+              GREAT
+            </span>
+            <span className="text-4xl font-extralight tracking-widest text-white/70">
+              SPORT
+            </span>
+          </div>
+          <span className="text-xs font-bold uppercase tracking-[0.6em] text-accent">
+            BETS
+          </span>
+        </div>
+
+        {/* Loading bar container */}
+        <div className="mt-16 w-64 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+          <div 
+            className="h-full bg-gradient-to-r from-primary via-accent to-primary transition-all duration-150 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        
+        <div className="mt-4">
+          <span className="text-[9px] text-white/30 uppercase tracking-[0.4em] font-bold">
+            Initializing {Math.round(progress)}%
+          </span>
+        </div>
       </div>
     </div>
   );
