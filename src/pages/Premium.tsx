@@ -104,10 +104,10 @@ export default function Premium() {
 
   // Define features inside to avoid TDZ
   const features = [
-    { icon: <TrendingUp className="w-5 h-5 text-accent" />, title: "Daily High-Odds Picks", desc: "Access our top-tier researched selections with high win rates." },
-    { icon: <Bell className="w-5 h-5 text-primary" />, title: "Real-Time Push Alerts", desc: "Never miss a winning opportunity with instant notifications." },
-    { icon: <Shield className="w-5 h-5 text-green-500" />, title: "Bankroll Management", desc: "Safe betting strategies and stake advice for long-term profit." },
-    { icon: <Globe className="w-5 h-5 text-blue-500" />, title: "Global Coverage", desc: "Predictions from over 50 leagues worldwide, including niche markets." }
+    { icon: <TrendingUp className="w-5 h-5 text-accent" />, title: "Premium Betting Picks", desc: "Unlock exclusive, high-value betting selections researched by our experts." },
+    { icon: <Bell className="w-5 h-5 text-primary" />, title: "Instant Push Notifications", desc: "Get real-time alerts for every new premium pick so you never miss an opportunity." },
+    { icon: <Shield className="w-5 h-5 text-green-500" />, title: "Full Archive Access", desc: "Browse our complete history of past picks and performance statistics." },
+    { icon: <Globe className="w-5 h-5 text-blue-500" />, title: "Ad-Free Experience", desc: "Enjoy a clean, distraction-free environment focused entirely on your betting success." }
   ];
 
   const plans = [
@@ -269,13 +269,16 @@ export default function Premium() {
 
                   <ul className="space-y-3 mb-8 text-left w-full">
                     <li className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Check className="w-3 h-3 text-green-500" /> Exclusive Premium Picks
+                    </li>
+                    <li className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Check className="w-3 h-3 text-green-500" /> Instant Push Alerts
+                    </li>
+                    <li className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Check className="w-3 h-3 text-green-500" /> Full Pick History
                     </li>
                     <li className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Check className="w-3 h-3 text-green-500" /> Priority Support
-                    </li>
-                    <li className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Check className="w-3 h-3 text-green-500" /> Ad-Free Experience
+                      <Check className="w-3 h-3 text-green-500" /> No Advertisements
                     </li>
                   </ul>
 
