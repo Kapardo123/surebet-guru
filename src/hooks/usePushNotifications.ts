@@ -77,6 +77,7 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
   useEffect(() => {
     if (!isNative || !userId) return;
 
+    let isMounted = true;
     let receivedHandle: any = null;
     let actionHandle: any = null;
 
@@ -85,6 +86,8 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
         console.log('PUSH: Setting up listeners (delayed)...');
         const { PushNotifications } = await import('@capacitor/push-notifications');
         
+        if (!isMounted) return;
+
         if (Capacitor.getPlatform() === 'android') {
           await PushNotifications.createChannel({
             id: 'fcm_default_channel',
@@ -96,13 +99,26 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
           }).catch(err => console.error("Error creating channel:", err));
         }
 
-        receivedHandle = await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        if (!isMounted) return;
+
+        // Use await to get the actual handle object
+        const h1 = await PushNotifications.addListener('pushNotificationReceived', (notification) => {
           console.log('Push received in foreground:', notification);
         });
+        if (isMounted) {
+          receivedHandle = h1;
+        } else {
+          h1.remove();
+        }
 
-        actionHandle = await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+        const h2 = await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
           console.log('Push action performed:', action);
         });
+        if (isMounted) {
+          actionHandle = h2;
+        } else {
+          h2.remove();
+        }
       } catch (e) {
         console.error("PUSH: Error in setupListeners:", e);
       }
@@ -111,9 +127,14 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
     const timer = setTimeout(setupListeners, 2000);
 
     return () => {
+      isMounted = false;
       clearTimeout(timer);
-      if (receivedHandle) receivedHandle.then((h: any) => h.remove());
-      if (actionHandle) actionHandle.then((h: any) => h.remove());
+      if (receivedHandle) {
+        receivedHandle.remove();
+      }
+      if (actionHandle) {
+        actionHandle.remove();
+      }
     };
   }, [isNative, userId]);
 
@@ -138,39 +159,47 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
       await PushNotifications.register();
 
       return new Promise((resolve, reject) => {
-        let successListener: any = null;
-        let errorListener: any = null;
+        let successHandle: any = null;
+        let errorHandle: any = null;
 
         const cleanup = () => {
-          if (successListener) successListener.then((h: any) => h.remove());
-          if (errorListener) errorListener.then((h: any) => h.remove());
+          if (successHandle) successHandle.remove();
+          if (errorHandle) errorHandle.remove();
         };
 
-        successListener = PushNotifications.addListener('registration', async ({ value: token }) => {
+        const startListening = async () => {
           try {
-            localStorage.setItem(TOKEN_STORAGE_KEY, token);
-            const { error } = await (supabase as any).from("push_tokens").upsert({
-              user_id: userId,
-              token,
-              platform,
-              enabled: true,
-              updated_at: new Date().toISOString(),
+            successHandle = await PushNotifications.addListener('registration', async ({ value: token }) => {
+              try {
+                localStorage.setItem(TOKEN_STORAGE_KEY, token);
+                const { error } = await (supabase as any).from("push_tokens").upsert({
+                  user_id: userId,
+                  token,
+                  platform,
+                  enabled: true,
+                  updated_at: new Date().toISOString(),
+                });
+
+                if (error) throw error;
+                setEnabled(true);
+                resolve(token);
+              } catch (err) {
+                reject(err);
+              } finally {
+                cleanup();
+              }
             });
 
-            if (error) throw error;
-            setEnabled(true);
-            resolve(token);
-          } catch (err) {
-            reject(err);
-          } finally {
-            cleanup();
+            errorHandle = await PushNotifications.addListener('registrationError', (err) => {
+              reject(new Error(err.error));
+              cleanup();
+            });
+          } catch (e) {
+            reject(e);
           }
-        });
+        };
 
-        errorListener = PushNotifications.addListener('registrationError', (err) => {
-          reject(new Error(err.error));
-          cleanup();
-        });
+        startListening();
 
         setTimeout(() => {
           cleanup();

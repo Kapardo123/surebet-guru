@@ -38,6 +38,12 @@ export default function Premium() {
 
   const push = usePushNotifications({ userId: user?.id, premiumActive: active });
 
+  const handleBack = () => {
+    // Force a complete reload to "/" to avoid any potential WebView history/state hanging
+    // This is a known workaround for Android WebView navigation/black screen issues
+    window.location.href = "/";
+  };
+
   useEffect(() => {
     // Immediate status check and RC offering fetch
     refresh().catch(() => {});
@@ -104,7 +110,7 @@ export default function Premium() {
     { icon: <TrendingUp className="w-5 h-5 text-accent" />, title: "Premium Betting Picks", desc: "Unlock exclusive, high-value betting selections researched by our experts." },
     { icon: <Bell className="w-5 h-5 text-primary" />, title: "Instant Push Notifications", desc: "Get real-time alerts for every new premium pick so you never miss an opportunity." },
     { icon: <Shield className="w-5 h-5 text-green-500" />, title: "AI Match Analytics", desc: "Deep statistical analysis powered by AI to identify the best value opportunities." },
-    { icon: <Globe className="w-5 h-5 text-blue-500" />, title: "Ad-Free Experience", desc: "Enjoy a clean, distraction-free environment focused entirely on your betting success." }
+    { icon: <Star className="w-5 h-5 text-blue-500" />, title: "VIP Strategy Guides", desc: "Exclusive bankroll management and betting strategy guides for consistent profits." }
   ];
 
   const plans = [
@@ -134,7 +140,9 @@ export default function Premium() {
     <div className="min-h-screen bg-background text-foreground pb-12">
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
         <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/"><Logo /></Link>
+          <div onClick={handleBack} className="cursor-pointer">
+            <Logo />
+          </div>
           <div className="flex items-center gap-2">
             {user ? (
               <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground">
@@ -145,12 +153,10 @@ export default function Premium() {
                 <Button variant="ghost" size="sm" className="font-display uppercase tracking-wider text-[10px]">Sign In</Button>
               </Link>
             )}
-            <Link to="/">
-              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </Button>
-            </Link>
+            <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1.5 text-muted-foreground hover:text-foreground">
+              <Home className="w-4 h-4" />
+              Home
+            </Button>
           </div>
         </div>
       </header>
