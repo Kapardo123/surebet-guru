@@ -152,9 +152,3 @@ export const usePremiumStatus = () => {
     refresh,
   };
 };
-
-  return {
-    ...state,
-    refresh,
-  };
-};
