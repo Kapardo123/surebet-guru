@@ -14,9 +14,6 @@ import { Capacitor } from "@capacitor/core";
 import { getOfferings, purchasePackage, presentPaywall } from "@/integrations/revenuecat";
 
 export default function Premium() {
-  const [logs, setLogs] = useState<string[]>(["v1.9.0 Init"]);
-  const addLog = (m: string) => setLogs(p => [...p, `${new Date().toLocaleTimeString()}: ${m}`].slice(-10));
-
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -28,27 +25,17 @@ export default function Premium() {
   const push = usePushNotifications({ userId: user?.id, premiumActive: active });
 
   useEffect(() => {
-    addLog("Mounted");
     const statusTimer = setTimeout(() => {
-      addLog("Refreshing status...");
-      refresh()
-        .then(() => addLog("Status OK"))
-        .catch(e => addLog("Status ERR"));
+      refresh().catch(() => {});
     }, 500);
 
     const rcTimer = setTimeout(() => {
       const fetchRC = async () => {
         if (Capacitor.getPlatform() !== 'web') {
-          addLog("Fetching RC...");
           try {
             const offerings = await getOfferings();
-            addLog(offerings ? "RC OK" : "RC NULL");
             if (offerings) setRcOfferings(offerings);
-          } catch (e) {
-            addLog("RC Catch");
-          }
-        } else {
-          addLog("Web: skip RC");
+          } catch (e) {}
         }
       };
       fetchRC();
@@ -175,11 +162,6 @@ export default function Premium() {
           ))}
         </div>
       </main>
-
-      {/* Debug Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black text-[#0f0] text-[8px] p-1 z-[10000] opacity-80 pointer-events-none max-h-20 overflow-hidden">
-        {logs.map((l, i) => <div key={i}>{l}</div>)}
-      </div>
     </div>
   );
 }
