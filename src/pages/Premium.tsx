@@ -106,7 +106,7 @@ export default function Premium() {
   const features = [
     { icon: <TrendingUp className="w-5 h-5 text-accent" />, title: "Premium Betting Picks", desc: "Unlock exclusive, high-value betting selections researched by our experts." },
     { icon: <Bell className="w-5 h-5 text-primary" />, title: "Instant Push Notifications", desc: "Get real-time alerts for every new premium pick so you never miss an opportunity." },
-    { icon: <Shield className="w-5 h-5 text-green-500" />, title: "Pro Betting Strategies", desc: "Access proven bankroll management advice and professional betting systems." },
+    { icon: <Shield className="w-5 h-5 text-green-500" />, title: "AI Match Analytics", desc: "Deep statistical analysis powered by AI to identify the best value opportunities." },
     { icon: <Globe className="w-5 h-5 text-blue-500" />, title: "Ad-Free Experience", desc: "Enjoy a clean, distraction-free environment focused entirely on your betting success." }
   ];
 
@@ -275,7 +275,7 @@ export default function Premium() {
                       <Check className="w-3 h-3 text-green-500" /> Instant Push Alerts
                     </li>
                     <li className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Check className="w-3 h-3 text-green-500" /> Pro Betting Strategies
+                      <Check className="w-3 h-3 text-green-500" /> AI Match Analytics
                     </li>
                     <li className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Check className="w-3 h-3 text-green-500" /> No Advertisements
