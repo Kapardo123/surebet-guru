@@ -221,13 +221,17 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
         await registerAndUpsert();
       } else {
         const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-        const { error } = await (supabase as any).from("push_tokens").upsert({
-          user_id: userId,
-          token: token || "unknown",
-          platform,
-          enabled: false,
-          updated_at: new Date().toISOString(),
-        });
+        if (!token) {
+          setEnabled(false);
+          return;
+        }
+
+        // Use a simple delete instead of upsert for disabling to avoid unique constraint issues
+        // We delete by token since that's the unique part
+        const { error } = await (supabase as any)
+          .from("push_tokens")
+          .delete()
+          .eq("token", token);
 
         if (error) throw error;
         setEnabled(false);

@@ -310,11 +310,15 @@ export default function Premium() {
         )}
 
         {/* Footer info */}
-        <section className="text-center max-w-md mx-auto py-8">
+        <section className="text-center max-w-md mx-auto py-8 space-y-4">
           <p className="text-[10px] text-muted-foreground leading-relaxed">
             Subscriptions are processed securely. Your premium access will be granted instantly across all your devices. 
             By subscribing, you agree to our <Link to="/terms" className="underline">Terms of Service</Link>.
           </p>
+          <div className="flex flex-col items-center gap-1 opacity-30">
+            <p className="text-[9px] font-black tracking-widest uppercase">App Version 2.0.8</p>
+            <p className="text-[8px] font-bold">Build 108</p>
+          </div>
         </section>
       </main>
     </div>
