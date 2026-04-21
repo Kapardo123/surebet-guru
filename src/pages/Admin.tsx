@@ -248,6 +248,17 @@ const Admin = () => {
     toast({ title: `Coupon match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
 
+  const handleSelectFeaturedMatch = (match: UpcomingMatch) => {
+    setFeatured((prev) => ({
+      ...prev,
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      league: match.league,
+      kickoff: `${match.date}, ${match.time}`,
+    }));
+    toast({ title: `Featured match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.league || !form.homeTeam || !form.awayTeam || !form.prediction || !form.odds || !form.kickoff) {
@@ -633,11 +644,30 @@ const Admin = () => {
                   </SelectContent>
                 </Select>
               </div>
+              
+              <UpcomingMatchesList teamName={featured.homeTeam} onSelectMatch={handleSelectFeaturedMatch} />
+
+              <div className="space-y-2 col-span-full">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Analysis / Description (Featured)</Label>
+                <textarea 
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                  placeholder="Why is this the featured pick?" 
+                  value={featured.description || ""} 
+                  onChange={(e) => setFeatured({ ...featured, description: e.target.value })} 
+                />
+              </div>
+
               <div className="flex items-end">
                 <Button
                   className="w-full gap-2 h-11 font-display uppercase tracking-wider text-xs"
                   onClick={async () => {
-                    await saveFeaturedPick(featured);
+                    const homeLogo = await fetchTeamLogoUrl(featured.homeTeam);
+                    const awayLogo = await fetchTeamLogoUrl(featured.awayTeam);
+                    await saveFeaturedPick({
+                      ...featured,
+                      homeTeamLogo: homeLogo,
+                      awayTeamLogo: awayLogo
+                    });
                     await refreshData();
                     toast({ title: "Featured Pick updated! ⚡" });
                   }}

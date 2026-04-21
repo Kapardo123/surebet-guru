@@ -9,6 +9,9 @@ export interface FeaturedPick {
   prediction: string;
   odds: string;
   confidence: string;
+  homeTeamLogo?: string | null;
+  awayTeamLogo?: string | null;
+  description?: string | null;
 }
 
 export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
@@ -33,7 +36,10 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
     awayTeam: data.away_team,
     prediction: data.prediction,
     odds: data.odds,
-    confidence: data.confidence
+    confidence: data.confidence,
+    homeTeamLogo: data.home_team_logo,
+    awayTeamLogo: data.away_team_logo,
+    description: data.description
   };
 };
 
@@ -47,7 +53,10 @@ export const saveFeaturedPick = async (pick: FeaturedPick) => {
       away_team: pick.awayTeam,
       prediction: pick.prediction,
       odds: pick.odds,
-      confidence: pick.confidence
+      confidence: pick.confidence,
+      home_team_logo: pick.homeTeamLogo,
+      away_team_logo: pick.awayTeamLogo,
+      description: pick.description
     }]);
 
   if (error) console.error("Error saving featured pick:", error);

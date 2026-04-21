@@ -79,12 +79,20 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
             {data.league} • {data.kickoff}
           </p>
           <div className="flex items-center gap-2.5 md:gap-4">
-            <TeamLogo teamName={data.homeTeam} size={28} />
+            <TeamLogo teamName={data.homeTeam} logoUrl={data.homeTeamLogo} size={28} />
             <p className="font-display text-lg md:text-4xl font-bold text-foreground tracking-tight">
               {data.homeTeam} <span className="text-muted-foreground font-normal text-sm md:text-4xl">vs</span> {data.awayTeam}
             </p>
-            <TeamLogo teamName={data.awayTeam} size={28} />
+            <TeamLogo teamName={data.awayTeam} logoUrl={data.awayTeamLogo} size={28} />
           </div>
+          
+          {data.description && (
+            <div className="mt-4 p-4 rounded-xl bg-accent/10 border border-accent/20 max-w-2xl">
+              <p className="text-xs md:text-sm text-muted-foreground leading-relaxed italic whitespace-pre-wrap">
+                "{data.description}"
+              </p>
+            </div>
+          )}
           <div className="flex items-center gap-4 md:gap-6 mt-4 md:mt-6">
             <div>
               <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-0.5">Prediction</p>
