@@ -255,6 +255,25 @@ const Admin = () => {
       return;
     }
 
+    // Convert date to ISO format for consistent storage
+    let kickoffISO = form.kickoff;
+    try {
+      // If it looks like a simple date time string, try to parse it
+      if (form.kickoff.includes('-') && form.kickoff.includes(':')) {
+        const datePart = form.kickoff.split(' ')[0];
+        const timePart = form.kickoff.split(' ')[1];
+        // Create date assuming Polish time (UTC+2 or UTC+1)
+        // For simplicity, let's treat it as a date string that browser can parse
+        // or just store as is if it's already ISO.
+        const parsedDate = new Date(form.kickoff.replace(' ', 'T'));
+        if (!isNaN(parsedDate.getTime())) {
+          kickoffISO = parsedDate.toISOString();
+        }
+      }
+    } catch (err) {
+      console.error("Date parsing error:", err);
+    }
+
     if (editingTipId !== null) {
       // Find current logos if not changed
       const current = tips.find(t => t.id === editingTipId);
@@ -269,7 +288,7 @@ const Admin = () => {
         awayTeam: form.awayTeam,
         prediction: form.prediction,
         odds: parseFloat(form.odds),
-        kickoff: form.kickoff,
+        kickoff: kickoffISO,
         status: form.status,
         isPremium: form.isPremium,
         homeTeamLogo: homeLogo,
@@ -291,7 +310,7 @@ const Admin = () => {
         awayTeam: form.awayTeam,
         prediction: form.prediction,
         odds: parseFloat(form.odds),
-        kickoff: form.kickoff,
+        kickoff: kickoffISO,
         status: form.status,
         isPremium: form.isPremium,
         homeTeamLogo: homeLogo,
@@ -694,8 +713,9 @@ const Admin = () => {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Kickoff</Label>
-                <Input placeholder="e.g. Today, 21:00" value={form.kickoff} onChange={(e) => setForm({ ...form, kickoff: e.target.value })} />
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Kickoff (Format: YYYY-MM-DD HH:MM)</Label>
+                <Input placeholder="e.g. 2026-04-21 21:00" value={form.kickoff} onChange={(e) => setForm({ ...form, kickoff: e.target.value })} />
+                <p className="text-[10px] text-muted-foreground italic">Podaj czas polski (zostanie przeliczony na czas użytkownika)</p>
               </div>
 
               <div className="space-y-2">

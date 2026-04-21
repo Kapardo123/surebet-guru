@@ -40,6 +40,22 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
   const [showAnalysis, setShowAnalysis] = useState(false);
   const locked = tip.isPremium && !userIsPremium;
 
+  const formatKickoff = (kickoffStr: string) => {
+    try {
+      // If it's an ISO string, format it to user's local time
+      const date = new Date(kickoffStr);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleString(undefined, {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+    } catch (e) {}
+    return kickoffStr; // Fallback to original string if not a date
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -173,7 +189,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
               <div className="flex items-center pt-2 border-t border-border/30">
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="text-[11px] text-muted-foreground">{tip.kickoff}</span>
+                  <span className="text-[11px] text-muted-foreground">{formatKickoff(tip.kickoff)}</span>
                 </div>
               </div>
             </>
