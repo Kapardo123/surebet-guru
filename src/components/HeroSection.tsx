@@ -1,13 +1,15 @@
-import { Zap } from "lucide-react";
+import { Zap, ChevronDown, ChevronUp } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { FeaturedPick } from "@/lib/featuredPickStorage";
+import { useState } from "react";
 
 interface HeroSectionProps {
   pick?: FeaturedPick;
 }
 
 const HeroSection = ({ pick }: HeroSectionProps) => {
+  const [showAnalysis, setShowAnalysis] = useState(false);
   const data = pick || {
     league: "Premier League",
     kickoff: "20:00",
@@ -87,10 +89,40 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
           </div>
           
           {data.description && (
-            <div className="mt-4 p-4 rounded-xl bg-accent/10 border border-accent/20 max-w-2xl">
-              <p className="text-xs md:text-sm text-muted-foreground leading-relaxed italic whitespace-pre-wrap">
-                "{data.description}"
-              </p>
+            <div className="mt-4">
+              <button 
+                onClick={() => setShowAnalysis(!showAnalysis)}
+                className="flex items-center gap-1.5 text-[10px] md:text-xs font-bold uppercase tracking-widest text-accent hover:text-accent/80 transition-colors"
+              >
+                {showAnalysis ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" />
+                    Hide Analysis
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    View Analysis
+                  </>
+                )}
+              </button>
+              <AnimatePresence>
+                {showAnalysis && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-3 p-4 rounded-xl bg-accent/10 border border-accent/20 max-w-2xl backdrop-blur-sm">
+                      <p className="text-xs md:text-sm text-muted-foreground leading-relaxed italic whitespace-pre-wrap">
+                        "{data.description}"
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
           <div className="flex items-center gap-4 md:gap-6 mt-4 md:mt-6">
