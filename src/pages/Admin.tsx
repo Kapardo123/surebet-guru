@@ -192,6 +192,7 @@ const Admin = () => {
     kickoff: "",
     status: "upcoming" as Tip["status"],
     isPremium: false,
+    description: "",
   });
 
   // Coupon form state
@@ -213,7 +214,7 @@ const Admin = () => {
 
   const resetTipForm = () => {
     setEditingTipId(null);
-    setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false });
+    setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, description: "" });
   };
 
   const resetCouponForm = () => {
@@ -273,6 +274,7 @@ const Admin = () => {
         isPremium: form.isPremium,
         homeTeamLogo: homeLogo,
         awayTeamLogo: awayLogo,
+        description: form.description,
       });
       await refreshData();
       resetTipForm();
@@ -294,6 +296,7 @@ const Admin = () => {
         isPremium: form.isPremium,
         homeTeamLogo: homeLogo,
         awayTeamLogo: awayLogo,
+        description: form.description,
       });
       
       if (created && form.isPremium) {
@@ -330,6 +333,7 @@ const Admin = () => {
       kickoff: tip.kickoff,
       status: tip.status,
       isPremium: tip.isPremium || false,
+      description: tip.description || "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -705,6 +709,16 @@ const Admin = () => {
                     <SelectItem value="draw">Draw</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2 col-span-full">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Analysis / Description</Label>
+                <textarea 
+                  className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                  placeholder="Why are you picking this tip?" 
+                  value={form.description} 
+                  onChange={(e) => setForm({ ...form, description: e.target.value })} 
+                />
               </div>
 
               <div className="flex items-center gap-3 col-span-full bg-accent/5 border border-accent/20 rounded-xl px-4 py-3">

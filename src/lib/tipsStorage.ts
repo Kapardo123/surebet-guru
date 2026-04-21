@@ -52,6 +52,7 @@ export const loadTips = async (): Promise<Tip[]> => {
     isPremium: tip.is_premium ?? undefined,
     homeTeamLogo: tip.home_team_logo || null,
     awayTeamLogo: tip.away_team_logo || null,
+    description: tip.description || null,
   }));
 
   setCachedTips(tips);
@@ -72,7 +73,8 @@ export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
       status: tip.status,
       is_premium: tip.isPremium,
       home_team_logo: tip.homeTeamLogo,
-      away_team_logo: tip.awayTeamLogo
+      away_team_logo: tip.awayTeamLogo,
+      description: tip.description
     }])
     .select()
     .single();
@@ -96,7 +98,8 @@ export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
     status: isTipStatus(record.status) ? record.status : "upcoming",
     isPremium: record.is_premium ?? undefined,
     homeTeamLogo: record.home_team_logo,
-    awayTeamLogo: record.away_team_logo
+    awayTeamLogo: record.away_team_logo,
+    description: record.description
   };
 };
 
@@ -123,7 +126,8 @@ export const updateTip = async (updatedTip: Tip) => {
       status: updatedTip.status,
       is_premium: updatedTip.isPremium,
       home_team_logo: updatedTip.homeTeamLogo,
-      away_team_logo: updatedTip.awayTeamLogo
+      away_team_logo: updatedTip.awayTeamLogo,
+      description: updatedTip.description
     })
     .eq('id', updatedTip.id);
 

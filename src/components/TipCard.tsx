@@ -1,8 +1,9 @@
 import { Badge } from "@/components/ui/badge";
-import { Clock, Lock, Crown, Flame } from "lucide-react";
+import { Clock, Lock, Crown, Flame, ChevronDown, ChevronUp } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 
 export interface Tip {
   id: number;
@@ -17,6 +18,7 @@ export interface Tip {
   isPremium?: boolean;
   homeTeamLogo?: string | null;
   awayTeamLogo?: string | null;
+  description?: string | null;
 }
 
 const statusVariant = {
@@ -35,6 +37,7 @@ const statusLabel = {
 
 
 const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boolean }) => {
+  const [showAnalysis, setShowAnalysis] = useState(false);
   const locked = tip.isPremium && !userIsPremium;
 
   return (
@@ -126,6 +129,45 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
                   </div>
                 </div>
               </div>
+
+              {/* Analysis / Description Toggle */}
+              {tip.description && (
+                <div className="pt-2">
+                  <button 
+                    onClick={() => setShowAnalysis(!showAnalysis)}
+                    className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-accent hover:text-accent/80 transition-colors"
+                  >
+                    {showAnalysis ? (
+                      <>
+                        <ChevronUp className="w-3.5 h-3.5" />
+                        Hide Analysis
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-3.5 h-3.5" />
+                        View Analysis
+                      </>
+                    )}
+                  </button>
+                  <AnimatePresence>
+                    {showAnalysis && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-3 p-3.5 rounded-xl bg-accent/5 border border-accent/10">
+                          <p className="text-xs text-muted-foreground leading-relaxed italic whitespace-pre-wrap">
+                            "{tip.description}"
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
 
               {/* Footer */}
               <div className="flex items-center pt-2 border-t border-border/30">
