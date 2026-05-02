@@ -685,8 +685,12 @@ const Admin = () => {
                         homeTeamLogo: homeLogo,
                         awayTeamLogo: awayLogo
                       });
-                      await refreshData();
-                      toast({ title: "Featured Pick updated! ⚡" });
+                      
+                      // Wait a bit for Supabase to process before refreshing
+                      setTimeout(async () => {
+                        await refreshData();
+                        toast({ title: "Featured Pick updated! ⚡" });
+                      }, 500);
                     } catch (error) {
                       console.error("Failed to save featured pick", error);
                       toast({ title: "Failed to update Featured Pick", variant: "destructive" });

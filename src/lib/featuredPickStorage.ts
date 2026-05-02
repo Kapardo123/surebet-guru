@@ -46,7 +46,7 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
 };
 
 export const saveFeaturedPick = async (pick: FeaturedPick) => {
-  const dataToSave = {
+  const dataToSave: any = {
     league: pick.league,
     kickoff: pick.kickoff,
     home_team: pick.homeTeam,
@@ -54,18 +54,39 @@ export const saveFeaturedPick = async (pick: FeaturedPick) => {
     prediction: pick.prediction,
     odds: pick.odds,
     confidence: pick.confidence,
-    status: pick.status || "upcoming",
     home_team_logo: pick.homeTeamLogo,
     away_team_logo: pick.awayTeamLogo,
     description: pick.description
   };
 
-  const { error } = pick.id 
-    ? await supabase.from('featured_picks').update(dataToSave).eq('id', pick.id)
-    : await supabase.from('featured_picks').insert([dataToSave]);
+  // Only add status if it's provided and we want to try saving it
+  // In case the column doesn't exist yet, we'll try to save without it if it fails
+  if (pick.status) {
+    dataToSave.status = pick.status;
+  }
 
-  if (error) {
-    console.error("Error saving featured pick:", error);
-    throw error;
+  try {
+    const { error } = pick.id 
+      ? await supabase.from('featured_picks').update(dataToSave).eq('id', pick.id)
+      : await supabase.from('featured_picks').insert([dataToSave]);
+
+    if (error) {
+      // If error is about missing column 'status', try saving without it
+      if (error.message?.includes('column "status" of relation "featured_picks" does not exist') || 
+          error.code === '42703') {
+        console.warn("Status column missing in featured_picks table. Saving without status.");
+        delete dataToSave.status;
+        const { error: retryError } = pick.id 
+          ? await supabase.from('featured_picks').update(dataToSave).eq('id', pick.id)
+          : await supabase.from('featured_picks').insert([dataToSave]);
+        
+        if (retryError) throw retryError;
+      } else {
+        throw error;
+      }
+    }
+  } catch (err) {
+    console.error("Error in saveFeaturedPick:", err);
+    throw err;
   }
 };

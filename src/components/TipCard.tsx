@@ -77,8 +77,8 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
         <div className={`h-[2px] w-full ${tip.isPremium ? 'bg-gradient-to-r from-accent via-primary to-accent' : 'bg-gradient-to-r from-primary via-accent to-primary'}`} />
 
         {tip.isPremium && !isSettled && (
-          <div className="absolute top-[2px] right-0 z-10">
-            <div className="bg-gradient-to-l from-accent to-accent/80 text-accent-foreground px-3 py-1.5 text-[10px] font-display font-bold uppercase tracking-wider rounded-bl-xl flex items-center gap-1.5 shadow-lg">
+          <div className="absolute top-[2px] left-0 z-10">
+            <div className="bg-gradient-to-r from-accent to-accent/80 text-accent-foreground px-3 py-1.5 text-[10px] font-display font-bold uppercase tracking-wider rounded-br-xl flex items-center gap-1.5 shadow-lg">
               <Crown className="w-3 h-3" />
               Premium
             </div>
@@ -87,20 +87,20 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
 
         <div className="p-5 space-y-4">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {tip.isPremium && (
-                <Badge variant="confidence" className="gap-1.5 py-1 px-2.5 shadow-sm border-accent/20">
-                  <Crown className="w-3.5 h-3.5 animate-pulse" />
-                  <span className="font-bold">PREMIUM PICK</span>
+                <Badge variant="confidence" className="gap-1 py-0.5 px-2 shadow-sm border-accent/20">
+                  <Crown className="w-3 h-3 animate-pulse" />
+                  <span className="font-bold text-[9px] md:text-[10px]">PREMIUM</span>
                 </Badge>
               )}
               <Badge variant="sport" className="text-[10px]">{tip.sport}</Badge>
-              <span className="text-[11px] text-muted-foreground font-medium">{tip.league}</span>
+              <span className="text-[11px] text-muted-foreground font-medium truncate max-w-[80px] md:max-w-none">{tip.league}</span>
             </div>
-            <Badge variant={statusVariant[tip.status]} className="gap-1.5">
+            <Badge variant={statusVariant[tip.status]} className="gap-1.5 shrink-0">
               {tip.isPremium && isSettled && <Crown className="w-3 h-3" />}
-              {statusLabel[tip.status]}
+              <span className="whitespace-nowrap">{statusLabel[tip.status]}</span>
             </Badge>
           </div>
 
