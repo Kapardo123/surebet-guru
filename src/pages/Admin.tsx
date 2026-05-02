@@ -232,7 +232,8 @@ const Admin = () => {
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
       league: match.league,
-      kickoff: `${match.date}, ${match.time}`,
+      kickoff: `${match.date} ${match.time}`,
+      odds: match.odds?.homeWin?.toString() || prev.odds,
     }));
     toast({ title: `Match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
@@ -243,7 +244,8 @@ const Admin = () => {
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
       league: match.league,
-      kickoff: `${match.date}, ${match.time}`,
+      kickoff: `${match.date} ${match.time}`,
+      odds: match.odds?.homeWin?.toString() || prev.odds,
     }));
     toast({ title: `Coupon match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
@@ -254,7 +256,8 @@ const Admin = () => {
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
       league: match.league,
-      kickoff: `${match.date}, ${match.time}`,
+      kickoff: `${match.date} ${match.time}`,
+      odds: match.odds?.homeWin?.toString() || prev.odds,
     }));
     toast({ title: `Featured match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
