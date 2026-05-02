@@ -28,26 +28,44 @@ const ODDS_API_KEY = "32bd7bdc9792fd0b5dd5fe53f7791410334554a3ff7e08746c0cfa470c
 let bookmakerSlugsCache: string[] | null = null;
 
 const getBookmakerSlugs = async (): Promise<string[]> => {
-  if (bookmakerSlugsCache) return bookmakerSlugsCache;
+  if (bookmakerSlugsCache && bookmakerSlugsCache.length > 0) return bookmakerSlugsCache;
   
   try {
     console.log("[OddsAPI] Fetching available bookmakers...");
     const response = await fetch(`https://api.odds-api.io/v3/bookmakers?apiKey=${ODDS_API_KEY}`);
-    if (!response.ok) throw new Error("Failed to fetch bookmakers list");
-    const data = await response.json();
     
-    // The API returns a list of bookmaker objects, we need their 'slug' property
-    const slugs = Array.isArray(data) ? data.map((b: any) => b.slug) : [];
-    console.log("[OddsAPI] Available bookmaker slugs:", slugs);
+    if (!response.ok) {
+      console.error("[OddsAPI] Bookmakers response not OK:", response.status);
+      return ["bet365", "1xbet"]; // Fallback to common ones if API fails
+    }
+
+    const data = await response.json();
+    let slugs: string[] = [];
+
+    if (Array.isArray(data)) {
+      slugs = data
+        .map((b: any) => (b.slug || b.key || b.id || "").toString())
+        .filter(s => s.trim().length > 0);
+    } else if (data && typeof data === 'object') {
+      // If it's an object, it might be { slug1: {...}, slug2: {...} } or { error: "..." }
+      if (data.error) {
+        console.error("[OddsAPI] API Error in bookmakers:", data.error);
+        return ["bet365", "1xbet"];
+      }
+      slugs = Object.keys(data).filter(key => key !== 'error' && key.length > 0);
+    }
+      
+    console.log("[OddsAPI] Parsed bookmaker slugs:", slugs);
     
     if (slugs.length > 0) {
       bookmakerSlugsCache = slugs;
       return slugs;
     }
-    return [];
+    
+    return ["bet365", "1xbet"]; // Last resort fallback
   } catch (err) {
-    console.error("[OddsAPI] Error fetching bookmakers:", err);
-    return [];
+    console.error("[OddsAPI] Exception in getBookmakerSlugs:", err);
+    return ["bet365", "1xbet"];
   }
 };
 
@@ -136,16 +154,26 @@ export const useEventOdds = (eventId: string | null) => {
       setLoading(true);
       console.log(`[OddsAPI] Fetching odds for event: ${eventId}`);
       try {
-        // Step 1: Get valid bookmaker slugs for your account
+        // Step 1: Get valid bookmaker slugs
         const validSlugs = await getBookmakerSlugs();
         
-        if (validSlugs.length === 0) {
-          throw new Error("No active bookmakers found for your API key. Check Odds-API.io dashboard.");
+        // Step 2: Build the request with valid slugs (max 30 allowed)
+        // Ensure no empty strings or spaces get through
+        const cleanSlugs = validSlugs
+          .map(s => s?.toString().trim())
+          .filter(s => s && s.length > 0)
+          .slice(0, 30);
+          
+        const bookmakersParam = cleanSlugs.join(',');
+          
+        if (!bookmakersParam) {
+          throw new Error("No valid bookmaker slugs available for the request.");
         }
 
-        // Step 2: Build the request with valid slugs (max 30 allowed)
-        const bookmakersParam = validSlugs.slice(0, 30).join(',');
-        const response = await fetch(`https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}&bookmakers=${bookmakersParam}`);
+        const url = `https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}&bookmakers=${encodeURIComponent(bookmakersParam)}`;
+        console.log(`[OddsAPI] Request URL: ${url}`);
+        
+        const response = await fetch(url);
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -157,7 +185,6 @@ export const useEventOdds = (eventId: string | null) => {
       } catch (err: any) {
         console.error("[OddsAPI] Error in useEventOdds:", err);
         setOutcomes([]);
-        // We could toast here, but let's keep it in console for now
       } finally {
         setLoading(false);
       }
@@ -267,7 +294,9 @@ export const useUpcomingMatches = (teamName: string) => {
         // Step 2: Fetch odds for these events in ONE multi-odds request
         // We also need to provide bookmakers here to avoid "Missing bookmakers"
         const validSlugs = await getBookmakerSlugs();
-        const bookmakersParam = validSlugs.length > 0 ? `&bookmakers=${validSlugs.slice(0, 30).join(',')}` : "";
+        const bookmakersParam = validSlugs.length > 0 
+          ? `&bookmakers=${validSlugs.filter(s => s && s.trim().length > 0).slice(0, 30).join(',')}` 
+          : "";
         
         const oddsResponse = await fetch(
           `https://api.odds-api.io/v3/odds/multi?apiKey=${ODDS_API_KEY}&eventIds=${eventIds}${bookmakersParam}`,
