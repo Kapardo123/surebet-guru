@@ -36,7 +36,7 @@ const getBookmakerSlugs = async (): Promise<string[]> => {
     
     if (!response.ok) {
       console.error("[OddsAPI] Bookmakers response not OK:", response.status);
-      return ["bet365", "1xbet"]; // Fallback to common ones if API fails
+      return ["Bet365", "1xBet", "Pinnacle", "Unibet", "William Hill"]; // Correct casing fallback
     }
 
     const data = await response.json();
@@ -44,13 +44,12 @@ const getBookmakerSlugs = async (): Promise<string[]> => {
 
     if (Array.isArray(data)) {
       slugs = data
-        .map((b: any) => (b.slug || b.key || b.id || "").toString())
+        .map((b: any) => (b.name || b.slug || b.key || b.id || "").toString())
         .filter(s => s.trim().length > 0);
     } else if (data && typeof data === 'object') {
-      // If it's an object, it might be { slug1: {...}, slug2: {...} } or { error: "..." }
       if (data.error) {
         console.error("[OddsAPI] API Error in bookmakers:", data.error);
-        return ["bet365", "1xbet"];
+        return ["Bet365", "1xBet", "Pinnacle", "Unibet", "William Hill"];
       }
       slugs = Object.keys(data).filter(key => key !== 'error' && key.length > 0);
     }
@@ -62,10 +61,10 @@ const getBookmakerSlugs = async (): Promise<string[]> => {
       return slugs;
     }
     
-    return ["bet365", "1xbet"]; // Last resort fallback
+    return ["Bet365", "1xBet", "Pinnacle", "Unibet", "William Hill"]; // Last resort fallback
   } catch (err) {
     console.error("[OddsAPI] Exception in getBookmakerSlugs:", err);
-    return ["bet365", "1xbet"];
+    return ["Bet365", "1xBet", "Pinnacle", "Unibet", "William Hill"];
   }
 };
 
@@ -173,7 +172,14 @@ export const useEventOdds = (eventId: string | null) => {
         const url = `https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}&bookmakers=${encodeURIComponent(bookmakersParam)}`;
         console.log(`[OddsAPI] Request URL: ${url}`);
         
-        const response = await fetch(url);
+        let response = await fetch(url);
+        
+        // If the request fails with 400 (likely invalid bookmaker), try without the bookmakers filter
+        if (!response.ok && response.status === 400) {
+          console.warn("[OddsAPI] Request with bookmakers failed, trying without filter...");
+          const fallbackUrl = `https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}`;
+          response = await fetch(fallbackUrl);
+        }
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
