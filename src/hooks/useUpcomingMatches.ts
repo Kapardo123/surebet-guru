@@ -38,61 +38,85 @@ export const useUpcomingMatches = (teamName: string) => {
 
     timerRef.current = setTimeout(async () => {
       try {
-        // Fetch matches and odds from odds-api.io
-        // Using the /v1/odds endpoint which provides both match info and odds
-        // We filter by team name in the results to save requests
+        // According to Odds-API.io v3 documentation, /events is the correct endpoint
+        // Let's use the search query to find specific teams
         const response = await fetch(
-          `https://api.odds-api.io/v1/odds?apikey=${ODDS_API_KEY}&sport=soccer`,
+          `https://api.odds-api.io/v3/events?apiKey=${ODDS_API_KEY}&sport=football&status=pending&search=${encodeURIComponent(teamName)}`,
           { signal: controller.signal }
         );
 
-        if (!response.ok) throw new Error("API response error");
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status}`);
+        }
         
-        const data = await response.json();
+        const events = await response.json();
         
-        // The API returns an array of events
-        const events = Array.isArray(data) ? data : (data.data || []);
-        
-        const searchStr = teamName.toLowerCase();
-        
-        const filtered = events
-          .filter((event: any) => {
-            const home = (event.home_team || "").toLowerCase();
-            const away = (event.away_team || "").toLowerCase();
-            return home.includes(searchStr) || away.includes(searchStr);
-          })
-          .slice(0, 5)
-          .map((event: any) => {
-            // Find 1x2 odds if available
-            const h2hOdds = event.bookmakers?.[0]?.markets?.find((m: any) => m.key === "h2h")?.outcomes;
-            
-            return {
-              id: event.id || Math.random().toString(36).substr(2, 9),
-              homeTeam: event.home_team,
-              awayTeam: event.away_team,
-              date: event.commence_time ? new Date(event.commence_time).toISOString().split('T')[0] : "TBD",
-              time: event.commence_time ? new Date(event.commence_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "TBD",
-              league: event.sport_title || "Soccer",
-              odds: h2hOdds ? {
-                homeWin: h2hOdds.find((o: any) => o.name === event.home_team)?.price,
-                draw: h2hOdds.find((o: any) => o.name === "Draw")?.price,
-                awayWin: h2hOdds.find((o: any) => o.name === event.away_team)?.price,
-              } : undefined
-            };
-          });
+        if (!Array.isArray(events)) {
+          console.error("API returned non-array response:", events);
+          setMatches([]);
+          setLoading(false);
+          return;
+        }
+
+        if (events.length === 0) {
+          setMatches([]);
+          setLoading(false);
+          return;
+        }
+
+        // To save credits, we'll try to get odds in the same request if the API allows or 
+        // fetch odds for the first 3 events only to minimize usage
+        const topEvents = events.slice(0, 5);
+        const eventIds = topEvents.map(e => e.id).join(',');
+
+        const oddsResponse = await fetch(
+          `https://api.odds-api.io/v3/odds/multi?apiKey=${ODDS_API_KEY}&eventIds=${eventIds}`,
+          { signal: controller.signal }
+        );
+
+        let oddsData: any[] = [];
+        if (oddsResponse.ok) {
+          oddsData = await oddsResponse.json();
+        }
+
+        const mappedMatches = topEvents.map((event: any) => {
+          const eventOdds = Array.isArray(oddsData) ? oddsData.find(o => o.id === event.id) : null;
+          
+          // Look for Moneyline (1X2) odds from the first bookmaker
+          let prices = null;
+          if (eventOdds && eventOdds.bookmakers) {
+            const firstBookie = Object.values(eventOdds.bookmakers)[0] as any[];
+            const mlMarket = firstBookie?.find((m: any) => m.name === "ML" || m.name === "1x2");
+            prices = mlMarket?.odds?.[0];
+          }
+
+          return {
+            id: event.id.toString(),
+            homeTeam: event.home,
+            awayTeam: event.away,
+            date: event.date ? new Date(event.date).toISOString().split('T')[0] : "TBD",
+            time: event.date ? new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "TBD",
+            league: event.league?.name || "Football",
+            odds: prices ? {
+              homeWin: parseFloat(prices.home),
+              draw: parseFloat(prices.draw),
+              awayWin: parseFloat(prices.away),
+            } : undefined
+          };
+        });
 
         if (!controller.signal.aborted) {
-          setMatches(filtered);
+          setMatches(mappedMatches);
           setLoading(false);
         }
       } catch (err: any) {
         if (err?.name !== "AbortError") {
-          console.error("Odds API Error:", err);
+          console.error("Odds API Hook Error:", err);
           setMatches([]);
           setLoading(false);
         }
       }
-    }, 800);
+    }, 1000);
 
     return () => {
       clearTimeout(timerRef.current);
