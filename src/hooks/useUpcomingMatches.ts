@@ -108,13 +108,13 @@ export const useEventOdds = (eventId: string | null) => {
       setLoading(true);
       console.log(`[OddsAPI] Fetching odds for event: ${eventId}`);
       try {
-        // Use multi-odds endpoint as it's the most reliable for v3
-        const response = await fetch(`https://api.odds-api.io/v3/odds/multi?apiKey=${ODDS_API_KEY}&eventIds=${eventId}`);
-        if (!response.ok) throw new Error(`Failed to fetch odds: ${response.status}`);
-        const eventsData = await response.json();
-        
-        // multi-odds returns an array of events
-        const eventData = Array.isArray(eventsData) ? eventsData[0] : eventsData;
+        // Added &bookmakers=all to fix the 400 Bad Request error
+        const response = await fetch(`https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}&bookmakers=all`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `API Error ${response.status}`);
+        }
+        const eventData = await response.json();
         
         if (!eventData || !eventData.bookmakers) {
           console.warn("[OddsAPI] No bookmakers found for this event in response:", eventsData);
