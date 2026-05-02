@@ -24,6 +24,20 @@ export interface League {
 // Odds-API.io Integration Hook - Forced Vercel Redeploy
 const ODDS_API_KEY = "32bd7bdc9792fd0b5dd5fe53f7791410334554a3ff7e08746c0cfa470c3d1a2a";
 
+// Function to clear bookmaker selections if needed (call this once if you get access denied)
+export const clearBookmakerSelections = async () => {
+  try {
+    const response = await fetch(`https://api.odds-api.io/v3/bookmakers/selected/clear?apiKey=${ODDS_API_KEY}`, {
+      method: 'PUT'
+    });
+    const data = await response.json();
+    console.log("[OddsAPI] Selection cleared:", data);
+    return data;
+  } catch (err) {
+    console.error("[OddsAPI] Failed to clear selections:", err);
+  }
+};
+
 // Global cache for bookmakers to avoid multiple calls
 let bookmakerSlugsCache: string[] | null = null;
 
@@ -36,7 +50,7 @@ const getBookmakerSlugs = async (): Promise<string[]> => {
     
     if (!response.ok) {
       console.error("[OddsAPI] Bookmakers response not OK:", response.status);
-      return ["Bet365", "1xBet", "Pinnacle", "Unibet", "William Hill"]; // Correct casing fallback
+      return ["Bet365", "1xbet"]; // Exact casing from error message
     }
 
     const data = await response.json();
@@ -49,22 +63,24 @@ const getBookmakerSlugs = async (): Promise<string[]> => {
     } else if (data && typeof data === 'object') {
       if (data.error) {
         console.error("[OddsAPI] API Error in bookmakers:", data.error);
-        return ["Bet365", "1xBet", "Pinnacle", "Unibet", "William Hill"];
+        return ["Bet365", "1xbet"];
       }
       slugs = Object.keys(data).filter(key => key !== 'error' && key.length > 0);
     }
       
-    console.log("[OddsAPI] Parsed bookmaker slugs:", slugs);
+    // STRICT LIMIT FOR YOUR PLAN: Only use the first 2 bookmakers
+    const limitedSlugs = slugs.slice(0, 2);
+    console.log("[OddsAPI] Parsed bookmaker slugs (limited to 2):", limitedSlugs);
     
-    if (slugs.length > 0) {
-      bookmakerSlugsCache = slugs;
-      return slugs;
+    if (limitedSlugs.length > 0) {
+      bookmakerSlugsCache = limitedSlugs;
+      return limitedSlugs;
     }
     
-    return ["Bet365", "1xBet", "Pinnacle", "Unibet", "William Hill"]; // Last resort fallback
+    return ["Bet365", "1xbet"]; 
   } catch (err) {
     console.error("[OddsAPI] Exception in getBookmakerSlugs:", err);
-    return ["Bet365", "1xBet", "Pinnacle", "Unibet", "William Hill"];
+    return ["Bet365", "1xbet"];
   }
 };
 

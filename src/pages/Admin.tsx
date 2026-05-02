@@ -37,7 +37,7 @@ import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
 import UpcomingMatchesList from "@/components/UpcomingMatchesList";
-import { UpcomingMatch, useLeagues, useLeagueMatches, useEventOdds, OddsOutcome } from "@/hooks/useUpcomingMatches";
+import { UpcomingMatch, useLeagues, useLeagueMatches, useEventOdds, OddsOutcome, clearBookmakerSelections } from "@/hooks/useUpcomingMatches";
 import Logo from "@/components/Logo";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -667,12 +667,25 @@ const Admin = () => {
             <Search className="w-20 h-20 text-accent" />
           </div>
           <CardContent className="p-6 md:p-8">
-            <h2 className="font-display text-xl font-bold text-foreground mb-6 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
-                <Search className="w-4 h-4 text-accent" />
-              </div>
-              Odds-API.io Match Finder
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-display text-xl font-bold text-foreground flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
+                  <Search className="w-4 h-4 text-accent" />
+                </div>
+                Odds-API.io Match Finder
+              </h2>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-[10px] h-8 border-accent/20 hover:bg-accent/10"
+                onClick={async () => {
+                  await clearBookmakerSelections();
+                  toast({ title: "Bookmaker selection reset! 🔄" });
+                }}
+              >
+                Reset API Selection
+              </Button>
+            </div>
             
             <div className="space-y-6">
               {/* Step 1: Select League */}
