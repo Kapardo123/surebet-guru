@@ -680,18 +680,17 @@ const Admin = () => {
                     try {
                       const homeLogo = await fetchTeamLogoUrl(featured.homeTeam);
                       const awayLogo = await fetchTeamLogoUrl(featured.awayTeam);
-                      await saveFeaturedPick({
+                      const savedPick = await saveFeaturedPick({
                         ...featured,
                         homeTeamLogo: homeLogo,
                         awayTeamLogo: awayLogo
                       });
                       
-                      // Wait a bit for Supabase to process before refreshing
-                      setTimeout(async () => {
-                        await refreshData();
-                      toast({ title: "Featured Pick updated! ⚡" });
-                    }, 500);
-                  } catch (error: any) {
+                      if (savedPick) {
+                        setFeatured(savedPick);
+                        toast({ title: "Featured Pick updated! ⚡" });
+                      }
+                    } catch (error: any) {
                     console.error("Full error object:", error);
                     if (error.message?.includes("SQL_COLUMN_MISSING")) {
                       toast({ 

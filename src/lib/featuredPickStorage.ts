@@ -45,7 +45,7 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
   };
 };
 
-export const saveFeaturedPick = async (pick: FeaturedPick) => {
+export const saveFeaturedPick = async (pick: FeaturedPick): Promise<FeaturedPick | null> => {
   const dataToSave: any = {
     league: pick.league,
     kickoff: pick.kickoff,
@@ -60,20 +60,32 @@ export const saveFeaturedPick = async (pick: FeaturedPick) => {
     description: pick.description
   };
 
-  console.log("Saving Featured Pick with data:", dataToSave);
-
   const { data, error } = pick.id 
-    ? await supabase.from('featured_picks').update(dataToSave).eq('id', pick.id).select()
-    : await supabase.from('featured_picks').insert([dataToSave]).select();
+    ? await supabase.from('featured_picks').update(dataToSave).eq('id', pick.id).select().single()
+    : await supabase.from('featured_picks').insert([dataToSave]).select().single();
 
   if (error) {
     console.error("Supabase error saving featured pick:", error);
-    // If it's a missing column error, give a very clear message
     if (error.code === '42703' || error.message?.includes('column "status"')) {
       throw new Error("SQL_COLUMN_MISSING: status");
     }
     throw new Error(error.message || "Unknown Supabase error");
   }
 
-  console.log("Save successful, returned data:", data);
+  if (!data) return null;
+
+  return {
+    id: data.id,
+    league: data.league,
+    kickoff: data.kickoff,
+    homeTeam: data.home_team,
+    awayTeam: data.away_team,
+    prediction: data.prediction,
+    odds: data.odds,
+    confidence: data.confidence,
+    status: data.status || "upcoming",
+    homeTeamLogo: data.home_team_logo,
+    awayTeamLogo: data.away_team_logo,
+    description: data.description
+  };
 };
