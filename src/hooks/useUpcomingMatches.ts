@@ -42,8 +42,51 @@ export const clearBookmakerSelections = async () => {
 let bookmakerSlugsCache: string[] | null = null;
 
 const getBookmakerSlugs = async (): Promise<string[]> => {
-  // Always return Bet365 and 1xBet as per requirements
-  return ["bet365", "1xbet"];
+  if (bookmakerSlugsCache && bookmakerSlugsCache.length > 0) return bookmakerSlugsCache;
+  
+  try {
+    console.log("[OddsAPI] Fetching available bookmakers...");
+    const response = await fetch(`https://api.odds-api.io/v3/bookmakers?apiKey=${ODDS_API_KEY}`);
+    
+    if (!response.ok) {
+      console.error("[OddsAPI] Bookmakers response not OK:", response.status);
+      return ["Bet365", "1xBet"]; // Fallback with correct casing
+    }
+
+    const data = await response.json();
+    let slugs: string[] = [];
+
+    if (Array.isArray(data)) {
+      // Find Bet365 and 1xBet specifically if they exist in the list
+      const allSlugs = data.map((b: any) => (b.name || b.slug || b.key || b.id || "").toString());
+      const preferred = allSlugs.filter(s => 
+        s.toLowerCase().includes('bet365') || 
+        s.toLowerCase().includes('1xbet')
+      );
+      
+      if (preferred.length > 0) {
+        slugs = preferred;
+      } else {
+        slugs = allSlugs.filter(s => s.trim().length > 0);
+      }
+    } else if (data && typeof data === 'object') {
+      slugs = Object.keys(data).filter(key => key !== 'error' && key.length > 0);
+    }
+      
+    // Limit to 2 bookmakers for your plan
+    const limitedSlugs = slugs.slice(0, 2);
+    console.log("[OddsAPI] Parsed bookmaker slugs (limited to 2):", limitedSlugs);
+    
+    if (limitedSlugs.length > 0) {
+      bookmakerSlugsCache = limitedSlugs;
+      return limitedSlugs;
+    }
+    
+    return ["Bet365", "1xBet"]; 
+  } catch (err) {
+    console.error("[OddsAPI] Exception in getBookmakerSlugs:", err);
+    return ["Bet365", "1xBet"];
+  }
 };
 
 export const useLeagues = () => {
