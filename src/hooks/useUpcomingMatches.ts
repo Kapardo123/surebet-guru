@@ -65,11 +65,11 @@ const getBookmakerSlugs = async (): Promise<string[]> => {
 
     let slugs: string[] = [];
     if (Array.isArray(data)) {
-      // Prioritize Bet365 and 1xBet
+      // Prioritize 10BET and 12bet as they are currently allowed in the plan
       const allSlugs = data.map((b: any) => (b.name || b.slug || b.key || b.id || "").toString());
       const preferred = allSlugs.filter(s => 
-        s.toLowerCase().includes('bet365') || 
-        s.toLowerCase().includes('1xbet')
+        s.toUpperCase() === '10BET' || 
+        s.toLowerCase() === '12bet'
       );
       
       if (preferred.length > 0) {
@@ -84,7 +84,7 @@ const getBookmakerSlugs = async (): Promise<string[]> => {
     return limitedSlugs;
   } catch (err) {
     console.error("[OddsAPI] Exception in getBookmakerSlugs:", err);
-    return ["Bet365", "1xBet"];
+    return ["10BET", "12bet"];
   }
 };
 
