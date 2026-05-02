@@ -46,22 +46,9 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
 };
 
 export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
-  // First, try to find the most recent featured pick to get its ID if not provided
-  let targetId = pick.id;
-  
-  if (!targetId) {
-    const { data: latest } = await supabase
-      .from('featured_picks')
-      .select('id')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    
-    if (latest) {
-      targetId = latest.id;
-    }
-  }
-
+  // We always INSERT a new record. 
+  // This ensures the latest "Save" is always the one with the newest 'created_at'.
+  // loadFeaturedPick always fetches the newest record, so this guarantees the UI updates correctly.
   const dataToSave: any = {
     league: pick.league,
     kickoff: pick.kickoff,
@@ -76,21 +63,9 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
     description: pick.description
   };
 
-  let error;
-  if (targetId) {
-    // Update the existing record
-    const { error: updateError } = await supabase
-      .from('featured_picks')
-      .update(dataToSave)
-      .eq('id', targetId);
-    error = updateError;
-  } else {
-    // No record exists at all, insert new one
-    const { error: insertError } = await supabase
-      .from('featured_picks')
-      .insert([dataToSave]);
-    error = insertError;
-  }
+  const { error } = await supabase
+    .from('featured_picks')
+    .insert([dataToSave]);
 
   if (error) {
     console.error("Supabase error saving featured pick:", error);

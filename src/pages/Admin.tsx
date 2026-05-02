@@ -680,13 +680,15 @@ const Admin = () => {
                     try {
                       const homeLogo = await fetchTeamLogoUrl(featured.homeTeam);
                     const awayLogo = await fetchTeamLogoUrl(featured.awayTeam);
+                    
+                    // Always save as a new record to ensure it becomes the "latest"
+                    const { id, ...pickWithoutId } = featured; 
                     await saveFeaturedPick({
-                      ...featured,
+                      ...pickWithoutId,
                       homeTeamLogo: homeLogo,
                       awayTeamLogo: awayLogo
                     });
                     
-                    // Always refresh from database to be 100% sure we have latest data
                     await refreshData();
                     toast({ title: "Featured Pick updated! ⚡" });
                   } catch (error: any) {
