@@ -70,11 +70,11 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
       <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/30 via-transparent to-accent/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
       <div
-        className="relative rounded-xl bg-card border border-border/50 overflow-hidden transition-all duration-300 group-hover:border-primary/30 group-hover:-translate-y-0.5"
-        style={{ boxShadow: "var(--card-shadow)" }}
+        className={`relative rounded-xl bg-card border ${tip.isPremium ? 'border-accent/40 shadow-[0_0_20px_rgba(236,72,153,0.15)]' : 'border-border/50'} overflow-hidden transition-all duration-300 group-hover:border-primary/30 group-hover:-translate-y-0.5`}
+        style={{ boxShadow: tip.isPremium ? "0 0 25px rgba(236,72,153,0.1)" : "var(--card-shadow)" }}
       >
         {/* Top accent line */}
-        <div className="h-[2px] w-full bg-gradient-to-r from-primary via-accent to-primary" />
+        <div className={`h-[2px] w-full ${tip.isPremium ? 'bg-gradient-to-r from-accent via-primary to-accent' : 'bg-gradient-to-r from-primary via-accent to-primary'}`} />
 
         {tip.isPremium && !isSettled && (
           <div className="absolute top-[2px] right-0 z-10">
@@ -90,15 +90,16 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {tip.isPremium && (
-                <Badge variant="confidence" className="gap-1 text-[10px]">
-                  <Crown className="w-3 h-3" />
-                  Premium
+                <Badge variant="confidence" className="gap-1.5 py-1 px-2.5 shadow-sm border-accent/20">
+                  <Crown className="w-3.5 h-3.5 animate-pulse" />
+                  <span className="font-bold">PREMIUM PICK</span>
                 </Badge>
               )}
               <Badge variant="sport" className="text-[10px]">{tip.sport}</Badge>
               <span className="text-[11px] text-muted-foreground font-medium">{tip.league}</span>
             </div>
-            <Badge variant={statusVariant[tip.status]}>
+            <Badge variant={statusVariant[tip.status]} className="gap-1.5">
+              {tip.isPremium && isSettled && <Crown className="w-3 h-3" />}
               {statusLabel[tip.status]}
             </Badge>
           </div>
