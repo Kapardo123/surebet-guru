@@ -239,8 +239,18 @@ export const useEventOdds = (eventId: string | null) => {
         'HT_ML': 'HT 1X2',
         'HT_OU': 'HT Totals',
         'HT_BTTS': 'HT BTTS',
+        'HT_DC': 'HT Double Chance',
+        'HT_DNB': 'HT Draw No Bet',
+        'HT_AH': 'HT Asian Handicap',
+        'T_OU': 'Team Totals',
+        'H_OU': 'Home Totals',
+        'A_OU': 'Away Totals',
         'Corners': 'Corners',
+        'Corners_ML': 'Corners Winner',
+        'Corners_OU': 'Corners Totals',
         'Cards': 'Cards',
+        'Cards_ML': 'Cards Winner',
+        'Cards_OU': 'Cards Totals',
         'FTS': 'First Team to Score',
         'OE': 'Odd/Even',
         'CleanSheet': 'Clean Sheet',
@@ -248,7 +258,10 @@ export const useEventOdds = (eventId: string | null) => {
         'AnytimeScorer': 'Anytime Scorer',
         'FirstScorer': 'First Scorer',
         'LastScorer': 'Last Scorer',
-        'BookingPoints': 'Booking Points'
+        'BookingPoints': 'Booking Points',
+        'WinningMargin': 'Winning Margin',
+        'ToQualify': 'To Qualify',
+        'TotalGoals_Exact': 'Exact Goals'
       };
 
       Object.entries(bookmakers).forEach(([bookieName, markets]: [string, any]) => {
