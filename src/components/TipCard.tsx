@@ -38,7 +38,10 @@ const statusLabel = {
 
 const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boolean }) => {
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const locked = tip.isPremium && !userIsPremium;
+  // Premium tips are locked ONLY if they are 'upcoming' and the user is NOT premium.
+  // Once they are won/lost/draw, they are visible to everyone.
+  const isSettled = tip.status !== "upcoming";
+  const locked = tip.isPremium && !userIsPremium && !isSettled;
 
   const formatKickoff = (kickoffStr: string) => {
     try {
@@ -86,6 +89,12 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
+              {tip.isPremium && (
+                <Badge variant="confidence" className="gap-1 text-[10px]">
+                  <Crown className="w-3 h-3" />
+                  Premium
+                </Badge>
+              )}
               <Badge variant="sport" className="text-[10px]">{tip.sport}</Badge>
               <span className="text-[11px] text-muted-foreground font-medium">{tip.league}</span>
             </div>

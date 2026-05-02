@@ -9,6 +9,7 @@ export interface FeaturedPick {
   prediction: string;
   odds: string;
   confidence: string;
+  status: "upcoming" | "won" | "lost" | "draw";
   homeTeamLogo?: string | null;
   awayTeamLogo?: string | null;
   description?: string | null;
@@ -37,6 +38,7 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
     prediction: data.prediction,
     odds: data.odds,
     confidence: data.confidence,
+    status: data.status || "upcoming",
     homeTeamLogo: data.home_team_logo,
     awayTeamLogo: data.away_team_logo,
     description: data.description
@@ -54,6 +56,7 @@ export const saveFeaturedPick = async (pick: FeaturedPick) => {
       prediction: pick.prediction,
       odds: pick.odds,
       confidence: pick.confidence,
+      status: pick.status || "upcoming",
       home_team_logo: pick.homeTeamLogo,
       away_team_logo: pick.awayTeamLogo,
       description: pick.description

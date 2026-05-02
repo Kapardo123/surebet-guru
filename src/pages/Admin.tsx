@@ -644,6 +644,22 @@ const Admin = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Status</Label>
+                <Select 
+                  value={featured.status || "upcoming"} 
+                  onValueChange={(v: any) => setFeatured({ ...featured, status: v })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="upcoming">Upcoming</SelectItem>
+                    <SelectItem value="won">Won ✓</SelectItem>
+                    <SelectItem value="lost">Lost ✗</SelectItem>
+                    <SelectItem value="draw">Draw</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               
               <UpcomingMatchesList teamName={featured.homeTeam} onSelectMatch={handleSelectFeaturedMatch} />
 

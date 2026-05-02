@@ -1,12 +1,34 @@
-import { Zap, ChevronDown, ChevronUp } from "lucide-react";
+import { Zap, ChevronDown, ChevronUp, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { motion, AnimatePresence } from "framer-motion";
 import { FeaturedPick } from "@/lib/featuredPickStorage";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 
 interface HeroSectionProps {
   pick?: FeaturedPick;
 }
+
+const statusVariant = {
+  upcoming: "outline" as const,
+  won: "win" as const,
+  lost: "loss" as const,
+  draw: "draw" as const,
+};
+
+const statusLabel = {
+  upcoming: "Upcoming",
+  won: "Won ✓",
+  lost: "Lost ✗",
+  draw: "Draw",
+};
+
+const statusIcon = {
+  upcoming: null,
+  won: <CheckCircle2 className="w-4 h-4 text-success" />,
+  lost: <XCircle className="w-4 h-4 text-loss" />,
+  draw: <MinusCircle className="w-4 h-4 text-muted-foreground" />,
+};
 
 const HeroSection = ({ pick }: HeroSectionProps) => {
   const [showAnalysis, setShowAnalysis] = useState(false);
@@ -18,7 +40,10 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
     prediction: "Over 2.5 Goals",
     odds: "1.85",
     confidence: "High",
+    status: "upcoming" as const,
   };
+
+  const currentStatus = data.status || "upcoming";
 
   return (
     <div className="relative overflow-hidden rounded-2xl glass gradient-border p-5 md:p-12">
@@ -64,11 +89,21 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
       </div>
 
       <div className="relative z-10">
-        <div className="flex items-center gap-2.5 mb-4 md:mb-6">
-          <div className="flex items-center gap-1.5 bg-accent/15 text-accent px-2.5 py-1 rounded-full">
-            <Zap className="w-3 h-3 md:w-3.5 md:h-3.5 animate-pulse-glow" />
-            <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider">Featured Pick</span>
+        <div className="flex items-center justify-between mb-4 md:mb-6">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5 bg-accent/15 text-accent px-2.5 py-1 rounded-full">
+              <Zap className="w-3 h-3 md:w-3.5 md:h-3.5 animate-pulse-glow" />
+              <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider">Featured Pick</span>
+            </div>
           </div>
+          {currentStatus !== "upcoming" && (
+            <Badge variant={statusVariant[currentStatus]} className="gap-1.5 py-1.5 px-3">
+              {statusIcon[currentStatus]}
+              <span className="font-display font-bold uppercase tracking-wider text-[10px] md:text-xs">
+                {statusLabel[currentStatus]}
+              </span>
+            </Badge>
+          )}
         </div>
 
         <h1 className="font-display text-2xl md:text-6xl font-bold mb-1 md:mb-2 tracking-tight">
