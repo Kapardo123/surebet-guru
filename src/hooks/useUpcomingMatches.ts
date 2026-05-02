@@ -35,7 +35,12 @@ export const useLeagues = () => {
         if (!response.ok) throw new Error("Failed to fetch leagues");
         const data = await response.json();
         // Filter leagues with events
-        setLeagues(data.filter((l: any) => l.eventsCount > 0).map((l: any) => ({ name: l.name, slug: l.slug })));
+        if (Array.isArray(data)) {
+          setLeagues(data.filter((l: any) => l.eventsCount > 0).map((l: any) => ({ name: l.name, slug: l.slug })));
+        } else {
+          console.error("Leagues API returned non-array data:", data);
+          setLeagues([]);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -65,14 +70,18 @@ export const useLeagueMatches = (leagueSlug: string | null) => {
         if (!response.ok) throw new Error("Failed to fetch matches");
         const data = await response.json();
         
-        setMatches(data.map((event: any) => ({
-          id: event.id.toString(),
-          homeTeam: event.home,
-          awayTeam: event.away,
-          date: event.date ? new Date(event.date).toISOString().split('T')[0] : "TBD",
-          time: event.date ? new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "TBD",
-          league: event.league?.name || "Football",
-        })));
+        if (Array.isArray(data)) {
+          setMatches(data.map((event: any) => ({
+            id: event.id.toString(),
+            homeTeam: event.home,
+            awayTeam: event.away,
+            date: event.date ? new Date(event.date).toISOString().split('T')[0] : "TBD",
+            time: event.date ? new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "TBD",
+            league: event.league?.name || "Football",
+          })));
+        } else {
+          setMatches([]);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -105,30 +114,36 @@ export const useEventOdds = (eventId: string | null) => {
         const allOutcomes: OddsOutcome[] = [];
         
         // Flatten bookmakers and markets
-        Object.values(data.bookmakers || {}).forEach((markets: any) => {
-          markets.forEach((market: any) => {
-            market.odds.forEach((odd: any) => {
-              // Convert market keys to readable names
-              let marketName = market.name;
-              if (marketName === 'ML') marketName = '1X2';
-              
-              Object.entries(odd).forEach(([side, price]: [string, any]) => {
-                if (side === 'updatedAt') return;
-                
-                let name = side;
-                if (side === 'home') name = data.home;
-                if (side === 'away') name = data.away;
-                if (side === 'draw') name = 'Draw';
-                
-                allOutcomes.push({
-                  name: `${marketName}: ${name}`,
-                  price: parseFloat(price),
-                  market: marketName
-                });
+        if (data.bookmakers) {
+          Object.values(data.bookmakers).forEach((markets: any) => {
+            if (Array.isArray(markets)) {
+              markets.forEach((market: any) => {
+                if (Array.isArray(market.odds)) {
+                  market.odds.forEach((odd: any) => {
+                    // Convert market keys to readable names
+                    let marketName = market.name || 'Unknown';
+                    if (marketName === 'ML') marketName = '1X2';
+                    
+                    Object.entries(odd).forEach(([side, price]: [string, any]) => {
+                      if (side === 'updatedAt') return;
+                      
+                      let name = side;
+                      if (side === 'home') name = data.home || 'Home';
+                      if (side === 'away') name = data.away || 'Away';
+                      if (side === 'draw') name = 'Draw';
+                      
+                      allOutcomes.push({
+                        name: `${marketName}: ${name}`,
+                        price: parseFloat(price) || 0,
+                        market: marketName
+                      });
+                    });
+                  });
+                }
               });
-            });
+            }
           });
-        });
+        }
 
         // Unique by name and pick best price
         const bestOdds = allOutcomes.reduce((acc, curr) => {

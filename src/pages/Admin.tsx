@@ -649,10 +649,14 @@ const Admin = () => {
                     <SelectValue placeholder={leaguesLoading ? "Loading leagues..." : "Choose a competition"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {leagues.map((league) => (
+                  {leagues && leagues.length > 0 ? (
+                    leagues.map((league) => (
                       <SelectItem key={league.slug} value={league.slug}>{league.name}</SelectItem>
-                    ))}
-                  </SelectContent>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>No active leagues found</SelectItem>
+                  )}
+                </SelectContent>
                 </Select>
               </div>
 
@@ -666,7 +670,8 @@ const Admin = () => {
                     </div>
                   ) : (
                     <div className="grid gap-3 sm:grid-cols-2">
-                      {leagueMatches.map((match) => (
+                    {leagueMatches && leagueMatches.length > 0 ? (
+                      leagueMatches.map((match) => (
                         <button
                           key={match.id}
                           onClick={() => setSelectedEventId(match.id)}
@@ -684,8 +689,11 @@ const Admin = () => {
                             {match.homeTeam} vs {match.awayTeam}
                           </div>
                         </button>
-                      ))}
-                    </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full text-center py-4 text-muted-foreground text-xs">No upcoming matches in this league</div>
+                    )}
+                  </div>
                   )}
                 </div>
               )}
@@ -702,19 +710,16 @@ const Admin = () => {
                   ) : (
                     <>
                       <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-                        {outcomes.map((outcome, idx) => (
+                      {outcomes && outcomes.length > 0 ? (
+                        outcomes.map((outcome, idx) => (
                           <button
                             key={idx}
-                            onClick={() => {
-                              const match = leagueMatches.find(m => m.id === selectedEventId);
-                              if (match) {
-                                // Pick selection logic
-                              }
-                            }}
                             className="group relative flex flex-col p-2.5 rounded-lg border border-border/50 bg-muted/5 hover:border-accent/40 hover:bg-accent/5 transition-all"
                           >
                             <div className="text-[9px] text-muted-foreground uppercase leading-none mb-1.5 truncate group-hover:text-accent/70">{outcome.market}</div>
-                            <div className="text-[10px] font-bold text-foreground leading-tight mb-1 truncate">{outcome.name.split(': ')[1]}</div>
+                            <div className="text-[10px] font-bold text-foreground leading-tight mb-1 truncate">
+                              {outcome.name.includes(': ') ? outcome.name.split(': ')[1] : outcome.name}
+                            </div>
                             <div className="text-xs font-display font-black text-accent mt-auto">{outcome.price.toFixed(2)}</div>
                             
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-accent/80 backdrop-blur-[2px] rounded-lg transition-opacity gap-1 px-1">
@@ -781,8 +786,11 @@ const Admin = () => {
                               </Button>
                             </div>
                           </button>
-                        ))}
-                      </div>
+                        ))
+                      ) : (
+                        <div className="col-span-full text-center py-4 text-muted-foreground text-xs">No active odds found for this match</div>
+                      )}
+                    </div>
                       <p className="text-[10px] text-muted-foreground italic flex items-center gap-1.5 mt-2">
                         <Zap className="w-3 h-3 text-accent" /> Hover over a pick to send it to Tip Form, Coupon, or Hero Section.
                       </p>
