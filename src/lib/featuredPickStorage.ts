@@ -45,7 +45,7 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
   };
 };
 
-export const saveFeaturedPick = async (pick: FeaturedPick): Promise<FeaturedPick | null> => {
+export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
   const dataToSave: any = {
     league: pick.league,
     kickoff: pick.kickoff,
@@ -60,9 +60,14 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<FeaturedPick
     description: pick.description
   };
 
-  const { data, error } = pick.id 
-    ? await supabase.from('featured_picks').update(dataToSave).eq('id', pick.id).select()
-    : await supabase.from('featured_picks').insert([dataToSave]).select();
+  let query;
+  if (pick.id) {
+    query = supabase.from('featured_picks').update(dataToSave).eq('id', pick.id);
+  } else {
+    query = supabase.from('featured_picks').insert([dataToSave]);
+  }
+
+  const { error } = await query;
 
   if (error) {
     console.error("Supabase error saving featured pick:", error);
@@ -71,22 +76,4 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<FeaturedPick
     }
     throw new Error(error.message || "Unknown Supabase error");
   }
-
-  const savedRecord = Array.isArray(data) ? data[0] : data;
-  if (!savedRecord) return null;
-
-  return {
-    id: savedRecord.id,
-    league: savedRecord.league,
-    kickoff: savedRecord.kickoff,
-    homeTeam: savedRecord.home_team,
-    awayTeam: savedRecord.away_team,
-    prediction: savedRecord.prediction,
-    odds: savedRecord.odds,
-    confidence: savedRecord.confidence,
-    status: savedRecord.status || "upcoming",
-    homeTeamLogo: savedRecord.home_team_logo,
-    awayTeamLogo: savedRecord.away_team_logo,
-    description: savedRecord.description
-  };
 };

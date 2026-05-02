@@ -679,18 +679,17 @@ const Admin = () => {
                   onClick={async () => {
                     try {
                       const homeLogo = await fetchTeamLogoUrl(featured.homeTeam);
-                      const awayLogo = await fetchTeamLogoUrl(featured.awayTeam);
-                      const savedPick = await saveFeaturedPick({
-                        ...featured,
-                        homeTeamLogo: homeLogo,
-                        awayTeamLogo: awayLogo
-                      });
-                      
-                      if (savedPick) {
-                        setFeatured(savedPick);
-                        toast({ title: "Featured Pick updated! ⚡" });
-                      }
-                    } catch (error: any) {
+                    const awayLogo = await fetchTeamLogoUrl(featured.awayTeam);
+                    await saveFeaturedPick({
+                      ...featured,
+                      homeTeamLogo: homeLogo,
+                      awayTeamLogo: awayLogo
+                    });
+                    
+                    // Always refresh from database to be 100% sure we have latest data
+                    await refreshData();
+                    toast({ title: "Featured Pick updated! ⚡" });
+                  } catch (error: any) {
                     console.error("Full error object:", error);
                     if (error.message?.includes("SQL_COLUMN_MISSING")) {
                       toast({ 
