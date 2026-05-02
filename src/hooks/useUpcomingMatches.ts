@@ -115,33 +115,40 @@ export const useEventOdds = (eventId: string | null) => {
         
         // Flatten bookmakers and markets
         if (data.bookmakers) {
-          Object.values(data.bookmakers).forEach((markets: any) => {
-            if (Array.isArray(markets)) {
-              markets.forEach((market: any) => {
-                if (Array.isArray(market.odds)) {
-                  market.odds.forEach((odd: any) => {
-                    // Convert market keys to readable names
-                    let marketName = market.name || 'Unknown';
-                    if (marketName === 'ML') marketName = '1X2';
-                    
-                    Object.entries(odd).forEach(([side, price]: [string, any]) => {
-                      if (side === 'updatedAt') return;
-                      
-                      let name = side;
-                      if (side === 'home') name = data.home || 'Home';
-                      if (side === 'away') name = data.away || 'Away';
-                      if (side === 'draw') name = 'Draw';
-                      
-                      allOutcomes.push({
-                        name: `${marketName}: ${name}`,
-                        price: parseFloat(price) || 0,
-                        market: marketName
-                      });
-                    });
+          // data.bookmakers can be an object or an array depending on the exact endpoint version
+          const bookmakersList = Array.isArray(data.bookmakers) ? data.bookmakers : Object.values(data.bookmakers);
+          
+          bookmakersList.forEach((bookmaker: any) => {
+            // Some versions have markets directly inside bookmaker, others have them in a markets property
+            const markets = Array.isArray(bookmaker) ? bookmaker : (bookmaker.markets || []);
+            
+            markets.forEach((market: any) => {
+              const odds = Array.isArray(market.odds) ? market.odds : [];
+              
+              odds.forEach((odd: any) => {
+                let marketName = market.name || 'Unknown';
+                if (marketName === 'ML') marketName = '1X2';
+                
+                Object.entries(odd).forEach(([side, price]: [string, any]) => {
+                  if (side === 'updatedAt' || side === 'handicap' || side === 'total') return;
+                  
+                  let name = side;
+                  if (side === 'home') name = data.home || 'Home';
+                  if (side === 'away') name = data.away || 'Away';
+                  if (side === 'draw') name = 'Draw';
+                  if (side === 'over') name = `Over ${odd.total || ''}`;
+                  if (side === 'under') name = `Under ${odd.total || ''}`;
+                  if (side === 'yes') name = 'BTTS: Yes';
+                  if (side === 'no') name = 'BTTS: No';
+                  
+                  allOutcomes.push({
+                    name: `${marketName}: ${name}`,
+                    price: parseFloat(price) || 0,
+                    market: marketName
                   });
-                }
+                });
               });
-            }
+            });
           });
         }
 
