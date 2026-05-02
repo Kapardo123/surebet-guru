@@ -25,7 +25,7 @@ const Admin = () => {
   const [tips, setTips] = useState<Tip[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [featured, setFeatured] = useState<FeaturedPick>({
-    league: "", kickoff: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", confidence: "High"
+    league: "", kickoff: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", confidence: "High", status: "upcoming"
   });
 
   useEffect(() => {
@@ -689,12 +689,20 @@ const Admin = () => {
                       // Wait a bit for Supabase to process before refreshing
                       setTimeout(async () => {
                         await refreshData();
-                        toast({ title: "Featured Pick updated! ⚡" });
-                      }, 500);
-                    } catch (error) {
-                      console.error("Failed to save featured pick", error);
+                      toast({ title: "Featured Pick updated! ⚡" });
+                    }, 500);
+                  } catch (error: any) {
+                    console.error("Failed to save featured pick", error);
+                    if (error.message === "COLUMN_MISSING_STATUS") {
+                      toast({ 
+                        title: "Status not saved!", 
+                        description: "You need to add the 'status' column in Supabase SQL Editor. Check the console for SQL command.",
+                        variant: "destructive" 
+                      });
+                    } else {
                       toast({ title: "Failed to update Featured Pick", variant: "destructive" });
                     }
+                  }
                   }}
                 >
                   <Zap className="w-4 h-4" />

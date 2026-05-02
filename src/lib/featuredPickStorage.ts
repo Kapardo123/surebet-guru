@@ -71,19 +71,21 @@ export const saveFeaturedPick = async (pick: FeaturedPick) => {
       : await supabase.from('featured_picks').insert([dataToSave]);
 
     if (error) {
-      // If error is about missing column 'status', try saving without it
-      if (error.message?.includes('column "status" of relation "featured_picks" does not exist') || 
-          error.code === '42703') {
-        console.warn("Status column missing in featured_picks table. Saving without status.");
-        delete dataToSave.status;
+      // Check for missing column error (PostgreSQL error code 42703)
+      if (error.code === '42703' || error.message?.includes('column "status"')) {
+        console.error("CRITICAL: 'status' column is missing in featured_picks table.");
+        // We still want to save the other fields, so we retry without status
+        const { status, ...restData } = dataToSave;
         const { error: retryError } = pick.id 
-          ? await supabase.from('featured_picks').update(dataToSave).eq('id', pick.id)
-          : await supabase.from('featured_picks').insert([dataToSave]);
+          ? await supabase.from('featured_picks').update(restData).eq('id', pick.id)
+          : await supabase.from('featured_picks').insert([restData]);
         
         if (retryError) throw retryError;
-      } else {
-        throw error;
+        
+        // Throw a specific error so the UI can tell the user about the SQL migration
+        throw new Error("COLUMN_MISSING_STATUS");
       }
+      throw error;
     }
   } catch (err) {
     console.error("Error in saveFeaturedPick:", err);
