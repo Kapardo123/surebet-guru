@@ -23,6 +23,24 @@ export interface League {
 
 const ODDS_API_KEY = "32bd7bdc9792fd0b5dd5fe53f7791410334554a3ff7e08746c0cfa470c3d1a2a";
 
+// Global variable to store active bookmakers
+let activeBookmakers: string[] = [];
+
+const fetchActiveBookmakers = async () => {
+  if (activeBookmakers.length > 0) return activeBookmakers;
+  try {
+    const response = await fetch(`https://api.odds-api.io/v3/bookmakers?apiKey=${ODDS_API_KEY}`);
+    if (!response.ok) return [];
+    const data = await response.json();
+    // Assuming data is an array of bookmaker objects with 'slug' property
+    activeBookmakers = Array.isArray(data) ? data.map((b: any) => b.slug) : [];
+    return activeBookmakers;
+  } catch (err) {
+    console.error("Error fetching bookmakers:", err);
+    return [];
+  }
+};
+
 export const useLeagues = () => {
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(false);
@@ -108,8 +126,18 @@ export const useEventOdds = (eventId: string | null) => {
       setLoading(true);
       console.log(`[OddsAPI] Fetching odds for event: ${eventId}`);
       try {
-        // Added &bookmakers=all to fix the 400 Bad Request error
-        const response = await fetch(`https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}&bookmakers=all`);
+        // Step 1: Ensure we have the list of bookmakers
+        const bookies = await fetchActiveBookmakers();
+        if (bookies.length === 0) {
+          console.warn("[OddsAPI] No active bookmakers found for your account.");
+          setOutcomes([]);
+          return;
+        }
+
+        // Step 2: Fetch odds using the correct bookmaker slugs
+        const bookmakersParam = bookies.join(',');
+        const response = await fetch(`https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}&bookmakers=${bookmakersParam}`);
+        
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.error || `API Error ${response.status}`);
@@ -117,7 +145,7 @@ export const useEventOdds = (eventId: string | null) => {
         const eventData = await response.json();
         
         if (!eventData || !eventData.bookmakers) {
-          console.warn("[OddsAPI] No bookmakers found for this event in response:", eventsData);
+          console.warn("[OddsAPI] No bookmakers found for this event in response:", eventData);
           setOutcomes([]);
           return;
         }
@@ -169,7 +197,7 @@ export const useEventOdds = (eventId: string | null) => {
         }, {} as Record<string, OddsOutcome>);
 
         const finalOutcomes = Object.values(bestOdds);
-        console.log(`[OddsAPI] Successfully parsed ${finalOutcomes.length} outcomes`);
+        console.log(`[OddsAPI] Successfully parsed ${finalOutcomes.length} outcomes from ${Object.keys(bookmakers).length} bookies`);
         setOutcomes(finalOutcomes);
       } catch (err) {
         console.error("[OddsAPI] Error in useEventOdds:", err);
