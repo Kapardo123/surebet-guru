@@ -61,8 +61,8 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<FeaturedPick
   };
 
   const { data, error } = pick.id 
-    ? await supabase.from('featured_picks').update(dataToSave).eq('id', pick.id).select().single()
-    : await supabase.from('featured_picks').insert([dataToSave]).select().single();
+    ? await supabase.from('featured_picks').update(dataToSave).eq('id', pick.id).select()
+    : await supabase.from('featured_picks').insert([dataToSave]).select();
 
   if (error) {
     console.error("Supabase error saving featured pick:", error);
@@ -72,20 +72,21 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<FeaturedPick
     throw new Error(error.message || "Unknown Supabase error");
   }
 
-  if (!data) return null;
+  const savedRecord = Array.isArray(data) ? data[0] : data;
+  if (!savedRecord) return null;
 
   return {
-    id: data.id,
-    league: data.league,
-    kickoff: data.kickoff,
-    homeTeam: data.home_team,
-    awayTeam: data.away_team,
-    prediction: data.prediction,
-    odds: data.odds,
-    confidence: data.confidence,
-    status: data.status || "upcoming",
-    homeTeamLogo: data.home_team_logo,
-    awayTeamLogo: data.away_team_logo,
-    description: data.description
+    id: savedRecord.id,
+    league: savedRecord.league,
+    kickoff: savedRecord.kickoff,
+    homeTeam: savedRecord.home_team,
+    awayTeam: savedRecord.away_team,
+    prediction: savedRecord.prediction,
+    odds: savedRecord.odds,
+    confidence: savedRecord.confidence,
+    status: savedRecord.status || "upcoming",
+    homeTeamLogo: savedRecord.home_team_logo,
+    awayTeamLogo: savedRecord.away_team_logo,
+    description: savedRecord.description
   };
 };
