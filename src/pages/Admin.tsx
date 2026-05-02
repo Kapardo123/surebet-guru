@@ -273,8 +273,6 @@ const Admin = () => {
       kickoff: `${match.date} ${match.time}`,
       odds: match.odds?.homeWin?.toString() || prev.odds,
     }));
-    setSelectedEventId(match.id);
-    setSelectedMarket(null);
     toast({ title: `Match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
 
@@ -705,21 +703,26 @@ const Admin = () => {
                       <RefreshCw className="w-4 h-4 animate-spin" /> Fetching matches...
                     </div>
                   ) : (
-                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="grid gap-3 sm:grid-cols-2">
                     {leagueMatches && leagueMatches.length > 0 ? (
                       leagueMatches.map((match) => (
                         <button
                           key={match.id}
-                          onClick={() => setSelectedEventId(match.id)}
+                          type="button"
+                          onClick={() => {
+                            console.log("Selected match ID:", match.id);
+                            setSelectedEventId(match.id);
+                            setSelectedMarket(null);
+                          }}
                           className={`flex flex-col gap-1 p-3 rounded-xl border text-left transition-all ${
                             selectedEventId === match.id 
-                              ? 'bg-accent/10 border-accent shadow-[0_0_15px_rgba(236,72,153,0.1)]' 
+                              ? 'bg-accent/20 border-accent shadow-[0_0_20px_rgba(236,72,153,0.2)] scale-[1.02]' 
                               : 'bg-muted/10 border-border/50 hover:border-accent/30'
                           }`}
                         >
                           <div className="flex justify-between items-center text-[10px] text-muted-foreground mb-1 uppercase tracking-tighter">
                             <span>{match.date} {match.time}</span>
-                            {selectedEventId === match.id && <Check className="w-3 h-3 text-accent" />}
+                            {selectedEventId === match.id && <Check className="w-3.5 h-3.5 text-accent animate-in zoom-in" />}
                           </div>
                           <div className="font-bold text-xs truncate">
                             {match.homeTeam} vs {match.awayTeam}
@@ -736,8 +739,11 @@ const Admin = () => {
 
               {/* Step 3: Select Odds & Pick Target Form */}
               {selectedEventId && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 pt-4 border-t border-accent/10">
-                  <Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Step 3: Select Your Pick</Label>
+                <div id="step-3-container" className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500 pt-6 border-t-2 border-accent/20 mt-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-[10px] font-black">3</div>
+                    <Label className="text-xs uppercase tracking-widest text-foreground font-black">Step 3: Select Your Pick & Send to Form</Label>
+                  </div>
                   
                   {oddsLoading ? (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
