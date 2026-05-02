@@ -23,23 +23,8 @@ export interface League {
 
 const ODDS_API_KEY = "32bd7bdc9792fd0b5dd5fe53f7791410334554a3ff7e08746c0cfa470c3d1a2a";
 
-// Global variable to store active bookmakers
-let activeBookmakers: string[] = [];
-
-const fetchActiveBookmakers = async () => {
-  if (activeBookmakers.length > 0) return activeBookmakers;
-  try {
-    const response = await fetch(`https://api.odds-api.io/v3/bookmakers?apiKey=${ODDS_API_KEY}`);
-    if (!response.ok) return [];
-    const data = await response.json();
-    // Assuming data is an array of bookmaker objects with 'slug' property
-    activeBookmakers = Array.isArray(data) ? data.map((b: any) => b.slug) : [];
-    return activeBookmakers;
-  } catch (err) {
-    console.error("Error fetching bookmakers:", err);
-    return [];
-  }
-};
+// Explicit list of your bookmakers to ensure they are always used
+const MY_BOOKMAKERS = ["bet365", "1xbet"];
 
 export const useLeagues = () => {
   const [leagues, setLeagues] = useState<League[]>([]);
@@ -124,81 +109,28 @@ export const useEventOdds = (eventId: string | null) => {
 
     const fetchOdds = async () => {
       setLoading(true);
-      console.log(`[OddsAPI] Fetching odds for event: ${eventId}`);
+      console.log(`[OddsAPI] Fetching odds for event: ${eventId} from ${MY_BOOKMAKERS.join(', ')}`);
       try {
-        // Step 1: Ensure we have the list of bookmakers
-        const bookies = await fetchActiveBookmakers();
-        if (bookies.length === 0) {
-          console.warn("[OddsAPI] No active bookmakers found for your account.");
-          setOutcomes([]);
-          return;
-        }
-
-        // Step 2: Fetch odds using the correct bookmaker slugs (max 30 allowed by API)
-        const bookmakersParam = bookies.slice(0, 30).join(',');
+        // We use your specific bookmakers directly to avoid any "invalid bookmaker" errors
+        const bookmakersParam = MY_BOOKMAKERS.join(',');
         const response = await fetch(`https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}&bookmakers=${bookmakersParam}`);
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
+          // If the API says these bookmakers are invalid, we'll try without the parameter as a last resort
+          if (response.status === 400) {
+            console.warn("[OddsAPI] Specific bookmakers failed, trying default fetch...");
+            const fallbackRes = await fetch(`https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}`);
+            if (!fallbackRes.ok) throw new Error(`API Error ${fallbackRes.status}`);
+            const fallbackData = await fallbackRes.json();
+            processEventData(fallbackData);
+            return;
+          }
           throw new Error(errorData.error || `API Error ${response.status}`);
         }
+        
         const eventData = await response.json();
-        
-        if (!eventData || !eventData.bookmakers) {
-          console.warn("[OddsAPI] No bookmakers found for this event in response:", eventData);
-          setOutcomes([]);
-          return;
-        }
-
-        const allOutcomes: OddsOutcome[] = [];
-        const bookmakers = eventData.bookmakers;
-        
-        // Process each bookmaker
-        Object.entries(bookmakers).forEach(([bookieName, markets]: [string, any]) => {
-          if (!Array.isArray(markets)) return;
-
-          markets.forEach((market: any) => {
-            const marketName = market.name || 'Unknown';
-            const readableMarket = marketName === 'ML' ? '1X2' : 
-                                 marketName === 'OU' ? 'Over/Under' : 
-                                 marketName === 'BTTS' ? 'BTTS' : marketName;
-
-            if (Array.isArray(market.odds)) {
-              market.odds.forEach((odd: any) => {
-                Object.entries(odd).forEach(([side, price]: [string, any]) => {
-                  if (['updatedAt', 'handicap', 'total', 'marketId'].includes(side)) return;
-                  
-                  let outcomeName = side;
-                  if (side === 'home') outcomeName = eventData.home || 'Home';
-                  if (side === 'away') outcomeName = eventData.away || 'Away';
-                  if (side === 'draw') outcomeName = 'Draw';
-                  if (side === 'over') outcomeName = `Over ${odd.total || ''}`;
-                  if (side === 'under') outcomeName = `Under ${odd.total || ''}`;
-                  if (side === 'yes') outcomeName = 'BTTS: Yes';
-                  if (side === 'no') outcomeName = 'BTTS: No';
-                  
-                  allOutcomes.push({
-                    name: `${readableMarket}: ${outcomeName}`,
-                    price: parseFloat(price) || 0,
-                    market: readableMarket
-                  });
-                });
-              });
-            }
-          });
-        });
-
-        // Unique by name and pick best price
-        const bestOdds = allOutcomes.reduce((acc, curr) => {
-          if (!acc[curr.name] || acc[curr.name].price < curr.price) {
-            acc[curr.name] = curr;
-          }
-          return acc;
-        }, {} as Record<string, OddsOutcome>);
-
-        const finalOutcomes = Object.values(bestOdds);
-        console.log(`[OddsAPI] Successfully parsed ${finalOutcomes.length} outcomes from ${Object.keys(bookmakers).length} bookies`);
-        setOutcomes(finalOutcomes);
+        processEventData(eventData);
       } catch (err) {
         console.error("[OddsAPI] Error in useEventOdds:", err);
         setOutcomes([]);
@@ -206,6 +138,63 @@ export const useEventOdds = (eventId: string | null) => {
         setLoading(false);
       }
     };
+
+    const processEventData = (eventData: any) => {
+      if (!eventData || !eventData.bookmakers) {
+        console.warn("[OddsAPI] No bookmakers found for this event:", eventData);
+        setOutcomes([]);
+        return;
+      }
+
+      const allOutcomes: OddsOutcome[] = [];
+      const bookmakers = eventData.bookmakers;
+      
+      Object.entries(bookmakers).forEach(([bookieName, markets]: [string, any]) => {
+        if (!Array.isArray(markets)) return;
+
+        markets.forEach((market: any) => {
+          const marketName = market.name || 'Unknown';
+          const readableMarket = marketName === 'ML' ? '1X2' : 
+                               marketName === 'OU' ? 'Over/Under' : 
+                               marketName === 'BTTS' ? 'BTTS' : marketName;
+
+          if (Array.isArray(market.odds)) {
+            market.odds.forEach((odd: any) => {
+              Object.entries(odd).forEach(([side, price]: [string, any]) => {
+                if (['updatedAt', 'handicap', 'total', 'marketId'].includes(side)) return;
+                
+                let outcomeName = side;
+                if (side === 'home') outcomeName = eventData.home || 'Home';
+                if (side === 'away') outcomeName = eventData.away || 'Away';
+                if (side === 'draw') outcomeName = 'Draw';
+                if (side === 'over') outcomeName = `Over ${odd.total || ''}`;
+                if (side === 'under') outcomeName = `Under ${odd.total || ''}`;
+                if (side === 'yes') outcomeName = 'BTTS: Yes';
+                if (side === 'no') outcomeName = 'BTTS: No';
+                
+                allOutcomes.push({
+                  name: `${readableMarket}: ${outcomeName}`,
+                  price: parseFloat(price) || 0,
+                  market: readableMarket
+                });
+              });
+            });
+          }
+        });
+      });
+
+      const bestOdds = allOutcomes.reduce((acc, curr) => {
+        if (!acc[curr.name] || acc[curr.name].price < curr.price) {
+          acc[curr.name] = curr;
+        }
+        return acc;
+      }, {} as Record<string, OddsOutcome>);
+
+      const finalOutcomes = Object.values(bestOdds);
+      console.log(`[OddsAPI] Successfully parsed ${finalOutcomes.length} outcomes`);
+      setOutcomes(finalOutcomes);
+    };
+
     fetchOdds();
   }, [eventId]);
 
