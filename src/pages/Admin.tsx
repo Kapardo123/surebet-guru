@@ -293,6 +293,30 @@ const Admin = () => {
     toast({ title: "Featured pick odds updated!" });
   };
 
+  const handleSelectCouponMatch = (match: UpcomingMatch) => {
+    setCouponMatchForm((prev) => ({
+      ...prev,
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      league: match.league,
+      kickoff: `${match.date} ${match.time}`,
+      odds: match.odds?.homeWin?.toString() || prev.odds,
+    }));
+    toast({ title: `Coupon match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
+  };
+
+  const handleSelectFeaturedMatch = (match: UpcomingMatch) => {
+    setFeatured((prev) => ({
+      ...prev,
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      league: match.league,
+      kickoff: `${match.date} ${match.time}`,
+      odds: match.odds?.homeWin?.toString() || prev.odds,
+    }));
+    toast({ title: `Featured match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.league || !form.homeTeam || !form.awayTeam || !form.prediction || !form.odds || !form.kickoff) {
