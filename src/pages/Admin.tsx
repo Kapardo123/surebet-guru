@@ -253,6 +253,16 @@ const Admin = () => {
   const { matches: leagueMatches, loading: matchesLoading } = useLeagueMatches(selectedLeague);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const { outcomes, loading: oddsLoading } = useEventOdds(selectedEventId);
+  const [selectedMarket, setSelectedMarket] = useState<string | null>(null);
+
+  // Group outcomes by market
+  const groupedOutcomes = outcomes.reduce((acc, outcome) => {
+    if (!acc[outcome.market]) acc[outcome.market] = [];
+    acc[outcome.market].push(outcome);
+    return acc;
+  }, {} as Record<string, OddsOutcome[]>);
+
+  const markets = Object.keys(groupedOutcomes);
 
   const handleSelectMatch = (match: UpcomingMatch) => {
     setForm((prev) => ({
@@ -263,6 +273,8 @@ const Admin = () => {
       kickoff: `${match.date} ${match.time}`,
       odds: match.odds?.homeWin?.toString() || prev.odds,
     }));
+    setSelectedEventId(match.id);
+    setSelectedMarket(null);
     toast({ title: `Match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
 
@@ -732,93 +744,122 @@ const Admin = () => {
                       <RefreshCw className="w-4 h-4 animate-spin" /> Fetching real-time odds...
                     </div>
                   ) : (
-                    <>
-                      <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-                      {outcomes && outcomes.length > 0 ? (
-                        outcomes.map((outcome, idx) => (
-                          <button
-                            key={idx}
-                            className="group relative flex flex-col p-2.5 rounded-lg border border-border/50 bg-muted/5 hover:border-accent/40 hover:bg-accent/5 transition-all"
-                          >
-                            <div className="text-[9px] text-muted-foreground uppercase leading-none mb-1.5 truncate group-hover:text-accent/70">{outcome.market}</div>
-                            <div className="text-[10px] font-bold text-foreground leading-tight mb-1 truncate">
-                              {outcome.name.includes(': ') ? outcome.name.split(': ')[1] : outcome.name}
-                            </div>
-                            <div className="text-xs font-display font-black text-accent mt-auto">{outcome.price.toFixed(2)}</div>
-                            
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-accent/80 backdrop-blur-[2px] rounded-lg transition-opacity gap-1 px-1">
-                              <Button 
-                                size="icon" 
-                                className="h-7 w-7 rounded-full bg-white text-accent hover:bg-white/90" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const match = leagueMatches.find(m => m.id === selectedEventId);
-                                  if (match) {
-                                    handleSelectMatch(match);
-                                    handleSelectOutcome(outcome);
-                                  }
-                                }}
-                                title="Send to Add Tip"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button 
-                                size="icon" 
-                                className="h-7 w-7 rounded-full bg-white text-primary hover:bg-white/90" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const match = leagueMatches.find(m => m.id === selectedEventId);
-                                  if (match) {
-                                    setCouponMatchForm({
-                                      homeTeam: match.homeTeam,
-                                      awayTeam: match.awayTeam,
-                                      league: match.league,
-                                      kickoff: `${match.date} ${match.time}`,
-                                      sport: "Football",
-                                      prediction: outcome.name,
-                                      odds: outcome.price.toString()
-                                    });
-                                    toast({ title: "Sent to Coupon Builder" });
-                                  }
-                                }}
-                                title="Send to Coupon"
-                              >
-                                <Receipt className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button 
-                                size="icon" 
-                                className="h-7 w-7 rounded-full bg-white text-yellow-500 hover:bg-white/90" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const match = leagueMatches.find(m => m.id === selectedEventId);
-                                  if (match) {
-                                    setFeatured({
-                                      ...featured,
-                                      homeTeam: match.homeTeam,
-                                      awayTeam: match.awayTeam,
-                                      league: match.league,
-                                      kickoff: `${match.date} ${match.time}`,
-                                      prediction: outcome.name,
-                                      odds: outcome.price.toString()
-                                    });
-                                    toast({ title: "Sent to Hero Pick" });
-                                  }
-                                }}
-                                title="Send to Hero"
-                              >
-                                <Zap className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </button>
-                        ))
-                      ) : (
+                    <div className="space-y-4">
+                      {/* Market Tabs */}
+                      <div className="flex flex-wrap gap-2">
+                        {markets.length > 0 ? (
+                          markets.map((market) => (
+                            <Button
+                              key={market}
+                              variant={selectedMarket === market ? "default" : "outline"}
+                              size="sm"
+                              className={`h-8 text-[10px] uppercase font-bold tracking-wider ${selectedMarket === market ? 'bg-accent text-accent-foreground' : 'border-accent/20 text-muted-foreground'}`}
+                              onClick={() => setSelectedMarket(market)}
+                            >
+                              {market}
+                            </Button>
+                          ))
+                        ) : (
+                          <div className="text-xs text-muted-foreground italic">No markets available for this event</div>
+                        )}
+                      </div>
+
+                      {/* Odds for selected market */}
+                      {selectedMarket && groupedOutcomes[selectedMarket] && (
+                        <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 animate-in fade-in zoom-in-95 duration-200">
+                          {groupedOutcomes[selectedMarket].map((outcome, idx) => (
+                            <button
+                              key={idx}
+                              className="group relative flex flex-col p-2.5 rounded-lg border border-accent/30 bg-accent/5 hover:border-accent hover:bg-accent/10 transition-all text-left"
+                            >
+                              <div className="text-[10px] font-bold text-foreground leading-tight mb-1 truncate">
+                                {outcome.name.includes(': ') ? outcome.name.split(': ')[1] : outcome.name}
+                              </div>
+                              <div className="text-xs font-display font-black text-accent mt-auto">{outcome.price.toFixed(2)}</div>
+                              
+                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-accent/90 backdrop-blur-[2px] rounded-lg transition-opacity gap-1 px-1">
+                                <Button 
+                                  size="icon" 
+                                  className="h-7 w-7 rounded-full bg-white text-accent hover:bg-white/90 shadow-xl" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const match = leagueMatches.find(m => m.id === selectedEventId);
+                                    if (match) {
+                                      handleSelectMatch(match);
+                                      handleSelectOutcome(outcome);
+                                    }
+                                  }}
+                                  title="Send to Add Tip"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button 
+                                  size="icon" 
+                                  className="h-7 w-7 rounded-full bg-white text-primary hover:bg-white/90 shadow-xl" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const match = leagueMatches.find(m => m.id === selectedEventId);
+                                    if (match) {
+                                      setCouponMatchForm({
+                                        homeTeam: match.homeTeam,
+                                        awayTeam: match.awayTeam,
+                                        league: match.league,
+                                        kickoff: `${match.date} ${match.time}`,
+                                        sport: "Football",
+                                        prediction: outcome.name,
+                                        odds: outcome.price.toString()
+                                      });
+                                      toast({ title: "Sent to Coupon Builder" });
+                                    }
+                                  }}
+                                  title="Send to Coupon"
+                                >
+                                  <Receipt className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button 
+                                  size="icon" 
+                                  className="h-7 w-7 rounded-full bg-white text-yellow-500 hover:bg-white/90 shadow-xl" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const match = leagueMatches.find(m => m.id === selectedEventId);
+                                    if (match) {
+                                      setFeatured({
+                                        ...featured,
+                                        homeTeam: match.homeTeam,
+                                        awayTeam: match.awayTeam,
+                                        league: match.league,
+                                        kickoff: `${match.date} ${match.time}`,
+                                        prediction: outcome.name,
+                                        odds: outcome.price.toString()
+                                      });
+                                      toast({ title: "Sent to Hero Pick" });
+                                    }
+                                  }}
+                                  title="Send to Hero"
+                                >
+                                  <Zap className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {!selectedMarket && outcomes.length > 0 && (
+                        <div className="text-center py-8 border-2 border-dashed border-accent/10 rounded-xl bg-accent/5">
+                          <TrendingUp className="w-8 h-8 text-accent/30 mx-auto mb-2" />
+                          <p className="text-xs text-muted-foreground">Select a market above to see available odds</p>
+                        </div>
+                      )}
+
+                      {outcomes.length === 0 && (
                         <div className="col-span-full text-center py-4 text-muted-foreground text-xs">No active odds found for this match</div>
                       )}
-                    </div>
+                      
                       <p className="text-[10px] text-muted-foreground italic flex items-center gap-1.5 mt-2">
                         <Zap className="w-3 h-3 text-accent" /> Hover over a pick to send it to Tip Form, Coupon, or Hero Section.
                       </p>
-                    </>
+                    </div>
                   )}
                 </div>
               )}
