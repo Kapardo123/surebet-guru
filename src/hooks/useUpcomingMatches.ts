@@ -222,28 +222,61 @@ export const useEventOdds = (eventId: string | null) => {
       const allOutcomes: OddsOutcome[] = [];
       const bookmakers = eventData.bookmakers;
       
+      const marketNameMap: Record<string, string> = {
+        'ML': '1X2',
+        'OU': 'Totals',
+        'BTTS': 'Both Teams to Score',
+        'DC': 'Double Chance',
+        'DNB': 'Draw No Bet',
+        'AH': 'Asian Handicap',
+        'EH': 'European Handicap',
+        'CS': 'Correct Score',
+        'HTFT': 'HT/FT',
+        'HT_ML': 'HT 1X2',
+        'HT_OU': 'HT Totals',
+        'HT_BTTS': 'HT BTTS',
+        'Corners': 'Corners',
+        'Cards': 'Cards'
+      };
+
       Object.entries(bookmakers).forEach(([bookieName, markets]: [string, any]) => {
         if (!Array.isArray(markets)) return;
 
         markets.forEach((market: any) => {
-          const marketName = market.name || 'Unknown';
-          const readableMarket = marketName === 'ML' ? '1X2' : 
-                               marketName === 'OU' ? 'Over/Under' : 
-                               marketName === 'BTTS' ? 'BTTS' : marketName;
+          const rawMarketName = market.name || 'Unknown';
+          const readableMarket = marketNameMap[rawMarketName] || rawMarketName;
 
           if (Array.isArray(market.odds)) {
             market.odds.forEach((odd: any) => {
               Object.entries(odd).forEach(([side, price]: [string, any]) => {
-                if (['updatedAt', 'handicap', 'total', 'marketId'].includes(side)) return;
+                // Skip meta-fields
+                if (['updatedAt', 'marketId'].includes(side)) return;
                 
                 let outcomeName = side;
+                const handicap = odd.hdp || odd.handicap || odd.total || '';
+                
+                // Format outcome based on side key
                 if (side === 'home') outcomeName = eventData.home || 'Home';
-                if (side === 'away') outcomeName = eventData.away || 'Away';
-                if (side === 'draw') outcomeName = 'Draw';
-                if (side === 'over') outcomeName = `Over ${odd.total || ''}`;
-                if (side === 'under') outcomeName = `Under ${odd.total || ''}`;
-                if (side === 'yes') outcomeName = 'BTTS: Yes';
-                if (side === 'no') outcomeName = 'BTTS: No';
+                else if (side === 'away') outcomeName = eventData.away || 'Away';
+                else if (side === 'draw') outcomeName = 'Draw';
+                else if (side === 'over') outcomeName = `Over ${handicap}`;
+                else if (side === 'under') outcomeName = `Under ${handicap}`;
+                else if (side === 'yes') outcomeName = 'Yes';
+                else if (side === 'no') outcomeName = 'No';
+                else if (side === '1X') outcomeName = '1X';
+                else if (side === '12') outcomeName = '12';
+                else if (side === 'X2') outcomeName = 'X2';
+                else if (side === '1') outcomeName = eventData.home || 'Home';
+                else if (side === '2') outcomeName = eventData.away || 'Away';
+                // HT/FT formats like home_home, home_draw, etc.
+                else if (side.includes('_')) {
+                  outcomeName = side.replace('_', '/').replace('home', 'H').replace('away', 'A').replace('draw', 'D');
+                }
+
+                // Add handicap/total if present and not already in name
+                if (handicap && !outcomeName.includes(handicap.toString())) {
+                  outcomeName += ` (${handicap > 0 ? '+' : ''}${handicap})`;
+                }
                 
                 allOutcomes.push({
                   name: `${readableMarket}: ${outcomeName}`,
@@ -256,6 +289,7 @@ export const useEventOdds = (eventId: string | null) => {
         });
       });
 
+      // Keep only best price for each unique outcome name
       const bestOdds = allOutcomes.reduce((acc, curr) => {
         if (!acc[curr.name] || acc[curr.name].price < curr.price) {
           acc[curr.name] = curr;
