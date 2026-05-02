@@ -106,51 +106,59 @@ export const useEventOdds = (eventId: string | null) => {
 
     const fetchOdds = async () => {
       setLoading(true);
+      console.log(`[OddsAPI] Fetching odds for event: ${eventId}`);
       try {
-        const response = await fetch(`https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}`);
-        if (!response.ok) throw new Error("Failed to fetch odds");
-        const data = await response.json();
+        // Use multi-odds endpoint as it's the most reliable for v3
+        const response = await fetch(`https://api.odds-api.io/v3/odds/multi?apiKey=${ODDS_API_KEY}&eventIds=${eventId}`);
+        if (!response.ok) throw new Error(`Failed to fetch odds: ${response.status}`);
+        const eventsData = await response.json();
         
+        // multi-odds returns an array of events
+        const eventData = Array.isArray(eventsData) ? eventsData[0] : eventsData;
+        
+        if (!eventData || !eventData.bookmakers) {
+          console.warn("[OddsAPI] No bookmakers found for this event in response:", eventsData);
+          setOutcomes([]);
+          return;
+        }
+
         const allOutcomes: OddsOutcome[] = [];
+        const bookmakers = eventData.bookmakers;
         
-        // Flatten bookmakers and markets
-        if (data.bookmakers) {
-          // data.bookmakers can be an object or an array depending on the exact endpoint version
-          const bookmakersList = Array.isArray(data.bookmakers) ? data.bookmakers : Object.values(data.bookmakers);
-          
-          bookmakersList.forEach((bookmaker: any) => {
-            // Some versions have markets directly inside bookmaker, others have them in a markets property
-            const markets = Array.isArray(bookmaker) ? bookmaker : (bookmaker.markets || []);
-            
-            markets.forEach((market: any) => {
-              const odds = Array.isArray(market.odds) ? market.odds : [];
-              
-              odds.forEach((odd: any) => {
-                let marketName = market.name || 'Unknown';
-                if (marketName === 'ML') marketName = '1X2';
-                
+        // Process each bookmaker
+        Object.entries(bookmakers).forEach(([bookieName, markets]: [string, any]) => {
+          if (!Array.isArray(markets)) return;
+
+          markets.forEach((market: any) => {
+            const marketName = market.name || 'Unknown';
+            const readableMarket = marketName === 'ML' ? '1X2' : 
+                                 marketName === 'OU' ? 'Over/Under' : 
+                                 marketName === 'BTTS' ? 'BTTS' : marketName;
+
+            if (Array.isArray(market.odds)) {
+              market.odds.forEach((odd: any) => {
                 Object.entries(odd).forEach(([side, price]: [string, any]) => {
-                  if (side === 'updatedAt' || side === 'handicap' || side === 'total') return;
+                  if (['updatedAt', 'handicap', 'total', 'marketId'].includes(side)) return;
                   
-                  let name = side;
-                  if (side === 'home') name = data.home || 'Home';
-                  if (side === 'away') name = data.away || 'Away';
-                  if (side === 'draw') name = 'Draw';
-                  if (side === 'over') name = `Over ${odd.total || ''}`;
-                  if (side === 'under') name = `Under ${odd.total || ''}`;
-                  if (side === 'yes') name = 'BTTS: Yes';
-                  if (side === 'no') name = 'BTTS: No';
+                  let outcomeName = side;
+                  if (side === 'home') outcomeName = eventData.home || 'Home';
+                  if (side === 'away') outcomeName = eventData.away || 'Away';
+                  if (side === 'draw') outcomeName = 'Draw';
+                  if (side === 'over') outcomeName = `Over ${odd.total || ''}`;
+                  if (side === 'under') outcomeName = `Under ${odd.total || ''}`;
+                  if (side === 'yes') outcomeName = 'BTTS: Yes';
+                  if (side === 'no') outcomeName = 'BTTS: No';
                   
                   allOutcomes.push({
-                    name: `${marketName}: ${name}`,
+                    name: `${readableMarket}: ${outcomeName}`,
                     price: parseFloat(price) || 0,
-                    market: marketName
+                    market: readableMarket
                   });
                 });
               });
-            });
+            }
           });
-        }
+        });
 
         // Unique by name and pick best price
         const bestOdds = allOutcomes.reduce((acc, curr) => {
@@ -160,9 +168,12 @@ export const useEventOdds = (eventId: string | null) => {
           return acc;
         }, {} as Record<string, OddsOutcome>);
 
-        setOutcomes(Object.values(bestOdds));
+        const finalOutcomes = Object.values(bestOdds);
+        console.log(`[OddsAPI] Successfully parsed ${finalOutcomes.length} outcomes`);
+        setOutcomes(finalOutcomes);
       } catch (err) {
-        console.error(err);
+        console.error("[OddsAPI] Error in useEventOdds:", err);
+        setOutcomes([]);
       } finally {
         setLoading(false);
       }
