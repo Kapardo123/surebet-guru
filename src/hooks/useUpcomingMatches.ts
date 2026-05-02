@@ -134,8 +134,8 @@ export const useEventOdds = (eventId: string | null) => {
           return;
         }
 
-        // Step 2: Fetch odds using the correct bookmaker slugs
-        const bookmakersParam = bookies.join(',');
+        // Step 2: Fetch odds using the correct bookmaker slugs (max 30 allowed by API)
+        const bookmakersParam = bookies.slice(0, 30).join(',');
         const response = await fetch(`https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}&bookmakers=${bookmakersParam}`);
         
         if (!response.ok) {
