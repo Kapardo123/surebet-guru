@@ -23,9 +23,6 @@ export interface League {
 
 const ODDS_API_KEY = "32bd7bdc9792fd0b5dd5fe53f7791410334554a3ff7e08746c0cfa470c3d1a2a";
 
-// Explicit list of your bookmakers to ensure they are always used
-const MY_BOOKMAKERS = ["bet365", "1xbet"];
-
 export const useLeagues = () => {
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(false);
@@ -109,23 +106,15 @@ export const useEventOdds = (eventId: string | null) => {
 
     const fetchOdds = async () => {
       setLoading(true);
-      console.log(`[OddsAPI] Fetching odds for event: ${eventId} from ${MY_BOOKMAKERS.join(', ')}`);
+      console.log(`[OddsAPI] Fetching odds for event: ${eventId}`);
       try {
-        // We use your specific bookmakers directly to avoid any "invalid bookmaker" errors
-        const bookmakersParam = MY_BOOKMAKERS.join(',');
-        const response = await fetch(`https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}&bookmakers=${bookmakersParam}`);
+        // We removed explicit bookmaker filtering because 'bet365' or '1xbet' might have different slugs 
+        // depending on the region or API version. By removing the parameter, 
+        // the API will return odds from all bookmakers active on your account.
+        const response = await fetch(`https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}`);
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          // If the API says these bookmakers are invalid, we'll try without the parameter as a last resort
-          if (response.status === 400) {
-            console.warn("[OddsAPI] Specific bookmakers failed, trying default fetch...");
-            const fallbackRes = await fetch(`https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}`);
-            if (!fallbackRes.ok) throw new Error(`API Error ${fallbackRes.status}`);
-            const fallbackData = await fallbackRes.json();
-            processEventData(fallbackData);
-            return;
-          }
           throw new Error(errorData.error || `API Error ${response.status}`);
         }
         
