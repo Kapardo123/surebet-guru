@@ -692,15 +692,21 @@ const Admin = () => {
                       toast({ title: "Featured Pick updated! ⚡" });
                     }, 500);
                   } catch (error: any) {
-                    console.error("Failed to save featured pick", error);
-                    if (error.message === "COLUMN_MISSING_STATUS") {
+                    console.error("Full error object:", error);
+                    if (error.message?.includes("SQL_COLUMN_MISSING")) {
                       toast({ 
-                        title: "Status not saved!", 
-                        description: "You need to add the 'status' column in Supabase SQL Editor. Check the console for SQL command.",
+                        title: "Database Error: Missing 'status'", 
+                        description: "CRITICAL: You MUST run the SQL command in Supabase to add the status column. See instructions below.",
                         variant: "destructive" 
                       });
+                      console.log("%c>>> RUN THIS SQL IN SUPABASE SQL EDITOR:", "color: yellow; font-weight: bold; font-size: 14px;");
+                      console.log("%cALTER TABLE featured_picks ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'upcoming';", "color: #00ff00; background: #222; padding: 5px;");
                     } else {
-                      toast({ title: "Failed to update Featured Pick", variant: "destructive" });
+                      toast({ 
+                        title: "Update Failed", 
+                        description: error.message || "Unknown error occurred while saving.",
+                        variant: "destructive" 
+                      });
                     }
                   }
                   }}

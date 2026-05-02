@@ -54,41 +54,26 @@ export const saveFeaturedPick = async (pick: FeaturedPick) => {
     prediction: pick.prediction,
     odds: pick.odds,
     confidence: pick.confidence,
+    status: pick.status || "upcoming",
     home_team_logo: pick.homeTeamLogo,
     away_team_logo: pick.awayTeamLogo,
     description: pick.description
   };
 
-  // Only add status if it's provided and we want to try saving it
-  // In case the column doesn't exist yet, we'll try to save without it if it fails
-  if (pick.status) {
-    dataToSave.status = pick.status;
-  }
+  console.log("Saving Featured Pick with data:", dataToSave);
 
-  try {
-    const { error } = pick.id 
-      ? await supabase.from('featured_picks').update(dataToSave).eq('id', pick.id)
-      : await supabase.from('featured_picks').insert([dataToSave]);
+  const { data, error } = pick.id 
+    ? await supabase.from('featured_picks').update(dataToSave).eq('id', pick.id).select()
+    : await supabase.from('featured_picks').insert([dataToSave]).select();
 
-    if (error) {
-      // Check for missing column error (PostgreSQL error code 42703)
-      if (error.code === '42703' || error.message?.includes('column "status"')) {
-        console.error("CRITICAL: 'status' column is missing in featured_picks table.");
-        // We still want to save the other fields, so we retry without status
-        const { status, ...restData } = dataToSave;
-        const { error: retryError } = pick.id 
-          ? await supabase.from('featured_picks').update(restData).eq('id', pick.id)
-          : await supabase.from('featured_picks').insert([restData]);
-        
-        if (retryError) throw retryError;
-        
-        // Throw a specific error so the UI can tell the user about the SQL migration
-        throw new Error("COLUMN_MISSING_STATUS");
-      }
-      throw error;
+  if (error) {
+    console.error("Supabase error saving featured pick:", error);
+    // If it's a missing column error, give a very clear message
+    if (error.code === '42703' || error.message?.includes('column "status"')) {
+      throw new Error("SQL_COLUMN_MISSING: status");
     }
-  } catch (err) {
-    console.error("Error in saveFeaturedPick:", err);
-    throw err;
+    throw new Error(error.message || "Unknown Supabase error");
   }
+
+  console.log("Save successful, returned data:", data);
 };
