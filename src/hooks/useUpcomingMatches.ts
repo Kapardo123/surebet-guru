@@ -42,46 +42,8 @@ export const clearBookmakerSelections = async () => {
 let bookmakerSlugsCache: string[] | null = null;
 
 const getBookmakerSlugs = async (): Promise<string[]> => {
-  if (bookmakerSlugsCache && bookmakerSlugsCache.length > 0) return bookmakerSlugsCache;
-  
-  try {
-    console.log("[OddsAPI] Fetching available bookmakers...");
-    const response = await fetch(`https://api.odds-api.io/v3/bookmakers?apiKey=${ODDS_API_KEY}`);
-    
-    if (!response.ok) {
-      console.error("[OddsAPI] Bookmakers response not OK:", response.status);
-      return ["Bet365", "1xbet"]; // Exact casing from error message
-    }
-
-    const data = await response.json();
-    let slugs: string[] = [];
-
-    if (Array.isArray(data)) {
-      slugs = data
-        .map((b: any) => (b.name || b.slug || b.key || b.id || "").toString())
-        .filter(s => s.trim().length > 0);
-    } else if (data && typeof data === 'object') {
-      if (data.error) {
-        console.error("[OddsAPI] API Error in bookmakers:", data.error);
-        return ["Bet365", "1xbet"];
-      }
-      slugs = Object.keys(data).filter(key => key !== 'error' && key.length > 0);
-    }
-      
-    // STRICT LIMIT FOR YOUR PLAN: Only use the first 2 bookmakers
-    const limitedSlugs = slugs.slice(0, 2);
-    console.log("[OddsAPI] Parsed bookmaker slugs (limited to 2):", limitedSlugs);
-    
-    if (limitedSlugs.length > 0) {
-      bookmakerSlugsCache = limitedSlugs;
-      return limitedSlugs;
-    }
-    
-    return ["Bet365", "1xbet"]; 
-  } catch (err) {
-    console.error("[OddsAPI] Exception in getBookmakerSlugs:", err);
-    return ["Bet365", "1xbet"];
-  }
+  // Always return Bet365 and 1xBet as per requirements
+  return ["bet365", "1xbet"];
 };
 
 export const useLeagues = () => {
@@ -236,7 +198,15 @@ export const useEventOdds = (eventId: string | null) => {
         'HT_OU': 'HT Totals',
         'HT_BTTS': 'HT BTTS',
         'Corners': 'Corners',
-        'Cards': 'Cards'
+        'Cards': 'Cards',
+        'FTS': 'First Team to Score',
+        'OE': 'Odd/Even',
+        'CleanSheet': 'Clean Sheet',
+        'WinToNil': 'Win to Nil',
+        'AnytimeScorer': 'Anytime Scorer',
+        'FirstScorer': 'First Scorer',
+        'LastScorer': 'Last Scorer',
+        'BookingPoints': 'Booking Points'
       };
 
       Object.entries(bookmakers).forEach(([bookieName, markets]: [string, any]) => {
