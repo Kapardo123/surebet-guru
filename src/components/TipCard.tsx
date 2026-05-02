@@ -76,7 +76,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
         {/* Top accent line */}
         <div className="h-[2px] w-full bg-gradient-to-r from-primary via-accent to-primary" />
 
-        {tip.isPremium && (
+        {tip.isPremium && !isSettled && (
           <div className="absolute top-[2px] right-0 z-10">
             <div className="bg-gradient-to-l from-accent to-accent/80 text-accent-foreground px-3 py-1.5 text-[10px] font-display font-bold uppercase tracking-wider rounded-bl-xl flex items-center gap-1.5 shadow-lg">
               <Crown className="w-3 h-3" />

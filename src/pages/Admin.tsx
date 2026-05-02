@@ -677,15 +677,20 @@ const Admin = () => {
                 <Button
                   className="w-full gap-2 h-11 font-display uppercase tracking-wider text-xs"
                   onClick={async () => {
-                    const homeLogo = await fetchTeamLogoUrl(featured.homeTeam);
-                    const awayLogo = await fetchTeamLogoUrl(featured.awayTeam);
-                    await saveFeaturedPick({
-                      ...featured,
-                      homeTeamLogo: homeLogo,
-                      awayTeamLogo: awayLogo
-                    });
-                    await refreshData();
-                    toast({ title: "Featured Pick updated! ⚡" });
+                    try {
+                      const homeLogo = await fetchTeamLogoUrl(featured.homeTeam);
+                      const awayLogo = await fetchTeamLogoUrl(featured.awayTeam);
+                      await saveFeaturedPick({
+                        ...featured,
+                        homeTeamLogo: homeLogo,
+                        awayTeamLogo: awayLogo
+                      });
+                      await refreshData();
+                      toast({ title: "Featured Pick updated! ⚡" });
+                    } catch (error) {
+                      console.error("Failed to save featured pick", error);
+                      toast({ title: "Failed to update Featured Pick", variant: "destructive" });
+                    }
                   }}
                 >
                   <Zap className="w-4 h-4" />

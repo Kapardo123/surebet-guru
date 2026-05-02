@@ -46,21 +46,26 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
 };
 
 export const saveFeaturedPick = async (pick: FeaturedPick) => {
-  const { error } = await supabase
-    .from('featured_picks')
-    .insert([{
-      league: pick.league,
-      kickoff: pick.kickoff,
-      home_team: pick.homeTeam,
-      away_team: pick.awayTeam,
-      prediction: pick.prediction,
-      odds: pick.odds,
-      confidence: pick.confidence,
-      status: pick.status || "upcoming",
-      home_team_logo: pick.homeTeamLogo,
-      away_team_logo: pick.awayTeamLogo,
-      description: pick.description
-    }]);
+  const dataToSave = {
+    league: pick.league,
+    kickoff: pick.kickoff,
+    home_team: pick.homeTeam,
+    away_team: pick.awayTeam,
+    prediction: pick.prediction,
+    odds: pick.odds,
+    confidence: pick.confidence,
+    status: pick.status || "upcoming",
+    home_team_logo: pick.homeTeamLogo,
+    away_team_logo: pick.awayTeamLogo,
+    description: pick.description
+  };
 
-  if (error) console.error("Error saving featured pick:", error);
+  const { error } = pick.id 
+    ? await supabase.from('featured_picks').update(dataToSave).eq('id', pick.id)
+    : await supabase.from('featured_picks').insert([dataToSave]);
+
+  if (error) {
+    console.error("Error saving featured pick:", error);
+    throw error;
+  }
 };
