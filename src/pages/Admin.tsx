@@ -31,7 +31,8 @@ import {
   ChevronRight,
   Trophy,
   PlusCircle,
-  LayoutDashboard
+  LayoutDashboard,
+  TrendingUp
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -766,7 +767,7 @@ const Admin = () => {
                     <div className="space-y-4">
                       {/* Market Tabs */}
                       <div className="flex flex-wrap gap-2">
-                        {markets.length > 0 ? (
+                        {markets && markets.length > 0 ? (
                           markets.map((market) => (
                             <Button
                               key={market}
@@ -784,7 +785,7 @@ const Admin = () => {
                       </div>
 
                       {/* Odds for selected market */}
-                      {selectedMarket && groupedOutcomes[selectedMarket] && (
+                      {selectedMarket && groupedOutcomes && groupedOutcomes[selectedMarket] && (
                         <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 animate-in fade-in zoom-in-95 duration-200">
                           {groupedOutcomes[selectedMarket].map((outcome, idx) => (
                             <button
@@ -792,9 +793,9 @@ const Admin = () => {
                               className="group relative flex flex-col p-2.5 rounded-lg border border-accent/30 bg-accent/5 hover:border-accent hover:bg-accent/10 transition-all text-left"
                             >
                               <div className="text-[10px] font-bold text-foreground leading-tight mb-1 truncate">
-                                {outcome.name.includes(': ') ? outcome.name.split(': ')[1] : outcome.name}
+                                {outcome.name && outcome.name.includes(': ') ? outcome.name.split(': ')[1] : outcome.name}
                               </div>
-                              <div className="text-xs font-display font-black text-accent mt-auto">{outcome.price.toFixed(2)}</div>
+                              <div className="text-xs font-display font-black text-accent mt-auto">{outcome.price ? outcome.price.toFixed(2) : "0.00"}</div>
                               
                               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-accent/90 backdrop-blur-[2px] rounded-lg transition-opacity gap-1 px-1">
                                 <Button 
@@ -802,7 +803,7 @@ const Admin = () => {
                                   className="h-7 w-7 rounded-full bg-white text-accent hover:bg-white/90 shadow-xl" 
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    const match = leagueMatches.find(m => m.id === selectedEventId);
+                                    const match = leagueMatches?.find(m => m.id === selectedEventId);
                                     if (match) {
                                       handleSelectMatch(match);
                                       handleSelectOutcome(outcome);
@@ -817,7 +818,7 @@ const Admin = () => {
                                   className="h-7 w-7 rounded-full bg-white text-primary hover:bg-white/90 shadow-xl" 
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    const match = leagueMatches.find(m => m.id === selectedEventId);
+                                    const match = leagueMatches?.find(m => m.id === selectedEventId);
                                     if (match) {
                                       setCouponMatchForm({
                                         homeTeam: match.homeTeam,
@@ -840,7 +841,7 @@ const Admin = () => {
                                   className="h-7 w-7 rounded-full bg-white text-yellow-500 hover:bg-white/90 shadow-xl" 
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    const match = leagueMatches.find(m => m.id === selectedEventId);
+                                    const match = leagueMatches?.find(m => m.id === selectedEventId);
                                     if (match) {
                                       setFeatured({
                                         ...featured,
@@ -864,14 +865,14 @@ const Admin = () => {
                         </div>
                       )}
 
-                      {!selectedMarket && outcomes.length > 0 && (
+                      {!selectedMarket && outcomes && outcomes.length > 0 && (
                         <div className="text-center py-8 border-2 border-dashed border-accent/10 rounded-xl bg-accent/5">
                           <TrendingUp className="w-8 h-8 text-accent/30 mx-auto mb-2" />
                           <p className="text-xs text-muted-foreground">Select a market above to see available odds</p>
                         </div>
                       )}
 
-                      {outcomes.length === 0 && (
+                      {(!outcomes || outcomes.length === 0) && (
                         <div className="col-span-full text-center py-4 text-muted-foreground text-xs">No active odds found for this match</div>
                       )}
                       
