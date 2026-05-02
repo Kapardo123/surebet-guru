@@ -73,8 +73,7 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
     status: pick.status || "upcoming",
     home_team_logo: pick.homeTeamLogo,
     away_team_logo: pick.awayTeamLogo,
-    description: pick.description,
-    updated_at: new Date().toISOString()
+    description: pick.description
   };
 
   let error;
