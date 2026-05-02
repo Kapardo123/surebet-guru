@@ -189,7 +189,7 @@ export const useEventOdds = (eventId: string | null) => {
           throw new Error("No valid bookmaker slugs available for the request.");
         }
 
-        const url = `https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}&bookmakers=${encodeURIComponent(bookmakersParam)}`;
+        const url = `https://api.odds-api.io/v3/odds?apiKey=${ODDS_API_KEY}&eventId=${eventId}&bookmakers=${encodeURIComponent(bookmakersParam)}&all=true`;
         console.log(`[OddsAPI] Request URL: ${url}`);
         
         let response = await fetch(url);
