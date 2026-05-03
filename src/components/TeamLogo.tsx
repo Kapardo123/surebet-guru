@@ -34,24 +34,15 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
 
         if (proxyError) throw proxyError;
         
-        // In some environments, Supabase might return the body directly as a Blob, 
-        // but in others it might be a base64 string or an object with a blob method.
-        if (data instanceof Blob) {
-          const objectUrl = URL.createObjectURL(data);
-          setProxyLogoUrl(objectUrl);
-        } else if (data?.base64) {
+        console.log(`[TeamLogo] Proxy response for ${teamName}:`, data);
+        
+        if (data?.base64) {
           // If proxy returned base64 (our new reliable method)
           const logoDataUrl = `data:${data.contentType || 'image/png'};base64,${data.base64}`;
           setProxyLogoUrl(logoDataUrl);
-        } else if (data && typeof data === 'object' && data.constructor.name === 'Blob') {
-          // Extra check for some environments
-          const objectUrl = URL.createObjectURL(data as unknown as Blob);
-          setProxyLogoUrl(objectUrl);
         } else {
-          console.warn("Proxy returned unexpected data type:", typeof data, "for URL:", url);
-          // If we can't get a blob, we fall back to direct URL as a last resort
-          // but set a small delay to avoid spamming
-          setProxyLogoUrl(url);
+          console.warn(`[TeamLogo] No base64 data for ${teamName}. Type:`, typeof data);
+          setError(true);
         }
       } catch (err) {
         console.error("Error fetching image through proxy:", err);
