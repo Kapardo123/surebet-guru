@@ -68,19 +68,32 @@ export const useTeamLogo = (teamName: string) => {
 
         const query = normalize(teamName);
         const teams = data.teams || [];
-        console.log(`[useTeamLogo] 📊 Found ${teams.length} teams in API`);
+        console.log(`[useTeamLogo] 📊 API returned ${teams.length} teams for "${teamName}"`);
 
-        const best = teams
-          .map((team: any) => ({ team, score: scoreTeamMatch(team, query) }))
-          .sort((a: any, b: any) => b.score - a.score)[0];
+        let bestTeam = null;
+        let bestScore = 0;
 
-        // Be even more permissive with matching
-        const badge = best?.score >= 30 ? best.team?.strBadge || null : null;
+        if (teams.length === 1) {
+          // If only one team found, we highly trust it
+          bestTeam = teams[0];
+          bestScore = 100;
+        } else if (teams.length > 1) {
+          const scored = teams.map((team: any) => ({
+            team,
+            score: scoreTeamMatch(team, query)
+          })).sort((a: any, b: any) => b.score - a.score);
+          
+          bestTeam = scored[0].team;
+          bestScore = scored[0].score;
+        }
+
+        // If we have a team and it has a badge, use it
+        const badge = (bestTeam && bestScore >= 20) ? bestTeam.strBadge || null : null;
         
         if (badge) {
-          console.log(`[useTeamLogo] ⭐ Match: ${best.team.strTeam} (Score: ${best.score})`);
+          console.log(`[useTeamLogo] ⭐ Match found: ${bestTeam.strTeam} (Score: ${bestScore})`);
         } else {
-          console.log(`[useTeamLogo] ❌ No match found for "${teamName}"`);
+          console.log(`[useTeamLogo] ❌ No valid badge/match for "${teamName}" (Best Score: ${bestScore})`);
         }
 
         // 3. Save to DB cache
