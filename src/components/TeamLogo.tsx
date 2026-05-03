@@ -19,10 +19,12 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
 
   useEffect(() => {
     const fetchImageThroughProxy = async (url: string) => {
-      if (!url || !url.includes('sofascore')) return;
+      if (!url) return;
       
       try {
         setImageLoading(true);
+        // If it's not a sofascore URL, we might not need proxy, 
+        // but for consistency and to avoid CORS, we proxy all external logos
         const { data, error: proxyError } = await supabase.functions.invoke('sport-api-proxy', {
           body: { 
             isImage: true,
@@ -32,9 +34,13 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
 
         if (proxyError) throw proxyError;
         
+        // Supabase invoke returns a Blob if the response is an image
         if (data instanceof Blob) {
           const objectUrl = URL.createObjectURL(data);
           setProxyLogoUrl(objectUrl);
+        } else {
+          console.warn("Proxy did not return a blob for:", url);
+          setError(true);
         }
       } catch (err) {
         console.error("Error fetching image through proxy:", err);
@@ -44,7 +50,7 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
       }
     };
 
-    if (finalLogoUrl && finalLogoUrl.includes('sofascore')) {
+    if (finalLogoUrl) {
       fetchImageThroughProxy(finalLogoUrl);
     }
 
@@ -62,20 +68,19 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
       .toUpperCase();
   };
 
-  if ((hookLoading || imageLoading) && !propLogoUrl && !proxyLogoUrl) {
-    return (
-      <div
-        className="rounded-full bg-muted animate-pulse flex-shrink-0 flex items-center justify-center"
-        style={{ width: size, height: size }}
-      >
-        <Loader2 className="w-3 h-3 animate-spin text-muted-foreground/50" />
-      </div>
-    );
-  }
-
-  const displayUrl = proxyLogoUrl || finalLogoUrl;
+  const displayUrl = proxyLogoUrl;
 
   if (!displayUrl || error) {
+    if (imageLoading || (hookLoading && !propLogoUrl)) {
+      return (
+        <div
+          className="rounded-full bg-muted animate-pulse flex-shrink-0 flex items-center justify-center"
+          style={{ width: size, height: size }}
+        >
+          <Loader2 className="w-3 h-3 animate-spin text-muted-foreground/50" />
+        </div>
+      );
+    }
     return (
       <div 
         className="rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold flex-shrink-0"
