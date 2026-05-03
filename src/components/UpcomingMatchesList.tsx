@@ -44,21 +44,19 @@ const UpcomingMatchesList = ({ onSelectMatch }: Props) => {
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-8 text-muted-foreground text-xs gap-2 bg-muted/20 rounded-xl border border-dashed">
-          <Loader2 className="w-4 h-4 animate-spin text-primary" />
-          Loading fixtures...
+      {searchTerm.length < 3 ? (
+        <div className="flex flex-col items-center justify-center py-8 px-4 bg-muted/20 border border-dashed border-border/50 rounded-xl text-center">
+          <Search className="w-8 h-8 text-muted-foreground/30 mb-2" />
+          <p className="text-xs text-muted-foreground">Type at least 3 characters to find a match</p>
         </div>
-      ) : (searchTerm.length > 0 && searchTerm.length < 3) ? (
-        <div className="text-center py-6 text-muted-foreground text-[10px] bg-muted/5 rounded-xl border border-dashed">
-          Type at least 3 characters to search...
+      ) : loading ? (
+        <div className="space-y-2 animate-pulse">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-16 bg-muted/50 rounded-xl" />
+          ))}
         </div>
-      ) : fixtures.length === 0 ? (
-        <div className="text-center py-6 text-muted-foreground text-xs bg-muted/10 rounded-xl border border-dashed">
-          No matches found for this date or filter.
-        </div>
-      ) : (
-        <div className="grid gap-2 sm:grid-cols-2">
+      ) : fixtures.length > 0 ? (
+        <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
           {fixtures.map((match) => (
             <button
               key={match.id}
@@ -92,6 +90,10 @@ const UpcomingMatchesList = ({ onSelectMatch }: Props) => {
               </div>
             </button>
           ))}
+        </div>
+      ) : (
+        <div className="text-center py-6 bg-muted/20 rounded-xl border border-dashed border-border/50">
+          <p className="text-xs text-muted-foreground">No matches found for "{searchTerm}"</p>
         </div>
       )}
     </div>

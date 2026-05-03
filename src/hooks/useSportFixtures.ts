@@ -7,9 +7,10 @@ export const useSportFixtures = (date?: string, filterTeam?: string) => {
 
   useEffect(() => {
     const loadFixtures = async () => {
-      // Don't fetch if filter is too short
+      // Only fetch if no search OR search is at least 3 characters
       if (filterTeam && filterTeam.length > 0 && filterTeam.length < 3) {
         setFixtures([]);
+        setLoading(false);
         return;
       }
 
@@ -18,7 +19,7 @@ export const useSportFixtures = (date?: string, filterTeam?: string) => {
       const data = await fetchMatchesByDate(targetDate);
       
       let filtered = data;
-      if (filterTeam && filterTeam.length >= 2) {
+      if (filterTeam && filterTeam.length >= 3) {
         const search = filterTeam.toLowerCase();
         filtered = data.filter(f => 
           f.homeTeam.toLowerCase().includes(search) || 
