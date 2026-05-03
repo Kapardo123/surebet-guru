@@ -30,19 +30,32 @@ serve(async (req) => {
 
     const queryStr = new URLSearchParams(params || "").toString();
 
-    // Strategy 1: The one that likely worked for /leagues
-    const url1 = `https://api.sportapi.ai/v1/${cleanPath}?token=${SPORT_API_KEY}${queryStr ? `&${queryStr}` : ''}`
+    // Strategy 1: The most documented way (Main Domain, no v1 in path, Bearer Auth)
+    const url1 = `https://sportapi.ai/api/${cleanPath}?${queryStr}`
     
-    // Strategy 2: Main domain v1
-    const url2 = `https://sportapi.ai/api/v1/${cleanPath}?token=${SPORT_API_KEY}${queryStr ? `&${queryStr}` : ''}`
+    // Strategy 2: v1 in path (Main Domain)
+    const url2 = `https://sportapi.ai/api/v1/${cleanPath}?${queryStr}`
     
-    // Strategy 3: Standard path (Docs)
-    const url3 = `https://sportapi.ai/api/${cleanPath}?token=${SPORT_API_KEY}${queryStr ? `&${queryStr}` : ''}`
+    // Strategy 3: v1 in path (Subdomain)
+    const url3 = `https://api.sportapi.ai/v1/${cleanPath}?${queryStr}`
     
     const strategies = [
-      { url: url1, name: "Strategy 1 (Subdomain v1 + Token)" },
-      { url: url2, name: "Strategy 2 (Main v1 + Token)" },
-      { url: url3, name: "Strategy 3 (Standard + Token)" }
+      { 
+        url: url1, 
+        name: "Strategy 1 (Main Path + Bearer)",
+        headers: { 'Authorization': `Bearer ${SPORT_API_KEY}`, 'Accept': 'application/json' }
+      },
+      { 
+        url: url1, 
+        name: "Strategy 2 (Main Path + Token in URL)",
+        headers: { 'Accept': 'application/json' },
+        urlWithToken: `${url1}${url1.includes('?') ? '&' : '?'}token=${SPORT_API_KEY}`
+      },
+      { 
+        url: url2, 
+        name: "Strategy 3 (v1 Path + X-Api-Key)",
+        headers: { 'X-Api-Key': SPORT_API_KEY, 'Accept': 'application/json' }
+      }
     ];
 
     let response;
@@ -50,27 +63,25 @@ serve(async (req) => {
     let successfulStrategy = "None";
     const diagnosticResults = [];
 
-    const headers = new Headers();
-    headers.set('Accept', 'application/json');
-    headers.set('X-Api-Key', SPORT_API_KEY);
-
     for (const strat of strategies) {
-      console.log(`[Proxy] Trying ${strat.name}: ${strat.url}`);
+      const finalUrl = strat.urlWithToken || strat.url;
+      console.log(`[Proxy] Trying ${strat.name}: ${finalUrl}`);
       try {
-        const res = await fetch(strat.url, { 
+        const res = await fetch(finalUrl, { 
           method: 'GET', 
-          headers: headers 
+          headers: strat.headers
         });
         const text = await res.text();
         
         const isWelcome = text.includes("Welcome to Sport API");
-        const isAuthError = res.status === 401 || text.includes("API key required");
+        const isAuthError = res.status === 401 || text.includes("API key required") || text.includes("Unauthorized");
 
         diagnosticResults.push({
           name: strat.name,
           status: res.status,
           isWelcome,
-          isAuthError
+          isAuthError,
+          preview: text.substring(0, 100)
         });
 
         if (res.status === 200 && !isWelcome && !isAuthError) {
