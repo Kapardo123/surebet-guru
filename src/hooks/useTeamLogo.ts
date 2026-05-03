@@ -6,6 +6,8 @@ const normalize = (value: string) =>
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s]/g, "") // Remove punctuation like & or -
+    .replace(/\s+/g, " ")
     .trim();
 
 const scoreTeamMatch = (team: any, query: string) => {
