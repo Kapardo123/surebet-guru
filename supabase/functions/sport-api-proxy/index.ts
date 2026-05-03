@@ -30,6 +30,7 @@ serve(async (req) => {
 
     const response = await fetch(url.toString(), {
       headers: {
+        'X-Api-Key': SPORT_API_KEY,
         'Authorization': `Bearer ${SPORT_API_KEY}`,
         'Accept': 'application/json',
         'Content-Type': 'application/json'
