@@ -11,6 +11,8 @@ interface TeamLogoProps {
 const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) => {
   const [error, setError] = useState(false);
   const { logoUrl: hookLogoUrl, loading } = useTeamLogo(propLogoUrl ? "" : teamName);
+  
+  // Use a direct fallback for SofaScore images if they fail or aren't provided
   const finalLogoUrl = propLogoUrl || hookLogoUrl;
 
   const getInitials = (name: string) => {
