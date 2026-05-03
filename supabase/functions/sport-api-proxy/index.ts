@@ -21,14 +21,13 @@ serve(async (req) => {
     
     // Construct SofaScore RapidAPI URL
     const date = params?.date || new Date().toISOString().split('T')[0];
+    const sport_slug = params?.sport_slug || 'football';
     
-    // Most SofaScore6 endpoints follow /api/sofascore/v1/
-    // Let's try to handle different endpoint formats
-    let finalUrl = `https://${RAPID_API_HOST}/api/sofascore/v1/${endpoint}`;
+    // Construct final URL with all parameters
+    let finalUrl = `https://${RAPID_API_HOST}/api/sofascore/v1/${endpoint}?date=${date}`;
     
-    // Add date if it's not already in the endpoint
-    if (!endpoint.includes('date=')) {
-      finalUrl += `${finalUrl.includes('?') ? '&' : '?'}date=${date}`;
+    if (endpoint === 'match/list') {
+      finalUrl += `&sport_slug=${sport_slug}`;
     }
     
     console.log(`[Proxy] Requesting: ${finalUrl}`);
