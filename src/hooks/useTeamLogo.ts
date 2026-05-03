@@ -53,27 +53,20 @@ export const useTeamLogo = (teamName: string) => {
           console.warn(`[useTeamLogo] ⚠️ Cache check failed:`, dbErr);
         }
 
-        // 2. Fetch from API-Football via Proxy
-        console.log(`[useTeamLogo] 🔍 Fetching from API-Football for: "${teamName}"`);
-        const { data, error: apiError } = await supabase.functions.invoke('sport-api-proxy', {
-          body: {
-            provider: 'api-football',
-            endpoint: 'teams',
-            params: { search: teamName }
-          }
-        });
-
-        if (apiError) throw apiError;
-
-        const teams = data?.response || [];
-        console.log(`[useTeamLogo] 📊 API-Football returned ${teams.length} teams`);
+        // 2. Fetch from TheSportsDB (Public API)
+        console.log(`[useTeamLogo] 🔍 Fetching from TheSportsDB for: "${teamName}"`);
+        const res = await fetch(
+          `https://www.thesportsdb.com/api/v1/json/1/searchteams.php?t=${encodeURIComponent(teamName)}`
+        );
+        const data = await res.json();
+        const teams = data.teams || [];
+        console.log(`[useTeamLogo] 📊 TheSportsDB returned ${teams.length} teams`);
 
         let badge = null;
         if (teams.length > 0) {
           const query = normalize(teamName);
-          const scored = teams.map((item: any) => {
-            const team = item.team;
-            const names = [team.name, team.name.replace("FC", ""), team.name.replace("CF", "")].map(normalize);
+          const scored = teams.map((team: any) => {
+            const names = [team.strTeam, team.strTeamShort, team.strTeamAlternate].filter(Boolean).map(normalize);
             
             let score = 0;
             if (names.some(n => n === query)) score = 100;
@@ -82,14 +75,15 @@ export const useTeamLogo = (teamName: string) => {
             return { team, score };
           }).sort((a: any, b: any) => b.score - a.score);
 
-          if (scored[0].score >= 50) {
-            badge = scored[0].team.logo;
-            console.log(`[useTeamLogo] ⭐ Match: "${teamName}" -> "${scored[0].team.name}" (Score: ${scored[0].score})`);
+          // Only accept if score is high enough to avoid "Arsenal" bug
+          if (scored[0].score >= 60) {
+            badge = scored[0].team.strBadge;
+            console.log(`[useTeamLogo] ⭐ Match: "${teamName}" -> "${scored[0].team.strTeam}" (Score: ${scored[0].score})`);
           }
         }
 
         if (!badge) {
-          console.log(`[useTeamLogo] ❌ No match found for "${teamName}" in API-Football`);
+          console.log(`[useTeamLogo] ❌ No valid match found for "${teamName}" in TheSportsDB`);
         }
 
         // 3. Save to DB cache

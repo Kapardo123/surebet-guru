@@ -20,44 +20,26 @@ serve(async (req) => {
   }
 
   try {
-    const payload = await req.json()
-    const { endpoint, params, provider } = payload
+    const { endpoint, params } = await req.json()
     
-    // Default config
-    let host = RAPID_API_HOST;
-    let baseUrl = `https://${RAPID_API_HOST}/api/sofascore/v1`;
-    
-    // Switch provider if requested (e.g., for logos)
-    if (provider === 'api-football') {
-      host = 'api-football-v1.p.rapidapi.com';
-      baseUrl = `https://${host}/v3`;
-    }
-    
-    // Construct final URL
+    // Construct SofaScore RapidAPI URL
     const date = params?.date || new Date().toISOString().split('T')[0];
     const sport_slug = params?.sport_slug || 'football';
     
-    let finalUrl = `${baseUrl}/${endpoint}`;
+    // Construct final URL
+    let finalUrl = `https://${RAPID_API_HOST}/api/sofascore/v1/${endpoint}?date=${date}`;
     
-    // Build query string from params
-    const queryParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        queryParams.append(key, String(value));
-      });
+    if (endpoint === 'match/list') {
+      finalUrl += `&sport_slug=${sport_slug}`;
     }
     
-    if (queryParams.toString()) {
-      finalUrl += `?${queryParams.toString()}`;
-    }
-    
-    console.log(`[Proxy] Requesting (${provider || 'sofascore'}): ${finalUrl}`);
+    console.log(`[Proxy] Requesting SofaScore: ${finalUrl}`);
 
     const response = await fetch(finalUrl, {
       method: 'GET',
       headers: {
         'X-RapidAPI-Key': RAPID_API_KEY,
-        'X-RapidAPI-Host': host,
+        'X-RapidAPI-Host': RAPID_API_HOST,
         'Accept': 'application/json'
       }
     });
