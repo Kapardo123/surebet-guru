@@ -17,23 +17,25 @@ serve(async (req) => {
     const { endpoint, params } = await req.json()
     
     // Clean up endpoint and build query params
-    const cleanPath = endpoint.replace(/^\/+/, '').replace(/^api\//, '')
+    const cleanPath = endpoint.replace(/^\/+/, '').replace(/^api\//, '').replace(/^v1\//, '')
     
+    // We try the api. subdomain and v1 prefix which is common for SportAPI.ai
+    const finalUrl = `https://api.sportapi.ai/v1/${cleanPath}`
     const queryParams = new URLSearchParams(params || {})
     
-    // According to docs, token can be in Authorization header or sometimes as a param
+    // Some endpoints prefer the token in the URL
     queryParams.append('token', SPORT_API_KEY)
     
-    const finalUrl = `https://sportapi.ai/api/${cleanPath}?${queryParams.toString()}`
+    const urlWithParams = `${finalUrl}?${queryParams.toString()}`
     
-    console.log(`[Proxy] Requesting: ${finalUrl}`);
+    console.log(`[Proxy] Requesting: ${urlWithParams}`);
 
-    const response = await fetch(finalUrl, {
+    const response = await fetch(urlWithParams, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Authorization': `Bearer ${SPORT_API_KEY}`,
-        'X-Api-Key': SPORT_API_KEY
+        'X-API-Key': SPORT_API_KEY,
+        'Authorization': `Bearer ${SPORT_API_KEY}`
       }
     })
 
