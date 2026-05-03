@@ -56,6 +56,9 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
     
     if (events.length > 0) {
       console.log(`[SofaScore] Found ${events.length} events`);
+      // Debug first few events to see structure
+      console.log("[SofaScore] First event sample:", JSON.stringify(events[0], null, 2));
+      
       return events.map((event: any) => {
         // Ensure status is a string
         let statusStr = "unknown";
@@ -69,14 +72,24 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
 
         // Ensure time is a string - check multiple possible SofaScore fields
          let timeStr = "TBD";
-         const timestamp = event.startTimestamp || event.start_timestamp || event.startTime || event.start_time;
+         
+         // SofaScore often has startTimestamp at the root of the event
+         // or sometimes inside a 'time' object
+         const timestamp = event.startTimestamp || 
+                           event.start_timestamp || 
+                           event.startTime || 
+                           event.start_time ||
+                           (event.time && typeof event.time === 'number' ? event.time : null) ||
+                           event.time?.startTimestamp ||
+                           event.time?.start_timestamp;
          
          if (timestamp) {
            try {
-             // SofaScore usually provides seconds, but let's be safe
-             const dateObj = new Date(timestamp > 10000000000 ? timestamp : timestamp * 1000);
+             // SofaScore usually provides seconds (10 digits), but JS needs milliseconds (13 digits)
+             const ts = Number(timestamp);
+             const dateObj = new Date(ts > 10000000000 ? ts : ts * 1000);
              if (!isNaN(dateObj.getTime())) {
-               timeStr = dateObj.toLocaleTimeString(undefined, { 
+               timeStr = dateObj.toLocaleTimeString('pl-PL', { 
                  hour: '2-digit', 
                  minute: '2-digit',
                  hour12: false 
@@ -85,13 +98,17 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
            } catch (e) {
              console.error("[SofaScore] Time formatting error:", e);
            }
-         } else if (typeof event.time === 'string') {
+         } else if (typeof event.time === 'string' && event.time.includes(':')) {
            timeStr = event.time;
          } else if (event.time?.initial) {
            timeStr = event.time.initial;
          } else if (event.status?.description && event.status.description.includes(':')) {
            // Fallback: sometimes the time is in the status description
            timeStr = event.status.description;
+         } else if (event.formatedStartDate) {
+           // Another common field in some SofaScore-like APIs
+           const match = event.formatedStartDate.match(/(\d{2}:\d{2})/);
+           if (match) timeStr = match[1];
          }
 
         return {
