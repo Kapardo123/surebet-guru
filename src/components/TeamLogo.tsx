@@ -61,8 +61,10 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
   }, [finalLogoUrl]);
 
   const getInitials = (name: string) => {
+    if (!name) return "??";
     return name
       .split(' ')
+      .filter(Boolean)
       .map(word => word[0])
       .join('')
       .slice(0, 2)
@@ -85,7 +87,7 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
   if (!displayUrl || error) {
     return (
       <div 
-        className="rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold flex-shrink-0"
+        className="rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold flex-shrink-0 overflow-hidden"
         style={{ width: size, height: size, fontSize: size * 0.4 }}
       >
         {getInitials(teamName)}

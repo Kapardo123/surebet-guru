@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-
-const logoCache: Record<string, string | null> = {};
+import { supabase } from "@/integrations/supabase/client";
 
 const normalize = (value: string) =>
   value
@@ -19,39 +18,38 @@ const scoreTeamMatch = (team: any, query: string) => {
 };
 
 export const useTeamLogo = (teamName: string) => {
-  const [logoUrl, setLogoUrl] = useState<string | null>(logoCache[teamName] ?? null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
-  const abortRef = useRef<AbortController>();
 
   useEffect(() => {
-    clearTimeout(timerRef.current);
-    abortRef.current?.abort();
-
     if (!teamName || teamName.length < 3) {
       setLogoUrl(null);
-      setLoading(false);
       return;
     }
 
-    if (logoCache[teamName] !== undefined) {
-      setLogoUrl(logoCache[teamName]);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    timerRef.current = setTimeout(async () => {
+    const fetchLogo = async () => {
+      setLoading(true);
+      
       try {
+        // 1. Check local DB cache first
+        const { data: cacheData, error: cacheError } = await supabase
+          .from('team_logos_cache')
+          .select('logo_url')
+          .eq('team_name', teamName)
+          .maybeSingle();
+
+        if (cacheData?.logo_url) {
+          setLogoUrl(cacheData.logo_url);
+          setLoading(false);
+          return;
+        }
+
+        // 2. Fetch from TheSportsDB
         const res = await fetch(
-          `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(teamName)}`,
-          { signal: controller.signal }
+          `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(teamName)}`
         );
         const data = await res.json();
-
         const query = normalize(teamName);
         const teams = data.teams || [];
 
@@ -61,24 +59,27 @@ export const useTeamLogo = (teamName: string) => {
 
         const badge = best?.score >= 60 ? best.team?.strBadge || null : null;
 
-        logoCache[teamName] = badge;
-        if (!controller.signal.aborted) {
-          setLogoUrl(badge);
-          setLoading(false);
+        // 3. Save to DB cache
+        if (badge) {
+          await supabase.from('team_logos_cache').upsert({
+            team_name: teamName,
+            logo_url: badge,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'team_name' });
         }
-      } catch (err: any) {
-        if (err?.name !== "AbortError") {
-          logoCache[teamName] = null;
-          setLogoUrl(null);
-          setLoading(false);
-        }
-      }
-    }, 600);
 
-    return () => {
-      clearTimeout(timerRef.current);
-      controller.abort();
+        setLogoUrl(badge);
+      } catch (err) {
+        console.error("Error in useTeamLogo:", err);
+      } finally {
+        setLoading(false);
+      }
     };
+
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(fetchLogo, 500);
+
+    return () => clearTimeout(timerRef.current);
   }, [teamName]);
 
   return { logoUrl, loading };
