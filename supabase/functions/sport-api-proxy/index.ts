@@ -28,42 +28,50 @@ serve(async (req) => {
       'Authorization': `Bearer ${SPORT_API_KEY}`
     };
 
-    // Strategy 1: URL Token + Headers (The most aggressive way)
-    const url1 = `https://sportapi.ai/api/${cleanPath}?token=${SPORT_API_KEY}&${new URLSearchParams(params || "").toString()}`
+    const queryStr = new URLSearchParams(params || "").toString();
+
+    // Strategy 1: sportapi.ai/api/v1/ (Most likely to fix Welcome message)
+    const url1 = `https://sportapi.ai/api/v1/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`
     
-    console.log(`[Proxy] Trying Strategy 1: ${url1}`);
+    // Strategy 2: api.sportapi.ai/v1/ (Subdomain fallback)
+    const url2 = `https://api.sportapi.ai/v1/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`
     
+    // Strategy 3: sportapi.ai/api/ (Original, as documented)
+    const url3 = `https://sportapi.ai/api/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`
+    
+    const strategies = [
+      { url: url1, name: "Strategy 1 (v1 Path)" },
+      { url: url2, name: "Strategy 2 (Subdomain v1)" },
+      { url: url3, name: "Strategy 3 (Standard API Path)" }
+    ];
+
     let response;
     let responseText;
-    let strategy = "Strategy 1 (Full Auth)";
+    let successfulStrategy = "None";
 
-    try {
-      response = await fetch(url1, { method: 'GET', headers: commonHeaders });
-      responseText = await response.text();
-      
-      // If Strategy 1 fails for ANY reason, try Strategy 2
-      if (response.status !== 200 || responseText.includes("Welcome to Sport API") || responseText.includes("API key required")) {
-        console.log(`[Proxy] Strategy 1 failed (Status: ${response.status}). Trying Strategy 2...`);
+    for (const strat of strategies) {
+      console.log(`[Proxy] Trying ${strat.name}: ${strat.url}`);
+      try {
+        const res = await fetch(strat.url, { method: 'GET', headers: commonHeaders });
+        const text = await res.text();
         
-        // Strategy 2: Different subdomain + headers
-        const url2 = `https://api.sportapi.ai/v1/${cleanPath}?${new URLSearchParams(params || "").toString()}`
-        strategy = "Strategy 2 (Subdomain Fallback)";
-        
-        const altResponse = await fetch(url2, {
-          method: 'GET',
-          headers: commonHeaders
-        });
-        
-        const altText = await altResponse.text();
-        if (altResponse.status === 200 && !altText.includes("Welcome to Sport API")) {
-          console.log("[Proxy] Strategy 2 succeeded!");
-          response = altResponse;
-          responseText = altText;
+        console.log(`[Proxy] ${strat.name} Result - Status: ${res.status}, Welcome: ${text.includes("Welcome")}`);
+
+        if (res.status === 200 && !text.includes("Welcome to Sport API") && !text.includes("API key required")) {
+          console.log(`[Proxy] ${strat.name} SUCCEEDED!`);
+          response = res;
+          responseText = text;
+          successfulStrategy = strat.name;
+          break;
         }
+        
+        // Keep the last attempt if none succeed
+        response = res;
+        responseText = text;
+        successfulStrategy = `Failed at ${strat.name}`;
+      } catch (err) {
+        console.error(`[Proxy] ${strat.name} Error: ${err.message}`);
       }
-    } catch (err) {
-      console.error(`[Proxy] Fetch error: ${err.message}`);
-      throw err;
     }
 
     let data;
@@ -76,9 +84,10 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       ...data,
       _debug: {
-        strategy_used: strategy,
-        final_status: response.status,
-        welcome_detected: responseText.includes("Welcome to Sport API")
+        strategy_used: successfulStrategy,
+        final_status: response?.status,
+        welcome_detected: responseText.includes("Welcome to Sport API"),
+        tried_urls: strategies.map(s => s.url)
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
