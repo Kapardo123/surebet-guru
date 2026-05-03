@@ -67,20 +67,31 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
           statusStr = event.status.description;
         }
 
-        // Ensure time is a string
+        // Ensure time is a string - check multiple possible SofaScore fields
          let timeStr = "TBD";
-         if (event.startTimestamp) {
+         const timestamp = event.startTimestamp || event.start_timestamp || event.startTime || event.start_time;
+         
+         if (timestamp) {
            try {
-             timeStr = new Date(event.startTimestamp * 1000).toLocaleTimeString(undefined, { 
-               hour: '2-digit', 
-               minute: '2-digit',
-               hour12: false 
-             });
+             // SofaScore usually provides seconds, but let's be safe
+             const dateObj = new Date(timestamp > 10000000000 ? timestamp : timestamp * 1000);
+             if (!isNaN(dateObj.getTime())) {
+               timeStr = dateObj.toLocaleTimeString(undefined, { 
+                 hour: '2-digit', 
+                 minute: '2-digit',
+                 hour12: false 
+               });
+             }
            } catch (e) {
              console.error("[SofaScore] Time formatting error:", e);
            }
          } else if (typeof event.time === 'string') {
            timeStr = event.time;
+         } else if (event.time?.initial) {
+           timeStr = event.time.initial;
+         } else if (event.status?.description && event.status.description.includes(':')) {
+           // Fallback: sometimes the time is in the status description
+           timeStr = event.status.description;
          }
 
         return {
