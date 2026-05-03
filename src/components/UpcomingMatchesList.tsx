@@ -1,88 +1,100 @@
-import { useUpcomingMatches, UpcomingMatch } from "@/hooks/useUpcomingMatches";
-import { Calendar, Loader2, TrendingUp } from "lucide-react";
+import { useSportFixtures, EnhancedUpcomingMatch } from "@/hooks/useSportFixtures";
+import { Calendar, Loader2, TrendingUp, Search } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
 
 interface Props {
-  teamName: string;
-  onSelectMatch: (match: UpcomingMatch) => void;
+  onSelectMatch: (match: any) => void;
 }
 
-const UpcomingMatchesList = ({ teamName, onSelectMatch }: Props) => {
-  const { matches, loading } = useUpcomingMatches(teamName);
-
-  if (teamName.length < 3) return null;
-
-  if (loading) {
-    return (
-      <div className="col-span-full flex items-center gap-2 text-muted-foreground text-xs py-2">
-        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        Searching upcoming matches & odds...
-      </div>
-    );
-  }
-
-  if (matches.length === 0) return null;
+const UpcomingMatchesList = ({ onSelectMatch }: Props) => {
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const { fixtures, loading } = useSportFixtures(date, searchTerm);
 
   return (
-    <div className="col-span-full space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-          <Calendar className="w-3.5 h-3.5" />
-          Upcoming matches from Odds-API
-        </p>
-        <Badge variant="outline" className="text-[9px] opacity-70">LIVE ODDS</Badge>
+    <div className="col-span-full space-y-4">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5" />
+            Find Match (SportAPI.ai)
+          </p>
+          <Badge variant="outline" className="text-[9px] opacity-70">FAST LOADING</Badge>
+        </div>
+        
+        <div className="flex gap-2">
+          <Input 
+            type="date" 
+            value={date} 
+            onChange={(e) => setDate(e.target.value)}
+            className="w-auto text-xs h-9"
+          />
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input 
+              placeholder="Filter team or league..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 text-xs h-9"
+            />
+          </div>
+        </div>
       </div>
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        {matches.map((match) => (
-          <button
-            key={match.id}
-            type="button"
-            onClick={() => onSelectMatch(match)}
-            className="flex flex-col gap-2 bg-muted/30 border border-border/50 rounded-xl p-3 text-left hover:border-primary/50 hover:bg-muted/50 transition-all cursor-pointer group relative overflow-hidden"
-          >
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <div className="flex items-center gap-1.5 overflow-hidden">
-                <TeamLogo teamName={match.homeTeam} size={16} />
-                <span className="text-[11px] font-bold text-foreground truncate">{match.homeTeam}</span>
-              </div>
-              <span className="text-[9px] text-muted-foreground shrink-0">vs</span>
-              <div className="flex items-center gap-1.5 overflow-hidden justify-end">
-                <span className="text-[11px] font-bold text-foreground truncate">{match.awayTeam}</span>
-                <TeamLogo teamName={match.awayTeam} size={16} />
-              </div>
-            </div>
 
-            {match.odds && (
-              <div className="grid grid-cols-3 gap-1 mt-auto">
-                <div className="bg-background/50 rounded-md p-1.5 border border-border/30 text-center">
-                  <p className="text-[8px] text-muted-foreground uppercase leading-none mb-1">1</p>
-                  <p className="text-[10px] font-bold text-primary">{match.odds.homeWin?.toFixed(2) || "-"}</p>
+      {loading ? (
+        <div className="flex items-center justify-center py-8 text-muted-foreground text-xs gap-2 bg-muted/20 rounded-xl border border-dashed">
+          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          Loading fixtures...
+        </div>
+      ) : fixtures.length === 0 ? (
+        <div className="text-center py-6 text-muted-foreground text-xs bg-muted/10 rounded-xl border border-dashed">
+          No matches found for this date or filter.
+        </div>
+      ) : (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {fixtures.map((match) => (
+            <button
+              key={match.id}
+              type="button"
+              onClick={() => onSelectMatch({
+                homeTeam: match.home_team,
+                awayTeam: match.away_team,
+                league: match.league_name,
+                date: date,
+                time: match.time || "TBD",
+                homeLogo: match.homeLogo,
+                awayLogo: match.awayLogo
+              })}
+              className="flex items-center justify-between gap-3 bg-card border border-border/50 rounded-xl p-3 text-left hover:border-primary/50 hover:bg-muted/50 transition-all cursor-pointer group active:scale-[0.98]"
+            >
+              <div className="flex-1 flex flex-col gap-1.5 overflow-hidden">
+                <div className="flex items-center gap-2">
+                  <TeamLogo teamName={match.home_team} logoUrl={match.homeLogo || undefined} size={18} />
+                  <span className="text-xs font-bold truncate">{match.home_team}</span>
                 </div>
-                <div className="bg-background/50 rounded-md p-1.5 border border-border/30 text-center">
-                  <p className="text-[8px] text-muted-foreground uppercase leading-none mb-1">X</p>
-                  <p className="text-[10px] font-bold text-muted-foreground">{match.odds.draw?.toFixed(2) || "-"}</p>
-                </div>
-                <div className="bg-background/50 rounded-md p-1.5 border border-border/30 text-center">
-                  <p className="text-[8px] text-muted-foreground uppercase leading-none mb-1">2</p>
-                  <p className="text-[10px] font-bold text-accent">{match.odds.awayWin?.toFixed(2) || "-"}</p>
+                <div className="flex items-center gap-2">
+                  <TeamLogo teamName={match.away_team} logoUrl={match.awayLogo || undefined} size={18} />
+                  <span className="text-xs font-bold truncate">{match.away_team}</span>
                 </div>
               </div>
-            )}
 
-            <div className="flex items-center justify-between text-[9px] text-muted-foreground mt-1 pt-1 border-t border-border/20">
-              <span className="truncate max-w-[100px]">{match.league}</span>
-              <span className="font-medium">{match.date} {match.time}</span>
-            </div>
-            
-            <div className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <TrendingUp className="w-3 h-3 text-primary" />
-            </div>
-          </button>
-        ))}
-      </div>
+              <div className="flex flex-col items-end gap-1 shrink-0 border-l border-border/20 pl-3">
+                <span className="text-[10px] font-medium text-primary">{match.league_name}</span>
+                <span className="text-[9px] text-muted-foreground uppercase">{match.status}</span>
+                <TrendingUp className="w-3 h-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
+
+export default UpcomingMatchesList;
+
 
 export default UpcomingMatchesList;

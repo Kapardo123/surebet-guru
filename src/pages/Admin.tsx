@@ -38,7 +38,6 @@ import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
 import UpcomingMatchesList from "@/components/UpcomingMatchesList";
-import { UpcomingMatch, useLeagues, useLeagueMatches, useEventOdds, OddsOutcome, clearBookmakerSelections } from "@/hooks/useUpcomingMatches";
 import Logo from "@/components/Logo";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -64,12 +63,45 @@ const Admin = () => {
     if (loadedFeatured) {
       setFeatured(loadedFeatured);
     }
-    
-    // Check if logos are being stored
-    const hasLogos = loadedTips.some(t => t.homeTeamLogo || t.awayTeamLogo);
-    if (loadedTips.length > 0 && !hasLogos) {
-      console.warn("SQL Migration needed: ALTER TABLE tips ADD COLUMN home_team_logo TEXT, ADD COLUMN away_team_logo TEXT;");
-    }
+  };
+
+  const handleSelectMatch = (match: any) => {
+    setForm((prev) => ({
+      ...prev,
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      league: match.league,
+      kickoff: `${match.date} ${match.time}`,
+      homeTeamLogo: match.homeLogo,
+      awayTeamLogo: match.awayLogo
+    }));
+    toast({ title: `Match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
+  };
+
+  const handleSelectCouponMatch = (match: any) => {
+    setCouponMatchForm((prev) => ({
+      ...prev,
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      league: match.league,
+      kickoff: `${match.date} ${match.time}`,
+      homeTeamLogo: match.homeLogo,
+      awayTeamLogo: match.awayLogo
+    }));
+    toast({ title: `Coupon match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
+  };
+
+  const handleSelectFeaturedMatch = (match: any) => {
+    setFeatured((prev) => ({
+      ...prev,
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      league: match.league,
+      kickoff: `${match.date} ${match.time}`,
+      homeTeamLogo: match.homeLogo,
+      awayTeamLogo: match.awayLogo
+    }));
+    toast({ title: `Featured match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
 
   // User Premium Management State
@@ -236,7 +268,7 @@ const Admin = () => {
 
   const resetTipForm = () => {
     setEditingTipId(null);
-    setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, description: "" });
+    setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, description: "", homeTeamLogo: null, awayTeamLogo: null });
   };
 
   const resetCouponForm = () => {
@@ -246,86 +278,6 @@ const Admin = () => {
     setCouponIsPremium(false);
     setCouponStatus("active");
     setCouponMatches([]);
-  };
-
-  // API Overhaul State
-  const { leagues, loading: leaguesLoading } = useLeagues();
-  const [selectedLeague, setSelectedLeague] = useState<string | null>(null);
-  const { matches: leagueMatches, loading: matchesLoading } = useLeagueMatches(selectedLeague);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const { outcomes, loading: oddsLoading } = useEventOdds(selectedEventId);
-  const [selectedMarket, setSelectedMarket] = useState<string | null>(null);
-
-  // Group outcomes by market
-  const groupedOutcomes = outcomes.reduce((acc, outcome) => {
-    if (!acc[outcome.market]) acc[outcome.market] = [];
-    acc[outcome.market].push(outcome);
-    return acc;
-  }, {} as Record<string, OddsOutcome[]>);
-
-  const markets = Object.keys(groupedOutcomes);
-
-  const handleSelectMatch = (match: UpcomingMatch) => {
-    setForm((prev) => ({
-      ...prev,
-      homeTeam: match.homeTeam,
-      awayTeam: match.awayTeam,
-      league: match.league,
-      kickoff: `${match.date} ${match.time}`,
-      odds: match.odds?.homeWin?.toString() || prev.odds,
-    }));
-    toast({ title: `Match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
-  };
-
-  const handleSelectOutcome = (outcome: OddsOutcome) => {
-    setForm(prev => ({
-      ...prev,
-      prediction: outcome.name,
-      odds: outcome.price.toString()
-    }));
-    toast({ title: "Odds updated!" });
-  };
-
-  const handleSelectCouponOutcome = (outcome: OddsOutcome) => {
-    setCouponMatchForm(prev => ({
-      ...prev,
-      prediction: outcome.name,
-      odds: outcome.price.toString()
-    }));
-    toast({ title: "Coupon match odds updated!" });
-  };
-
-  const handleSelectFeaturedOutcome = (outcome: OddsOutcome) => {
-    setFeatured(prev => ({
-      ...prev,
-      prediction: outcome.name,
-      odds: outcome.price.toString()
-    }));
-    toast({ title: "Featured pick odds updated!" });
-  };
-
-  const handleSelectCouponMatch = (match: UpcomingMatch) => {
-    setCouponMatchForm((prev) => ({
-      ...prev,
-      homeTeam: match.homeTeam,
-      awayTeam: match.awayTeam,
-      league: match.league,
-      kickoff: `${match.date} ${match.time}`,
-      odds: match.odds?.homeWin?.toString() || prev.odds,
-    }));
-    toast({ title: `Coupon match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
-  };
-
-  const handleSelectFeaturedMatch = (match: UpcomingMatch) => {
-    setFeatured((prev) => ({
-      ...prev,
-      homeTeam: match.homeTeam,
-      awayTeam: match.awayTeam,
-      league: match.league,
-      kickoff: `${match.date} ${match.time}`,
-      odds: match.odds?.homeWin?.toString() || prev.odds,
-    }));
-    toast({ title: `Featured match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -338,13 +290,7 @@ const Admin = () => {
     // Convert date to ISO format for consistent storage
     let kickoffISO = form.kickoff;
     try {
-      // If it looks like a simple date time string, try to parse it
       if (form.kickoff.includes('-') && form.kickoff.includes(':')) {
-        const datePart = form.kickoff.split(' ')[0];
-        const timePart = form.kickoff.split(' ')[1];
-        // Create date assuming Polish time (UTC+2 or UTC+1)
-        // For simplicity, let's treat it as a date string that browser can parse
-        // or just store as is if it's already ISO.
         const parsedDate = new Date(form.kickoff.replace(' ', 'T'));
         if (!isNaN(parsedDate.getTime())) {
           kickoffISO = parsedDate.toISOString();
@@ -355,11 +301,6 @@ const Admin = () => {
     }
 
     if (editingTipId !== null) {
-      // Find current logos if not changed
-      const current = tips.find(t => t.id === editingTipId);
-      const homeLogo = current?.homeTeamLogo || await fetchTeamLogoUrl(form.homeTeam);
-      const awayLogo = current?.awayTeamLogo || await fetchTeamLogoUrl(form.awayTeam);
-
       await updateTip({
         id: editingTipId,
         sport: form.sport,
@@ -371,18 +312,14 @@ const Admin = () => {
         kickoff: kickoffISO,
         status: form.status,
         isPremium: form.isPremium,
-        homeTeamLogo: homeLogo,
-        awayTeamLogo: awayLogo,
+        homeTeamLogo: form.homeTeamLogo,
+        awayTeamLogo: form.awayTeamLogo,
         description: form.description,
       });
       await refreshData();
       resetTipForm();
       toast({ title: "Tip updated! ✅" });
     } else {
-      // Fetch logos on add
-      const homeLogo = await fetchTeamLogoUrl(form.homeTeam);
-      const awayLogo = await fetchTeamLogoUrl(form.awayTeam);
-
       const created = await addTip({
         sport: form.sport,
         league: form.league,
@@ -393,13 +330,12 @@ const Admin = () => {
         kickoff: kickoffISO,
         status: form.status,
         isPremium: form.isPremium,
-        homeTeamLogo: homeLogo,
-        awayTeamLogo: awayLogo,
+        homeTeamLogo: form.homeTeamLogo,
+        awayTeamLogo: form.awayTeamLogo,
         description: form.description,
       });
       
       if (created && form.isPremium) {
-        // Automatically send push notification for new premium tip
         try {
           await supabase.functions.invoke("send-premium-push", {
             body: { 
@@ -407,11 +343,7 @@ const Admin = () => {
               message: `${form.homeTeam} vs ${form.awayTeam} - ${form.prediction}` 
             }
           });
-          toast({ title: "Premium push sent! 🚀" });
-        } catch (pushError) {
-          console.error("Failed to send automatic push:", pushError);
-          // Don't show error toast here to not confuse user if tip was added successfully
-        }
+        } catch (pushError) {}
       }
       
       await refreshData();
@@ -433,6 +365,8 @@ const Admin = () => {
       status: tip.status,
       isPremium: tip.isPremium || false,
       description: tip.description || "",
+      homeTeamLogo: tip.homeTeamLogo || null,
+      awayTeamLogo: tip.awayTeamLogo || null,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -444,24 +378,20 @@ const Admin = () => {
   };
 
   const handleAddCouponMatch = async () => {
-    const { homeTeam, awayTeam, prediction, odds, league, sport, kickoff } = couponMatchForm;
+    const { homeTeam, awayTeam, prediction, odds, league, sport, kickoff, homeTeamLogo, awayTeamLogo } = couponMatchForm;
     if (!homeTeam || !awayTeam || !prediction || !odds) {
       toast({ title: "Fill match fields", variant: "destructive" });
       return;
     }
-    
-    // Fetch logos for each match in the coupon
-    const homeLogo = await fetchTeamLogoUrl(homeTeam);
-    const awayLogo = await fetchTeamLogoUrl(awayTeam);
 
     setCouponMatches([...couponMatches, {
       homeTeam, awayTeam, prediction,
       odds: parseFloat(odds),
       league, sport, kickoff,
-      homeTeamLogo: homeLogo,
-      awayTeamLogo: awayLogo,
+      homeTeamLogo,
+      awayTeamLogo,
     }]);
-    setCouponMatchForm({ homeTeam: "", awayTeam: "", prediction: "", odds: "", league: "", sport: "Football", kickoff: "" });
+    setCouponMatchForm({ homeTeam: "", awayTeam: "", prediction: "", odds: "", league: "", sport: "Football", kickoff: "", homeTeamLogo: null, awayTeamLogo: null });
     toast({ title: "Match added to coupon ✅" });
   };
 
@@ -499,7 +429,6 @@ const Admin = () => {
       });
 
       if (createdCoupon && couponIsPremium) {
-        // Automatically send push notification for new premium coupon
         try {
           await supabase.functions.invoke("send-premium-push", {
             body: { 
@@ -507,10 +436,7 @@ const Admin = () => {
               message: `${couponName} with total odds ${calculateTotalOdds(couponMatches).toFixed(2)}` 
             }
           });
-          toast({ title: "Premium push sent! 🚀" });
-        } catch (pushError) {
-          console.error("Failed to send automatic push for coupon:", pushError);
-        }
+        } catch (pushError) {}
       }
 
       await refreshData();
@@ -534,8 +460,36 @@ const Admin = () => {
     toast({ title: "Coupon removed" });
   };
 
+  // Replace old state with simpler mobile-friendly form state
+  const [form, setForm] = useState({
+    sport: "Football",
+    league: "",
+    homeTeam: "",
+    awayTeam: "",
+    prediction: "",
+    odds: "",
+    kickoff: "",
+    status: "upcoming" as Tip["status"],
+    isPremium: false,
+    description: "",
+    homeTeamLogo: null as string | null,
+    awayTeamLogo: null as string | null,
+  });
+
+  const [couponMatchForm, setCouponMatchForm] = useState({
+    homeTeam: "",
+    awayTeam: "",
+    prediction: "",
+    odds: "",
+    league: "",
+    sport: "Football",
+    kickoff: "",
+    homeTeamLogo: null as string | null,
+    awayTeamLogo: null as string | null,
+  });
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       <header className="sticky top-0 z-50 glass border-b border-border/50">
         <div className="container max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -547,578 +501,117 @@ const Admin = () => {
           <Link to="/">
             <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
               <ArrowLeft className="w-4 h-4" />
-              Back
+              <span className="hidden sm:inline">Back</span>
             </Button>
           </Link>
         </div>
       </header>
 
-      <main className="container max-w-5xl mx-auto px-4 py-8 space-y-8">
-        {/* USER PREMIUM MANAGEMENT */}
-        <Card className="bg-card border-border/50 card-glow overflow-hidden relative">
-          <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
-            <Crown className="w-24 h-24 text-accent" />
-          </div>
-          <CardContent className="p-6 md:p-8">
-            <h2 className="font-display text-xl font-bold text-foreground mb-6 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
-                <Users className="w-4 h-4 text-accent" />
-              </div>
-              Manage Premium (Manual)
+      <main className="container max-w-5xl mx-auto px-4 py-6 space-y-6">
+        {/* QUICK FIND MATCH SECTION - MOBILE FIRST */}
+        <Card className="bg-card border-primary/20 shadow-lg overflow-hidden border-2">
+          <CardContent className="p-4 sm:p-6">
+            <h2 className="font-display text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <Search className="w-5 h-5 text-primary" />
+              Quick Match Finder
             </h2>
-            <form onSubmit={handleGrantPremium} className="grid gap-5 md:grid-cols-3 items-end">
-              <div className="space-y-2 md:col-span-1">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">User Email</Label>
-                <Input 
-                  type="email"
-                  placeholder="user@example.com" 
-                  value={userEmail} 
-                  onChange={(e) => setUserEmail(e.target.value)} 
-                />
-              </div>
-              <div className="space-y-2 md:col-span-1">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Premium Days</Label>
-                <Select value={premiumDays} onValueChange={setPremiumDays}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select duration" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 Day</SelectItem>
-                    <SelectItem value="7">7 Days</SelectItem>
-                    <SelectItem value="15">15 Days</SelectItem>
-                    <SelectItem value="30">30 Days</SelectItem>
-                    <SelectItem value="90">90 Days</SelectItem>
-                    <SelectItem value="365">1 Year</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="md:col-span-1">
-                <Button 
-                  type="submit" 
-                  disabled={isUpdatingPremium}
-                  className="w-full gap-2 h-11 font-display uppercase tracking-wider text-xs bg-accent text-accent-foreground hover:bg-accent/90"
-                >
-                  {isUpdatingPremium ? (
-                    <span className="animate-spin">⌛</span>
-                  ) : (
-                    <Crown className="w-4 h-4" />
-                  )}
-                  Grant Access
-                </Button>
-              </div>
-            </form>
-            <p className="mt-4 text-[11px] text-muted-foreground italic">
-              * Note: User must exist in 'profiles' table. If not found, ensure they have logged in at least once.
+            <UpcomingMatchesList onSelectMatch={handleSelectMatch} />
+            <p className="text-[10px] text-muted-foreground mt-3 italic">
+              * Select a match above to automatically fill the "Add New Tip" form below.
             </p>
           </CardContent>
         </Card>
 
-        {/* PUSH NOTIFICATIONS */}
-        <Card className="bg-card border-border/50 card-glow overflow-hidden relative">
-          <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
-            <Bell className="w-24 h-24 text-accent" />
-          </div>
-          <CardContent className="p-6 md:p-8">
-            <h2 className="font-display text-xl font-bold text-foreground mb-6 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
-                <Bell className="w-4 h-4 text-accent" />
-              </div>
-              Send Premium Push Notification
-            </h2>
-            <form onSubmit={sendPremiumPush} className="grid gap-5">
-              <div className="grid gap-5 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Notification Title</Label>
-                  <Input 
-                    placeholder="e.g. New Premium Tip! 🔥" 
-                    value={pushTitle} 
-                    onChange={(e) => setPushTitle(e.target.value)} 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Notification Message</Label>
-                  <Input 
-                    placeholder="e.g. A new high-confidence tip has been added." 
-                    value={pushMessage} 
-                    onChange={(e) => setPushMessage(e.target.value)} 
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button 
-                  type="submit" 
-                  disabled={isSendingPush}
-                  className="w-full md:w-auto min-w-[200px] gap-2 h-11 font-display uppercase tracking-wider text-xs bg-accent text-accent-foreground hover:bg-accent/90"
-                >
-                  {isSendingPush ? (
-                    <span className="animate-spin">⌛</span>
-                  ) : (
-                    <Bell className="w-4 h-4" />
-                  )}
-                  Send to All Premium Users
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* API INTEGRATION STEPPER */}
-        <Card className="bg-card border-accent/30 card-glow border-2 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-            <Search className="w-20 h-20 text-accent" />
-          </div>
-          <CardContent className="p-6 md:p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display text-xl font-bold text-foreground flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
-                  <Search className="w-4 h-4 text-accent" />
-                </div>
-                Odds-API.io Match Finder
-              </h2>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-[10px] h-8 border-accent/20 hover:bg-accent/10"
-                onClick={async () => {
-                  await clearBookmakerSelections();
-                  toast({ title: "Bookmaker selection reset! 🔄" });
-                }}
-              >
-                Reset API Selection
-              </Button>
-            </div>
-            
-            <div className="space-y-6">
-              {/* Step 1: Select League */}
-              <div className="space-y-3">
-                <Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Step 1: Select League</Label>
-                <Select onValueChange={setSelectedLeague} value={selectedLeague || ""}>
-                  <SelectTrigger className="h-12 bg-muted/20 border-accent/20">
-                    <SelectValue placeholder={leaguesLoading ? "Loading leagues..." : "Choose a competition"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                  {leagues && leagues.length > 0 ? (
-                    leagues.map((league) => (
-                      <SelectItem key={league.slug} value={league.slug}>{league.name}</SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="none" disabled>No active leagues found</SelectItem>
-                  )}
-                </SelectContent>
-                </Select>
-              </div>
-
-              {/* Step 2: Select Match */}
-              {selectedLeague && (
-                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Step 2: Select Match</Label>
-                  {matchesLoading ? (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
-                      <RefreshCw className="w-4 h-4 animate-spin" /> Fetching matches...
-                    </div>
-                  ) : (
-                      <div className="grid gap-3 sm:grid-cols-2">
-                    {leagueMatches && leagueMatches.length > 0 ? (
-                      leagueMatches.map((match) => (
-                        <button
-                          key={match.id}
-                          type="button"
-                          onClick={() => {
-                            console.log("Selected match ID:", match.id);
-                            setSelectedEventId(match.id);
-                            setSelectedMarket(null);
-                          }}
-                          className={`flex flex-col gap-1 p-3 rounded-xl border text-left transition-all ${
-                            selectedEventId === match.id 
-                              ? 'bg-accent/20 border-accent shadow-[0_0_20px_rgba(236,72,153,0.2)] scale-[1.02]' 
-                              : 'bg-muted/10 border-border/50 hover:border-accent/30'
-                          }`}
-                        >
-                          <div className="flex justify-between items-center text-[10px] text-muted-foreground mb-1 uppercase tracking-tighter">
-                            <span>{match.date} {match.time}</span>
-                            {selectedEventId === match.id && <Check className="w-3.5 h-3.5 text-accent animate-in zoom-in" />}
-                          </div>
-                          <div className="font-bold text-xs truncate">
-                            {match.homeTeam} vs {match.awayTeam}
-                          </div>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="col-span-full text-center py-4 text-muted-foreground text-xs">No upcoming matches in this league</div>
-                    )}
-                  </div>
-                  )}
-                </div>
-              )}
-
-              {/* Step 3: Select Odds & Pick Target Form */}
-              {selectedEventId && (
-                <div id="step-3-container" className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500 pt-6 border-t-2 border-accent/20 mt-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-[10px] font-black">3</div>
-                    <Label className="text-xs uppercase tracking-widest text-foreground font-black">Step 3: Select Your Pick & Send to Form</Label>
-                  </div>
-                  
-                  {oddsLoading ? (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
-                      <RefreshCw className="w-4 h-4 animate-spin" /> Fetching real-time odds...
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {/* Market Tabs */}
-                      <div className="flex flex-wrap gap-2">
-                        {markets && markets.length > 0 ? (
-                          markets.map((market) => (
-                            <Button
-                              key={market}
-                              variant={selectedMarket === market ? "default" : "outline"}
-                              size="sm"
-                              className={`h-8 text-[10px] uppercase font-bold tracking-wider ${selectedMarket === market ? 'bg-accent text-accent-foreground' : 'border-accent/20 text-muted-foreground'}`}
-                              onClick={() => setSelectedMarket(market)}
-                            >
-                              {market}
-                            </Button>
-                          ))
-                        ) : (
-                          <div className="text-xs text-muted-foreground italic">No markets available for this event</div>
-                        )}
-                      </div>
-
-                      {/* Odds for selected market */}
-                      {selectedMarket && groupedOutcomes && groupedOutcomes[selectedMarket] && (
-                        <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 animate-in fade-in zoom-in-95 duration-200">
-                          {groupedOutcomes[selectedMarket].map((outcome, idx) => (
-                            <button
-                              key={idx}
-                              className="group relative flex flex-col p-2.5 rounded-lg border border-accent/30 bg-accent/5 hover:border-accent hover:bg-accent/10 transition-all text-left"
-                            >
-                              <div className="text-[10px] font-bold text-foreground leading-tight mb-1 truncate">
-                                {outcome.name && outcome.name.includes(': ') ? outcome.name.split(': ')[1] : outcome.name}
-                              </div>
-                              <div className="text-xs font-display font-black text-accent mt-auto">{outcome.price ? outcome.price.toFixed(2) : "0.00"}</div>
-                              
-                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-accent/90 backdrop-blur-[2px] rounded-lg transition-opacity gap-1 px-1">
-                                <Button 
-                                  size="icon" 
-                                  className="h-7 w-7 rounded-full bg-white text-accent hover:bg-white/90 shadow-xl" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const match = leagueMatches?.find(m => m.id === selectedEventId);
-                                    if (match) {
-                                      handleSelectMatch(match);
-                                      handleSelectOutcome(outcome);
-                                    }
-                                  }}
-                                  title="Send to Add Tip"
-                                >
-                                  <Plus className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button 
-                                  size="icon" 
-                                  className="h-7 w-7 rounded-full bg-white text-primary hover:bg-white/90 shadow-xl" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const match = leagueMatches?.find(m => m.id === selectedEventId);
-                                    if (match) {
-                                      setCouponMatchForm({
-                                        homeTeam: match.homeTeam,
-                                        awayTeam: match.awayTeam,
-                                        league: match.league,
-                                        kickoff: `${match.date} ${match.time}`,
-                                        sport: "Football",
-                                        prediction: outcome.name,
-                                        odds: outcome.price.toString()
-                                      });
-                                      toast({ title: "Sent to Coupon Builder" });
-                                    }
-                                  }}
-                                  title="Send to Coupon"
-                                >
-                                  <Receipt className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button 
-                                  size="icon" 
-                                  className="h-7 w-7 rounded-full bg-white text-yellow-500 hover:bg-white/90 shadow-xl" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const match = leagueMatches?.find(m => m.id === selectedEventId);
-                                    if (match) {
-                                      setFeatured({
-                                        ...featured,
-                                        homeTeam: match.homeTeam,
-                                        awayTeam: match.awayTeam,
-                                        league: match.league,
-                                        kickoff: `${match.date} ${match.time}`,
-                                        prediction: outcome.name,
-                                        odds: outcome.price.toString()
-                                      });
-                                      toast({ title: "Sent to Hero Pick" });
-                                    }
-                                  }}
-                                  title="Send to Hero"
-                                >
-                                  <Zap className="w-3.5 h-3.5" />
-                                </Button>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {!selectedMarket && outcomes && outcomes.length > 0 && (
-                        <div className="text-center py-8 border-2 border-dashed border-accent/10 rounded-xl bg-accent/5">
-                          <TrendingUp className="w-8 h-8 text-accent/30 mx-auto mb-2" />
-                          <p className="text-xs text-muted-foreground">Select a market above to see available odds</p>
-                        </div>
-                      )}
-
-                      {(!outcomes || outcomes.length === 0) && (
-                        <div className="col-span-full text-center py-4 text-muted-foreground text-xs">No active odds found for this match</div>
-                      )}
-                      
-                      <p className="text-[10px] text-muted-foreground italic flex items-center gap-1.5 mt-2">
-                        <Zap className="w-3 h-3 text-accent" /> Hover over a pick to send it to Tip Form, Coupon, or Hero Section.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* FEATURED PICK EDITOR */}
-        <Card className="bg-card border-border/50 card-glow">
-          <CardContent className="p-6 md:p-8">
-            <h2 className="font-display text-xl font-bold text-foreground mb-6 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-accent" />
-              </div>
-              Featured Pick (Hero)
-            </h2>
-            <div className="grid gap-5 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">League</Label>
-                <Input value={featured.league} onChange={(e) => setFeatured({ ...featured, league: e.target.value })} placeholder="e.g. Premier League" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Kickoff Time</Label>
-                <Input value={featured.kickoff} onChange={(e) => setFeatured({ ...featured, kickoff: e.target.value })} placeholder="e.g. 20:00" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Home Team</Label>
-                <div className="flex items-center gap-2">
-                  <Input value={featured.homeTeam} onChange={(e) => setFeatured({ ...featured, homeTeam: e.target.value })} placeholder="e.g. Arsenal" />
-                  {featured.homeTeam.length > 2 && <TeamLogo teamName={featured.homeTeam} size={32} />}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Away Team</Label>
-                <div className="flex items-center gap-2">
-                  <Input value={featured.awayTeam} onChange={(e) => setFeatured({ ...featured, awayTeam: e.target.value })} placeholder="e.g. Chelsea" />
-                  {featured.awayTeam.length > 2 && <TeamLogo teamName={featured.awayTeam} size={32} />}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Prediction</Label>
-                <Input value={featured.prediction} onChange={(e) => setFeatured({ ...featured, prediction: e.target.value })} placeholder="e.g. Over 2.5 Goals" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Odds</Label>
-                <Input value={featured.odds} onChange={(e) => setFeatured({ ...featured, odds: e.target.value })} placeholder="e.g. 1.85" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Confidence</Label>
-                <Select value={featured.confidence} onValueChange={(v) => setFeatured({ ...featured, confidence: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="High">High 🔥</SelectItem>
-                    <SelectItem value="Medium">Medium ⚡</SelectItem>
-                    <SelectItem value="Low">Low 🎲</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Status</Label>
-                <Select 
-                  value={featured.status || "upcoming"} 
-                  onValueChange={(v: any) => setFeatured({ ...featured, status: v })}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="upcoming">Upcoming</SelectItem>
-                    <SelectItem value="won">Won ✓</SelectItem>
-                    <SelectItem value="lost">Lost ✗</SelectItem>
-                    <SelectItem value="draw">Draw</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <UpcomingMatchesList teamName={featured.homeTeam} onSelectMatch={handleSelectFeaturedMatch} />
-
-              <div className="space-y-2 col-span-full">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Analysis / Description (Featured)</Label>
-                <textarea 
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                  placeholder="Why is this the featured pick?" 
-                  value={featured.description || ""} 
-                  onChange={(e) => setFeatured({ ...featured, description: e.target.value })} 
-                />
-              </div>
-
-              <div className="flex items-end">
-                <Button
-                  className="w-full gap-2 h-11 font-display uppercase tracking-wider text-xs"
-                  onClick={async () => {
-                    try {
-                      const homeLogo = await fetchTeamLogoUrl(featured.homeTeam);
-                    const awayLogo = await fetchTeamLogoUrl(featured.awayTeam);
-                    
-                    // Always save as a new record to ensure it becomes the "latest"
-                    const { id, ...pickWithoutId } = featured; 
-                    await saveFeaturedPick({
-                      ...pickWithoutId,
-                      homeTeamLogo: homeLogo,
-                      awayTeamLogo: awayLogo
-                    });
-                    
-                    await refreshData();
-                    toast({ title: "Featured Pick updated! ⚡" });
-                  } catch (error: any) {
-                    console.error("Full error object:", error);
-                    if (error.message?.includes("SQL_COLUMN_MISSING")) {
-                      toast({ 
-                        title: "Database Error: Missing 'status'", 
-                        description: "CRITICAL: You MUST run the SQL command in Supabase to add the status column. See instructions below.",
-                        variant: "destructive" 
-                      });
-                      console.log("%c>>> RUN THIS SQL IN SUPABASE SQL EDITOR:", "color: yellow; font-weight: bold; font-size: 14px;");
-                      console.log("%cALTER TABLE featured_picks ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'upcoming';", "color: #00ff00; background: #222; padding: 5px;");
-                    } else {
-                      toast({ 
-                        title: "Update Failed", 
-                        description: error.message || "Unknown error occurred while saving.",
-                        variant: "destructive" 
-                      });
-                    }
-                  }
-                  }}
-                >
-                  <Zap className="w-4 h-4" />
-                  Save Featured Pick
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ADD / EDIT TIP */}
-        <Card className={`bg-card border-border/50 card-glow ${editingTipId !== null ? 'ring-2 ring-accent' : ''}`}>
-          <CardContent className="p-6 md:p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display text-xl font-bold text-foreground flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
-                  {editingTipId !== null ? <Pencil className="w-4 h-4 text-primary" /> : <Plus className="w-4 h-4 text-primary" />}
-                </div>
+        {/* ADD / EDIT TIP - RE-LAYOUT FOR MOBILE */}
+        <Card className={`bg-card border-border/50 ${editingTipId !== null ? 'ring-2 ring-primary' : ''}`}>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-lg font-bold flex items-center gap-2">
+                {editingTipId !== null ? <Pencil className="w-4 h-4 text-primary" /> : <PlusCircle className="w-4 h-4 text-primary" />}
                 {editingTipId !== null ? "Edit Tip" : "Add New Tip"}
               </h2>
               {editingTipId !== null && (
-                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={resetTipForm}>
-                  <XCircle className="w-4 h-4" /> Cancel
+                <Button variant="ghost" size="sm" className="h-8 px-2" onClick={resetTipForm}>
+                  <X className="w-4 h-4 mr-1" /> Cancel
                 </Button>
               )}
             </div>
-            <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Sport</Label>
-                <Select value={form.sport} onValueChange={(v) => setForm({ ...form, sport: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["Football", "Basketball", "Tennis", "MMA", "Baseball", "Hockey", "Esports"].map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">League</Label>
-                <Input placeholder="e.g. La Liga, NBA..." value={form.league} onChange={(e) => setForm({ ...form, league: e.target.value })} />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Home Team</Label>
-                <div className="flex items-center gap-2">
-                  <Input placeholder="e.g. Barcelona" value={form.homeTeam} onChange={(e) => setForm({ ...form, homeTeam: e.target.value })} />
-                  {form.homeTeam.length > 2 && <TeamLogo teamName={form.homeTeam} size={32} />}
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Sport</Label>
+                  <Select value={form.sport} onValueChange={(v) => setForm({ ...form, sport: v })}>
+                    <SelectTrigger className="h-10 bg-muted/20"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {["Football", "Basketball", "Tennis", "MMA", "Baseball", "Hockey", "Esports"].map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">League</Label>
+                  <Input className="h-10 bg-muted/20" placeholder="e.g. La Liga" value={form.league} onChange={(e) => setForm({ ...form, league: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Home Team</Label>
+                  <div className="relative">
+                    <Input className="h-10 bg-muted/20" value={form.homeTeam} onChange={(e) => setForm({ ...form, homeTeam: e.target.value })} />
+                    {form.homeTeamLogo && <div className="absolute right-2 top-1/2 -translate-y-1/2"><TeamLogo teamName={form.homeTeam} logoUrl={form.homeTeamLogo} size={20} /></div>}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Away Team</Label>
+                  <div className="relative">
+                    <Input className="h-10 bg-muted/20" value={form.awayTeam} onChange={(e) => setForm({ ...form, awayTeam: e.target.value })} />
+                    {form.awayTeamLogo && <div className="absolute right-2 top-1/2 -translate-y-1/2"><TeamLogo teamName={form.awayTeam} logoUrl={form.awayTeamLogo} size={20} /></div>}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Prediction</Label>
+                  <Input className="h-10 bg-muted/20" placeholder="e.g. Home Win" value={form.prediction} onChange={(e) => setForm({ ...form, prediction: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Odds</Label>
+                  <Input type="number" step="0.01" className="h-10 bg-muted/20" value={form.odds} onChange={(e) => setForm({ ...form, odds: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Kickoff (YYYY-MM-DD HH:MM)</Label>
+                  <Input className="h-10 bg-muted/20" value={form.kickoff} onChange={(e) => setForm({ ...form, kickoff: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Status</Label>
+                  <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as Tip["status"] })}>
+                    <SelectTrigger className="h-10 bg-muted/20"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="upcoming">Upcoming</SelectItem>
+                      <SelectItem value="won">Won ✓</SelectItem>
+                      <SelectItem value="lost">Lost ✗</SelectItem>
+                      <SelectItem value="draw">Draw</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Away Team</Label>
-                <div className="flex items-center gap-2">
-                  <Input placeholder="e.g. Real Madrid" value={form.awayTeam} onChange={(e) => setForm({ ...form, awayTeam: e.target.value })} />
-                  {form.awayTeam.length > 2 && <TeamLogo teamName={form.awayTeam} size={32} />}
-                </div>
-              </div>
-
-              <UpcomingMatchesList teamName={form.homeTeam} onSelectMatch={handleSelectMatch} />
-
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Prediction</Label>
-                <Input placeholder="e.g. Over 2.5 Goals" value={form.prediction} onChange={(e) => setForm({ ...form, prediction: e.target.value })} />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Odds</Label>
-                <Input type="number" step="0.01" placeholder="e.g. 1.85" value={form.odds} onChange={(e) => setForm({ ...form, odds: e.target.value })} />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Kickoff (Format: YYYY-MM-DD HH:MM)</Label>
-                <Input placeholder="e.g. 2026-04-21 21:00" value={form.kickoff} onChange={(e) => setForm({ ...form, kickoff: e.target.value })} />
-                <p className="text-[10px] text-muted-foreground italic">Podaj czas polski (zostanie przeliczony na czas użytkownika)</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Status</Label>
-                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as Tip["status"] })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="upcoming">Upcoming</SelectItem>
-                    <SelectItem value="won">Won ✓</SelectItem>
-                    <SelectItem value="lost">Lost ✗</SelectItem>
-                    <SelectItem value="draw">Draw</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2 col-span-full">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Analysis / Description</Label>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Analysis / Description</Label>
                 <textarea 
-                  className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                  placeholder="Why are you picking this tip?" 
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-muted/20 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                  placeholder="Why this tip?" 
                   value={form.description} 
                   onChange={(e) => setForm({ ...form, description: e.target.value })} 
                 />
               </div>
 
-              <div className="flex items-center gap-3 col-span-full bg-accent/5 border border-accent/20 rounded-xl px-4 py-3">
-                <Checkbox
-                  id="isPremium"
-                  checked={form.isPremium}
-                  onCheckedChange={(checked) => setForm({ ...form, isPremium: checked === true })}
-                />
-                <Label htmlFor="isPremium" className="flex items-center gap-2 cursor-pointer text-sm">
-                  <Crown className="w-4 h-4 text-accent" />
-                  Premium only tip
-                </Label>
-              </div>
-
-              <div className="flex items-end col-span-full">
-                <Button type="submit" className="w-full gap-2 h-11 font-display uppercase tracking-wider text-xs">
-                  {editingTipId !== null ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              <div className="flex items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <Checkbox id="isPremium" checked={form.isPremium} onCheckedChange={(c) => setForm({ ...form, isPremium: c === true })} />
+                  <Label htmlFor="isPremium" className="flex items-center gap-1.5 text-xs font-bold cursor-pointer">
+                    <Crown className="w-3.5 h-3.5 text-accent" /> Premium Tip
+                  </Label>
+                </div>
+                <Button type="submit" className="h-10 px-6 font-display uppercase tracking-widest text-[10px]">
                   {editingTipId !== null ? "Save Changes" : "Add Tip"}
                 </Button>
               </div>
@@ -1126,191 +619,142 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-        {/* ALL TIPS LIST */}
-        <div>
-          <h2 className="font-display text-xl font-bold text-foreground mb-4 tracking-tight">
-            All Tips ({tips.length})
-          </h2>
-          <div className="grid gap-3">
-            {tips.map((tip) => (
-              <Card key={tip.id} className="bg-card border-border/50 group hover:border-border transition-colors">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <TeamLogo teamName={tip.homeTeam} size={24} />
-                    <div>
-                      <p className="font-display font-semibold text-foreground text-sm tracking-tight">
-                        {tip.homeTeam} vs {tip.awayTeam}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {tip.sport} • {tip.league} • {tip.prediction} @ {tip.odds}
-                      </p>
+        {/* FEATURED PICK (HERO) - SIMPLIFIED */}
+        <Card className="bg-card border-accent/30 shadow-accent/10 shadow-xl overflow-hidden">
+          <CardContent className="p-4 sm:p-6">
+            <h2 className="font-display text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-accent" />
+              Featured Pick (Hero)
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <UpcomingMatchesList onSelectMatch={handleSelectFeaturedMatch} />
+                <div className="space-y-3 p-4 bg-muted/10 rounded-xl border border-border/50">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase text-muted-foreground">Confidence</Label>
+                      <Select value={featured.confidence} onValueChange={(v) => setFeatured({ ...featured, confidence: v })}>
+                        <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="High">High 🔥</SelectItem>
+                          <SelectItem value="Medium">Medium ⚡</SelectItem>
+                          <SelectItem value="Low">Low 🎲</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase text-muted-foreground">Status</Label>
+                      <Select value={featured.status || "upcoming"} onValueChange={(v: any) => setFeatured({ ...featured, status: v })}>
+                        <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="upcoming">Upcoming</SelectItem>
+                          <SelectItem value="won">Won ✓</SelectItem>
+                          <SelectItem value="lost">Lost ✗</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {tip.isPremium && (
-                      <Badge variant="confidence" className="gap-1 text-[10px]">
-                        <Crown className="w-3 h-3" />
-                        Premium
-                      </Badge>
-                    )}
-                    <Badge variant={tip.status === "won" ? "win" : tip.status === "lost" ? "loss" : tip.status === "draw" ? "draw" : "outline"}>
-                      {tip.status}
-                    </Badge>
-                    <Button variant="ghost" size="icon" onClick={() => handleEditTip(tip)} className="text-primary hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(tip.id)} className="text-loss hover:text-loss hover:bg-loss/10 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        {/* COUPON BUILDER */}
-        <Card className={`bg-card border-border/50 card-glow ${editingCouponId !== null ? 'ring-2 ring-accent' : ''}`}>
-          <CardContent className="p-6 md:p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display text-xl font-bold text-foreground flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
-                  {editingCouponId !== null ? <Pencil className="w-4 h-4 text-accent" /> : <Receipt className="w-4 h-4 text-accent" />}
-                </div>
-                {editingCouponId !== null ? "Edit Coupon" : "Create Coupon"}
-              </h2>
-              {editingCouponId !== null && (
-                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={resetCouponForm}>
-                  <XCircle className="w-4 h-4" /> Cancel
-                </Button>
-              )}
-            </div>
-
-            <div className="space-y-5">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Coupon Name</Label>
-                  <Input placeholder="e.g. Weekend Combo" value={couponName} onChange={(e) => setCouponName(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Stake ($)</Label>
-                  <Input type="number" step="0.01" placeholder="e.g. 10" value={couponStake} onChange={(e) => setCouponStake(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Status</Label>
-                  <Select value={couponStatus} onValueChange={(v) => setCouponStatus(v as Coupon["status"])}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="won">Won ✓</SelectItem>
-                      <SelectItem value="lost">Lost ✗</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end">
-                  <div className="flex items-center gap-3 bg-accent/5 border border-accent/20 rounded-xl px-4 py-3 w-full">
-                    <Checkbox id="couponPremium" checked={couponIsPremium} onCheckedChange={(c) => setCouponIsPremium(c === true)} />
-                    <Label htmlFor="couponPremium" className="flex items-center gap-2 cursor-pointer text-sm">
-                      <Crown className="w-4 h-4 text-accent" /> Premium
-                    </Label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Add match to coupon */}
-              <div className="bg-muted/30 rounded-xl p-4 space-y-4">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-display font-bold">Add Match to Coupon</p>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <Input placeholder="Home Team" value={couponMatchForm.homeTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, homeTeam: e.target.value })} />
-                  <Input placeholder="Away Team" value={couponMatchForm.awayTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, awayTeam: e.target.value })} />
-                  
-                  <div className="col-span-full">
-                    <UpcomingMatchesList teamName={couponMatchForm.homeTeam} onSelectMatch={handleSelectCouponMatch} />
-                  </div>
-
-                  <Input placeholder="Prediction" value={couponMatchForm.prediction} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, prediction: e.target.value })} />
-                  <Input type="number" step="0.01" placeholder="Odds" value={couponMatchForm.odds} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, odds: e.target.value })} />
-                  <Input placeholder="League" value={couponMatchForm.league} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, league: e.target.value })} />
-                  <Input placeholder="Kickoff" value={couponMatchForm.kickoff} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, kickoff: e.target.value })} />
-                </div>
-                <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={handleAddCouponMatch}>
-                  <Plus className="w-3.5 h-3.5" /> Add Match
-                </Button>
-              </div>
-
-              {/* Current coupon matches */}
-              {couponMatches.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-display">
-                    Matches ({couponMatches.length}) — Total Odds: <span className="text-primary font-bold">{calculateTotalOdds(couponMatches).toFixed(2)}</span>
-                    {couponStake && (
-                      <span className="text-accent ml-2">
-                        Potential Win: ${(parseFloat(couponStake) * calculateTotalOdds(couponMatches)).toFixed(2)}
-                      </span>
-                    )}
-                  </p>
-                  {couponMatches.map((m, i) => (
-                    <div key={i} className="flex items-center justify-between bg-card border border-border/50 rounded-lg p-3">
-                      <div className="flex items-center gap-2">
-                        <TeamLogo teamName={m.homeTeam} size={20} />
-                        <span className="text-sm text-foreground">{m.homeTeam} vs {m.awayTeam}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-muted-foreground">{m.prediction}</span>
-                        <span className="font-display font-bold text-accent text-sm">{m.odds.toFixed(2)}</span>
-                        <Button variant="ghost" size="icon" className="w-6 h-6 text-loss hover:text-loss" onClick={() => handleRemoveCouponMatch(i)}>
-                          <X className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] uppercase text-muted-foreground">Prediction & Odds</Label>
+                    <div className="flex gap-2">
+                      <Input className="h-9 text-xs flex-1" placeholder="Prediction" value={featured.prediction} onChange={(e) => setFeatured({ ...featured, prediction: e.target.value })} />
+                      <Input className="h-9 text-xs w-20" placeholder="Odds" value={featured.odds} onChange={(e) => setFeatured({ ...featured, odds: e.target.value })} />
                     </div>
-                  ))}
+                  </div>
+                  <Button
+                    className="w-full gap-2 h-10 font-display uppercase tracking-wider text-[10px] bg-accent hover:bg-accent/90"
+                    onClick={async () => {
+                      const { id, ...pickWithoutId } = featured; 
+                      await saveFeaturedPick(pickWithoutId);
+                      await refreshData();
+                      toast({ title: "Hero Pick Saved! ⚡" });
+                    }}
+                  >
+                    Update Hero Section
+                  </Button>
                 </div>
-              )}
-
-              <Button className="w-full gap-2 h-11 font-display uppercase tracking-wider text-xs" onClick={handleCreateOrUpdateCoupon}>
-                {editingCouponId !== null ? <Save className="w-4 h-4" /> : <Receipt className="w-4 h-4" />}
-                {editingCouponId !== null ? "Save Changes" : "Create Coupon"}
-              </Button>
+              </div>
+              <div className="space-y-4">
+                <div className="p-4 bg-accent/5 rounded-xl border border-accent/20 h-full">
+                  <Label className="text-[9px] uppercase text-accent font-bold">Hero Analysis</Label>
+                  <textarea 
+                    className="mt-2 w-full h-[calc(100%-30px)] min-h-[120px] bg-transparent border-none text-xs text-muted-foreground focus:ring-0 resize-none italic"
+                    placeholder="Describe why this is the pick of the day..."
+                    value={featured.description || ""}
+                    onChange={(e) => setFeatured({ ...featured, description: e.target.value })}
+                  />
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Existing coupons */}
-        {coupons.length > 0 && (
-          <div>
-            <h2 className="font-display text-xl font-bold text-foreground mb-4 tracking-tight">
-              All Coupons ({coupons.length})
-            </h2>
-            <div className="grid gap-3">
-              {coupons.map((coupon) => (
-                <Card key={coupon.id} className="bg-card border-border/50 group hover:border-border transition-colors">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div>
-                      <p className="font-display font-semibold text-foreground text-sm">{coupon.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {coupon.matches.length} matches • Total: {coupon.totalOdds.toFixed(2)} • {coupon.status}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {coupon.isPremium && (
-                        <Badge variant="confidence" className="gap-1 text-[10px]">
-                          <Crown className="w-3 h-3" /> Premium
-                        </Badge>
-                      )}
-                      <Button variant="ghost" size="icon" onClick={() => handleEditCoupon(coupon)} className="text-primary hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteCoupon(coupon.id)} className="text-loss hover:text-loss hover:bg-loss/10 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+        {/* PREMIUM & PUSH - COMPACT ON MOBILE */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <Card className="bg-card border-border/50">
+            <CardContent className="p-4">
+              <h3 className="font-display text-sm font-bold mb-4 flex items-center gap-2">
+                <Users className="w-4 h-4 text-accent" /> Premium Access
+              </h3>
+              <form onSubmit={handleGrantPremium} className="space-y-3">
+                <Input className="h-9 text-xs" placeholder="User Email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} />
+                <div className="flex gap-2">
+                  <Select value={premiumDays} onValueChange={premiumDays}>
+                    <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7">7 Days</SelectItem>
+                      <SelectItem value="30">30 Days</SelectItem>
+                      <SelectItem value="365">1 Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button type="submit" disabled={isUpdatingPremium} className="h-9 text-[10px] flex-1 bg-accent">Grant</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border-border/50">
+            <CardContent className="p-4">
+              <h3 className="font-display text-sm font-bold mb-4 flex items-center gap-2">
+                <Bell className="w-4 h-4 text-accent" /> Send Push
+              </h3>
+              <form onSubmit={sendPremiumPush} className="space-y-3">
+                <Input className="h-9 text-xs" placeholder="Title" value={pushTitle} onChange={(e) => setPushTitle(e.target.value)} />
+                <div className="flex gap-2">
+                  <Input className="h-9 text-xs flex-1" placeholder="Message" value={pushMessage} onChange={(e) => setPushMessage(e.target.value)} />
+                  <Button type="submit" disabled={isSendingPush} className="h-9 text-[10px] bg-accent">Send</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ALL TIPS LIST - COMPACT */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-lg font-bold">Active Tips ({tips.length})</h2>
+            <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={refreshData}><RefreshCw className="w-3 h-3 mr-1" /> Sync</Button>
           </div>
-        )}
+          <div className="space-y-2">
+            {tips.map((tip) => (
+              <div key={tip.id} className="flex items-center justify-between p-3 bg-card border border-border/50 rounded-xl group active:bg-muted/50">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo || undefined} size={20} />
+                  <div className="truncate">
+                    <p className="text-xs font-bold truncate">{tip.homeTeam} vs {tip.awayTeam}</p>
+                    <p className="text-[10px] text-muted-foreground">{tip.prediction} @ {tip.odds}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Badge variant={tip.status === "won" ? "win" : tip.status === "lost" ? "loss" : "outline"} className="text-[8px] h-5 px-1">{tip.status}</Badge>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditTip(tip)}><Pencil className="w-3.5 h-3.5" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-loss" onClick={() => handleDelete(tip.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </main>
     </div>
   );
