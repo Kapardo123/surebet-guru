@@ -24,14 +24,17 @@ serve(async (req) => {
     const { endpoint, params, isImage } = payload
     
     if (isImage) {
-      console.log(`[Proxy] Fetching image from: ${endpoint}`);
-      const imgRes = await fetch(endpoint, {
+      // If it's a team logo request, use the official RapidAPI endpoint
+      // The endpoint passed will be the teamId
+      const teamId = params?.teamId || endpoint.split('/').pop();
+      const rapidApiImageUrl = `https://${RAPID_API_HOST}/api/sofascore/v1/teams/get-image?team_id=${teamId}`;
+      
+      console.log(`[Proxy] Fetching team logo from RapidAPI: ${rapidApiImageUrl}`);
+      
+      const imgRes = await fetch(rapidApiImageUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-          'Accept-Language': 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
-          'Referer': 'https://www.sofascore.com/',
-          'Cache-Control': 'no-cache'
+          'X-RapidAPI-Key': RAPID_API_KEY,
+          'X-RapidAPI-Host': RAPID_API_HOST,
         }
       });
       
