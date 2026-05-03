@@ -39,6 +39,10 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
         if (data instanceof Blob) {
           const objectUrl = URL.createObjectURL(data);
           setProxyLogoUrl(objectUrl);
+        } else if (data?.base64) {
+          // If proxy returned base64 (our new reliable method)
+          const logoDataUrl = `data:${data.contentType || 'image/png'};base64,${data.base64}`;
+          setProxyLogoUrl(logoDataUrl);
         } else if (data && typeof data === 'object' && data.constructor.name === 'Blob') {
           // Extra check for some environments
           const objectUrl = URL.createObjectURL(data as unknown as Blob);

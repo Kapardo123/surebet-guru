@@ -32,11 +32,16 @@ serve(async (req) => {
         }
       });
       
-      const blob = await imgRes.blob();
-      return new Response(blob, {
+      const arrayBuffer = await imgRes.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      
+      return new Response(JSON.stringify({ 
+        base64, 
+        contentType: imgRes.headers.get('Content-Type') || 'image/png' 
+      }), {
         headers: { 
           ...corsHeaders,
-          'Content-Type': imgRes.headers.get('Content-Type') || 'image/png',
+          'Content-Type': 'application/json',
           'Cache-Control': 'public, max-age=86400'
         },
         status: 200,
