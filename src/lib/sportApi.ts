@@ -68,12 +68,20 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
         }
 
         // Ensure time is a string
-        let timeStr = "TBD";
-        if (event.startTimestamp) {
-          timeStr = new Date(event.startTimestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        } else if (typeof event.time === 'string') {
-          timeStr = event.time;
-        }
+         let timeStr = "TBD";
+         if (event.startTimestamp) {
+           try {
+             timeStr = new Date(event.startTimestamp * 1000).toLocaleTimeString(undefined, { 
+               hour: '2-digit', 
+               minute: '2-digit',
+               hour12: false 
+             });
+           } catch (e) {
+             console.error("[SofaScore] Time formatting error:", e);
+           }
+         } else if (typeof event.time === 'string') {
+           timeStr = event.time;
+         }
 
         return {
           id: event.id,
