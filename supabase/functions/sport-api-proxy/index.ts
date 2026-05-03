@@ -19,11 +19,11 @@ serve(async (req) => {
     // Clean up endpoint and build query params
     const cleanPath = endpoint.replace(/^\/+/, '').replace(/^api\//, '').replace(/^v1\//, '')
     
-    // We try the api. subdomain and v1 prefix which is common for SportAPI.ai
-    const finalUrl = `https://api.sportapi.ai/v1/${cleanPath}`
+    // We use sportapi.ai/api/v1/ which is the most likely production path
+    const finalUrl = `https://sportapi.ai/api/v1/${cleanPath}`
     const queryParams = new URLSearchParams(params || {})
     
-    // Some endpoints prefer the token in the URL
+    // Always include token in URL as a fallback
     queryParams.append('token', SPORT_API_KEY)
     
     const urlWithParams = `${finalUrl}?${queryParams.toString()}`
@@ -34,7 +34,7 @@ serve(async (req) => {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'X-API-Key': SPORT_API_KEY,
+        'X-Api-Key': SPORT_API_KEY,
         'Authorization': `Bearer ${SPORT_API_KEY}`
       }
     })
