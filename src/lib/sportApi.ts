@@ -19,14 +19,21 @@ export interface SportApiFixture {
 
 export const fetchFixturesByDate = async (date: string): Promise<SportApiFixture[]> => {
   try {
-    const response = await fetch(`${BASE_URL}/fixtures?date=${date}&token=${SPORT_API_KEY}`);
-    const data = await response.json();
-    if (data.success) {
+    const { data, error } = await supabase.functions.invoke('sport-api-proxy', {
+      body: { 
+        endpoint: '/fixtures',
+        params: { date }
+      }
+    });
+
+    if (error) throw error;
+    
+    if (data?.success) {
       return data.fixtures;
     }
     return [];
   } catch (error) {
-    console.error("Error fetching fixtures:", error);
+    console.error("Error fetching fixtures via proxy:", error);
     return [];
   }
 };
