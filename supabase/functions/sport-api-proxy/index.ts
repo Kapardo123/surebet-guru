@@ -21,14 +21,17 @@ serve(async (req) => {
     
     // Construct SofaScore RapidAPI URL
     const date = params?.date || new Date().toISOString().split('T')[0];
-    let finalUrl = `https://${RAPID_API_HOST}/api/sofascore/v1/${endpoint}?date=${date}`;
     
-    // Add categoryId if provided
-    if (params?.categoryId) {
-      finalUrl += `&categoryId=${params.categoryId}`;
+    // Most SofaScore6 endpoints follow /api/sofascore/v1/
+    // Let's try to handle different endpoint formats
+    let finalUrl = `https://${RAPID_API_HOST}/api/sofascore/v1/${endpoint}`;
+    
+    // Add date if it's not already in the endpoint
+    if (!endpoint.includes('date=')) {
+      finalUrl += `${finalUrl.includes('?') ? '&' : '?'}date=${date}`;
     }
     
-    console.log(`[Proxy] Fetching from: ${finalUrl}`);
+    console.log(`[Proxy] Requesting: ${finalUrl}`);
 
     const response = await fetch(finalUrl, {
       method: 'GET',
@@ -40,16 +43,19 @@ serve(async (req) => {
     });
 
     const responseText = await response.text();
+    console.log(`[Proxy] Status: ${response.status}`);
+    
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      data = { error: "Parse error", raw: responseText };
+      console.error(`[Proxy] JSON Parse Error: ${e.message}`);
+      data = { error: "Parse error", raw: responseText.substring(0, 1000) };
     }
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
+      status: response.status,
     })
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {

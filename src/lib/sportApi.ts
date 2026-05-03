@@ -24,18 +24,41 @@ export interface SofaMatch {
  */
 export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => {
   try {
-    const { data, error } = await supabase.functions.invoke('sport-api-proxy', {
+    console.log(`[SofaScore] Fetching matches for date: ${date}`);
+    
+    // Strategy 1: events/schedule/date
+    let { data, error } = await supabase.functions.invoke('sport-api-proxy', {
       body: { 
         endpoint: 'events/schedule/date',
         params: { date } 
       }
     });
 
-    if (error) throw error;
+    // Strategy 2: Fallback to match/by-date if Strategy 1 fails or returns empty
+    const hasEvents = (d: any) => (d?.events && d.events.length > 0) || (d?.data?.events && d.data.events.length > 0) || (d?.data && Array.isArray(d.data) && d.data.length > 0);
 
-    const events = data?.events || data?.data?.events || [];
+    if (error || !hasEvents(data)) {
+      console.log("[SofaScore] Strategy 1 failed or empty, trying Strategy 2 (match/by-date)...");
+      const fallbackResponse = await supabase.functions.invoke('sport-api-proxy', {
+        body: { 
+          endpoint: 'match/by-date',
+          params: { date } 
+        }
+      });
+      if (!fallbackResponse.error && hasEvents(fallbackResponse.data)) {
+        data = fallbackResponse.data;
+      }
+    }
+
+    if (!data) return [];
+
+    console.log("[SofaScore] Final Data Structure:", data);
+
+    // Try multiple possible paths for events
+    const events = data?.events || data?.data?.events || (Array.isArray(data?.data) ? data.data : []);
     
     if (events && Array.isArray(events)) {
+      console.log(`[SofaScore] Found ${events.length} events`);
       return events.map((event: any) => ({
         id: event.id,
         homeTeam: event.homeTeam?.name || "Unknown",
