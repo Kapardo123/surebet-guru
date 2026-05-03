@@ -16,24 +16,26 @@ serve(async (req) => {
   try {
     const { endpoint, params } = await req.json()
     
-    // Ensure endpoint starts with /api if not present
-    const path = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`
-    const url = new URL(`${BASE_URL}${path}`)
+    // Build URL string manually to be 100% sure of the format
+    let urlString = `https://sportapi.ai/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`
     
+    // Add query parameters
     if (params) {
+      const queryParams = new URLSearchParams()
       Object.keys(params).forEach(key => {
-        url.searchParams.append(key, params[key])
+        queryParams.append(key, params[key])
       })
+      urlString += (urlString.includes('?') ? '&' : '?') + queryParams.toString()
     }
 
-    console.log(`[Proxy] Fetching: ${url.toString()}`);
+    console.log(`[Proxy] Target URL: ${urlString}`);
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(urlString, {
+      method: 'GET',
       headers: {
         'X-Api-Key': SPORT_API_KEY,
         'Authorization': `Bearer ${SPORT_API_KEY}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Accept': 'application/json'
       }
     })
     const data = await response.json()
