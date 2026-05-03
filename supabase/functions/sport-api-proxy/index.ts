@@ -16,23 +16,22 @@ serve(async (req) => {
   try {
     const { endpoint, params } = await req.json()
     
-    // The server explicitly asked for X-Api-Key header.
-    // Let's build a clean URL and pass the key in the headers.
+    // Hardcoded URL construction to prevent any path issues
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+    let finalUrl = `https://sportapi.ai/api${cleanEndpoint}`
     
-    const url = new URL(`https://sportapi.ai/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`)
-    
-    if (params) {
-      Object.keys(params).forEach(key => {
-        url.searchParams.append(key, params[key])
-      })
+    if (params && Object.keys(params).length > 0) {
+      const qs = new URLSearchParams(params).toString()
+      finalUrl += `?${qs}`
     }
 
-    console.log(`[Proxy] Requesting: ${url.toString()}`);
+    console.log(`[Proxy] Calling: ${finalUrl}`);
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(finalUrl, {
       method: 'GET',
       headers: {
         'X-Api-Key': SPORT_API_KEY,
+        'Authorization': `Bearer ${SPORT_API_KEY}`,
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       }
