@@ -30,19 +30,27 @@ serve(async (req) => {
 
     const queryStr = new URLSearchParams(params || "").toString();
 
-    // Strategy 1: sportapi.ai/api/v1/ (Most likely to fix Welcome message)
-    const url1 = `https://sportapi.ai/api/v1/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`
-    
-    // Strategy 2: api.sportapi.ai/v1/ (Subdomain fallback)
-    const url2 = `https://api.sportapi.ai/v1/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`
-    
-    // Strategy 3: sportapi.ai/api/ (Original, as documented)
-    const url3 = `https://sportapi.ai/api/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`
-    
     const strategies = [
-      { url: url1, name: "Strategy 1 (v1 Path)" },
-      { url: url2, name: "Strategy 2 (Subdomain v1)" },
-      { url: url3, name: "Strategy 3 (Standard API Path)" }
+      { 
+        url: `https://api.sportapi.ai/v1/${cleanPath}?${queryStr}`, 
+        name: "Strategy 1 (Subdomain + v1 + Header Only)",
+        headers: { ...commonHeaders } 
+      },
+      { 
+        url: `https://sportapi.ai/api/v1/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`, 
+        name: "Strategy 2 (Main Domain + v1 + Token)",
+        headers: { ...commonHeaders } 
+      },
+      { 
+        url: `https://sportapi.ai/api/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`, 
+        name: "Strategy 3 (Main Domain + Token)",
+        headers: { ...commonHeaders } 
+      },
+      { 
+        url: `https://api.sportapi.ai/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`, 
+        name: "Strategy 4 (Subdomain + Token)",
+        headers: { ...commonHeaders } 
+      }
     ];
 
     let response;
@@ -52,12 +60,12 @@ serve(async (req) => {
     for (const strat of strategies) {
       console.log(`[Proxy] Trying ${strat.name}: ${strat.url}`);
       try {
-        const res = await fetch(strat.url, { method: 'GET', headers: commonHeaders });
+        const res = await fetch(strat.url, { method: 'GET', headers: strat.headers });
         const text = await res.text();
         
-        console.log(`[Proxy] ${strat.name} Result - Status: ${res.status}, Welcome: ${text.includes("Welcome")}`);
+        console.log(`[Proxy] ${strat.name} Result - Status: ${res.status}`);
 
-        if (res.status === 200 && !text.includes("Welcome to Sport API") && !text.includes("API key required")) {
+        if (res.status === 200 && !text.includes("Welcome to Sport API")) {
           console.log(`[Proxy] ${strat.name} SUCCEEDED!`);
           response = res;
           responseText = text;

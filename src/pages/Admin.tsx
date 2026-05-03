@@ -727,11 +727,23 @@ const Admin = () => {
                     if (results.length > 0) {
                       toast({ title: "API OK! ✅", description: `Found ${results.length} fixtures` });
                     } else {
-                      toast({ 
-                        variant: "destructive", 
-                        title: "API Error ❌", 
-                        description: "Check console for details. Proxy might be returning Welcome message." 
+                      // Try fetching leagues as a backup test
+                      const { data: leaguesData } = await supabase.functions.invoke('sport-api-proxy', {
+                        body: { endpoint: '/leagues', params: {} }
                       });
+                      
+                      if (leaguesData?.success || Array.isArray(leaguesData?.data)) {
+                        toast({ 
+                          title: "Partial API Success ⚠️", 
+                          description: "Leagues loaded, but no fixtures for this date." 
+                        });
+                      } else {
+                        toast({ 
+                          variant: "destructive", 
+                          title: "API Error ❌", 
+                          description: "Check console for debug info. All strategies failed." 
+                        });
+                      }
                     }
                   } catch (e) {
                     toast({ variant: "destructive", title: "Test Failed", description: String(e) });
