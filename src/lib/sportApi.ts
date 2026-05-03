@@ -19,11 +19,7 @@ export interface SportApiFixture {
 
 export const fetchFixturesByDate = async (date: string): Promise<SportApiFixture[]> => {
   try {
-    const response = await fetch(`${BASE_URL}/fixtures?date=${date}`, {
-      headers: {
-        'Authorization': `Bearer ${SPORT_API_KEY}`
-      }
-    });
+    const response = await fetch(`${BASE_URL}/fixtures?date=${date}&token=${SPORT_API_KEY}`);
     const data = await response.json();
     if (data.success) {
       return data.fixtures;
