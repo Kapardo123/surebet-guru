@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const SPORT_API_KEY = "sk_live_7f431190a0515b40375c17e0f9ff8f39fbc6df19";
-const BASE_URL = "https://api.sportapi.ai/v1";
+const RAPID_API_KEY = "fc0296157dmsh5bde502e15c007ap161035jsn820607c5daf7";
+const RAPID_API_HOST = "sofascore6.p.rapidapi.com";
 
 export interface SportApiFixture {
   id: number;
@@ -15,35 +15,48 @@ export interface SportApiFixture {
   time?: string;
   home_team_id?: number;
   away_team_id?: number;
+  home_logo?: string;
+  away_logo?: string;
 }
 
 export const fetchFixturesByDate = async (date: string): Promise<SportApiFixture[]> => {
   try {
-    console.log(`[SportAPI] Calling proxy for date: ${date}`);
+    console.log(`[SofaScore] Calling proxy for date: ${date}`);
     const { data, error } = await supabase.functions.invoke('sport-api-proxy', {
       body: { 
-        endpoint: '/fixtures',
+        endpoint: 'events/schedule/date',
         params: { date }
       }
     });
 
     if (error) {
-      console.error("[SportAPI] Proxy invocation error:", error);
+      console.error("[SofaScore] Proxy invocation error:", error);
       throw error;
     }
     
-    if (data?.success) {
-      console.log(`[SportAPI] Successfully fetched ${data.fixtures?.length || 0} fixtures`);
-      return data.fixtures;
+    if (data?.events) {
+      console.log(`[SofaScore] Successfully fetched ${data.events.length} events`);
+      // Map SofaScore format to our app format
+      return data.events.map((event: any) => ({
+        id: event.id,
+        home_team: event.homeTeam.name,
+        away_team: event.awayTeam.name,
+        home_score: event.homeScore?.current,
+        away_score: event.awayScore?.current,
+        status: event.status.type,
+        league_name: event.tournament.name,
+        date: date,
+        time: new Date(event.startTimestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        home_team_id: event.homeTeam.id,
+        away_team_id: event.awayTeam.id,
+        home_logo: `https://api.sofascore.app/api/v1/team/${event.homeTeam.id}/image`,
+        away_logo: `https://api.sofascore.app/api/v1/team/${event.awayTeam.id}/image`,
+      }));
     }
     
-    console.warn("[SportAPI] Proxy returned success: false or no fixtures", data);
-    if (data?._debug) {
-      console.log("[SportAPI] Proxy Debug Info:", data._debug);
-    }
     return [];
   } catch (error) {
-    console.error("[SportAPI] Final error in fetchFixturesByDate:", error);
+    console.error("[SofaScore] Final error in fetchFixturesByDate:", error);
     return [];
   }
 };
