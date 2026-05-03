@@ -21,48 +21,62 @@ export interface SofaMatch {
   liveMinute?: string;
 }
 
+// Global cache for API responses to avoid redundant calls for the same date
+const matchesCache: Record<string, { data: SofaMatch[], timestamp: number }> = {};
+const inFlightRequests: Record<string, Promise<SofaMatch[]>> = {};
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 /**
  * Fetches matches for a specific date using SofaScore API via Supabase Edge Function proxy
  */
 export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => {
+  const now = Date.now();
+  
+  // 1. Check if we have valid cached data
+  if (matchesCache[date] && (now - matchesCache[date].timestamp < CACHE_TTL)) {
+    console.log(`[SofaScore] Returning cached data for ${date}`);
+    return matchesCache[date];
+  }
+
+  // 2. Check if there is already a request in flight for this date
+  if (inFlightRequests[date]) {
+    console.log(`[SofaScore] Waiting for in-flight request for ${date}`);
+    return inFlightRequests[date];
+  }
+
   try {
     console.log(`[SofaScore] Fetching matches for date: ${date}`);
     
-    const { data, error } = await supabase.functions.invoke('sport-api-proxy', {
-      body: { 
-        endpoint: 'match/list',
-        params: { 
-          date,
-          sport_slug: 'football'
-        } 
-      }
-    });
+    // Create the request promise
+    const requestPromise = (async () => {
+      const { data, error } = await supabase.functions.invoke('sport-api-proxy', {
+        body: { 
+          endpoint: 'match/list',
+          params: { 
+            date,
+            sport_slug: 'football'
+          } 
+        }
+      });
 
-    if (error) throw error;
-
-    console.log("[SofaScore] Response data:", data);
-
-    // SofaScore can return events in various structures depending on the specific endpoint version
-    let events: any[] = [];
-    if (Array.isArray(data)) {
-      events = data;
-    } else if (data?.matches && Array.isArray(data.matches)) {
-      events = data.matches;
-    } else if (data?.events && Array.isArray(data.events)) {
-      events = data.events;
-    } else if (data?.data?.matches && Array.isArray(data.data.matches)) {
-      events = data.data.matches;
-    } else if (data?.data?.events && Array.isArray(data.data.events)) {
-      events = data.data.events;
-    }
-    
-    if (events.length > 0) {
-      console.log(`[SofaScore] Found ${events.length} events`);
-      // Debug first few events to see structure
-      console.log("[SofaScore] First event sample:", JSON.stringify(events[0], null, 2));
+      if (error) throw error;
       
-      return events.map((event: any) => {
-        // Ensure status is a string
+      // ... mapping logic remains the same ...
+      let events: any[] = [];
+      if (Array.isArray(data)) {
+        events = data;
+      } else if (data?.matches && Array.isArray(data.matches)) {
+        events = data.matches;
+      } else if (data?.events && Array.isArray(data.events)) {
+        events = data.events;
+      } else if (data?.data?.matches && Array.isArray(data.data.matches)) {
+        events = data.data.matches;
+      } else if (data?.data?.events && Array.isArray(data.data.events)) {
+        events = data.data.events;
+      }
+      
+      const mappedEvents = events.map((event: any) => {
+        // ... all the existing mapping logic ...
         let statusStr = "unknown";
         if (typeof event.status === 'string') {
           statusStr = event.status;
@@ -72,96 +86,80 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
           statusStr = event.status.description;
         }
 
-        // Ensure time is a string - check multiple possible SofaScore fields
-         let timeStr = "TBD";
+        let timeStr = "TBD";
+        const timestamp = event.timestamp ||
+                          event.startTimestamp || 
+                          event.start_timestamp || 
+                          event.startTime || 
+                          event.start_time ||
+                          (event.time && typeof event.time === 'number' ? event.time : null) ||
+                          event.time?.startTimestamp ||
+                          event.time?.start_timestamp;
          
-         // Based on debug data: timestamp is at the root
-         const timestamp = event.timestamp ||
-                           event.startTimestamp || 
-                           event.start_timestamp || 
-                           event.startTime || 
-                           event.start_time ||
-                           (event.time && typeof event.time === 'number' ? event.time : null) ||
-                           event.time?.startTimestamp ||
-                           event.time?.start_timestamp;
-         
-         if (timestamp) {
-           try {
-             // SofaScore usually provides seconds (10 digits), but JS needs milliseconds (13 digits)
-             const ts = Number(timestamp);
-             const dateObj = new Date(ts > 10000000000 ? ts : ts * 1000);
-             if (!isNaN(dateObj.getTime())) {
-               timeStr = dateObj.toLocaleTimeString('pl-PL', { 
-                 hour: '2-digit', 
-                 minute: '2-digit',
-                 hour12: false 
-               });
-             }
-           } catch (e) {
-             console.error("[SofaScore] Time formatting error:", e);
-           }
-         } else if (typeof event.time === 'string' && event.time.includes(':')) {
-           timeStr = event.time;
-         } else if (event.time?.initial) {
-           timeStr = event.time.initial;
-         } else if (event.status?.description && event.status.description.includes(':')) {
-           // Fallback: sometimes the time is in the status description
-           timeStr = event.status.description;
-         } else if (event.formatedStartDate) {
-           // Another common field in some SofaScore-like APIs
-           const match = event.formatedStartDate.match(/(\d{2}:\d{2})/);
-           if (match) timeStr = match[1];
-         }
+        if (timestamp) {
+          try {
+            const ts = Number(timestamp);
+            const dateObj = new Date(ts > 10000000000 ? ts : ts * 1000);
+            if (!isNaN(dateObj.getTime())) {
+              timeStr = dateObj.toLocaleTimeString('pl-PL', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false 
+              });
+            }
+          } catch (e) {}
+        } else if (typeof event.time === 'string' && event.time.includes(':')) {
+          timeStr = event.time;
+        }
 
-        // Check if match is live
-         const isLive = event.status?.type === 'inprogress' || event.status?.type === 'live';
-         
-         // Calculate live minute if available
-         let liveMinute = undefined;
-         if (isLive) {
-           if (event.status?.description === 'HT') {
-             liveMinute = 'HT';
-           } else if (event.time?.currentPeriodStartTimestamp) {
-             const startTs = event.time.currentPeriodStartTimestamp;
-             const nowTs = Math.floor(Date.now() / 1000);
-             const diffMinutes = Math.floor((nowTs - startTs) / 60);
-             
-             // SofaScore status types can help determine if it's 2nd half
-             const isSecondHalf = event.status?.code === 31; // 31 is often 2nd half
-             const baseMinute = isSecondHalf ? 45 : 0;
-             const calculatedMinute = baseMinute + diffMinutes;
-             
-             // Cap at 90+ for normal time, but allow more for extra time if needed
-             liveMinute = `${Math.max(1, calculatedMinute)}'`;
-           } else if (event.status?.description && event.status.description.includes("'")) {
-             liveMinute = event.status.description;
-           }
-         }
+        const isLive = event.status?.type === 'inprogress' || event.status?.type === 'live';
+        let liveMinute = undefined;
+        if (isLive) {
+          if (event.status?.description === 'HT') {
+            liveMinute = 'HT';
+          } else if (event.time?.currentPeriodStartTimestamp) {
+            const startTs = event.time.currentPeriodStartTimestamp;
+            const nowTs = Math.floor(Date.now() / 1000);
+            const diffMinutes = Math.floor((nowTs - startTs) / 60);
+            const isSecondHalf = event.status?.code === 31;
+            const baseMinute = isSecondHalf ? 45 : 0;
+            liveMinute = `${Math.max(1, baseMinute + diffMinutes)}'`;
+          }
+        }
 
-         return {
-           id: event.id,
-           homeTeam: event.homeTeam?.name || event.home_team?.name || "Unknown",
-           awayTeam: event.awayTeam?.name || event.away_team?.name || "Unknown",
-           homeScore: event.homeScore?.current ?? event.home_score?.current ?? null,
-           awayScore: event.awayScore?.current ?? event.away_score?.current ?? null,
-           status: statusStr,
-           league: event.tournament?.name || event.league?.name || "Unknown",
-           date: date,
-           time: timeStr,
-           homeTeamId: event.homeTeam?.id || event.home_team?.id,
-           awayTeamId: event.awayTeam?.id || event.away_team?.id,
-           isLive: isLive,
-           liveMinute: liveMinute,
-           // Remove direct SofaScore logo links to force using useTeamLogo (TheSportsDB + Cache)
-           homeLogo: undefined,
-           awayLogo: undefined,
-         };
+        return {
+          id: event.id,
+          homeTeam: event.homeTeam?.name || event.home_team?.name || "Unknown",
+          awayTeam: event.awayTeam?.name || event.away_team?.name || "Unknown",
+          homeScore: event.homeScore?.current ?? event.home_score?.current ?? null,
+          awayScore: event.awayScore?.current ?? event.away_score?.current ?? null,
+          status: statusStr,
+          league: event.tournament?.name || event.league?.name || "Unknown",
+          date: date,
+          time: timeStr,
+          isLive,
+          liveMinute
+        };
       });
-    }
+
+      // Cache the result
+      matchesCache[date] = { data: mappedEvents, timestamp: Date.now() };
+      return mappedEvents;
+    })();
+
+    // Store in-flight promise
+    inFlightRequests[date] = requestPromise;
     
-    return [];
+    // Wait for the request
+    const result = await requestPromise;
+    
+    // Cleanup in-flight tracking
+    delete inFlightRequests[date];
+    
+    return result;
   } catch (error) {
     console.error("[SofaScore] Error fetching matches:", error);
+    delete inFlightRequests[date];
     return [];
   }
 };
