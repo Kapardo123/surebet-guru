@@ -39,7 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
 import UpcomingMatchesList from "@/components/UpcomingMatchesList";
 import Logo from "@/components/Logo";
-import { fetchFixturesByDate } from "@/lib/sportApi";
+import { fetchMatchesByDate } from "@/lib/sportApi";
 import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
@@ -723,7 +723,7 @@ const Admin = () => {
                   try {
                     const date = new Date().toISOString().split('T')[0];
                     toast({ title: "Testing SofaScore API..." });
-                    const results = await fetchFixturesByDate(date);
+                    const results = await fetchMatchesByDate(date);
                     console.log("Test results:", results);
                     if (results.length > 0) {
                       toast({ title: "API OK! ✅", description: `Found ${results.length} fixtures. Check console for details.` });
