@@ -40,6 +40,9 @@ serve(async (req) => {
     });
 
     const responseText = await response.text();
+    console.log(`[Proxy] Response status: ${response.status}`);
+    console.log(`[Proxy] Response body start: ${responseText.substring(0, 500)}`);
+    
     let data;
     try {
       data = JSON.parse(responseText);

@@ -24,8 +24,8 @@ export const fetchFixturesByDate = async (date: string): Promise<SportApiFixture
     console.log(`[SofaScore] Calling proxy for date: ${date}`);
     const { data, error } = await supabase.functions.invoke('sport-api-proxy', {
       body: { 
-        endpoint: 'match/by-date',
-        params: { date, categoryId: 1 } // Default to categoryId 1 (Football)
+        endpoint: 'events/schedule/date',
+        params: { date } 
       }
     });
 
@@ -34,6 +34,11 @@ export const fetchFixturesByDate = async (date: string): Promise<SportApiFixture
       throw error;
     }
     
+    if (data?._debug) {
+      console.log("[SofaScore] Debug Info:", data._debug);
+    }
+    console.log("[SofaScore] Full response data:", data);
+
     const events = data?.events || data?.data?.events || data?.matches || [];
     
     if (events && Array.isArray(events)) {
