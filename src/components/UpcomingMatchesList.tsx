@@ -95,6 +95,3 @@ const UpcomingMatchesList = ({ onSelectMatch }: Props) => {
 };
 
 export default UpcomingMatchesList;
-
-
-export default UpcomingMatchesList;
