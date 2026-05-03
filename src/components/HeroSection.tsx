@@ -143,6 +143,12 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
                 <span className="text-muted-foreground font-normal text-sm md:text-4xl mx-2">vs</span>
               )}
 
+              {score?.isLive && score.liveMinute && (
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-accent/20 backdrop-blur-sm px-2 py-0.5 rounded-full border border-accent/30">
+                  <span className="text-[10px] md:text-xs font-bold text-accent whitespace-nowrap">{score.liveMinute}</span>
+                </div>
+              )}
+
               <p className="font-display text-lg md:text-4xl font-bold text-foreground tracking-tight">
                 {data.awayTeam}
               </p>

@@ -7,7 +7,13 @@ const CACHE_DURATION_LIVE = 2 * 60 * 1000; // 2 minutes for live matches
 const CACHE_DURATION_DEFAULT = 10 * 60 * 1000; // 10 minutes for finished/future matches
 
 export const useLiveMatchScore = (homeTeam: string, awayTeam: string, kickoffDate: string) => {
-  const [score, setScore] = useState<{ home: number | string | null, away: number | string | null, isLive: boolean, status?: string } | null>(null);
+  const [score, setScore] = useState<{ 
+    home: number | string | null, 
+    away: number | string | null, 
+    isLive: boolean, 
+    status?: string,
+    liveMinute?: string 
+  } | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -69,7 +75,8 @@ export const useLiveMatchScore = (homeTeam: string, awayTeam: string, kickoffDat
             home: match.homeScore,
             away: match.awayScore,
             isLive: match.isLive || false,
-            status: match.status
+            status: match.status,
+            liveMinute: match.liveMinute
           });
         }
       } catch (error) {

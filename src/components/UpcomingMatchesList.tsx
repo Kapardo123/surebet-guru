@@ -99,7 +99,11 @@ const UpcomingMatchesList = ({ onSelectMatch }: Props) => {
 
               <div className="flex flex-col items-end gap-1 shrink-0 border-l border-border/20 pl-3">
                 <div className="flex items-center gap-1.5 text-primary">
-                  <span className="text-[10px] font-bold">{match.time}</span>
+                  {match.isLive && match.liveMinute ? (
+                    <span className="text-[10px] font-black text-accent animate-pulse">{match.liveMinute}</span>
+                  ) : (
+                    <span className="text-[10px] font-bold">{match.time}</span>
+                  )}
                   <span className="text-[10px] font-medium opacity-80">{match.league}</span>
                 </div>
                 <span className="text-[9px] text-muted-foreground uppercase">{typeof match.status === 'string' ? match.status : 'unknown'}</span>

@@ -134,7 +134,12 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
                     </span>
                   </div>
                   {score.isLive && (
-                    <span className="text-[9px] font-black text-accent uppercase tracking-widest animate-pulse">Live</span>
+                    <div className="flex flex-col items-center">
+                      {score.liveMinute && (
+                        <span className="text-[10px] font-bold text-accent leading-none mb-0.5">{score.liveMinute}</span>
+                      )}
+                      <span className="text-[9px] font-black text-accent uppercase tracking-widest animate-pulse">Live</span>
+                    </div>
                   )}
                 </div>
               ) : (

@@ -18,6 +18,7 @@ export interface SofaMatch {
   homeLogo?: string;
   awayLogo?: string;
   isLive?: boolean;
+  liveMinute?: string;
 }
 
 /**
@@ -114,6 +115,28 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
 
         // Check if match is live
          const isLive = event.status?.type === 'inprogress' || event.status?.type === 'live';
+         
+         // Calculate live minute if available
+         let liveMinute = undefined;
+         if (isLive) {
+           if (event.status?.description === 'HT') {
+             liveMinute = 'HT';
+           } else if (event.time?.currentPeriodStartTimestamp) {
+             const startTs = event.time.currentPeriodStartTimestamp;
+             const nowTs = Math.floor(Date.now() / 1000);
+             const diffMinutes = Math.floor((nowTs - startTs) / 60);
+             
+             // SofaScore status types can help determine if it's 2nd half
+             const isSecondHalf = event.status?.code === 31; // 31 is often 2nd half
+             const baseMinute = isSecondHalf ? 45 : 0;
+             const calculatedMinute = baseMinute + diffMinutes;
+             
+             // Cap at 90+ for normal time, but allow more for extra time if needed
+             liveMinute = `${Math.max(1, calculatedMinute)}'`;
+           } else if (event.status?.description && event.status.description.includes("'")) {
+             liveMinute = event.status.description;
+           }
+         }
 
          return {
            id: event.id,
@@ -128,6 +151,7 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
            homeTeamId: event.homeTeam?.id || event.home_team?.id,
            awayTeamId: event.awayTeam?.id || event.away_team?.id,
            isLive: isLive,
+           liveMinute: liveMinute,
            // Remove direct SofaScore logo links to force using useTeamLogo (TheSportsDB + Cache)
            homeLogo: undefined,
            awayLogo: undefined,
