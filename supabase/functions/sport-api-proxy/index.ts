@@ -27,11 +27,22 @@ serve(async (req) => {
       console.log(`[Proxy] Fetching image from: ${endpoint}`);
       const imgRes = await fetch(endpoint, {
         headers: {
-          'X-RapidAPI-Key': RAPID_API_KEY,
-          'X-RapidAPI-Host': RAPID_API_HOST,
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+          'Accept-Language': 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Referer': 'https://www.sofascore.com/',
+          'Cache-Control': 'no-cache'
         }
       });
       
+      if (!imgRes.ok) {
+        console.error(`[Proxy] Image fetch failed with status: ${imgRes.status}`);
+        return new Response(JSON.stringify({ error: `Image fetch failed: ${imgRes.status}` }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: imgRes.status,
+        });
+      }
+
       const arrayBuffer = await imgRes.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
       let binary = '';
