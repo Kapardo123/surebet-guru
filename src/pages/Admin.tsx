@@ -236,18 +236,6 @@ const Admin = () => {
 
   // Tip form
   const [editingTipId, setEditingTipId] = useState<number | null>(null);
-  const [form, setForm] = useState({
-    sport: "Football",
-    league: "",
-    homeTeam: "",
-    awayTeam: "",
-    prediction: "",
-    odds: "",
-    kickoff: "",
-    status: "upcoming" as Tip["status"],
-    isPremium: false,
-    description: "",
-  });
 
   // Coupon form state
   const [editingCouponId, setEditingCouponId] = useState<number | null>(null);
@@ -256,15 +244,7 @@ const Admin = () => {
   const [couponIsPremium, setCouponIsPremium] = useState(false);
   const [couponStatus, setCouponStatus] = useState<Coupon["status"]>("active");
   const [couponMatches, setCouponMatches] = useState<CouponMatch[]>([]);
-  const [couponMatchForm, setCouponMatchForm] = useState({
-    homeTeam: "",
-    awayTeam: "",
-    prediction: "",
-    odds: "",
-    league: "",
-    sport: "Football",
-    kickoff: "",
-  });
+
 
   const resetTipForm = () => {
     setEditingTipId(null);
