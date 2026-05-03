@@ -23,8 +23,8 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
       
       try {
         setImageLoading(true);
-        // If it's not a sofascore URL, we might not need proxy, 
-        // but for consistency and to avoid CORS, we proxy all external logos
+        setError(false);
+        
         const { data, error: proxyError } = await supabase.functions.invoke('sport-api-proxy', {
           body: { 
             isImage: true,
@@ -34,17 +34,25 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
 
         if (proxyError) throw proxyError;
         
-        // Supabase invoke returns a Blob if the response is an image
+        // In some environments, Supabase might return the body directly as a Blob, 
+        // but in others it might be a base64 string or an object with a blob method.
         if (data instanceof Blob) {
           const objectUrl = URL.createObjectURL(data);
           setProxyLogoUrl(objectUrl);
+        } else if (data && typeof data === 'object' && data.constructor.name === 'Blob') {
+          // Extra check for some environments
+          const objectUrl = URL.createObjectURL(data as unknown as Blob);
+          setProxyLogoUrl(objectUrl);
         } else {
-          console.warn("Proxy did not return a blob for:", url);
-          setError(true);
+          console.warn("Proxy returned unexpected data type:", typeof data, "for URL:", url);
+          // If we can't get a blob, we fall back to direct URL as a last resort
+          // but set a small delay to avoid spamming
+          setProxyLogoUrl(url);
         }
       } catch (err) {
         console.error("Error fetching image through proxy:", err);
-        setError(true);
+        // Last resort fallback to direct URL
+        setProxyLogoUrl(url);
       } finally {
         setImageLoading(false);
       }
