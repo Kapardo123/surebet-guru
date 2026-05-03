@@ -17,6 +17,11 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
   const { logoUrl: hookLogoUrl, loading: hookLoading } = useTeamLogo(propLogoUrl ? "" : teamName);
   const finalLogoUrl = propLogoUrl || hookLogoUrl;
 
+  // DIRECT FALLBACK STRATEGY: 
+  // If we have a SofaScore URL, try to load it directly first
+  // Browsers often allow this if the server (api.sofascore.app) allows it
+  const directSofaUrl = finalLogoUrl && finalLogoUrl.includes('sofascore') ? finalLogoUrl : null;
+
   useEffect(() => {
     const fetchImageThroughProxy = async (url: string) => {
       if (!url) return;
@@ -37,17 +42,15 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
         console.log(`[TeamLogo] Proxy response for ${teamName}:`, data);
         
         if (data?.base64) {
-          // If proxy returned base64 (our new reliable method)
           const logoDataUrl = `data:${data.contentType || 'image/png'};base64,${data.base64}`;
           setProxyLogoUrl(logoDataUrl);
         } else {
-          console.warn(`[TeamLogo] No base64 data for ${teamName}. Type:`, typeof data);
-          setError(true);
+          console.warn(`[TeamLogo] No base64 data for ${teamName}. Fallback to direct URL.`);
+          setProxyLogoUrl(url); // Fallback to direct URL if proxy fails
         }
       } catch (err) {
         console.error("Error fetching image through proxy:", err);
-        // Last resort fallback to direct URL
-        setProxyLogoUrl(url);
+        setProxyLogoUrl(url); // Fallback to direct URL if proxy fails
       } finally {
         setImageLoading(false);
       }
@@ -74,6 +77,20 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
   const displayUrl = proxyLogoUrl;
 
   if (!displayUrl || error) {
+    // If we have a direct URL, try to use it before showing initials
+    if (directSofaUrl && !error) {
+      return (
+        <img
+          src={directSofaUrl}
+          alt={`${teamName} logo`}
+          className="object-contain flex-shrink-0"
+          style={{ width: size, height: size }}
+          loading="lazy"
+          onError={() => setError(true)}
+        />
+      );
+    }
+
     if (imageLoading || (hookLoading && !propLogoUrl)) {
       return (
         <div
