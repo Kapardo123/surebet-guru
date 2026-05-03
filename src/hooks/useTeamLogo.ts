@@ -53,43 +53,43 @@ export const useTeamLogo = (teamName: string) => {
           console.warn(`[useTeamLogo] ⚠️ Cache check failed:`, dbErr);
         }
 
-        // 2. Fetch from TheSportsDB
-        const tryFetch = async (key: string, name: string) => {
-          const url = `https://www.thesportsdb.com/api/v1/json/${key}/searchteams.php?t=${encodeURIComponent(name)}`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-          return await res.json();
-        };
+        // 2. Fetch from API-Football via Proxy
+        console.log(`[useTeamLogo] 🔍 Fetching from API-Football for: "${teamName}"`);
+        const { data, error: apiError } = await supabase.functions.invoke('sport-api-proxy', {
+          body: {
+            provider: 'api-football',
+            endpoint: 'teams',
+            params: { search: teamName }
+          }
+        });
 
-        let data = await tryFetch('3', teamName);
-        if (!data.teams) {
-          data = await tryFetch('1', teamName);
-        }
+        if (apiError) throw apiError;
 
-        const query = normalize(teamName);
-        const teams = data.teams || [];
-        
-        let bestTeam = null;
-        let bestScore = 0;
+        const teams = data?.response || [];
+        console.log(`[useTeamLogo] 📊 API-Football returned ${teams.length} teams`);
 
+        let badge = null;
         if (teams.length > 0) {
-          const scored = teams.map((team: any) => ({
-            team,
-            score: scoreTeamMatch(team, query)
-          })).sort((a: any, b: any) => b.score - a.score);
-          
-          bestTeam = scored[0].team;
-          bestScore = scored[0].score;
+          const query = normalize(teamName);
+          const scored = teams.map((item: any) => {
+            const team = item.team;
+            const names = [team.name, team.name.replace("FC", ""), team.name.replace("CF", "")].map(normalize);
+            
+            let score = 0;
+            if (names.some(n => n === query)) score = 100;
+            else if (names.some(n => n.includes(query) || query.includes(n))) score = 80;
+            
+            return { team, score };
+          }).sort((a: any, b: any) => b.score - a.score);
+
+          if (scored[0].score >= 50) {
+            badge = scored[0].team.logo;
+            console.log(`[useTeamLogo] ⭐ Match: "${teamName}" -> "${scored[0].team.name}" (Score: ${scored[0].score})`);
+          }
         }
 
-        // Final protection: Ensure the found team name actually matches the query partially
-        // TheSportsDB sometimes returns Arsenal as a default or first result for bad queries
-        const badge = (bestTeam && bestScore >= 30) ? bestTeam.strBadge || null : null;
-        
-        if (badge) {
-          console.log(`[useTeamLogo] ⭐ Match: "${teamName}" -> "${bestTeam.strTeam}" (Score: ${bestScore})`);
-        } else {
-          console.log(`[useTeamLogo] ❌ No match for "${teamName}"`);
+        if (!badge) {
+          console.log(`[useTeamLogo] ❌ No match found for "${teamName}" in API-Football`);
         }
 
         // 3. Save to DB cache
