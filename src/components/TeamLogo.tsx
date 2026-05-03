@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTeamLogo } from "@/hooks/useTeamLogo";
-import { Shield } from "lucide-react";
+import { Shield, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TeamLogoProps {
   teamName: string;
@@ -10,10 +11,47 @@ interface TeamLogoProps {
 
 const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) => {
   const [error, setError] = useState(false);
-  const { logoUrl: hookLogoUrl, loading } = useTeamLogo(propLogoUrl ? "" : teamName);
+  const [proxyLogoUrl, setProxyLogoUrl] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(false);
   
-  // Use a direct fallback for SofaScore images if they fail or aren't provided
+  const { logoUrl: hookLogoUrl, loading: hookLoading } = useTeamLogo(propLogoUrl ? "" : teamName);
   const finalLogoUrl = propLogoUrl || hookLogoUrl;
+
+  useEffect(() => {
+    const fetchImageThroughProxy = async (url: string) => {
+      if (!url || !url.includes('sofascore')) return;
+      
+      try {
+        setImageLoading(true);
+        const { data, error: proxyError } = await supabase.functions.invoke('sport-api-proxy', {
+          body: { 
+            isImage: true,
+            endpoint: url
+          }
+        });
+
+        if (proxyError) throw proxyError;
+        
+        if (data instanceof Blob) {
+          const objectUrl = URL.createObjectURL(data);
+          setProxyLogoUrl(objectUrl);
+        }
+      } catch (err) {
+        console.error("Error fetching image through proxy:", err);
+        setError(true);
+      } finally {
+        setImageLoading(false);
+      }
+    };
+
+    if (finalLogoUrl && finalLogoUrl.includes('sofascore')) {
+      fetchImageThroughProxy(finalLogoUrl);
+    }
+
+    return () => {
+      if (proxyLogoUrl) URL.revokeObjectURL(proxyLogoUrl);
+    };
+  }, [finalLogoUrl]);
 
   const getInitials = (name: string) => {
     return name
@@ -24,16 +62,20 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
       .toUpperCase();
   };
 
-  if (loading && !propLogoUrl) {
+  if ((hookLoading || imageLoading) && !propLogoUrl && !proxyLogoUrl) {
     return (
       <div
-        className="rounded-full bg-muted animate-pulse flex-shrink-0"
+        className="rounded-full bg-muted animate-pulse flex-shrink-0 flex items-center justify-center"
         style={{ width: size, height: size }}
-      />
+      >
+        <Loader2 className="w-3 h-3 animate-spin text-muted-foreground/50" />
+      </div>
     );
   }
 
-  if (!finalLogoUrl || error) {
+  const displayUrl = proxyLogoUrl || finalLogoUrl;
+
+  if (!displayUrl || error) {
     return (
       <div 
         className="rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold flex-shrink-0"
@@ -46,7 +88,7 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
 
   return (
     <img
-      src={finalLogoUrl}
+      src={displayUrl}
       alt={`${teamName} logo`}
       className="object-contain flex-shrink-0"
       style={{ width: size, height: size }}

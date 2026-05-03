@@ -20,8 +20,29 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, params } = await req.json()
+    const payload = await req.json()
+    const { endpoint, params, isImage } = payload
     
+    if (isImage) {
+      console.log(`[Proxy] Fetching image from: ${endpoint}`);
+      const imgRes = await fetch(endpoint, {
+        headers: {
+          'X-RapidAPI-Key': RAPID_API_KEY,
+          'X-RapidAPI-Host': RAPID_API_HOST,
+        }
+      });
+      
+      const blob = await imgRes.blob();
+      return new Response(blob, {
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': imgRes.headers.get('Content-Type') || 'image/png',
+          'Cache-Control': 'public, max-age=86400'
+        },
+        status: 200,
+      });
+    }
+
     // Construct SofaScore RapidAPI URL
     const date = params?.date || new Date().toISOString().split('T')[0];
     const sport_slug = params?.sport_slug || 'football';
