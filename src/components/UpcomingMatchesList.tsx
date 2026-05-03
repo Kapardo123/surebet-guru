@@ -85,7 +85,7 @@ const UpcomingMatchesList = ({ onSelectMatch }: Props) => {
 
               <div className="flex flex-col items-end gap-1 shrink-0 border-l border-border/20 pl-3">
                 <span className="text-[10px] font-medium text-primary">{match.league}</span>
-                <span className="text-[9px] text-muted-foreground uppercase">{match.status}</span>
+                <span className="text-[9px] text-muted-foreground uppercase">{typeof match.status === 'string' ? match.status : 'unknown'}</span>
                 <TrendingUp className="w-3 h-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </button>

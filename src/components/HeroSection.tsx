@@ -45,6 +45,11 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
 
   const currentStatus = data.status || "upcoming";
 
+  const formatKickoff = (kickoffStr: string) => {
+    if (!kickoffStr) return "";
+    return String(kickoffStr).replace(/\[object Object\]/g, "").trim();
+  };
+
   return (
     <div className="relative overflow-hidden rounded-2xl glass gradient-border p-5 md:p-12">
       {/* Synthwave gradient mesh */}
@@ -113,7 +118,7 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
 
         <div className="space-y-3 md:space-y-4">
           <p className="text-muted-foreground text-[10px] md:text-xs uppercase tracking-[0.2em]">
-            {data.league} • {data.kickoff}
+            {data.league} • {formatKickoff(data.kickoff)}
           </p>
           <div className="flex items-center gap-2.5 md:gap-4">
             <TeamLogo teamName={data.homeTeam} logoUrl={data.homeTeamLogo} size={28} />

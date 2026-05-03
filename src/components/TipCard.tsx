@@ -45,8 +45,13 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
 
   const formatKickoff = (kickoffStr: string) => {
     try {
+      if (!kickoffStr) return "TBD";
+      
+      // Handle case where [object Object] might have been saved in the string
+      const cleanKickoff = String(kickoffStr).replace(/\[object Object\]/g, "").trim();
+      
       // If it's an ISO string, format it to user's local time
-      const date = new Date(kickoffStr);
+      const date = new Date(cleanKickoff.replace(' ', 'T'));
       if (!isNaN(date.getTime())) {
         return date.toLocaleString(undefined, {
           day: '2-digit',
@@ -55,8 +60,9 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
           minute: '2-digit'
         });
       }
+      return cleanKickoff || "TBD";
     } catch (e) {}
-    return kickoffStr; // Fallback to original string if not a date
+    return String(kickoffStr); // Fallback to original string if not a date
   };
 
   return (

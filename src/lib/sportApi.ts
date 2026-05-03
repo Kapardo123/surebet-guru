@@ -56,24 +56,42 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
     
     if (events.length > 0) {
       console.log(`[SofaScore] Found ${events.length} events`);
-      return events.map((event: any) => ({
-        id: event.id,
-        homeTeam: event.homeTeam?.name || event.home_team?.name || "Unknown",
-        awayTeam: event.awayTeam?.name || event.away_team?.name || "Unknown",
-        homeScore: event.homeScore?.current ?? event.home_score?.current,
-        awayScore: event.awayScore?.current ?? event.away_score?.current,
-        status: event.status?.type || event.status || "unknown",
-        league: event.tournament?.name || event.league?.name || "Unknown",
-        date: date,
-        time: event.startTimestamp 
-          ? new Date(event.startTimestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-          : (event.time || "TBD"),
-        homeTeamId: event.homeTeam?.id || event.home_team?.id,
-        awayTeamId: event.awayTeam?.id || event.away_team?.id,
-        // Remove direct SofaScore logo links to force using useTeamLogo (TheSportsDB + Cache)
-        homeLogo: undefined,
-        awayLogo: undefined,
-      }));
+      return events.map((event: any) => {
+        // Ensure status is a string
+        let statusStr = "unknown";
+        if (typeof event.status === 'string') {
+          statusStr = event.status;
+        } else if (event.status?.type && typeof event.status.type === 'string') {
+          statusStr = event.status.type;
+        } else if (event.status?.description && typeof event.status.description === 'string') {
+          statusStr = event.status.description;
+        }
+
+        // Ensure time is a string
+        let timeStr = "TBD";
+        if (event.startTimestamp) {
+          timeStr = new Date(event.startTimestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else if (typeof event.time === 'string') {
+          timeStr = event.time;
+        }
+
+        return {
+          id: event.id,
+          homeTeam: event.homeTeam?.name || event.home_team?.name || "Unknown",
+          awayTeam: event.awayTeam?.name || event.away_team?.name || "Unknown",
+          homeScore: event.homeScore?.current ?? event.home_score?.current,
+          awayScore: event.awayScore?.current ?? event.away_score?.current,
+          status: statusStr,
+          league: event.tournament?.name || event.league?.name || "Unknown",
+          date: date,
+          time: timeStr,
+          homeTeamId: event.homeTeam?.id || event.home_team?.id,
+          awayTeamId: event.awayTeam?.id || event.away_team?.id,
+          // Remove direct SofaScore logo links to force using useTeamLogo (TheSportsDB + Cache)
+          homeLogo: undefined,
+          awayLogo: undefined,
+        };
+      });
     }
     
     return [];
