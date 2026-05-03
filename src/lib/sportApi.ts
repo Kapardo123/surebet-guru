@@ -70,8 +70,8 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
           : (event.time || "TBD"),
         homeTeamId: event.homeTeam?.id || event.home_team?.id,
         awayTeamId: event.awayTeam?.id || event.away_team?.id,
-        homeLogo: event.homeTeam?.id ? `https://api.sofascore.com/api/v1/team/${event.homeTeam.id}/image` : undefined,
-        awayLogo: event.awayTeam?.id ? `https://api.sofascore.com/api/v1/team/${event.awayTeam.id}/image` : undefined,
+        homeLogo: event.homeTeam?.id ? `https://api.sofascore.app/api/v1/team/${event.homeTeam.id}/image` : undefined,
+        awayLogo: event.awayTeam?.id ? `https://api.sofascore.app/api/v1/team/${event.awayTeam.id}/image` : undefined,
       }));
     }
     
