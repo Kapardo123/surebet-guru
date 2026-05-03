@@ -35,7 +35,7 @@ export const useTeamLogo = (teamName: string) => {
       setLoading(true);
       
       try {
-        // 1. Check local DB cache first (wrap in try-catch to not block if table missing)
+        // 1. Check local DB cache first
         try {
           const { data: cacheData } = await supabase
             .from('team_logos_cache')
@@ -44,42 +44,35 @@ export const useTeamLogo = (teamName: string) => {
             .maybeSingle();
 
           if (cacheData?.logo_url) {
-            console.log(`[useTeamLogo] ✅ Found in Cache: ${cacheData.logo_url}`);
+            console.log(`[useTeamLogo] ✅ Found in Cache: ${teamName} -> ${cacheData.logo_url}`);
             setLogoUrl(cacheData.logo_url);
             setLoading(false);
             return;
           }
         } catch (dbErr) {
-          console.warn(`[useTeamLogo] ⚠️ Cache check failed (Table might be missing):`, dbErr);
+          console.warn(`[useTeamLogo] ⚠️ Cache check failed:`, dbErr);
         }
 
-        // 2. Fetch from TheSportsDB (Try API key '3' then '1')
-        const tryFetch = async (key: string) => {
-          const url = `https://www.thesportsdb.com/api/v1/json/${key}/searchteams.php?t=${encodeURIComponent(teamName)}`;
-          console.log(`[useTeamLogo] 🔍 Fetching from TheSportsDB (Key ${key})...`);
+        // 2. Fetch from TheSportsDB
+        const tryFetch = async (key: string, name: string) => {
+          const url = `https://www.thesportsdb.com/api/v1/json/${key}/searchteams.php?t=${encodeURIComponent(name)}`;
           const res = await fetch(url);
           if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
           return await res.json();
         };
 
-        let data = await tryFetch('3');
+        let data = await tryFetch('3', teamName);
         if (!data.teams) {
-          console.log(`[useTeamLogo] 🔄 Key 3 returned nothing, trying Key 1...`);
-          data = await tryFetch('1');
+          data = await tryFetch('1', teamName);
         }
 
         const query = normalize(teamName);
         const teams = data.teams || [];
-        console.log(`[useTeamLogo] 📊 API returned ${teams.length} teams for "${teamName}"`);
-
+        
         let bestTeam = null;
         let bestScore = 0;
 
-        if (teams.length === 1) {
-          // If only one team found, we highly trust it
-          bestTeam = teams[0];
-          bestScore = 100;
-        } else if (teams.length > 1) {
+        if (teams.length > 0) {
           const scored = teams.map((team: any) => ({
             team,
             score: scoreTeamMatch(team, query)
@@ -89,13 +82,14 @@ export const useTeamLogo = (teamName: string) => {
           bestScore = scored[0].score;
         }
 
-        // If we have a team and it has a badge, use it
-        const badge = (bestTeam && bestScore >= 20) ? bestTeam.strBadge || null : null;
+        // Final protection: Ensure the found team name actually matches the query partially
+        // TheSportsDB sometimes returns Arsenal as a default or first result for bad queries
+        const badge = (bestTeam && bestScore >= 30) ? bestTeam.strBadge || null : null;
         
         if (badge) {
-          console.log(`[useTeamLogo] ⭐ Match found: ${bestTeam.strTeam} (Score: ${bestScore})`);
+          console.log(`[useTeamLogo] ⭐ Match: "${teamName}" -> "${bestTeam.strTeam}" (Score: ${bestScore})`);
         } else {
-          console.log(`[useTeamLogo] ❌ No valid badge/match for "${teamName}" (Best Score: ${bestScore})`);
+          console.log(`[useTeamLogo] ❌ No match for "${teamName}"`);
         }
 
         // 3. Save to DB cache
@@ -106,12 +100,13 @@ export const useTeamLogo = (teamName: string) => {
             updated_at: new Date().toISOString()
           }, { onConflict: 'team_name' });
         } catch (dbErr) {
-          console.error("[useTeamLogo] ⚠️ Failed to save to cache:", dbErr);
+          console.error("[useTeamLogo] ⚠️ Cache save failed:", dbErr);
         }
 
         setLogoUrl(badge);
       } catch (err) {
         console.error("[useTeamLogo] ‼️ Error:", err);
+        setLogoUrl(null);
       } finally {
         setLoading(false);
       }
