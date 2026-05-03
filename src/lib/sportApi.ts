@@ -38,6 +38,9 @@ export const fetchFixturesByDate = async (date: string): Promise<SportApiFixture
     }
     
     console.warn("[SportAPI] Proxy returned success: false or no fixtures", data);
+    if (data?._debug) {
+      console.log("[SportAPI] Proxy Debug Info:", data._debug);
+    }
     return [];
   } catch (error) {
     console.error("[SportAPI] Final error in fetchFixturesByDate:", error);

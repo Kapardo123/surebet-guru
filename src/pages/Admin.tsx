@@ -713,7 +713,34 @@ const Admin = () => {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-lg font-bold">Active Tips ({tips.length})</h2>
-            <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={refreshData}><RefreshCw className="w-3 h-3 mr-1" /> Sync</Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 text-[10px] border-accent/30 text-accent"
+                onClick={async () => {
+                  try {
+                    const date = new Date().toISOString().split('T')[0];
+                    toast({ title: "Testing SportAPI..." });
+                    const results = await fetchFixturesByDate(date);
+                    if (results.length > 0) {
+                      toast({ title: "API OK! ✅", description: `Found ${results.length} fixtures` });
+                    } else {
+                      toast({ 
+                        variant: "destructive", 
+                        title: "API Error ❌", 
+                        description: "Check console for details. Proxy might be returning Welcome message." 
+                      });
+                    }
+                  } catch (e) {
+                    toast({ variant: "destructive", title: "Test Failed", description: String(e) });
+                  }
+                }}
+              >
+                <Zap className="w-3 h-3 mr-1" /> Test API
+              </Button>
+              <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={refreshData}><RefreshCw className="w-3 h-3 mr-1" /> Sync</Button>
+            </div>
           </div>
           <div className="space-y-2">
             {tips.map((tip) => (

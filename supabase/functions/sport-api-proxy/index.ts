@@ -16,32 +16,52 @@ serve(async (req) => {
   try {
     const { endpoint, params } = await req.json()
     
-    // Clean up endpoint and build query params
+    // Clean up endpoint
     const cleanPath = endpoint.replace(/^\/+/, '').replace(/^api\//, '').replace(/^v1\//, '')
     
-    // We use sportapi.ai/api/v1/ which is the most likely production path
-    const finalUrl = `https://sportapi.ai/api/v1/${cleanPath}`
+    // Diagnostic info
+    console.log(`[Proxy] Incoming request for: ${cleanPath}`);
+    console.log(`[Proxy] Params: ${JSON.stringify(params)}`);
+
+    // We'll try the most standard URL first
+    const finalUrl = `https://sportapi.ai/api/${cleanPath}`
     const queryParams = new URLSearchParams(params || {})
-    
-    // Always include token in URL as a fallback
     queryParams.append('token', SPORT_API_KEY)
     
     const urlWithParams = `${finalUrl}?${queryParams.toString()}`
     
-    console.log(`[Proxy] Requesting: ${urlWithParams}`);
+    console.log(`[Proxy] Primary URL: ${urlWithParams}`);
 
-    const response = await fetch(urlWithParams, {
+    // Try primary URL
+    let response = await fetch(urlWithParams, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'X-Api-Key': SPORT_API_KEY,
-        'Authorization': `Bearer ${SPORT_API_KEY}`
+        'X-Api-Key': SPORT_API_KEY
       }
     })
 
-    const responseText = await response.text();
+    let responseText = await response.text();
     console.log(`[Proxy] Status: ${response.status}`);
-    console.log(`[Proxy] Response: ${responseText.substring(0, 200)}`);
+    
+    // If we get the "Welcome" message, try alternative URL structure
+    if (responseText.includes("Welcome to Sport API")) {
+      console.log("[Proxy] Got Welcome message, trying alternative URL...");
+      const altUrl = `https://api.sportapi.ai/${cleanPath}?token=${SPORT_API_KEY}&${new URLSearchParams(params || "").toString()}`
+      console.log(`[Proxy] Alternative URL: ${altUrl}`);
+      
+      const altResponse = await fetch(altUrl, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json', 'X-Api-Key': SPORT_API_KEY }
+      });
+      
+      const altText = await altResponse.text();
+      if (!altText.includes("Welcome to Sport API")) {
+        console.log("[Proxy] Alternative URL succeeded!");
+        response = altResponse;
+        responseText = altText;
+      }
+    }
 
     let data;
     try {
@@ -50,7 +70,14 @@ serve(async (req) => {
       data = { error: "Failed to parse API response", raw: responseText };
     }
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify({
+      ...data,
+      _debug: {
+        url: urlWithParams,
+        status: response.status,
+        headers_sent: ['Accept', 'X-Api-Key']
+      }
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
