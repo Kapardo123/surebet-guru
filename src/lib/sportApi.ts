@@ -73,9 +73,9 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
         // Ensure time is a string - check multiple possible SofaScore fields
          let timeStr = "TBD";
          
-         // SofaScore often has startTimestamp at the root of the event
-         // or sometimes inside a 'time' object
-         const timestamp = event.startTimestamp || 
+         // Based on debug data: timestamp is at the root
+         const timestamp = event.timestamp ||
+                           event.startTimestamp || 
                            event.start_timestamp || 
                            event.startTime || 
                            event.start_time ||
