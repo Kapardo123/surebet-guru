@@ -14,6 +14,12 @@ export const useSportFixtures = (date?: string, filterTeam?: string) => {
 
   useEffect(() => {
     const loadFixtures = async () => {
+      // Don't fetch if filter is too short
+      if (filterTeam && filterTeam.length > 0 && filterTeam.length < 3) {
+        setFixtures([]);
+        return;
+      }
+
       setLoading(true);
       const targetDate = date || new Date().toISOString().split('T')[0];
       const data = await fetchFixturesByDate(targetDate);

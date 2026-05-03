@@ -49,6 +49,10 @@ const UpcomingMatchesList = ({ onSelectMatch }: Props) => {
           <Loader2 className="w-4 h-4 animate-spin text-primary" />
           Loading fixtures...
         </div>
+      ) : (searchTerm.length > 0 && searchTerm.length < 3) ? (
+        <div className="text-center py-6 text-muted-foreground text-[10px] bg-muted/5 rounded-xl border border-dashed">
+          Type at least 3 characters to search...
+        </div>
       ) : fixtures.length === 0 ? (
         <div className="text-center py-6 text-muted-foreground text-xs bg-muted/10 rounded-xl border border-dashed">
           No matches found for this date or filter.
