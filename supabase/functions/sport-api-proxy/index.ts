@@ -16,22 +16,40 @@ serve(async (req) => {
   try {
     const { endpoint, params } = await req.json()
     
-    // Hardcoded URL construction to prevent any path issues
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-    // Add API key to query params as well, as some systems prefer it there
-    const qs = new URLSearchParams(params || {}).toString()
-    const finalUrl = `https://sportapi.ai/api${cleanEndpoint}?${qs}${qs ? '&' : ''}token=${SPORT_API_KEY}`
+    // Clean up endpoint and build query params
+    let cleanPath = endpoint.replace(/^\/+/, '').replace(/^api\//, '')
     
-    console.log(`[Proxy] Calling: ${finalUrl}`);
+    // Add v1 if not present (most SportAPI endpoints use v1)
+    if (!cleanPath.startsWith('v1/')) {
+      cleanPath = `v1/${cleanPath}`
+    }
+
+    const queryParams = new URLSearchParams(params || {})
+    
+    // Add token to URL - this is often the most reliable way for this specific API
+    queryParams.append('token', SPORT_API_KEY)
+    
+    const finalUrl = `https://sportapi.ai/api/${cleanPath}?${queryParams.toString()}`
+    
+    console.log(`[Proxy] Requesting: ${finalUrl}`);
 
     const response = await fetch(finalUrl, {
       method: 'GET',
       headers: {
-        'X-Api-Key': SPORT_API_KEY,
         'Accept': 'application/json'
       }
     })
-    const data = await response.json()
+
+    const responseText = await response.text();
+    console.log(`[Proxy] Status: ${response.status}`);
+    console.log(`[Proxy] Response: ${responseText.substring(0, 200)}`);
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      data = { error: "Failed to parse API response", raw: responseText };
+    }
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
