@@ -20,9 +20,13 @@ serve(async (req) => {
     const date = params?.date || new Date().toISOString().split('T')[0];
     
     // Construct SofaScore RapidAPI URL
-    // SofaScore API on RapidAPI usually follows this pattern:
-    // https://sofascore6.p.rapidapi.com/api/sofascore/v1/events/schedule/date?date=2024-05-03
-    const finalUrl = `https://${RAPID_API_HOST}/api/sofascore/v1/${endpoint}?date=${date}`
+    const date = params?.date || new Date().toISOString().split('T')[0];
+    let finalUrl = `https://${RAPID_API_HOST}/api/sofascore/v1/${endpoint}?date=${date}`;
+    
+    // Add categoryId if provided
+    if (params?.categoryId) {
+      finalUrl += `&categoryId=${params.categoryId}`;
+    }
     
     console.log(`[Proxy] Fetching from: ${finalUrl}`);
 
@@ -35,9 +39,21 @@ serve(async (req) => {
       }
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      data = { error: "Parse error", raw: responseText };
+    }
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify({
+      ...data,
+      _debug: {
+        url: finalUrl,
+        status: response.status
+      }
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })

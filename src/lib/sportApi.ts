@@ -24,8 +24,8 @@ export const fetchFixturesByDate = async (date: string): Promise<SportApiFixture
     console.log(`[SofaScore] Calling proxy for date: ${date}`);
     const { data, error } = await supabase.functions.invoke('sport-api-proxy', {
       body: { 
-        endpoint: 'events/schedule/date',
-        params: { date }
+        endpoint: 'match/by-date',
+        params: { date, categoryId: 1 } // Default to categoryId 1 (Football)
       }
     });
 
@@ -34,25 +34,29 @@ export const fetchFixturesByDate = async (date: string): Promise<SportApiFixture
       throw error;
     }
     
-    if (data?.events) {
-      console.log(`[SofaScore] Successfully fetched ${data.events.length} events`);
+    const events = data?.events || data?.data?.events || data?.matches || [];
+    
+    if (events && Array.isArray(events)) {
+      console.log(`[SofaScore] Successfully fetched ${events.length} events`);
       // Map SofaScore format to our app format
-      return data.events.map((event: any) => ({
+      return events.map((event: any) => ({
         id: event.id,
-        home_team: event.homeTeam.name,
-        away_team: event.awayTeam.name,
+        home_team: event.homeTeam?.name || "Unknown",
+        away_team: event.awayTeam?.name || "Unknown",
         home_score: event.homeScore?.current,
         away_score: event.awayScore?.current,
-        status: event.status.type,
-        league_name: event.tournament.name,
+        status: event.status?.type || "unknown",
+        league_name: event.tournament?.name || "Unknown",
         date: date,
-        time: new Date(event.startTimestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        home_team_id: event.homeTeam.id,
-        away_team_id: event.awayTeam.id,
-        home_logo: `https://api.sofascore.app/api/v1/team/${event.homeTeam.id}/image`,
-        away_logo: `https://api.sofascore.app/api/v1/team/${event.awayTeam.id}/image`,
+        time: event.startTimestamp ? new Date(event.startTimestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "TBD",
+        home_team_id: event.homeTeam?.id,
+        away_team_id: event.awayTeam?.id,
+        home_logo: event.homeTeam?.id ? `https://api.sofascore.app/api/v1/team/${event.homeTeam.id}/image` : null,
+        away_logo: event.awayTeam?.id ? `https://api.sofascore.app/api/v1/team/${event.awayTeam.id}/image` : null,
       }));
     }
+    
+    console.warn("[SofaScore] No events found in response", data);
     
     return [];
   } catch (error) {

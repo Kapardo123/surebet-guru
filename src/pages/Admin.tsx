@@ -724,13 +724,14 @@ const Admin = () => {
                     const date = new Date().toISOString().split('T')[0];
                     toast({ title: "Testing SofaScore API..." });
                     const results = await fetchFixturesByDate(date);
+                    console.log("Test results:", results);
                     if (results.length > 0) {
-                      toast({ title: "API OK! ✅", description: `Found ${results.length} fixtures` });
+                      toast({ title: "API OK! ✅", description: `Found ${results.length} fixtures. Check console for details.` });
                     } else {
                       toast({ 
                         variant: "destructive", 
                         title: "API Error ❌", 
-                        description: "No events found for today." 
+                        description: "No events found. Check browser console for debug info." 
                       });
                     }
                   } catch (e) {
