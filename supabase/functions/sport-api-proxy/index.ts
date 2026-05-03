@@ -18,22 +18,17 @@ serve(async (req) => {
     
     // Hardcoded URL construction to prevent any path issues
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-    let finalUrl = `https://sportapi.ai/api${cleanEndpoint}`
+    // Add API key to query params as well, as some systems prefer it there
+    const qs = new URLSearchParams(params || {}).toString()
+    const finalUrl = `https://sportapi.ai/api${cleanEndpoint}?${qs}${qs ? '&' : ''}token=${SPORT_API_KEY}`
     
-    if (params && Object.keys(params).length > 0) {
-      const qs = new URLSearchParams(params).toString()
-      finalUrl += `?${qs}`
-    }
-
     console.log(`[Proxy] Calling: ${finalUrl}`);
 
     const response = await fetch(finalUrl, {
       method: 'GET',
       headers: {
         'X-Api-Key': SPORT_API_KEY,
-        'Authorization': `Bearer ${SPORT_API_KEY}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Accept': 'application/json'
       }
     })
     const data = await response.json()
