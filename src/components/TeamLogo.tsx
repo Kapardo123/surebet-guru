@@ -11,54 +11,8 @@ interface TeamLogoProps {
 
 const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) => {
   const [error, setError] = useState(false);
-  const [proxyLogoUrl, setProxyLogoUrl] = useState<string | null>(null);
-  const [imageLoading, setImageLoading] = useState(false);
-
   const { logoUrl: hookLogoUrl, loading: hookLoading } = useTeamLogo(propLogoUrl ? "" : teamName);
   const finalLogoUrl = propLogoUrl || hookLogoUrl;
-
-  useEffect(() => {
-    const fetchImageThroughProxy = async (url: string) => {
-      if (!url || !url.includes('sofascore')) return;
-      
-      // Extract teamId from the URL
-      const teamId = url.split('/').filter(p => !isNaN(Number(p)) && p !== "").pop();
-      if (!teamId) return;
-
-      try {
-        setImageLoading(true);
-        setError(false);
-        
-        const { data, error: proxyError } = await supabase.functions.invoke('sport-api-proxy', {
-          body: { 
-            isImage: true,
-            endpoint: teamId, // Pass teamId as endpoint
-            params: { teamId }
-          }
-        });
-
-        if (proxyError) throw proxyError;
-        
-        if (data?.base64) {
-          const logoDataUrl = `data:${data.contentType || 'image/png'};base64,${data.base64}`;
-          setProxyLogoUrl(logoDataUrl);
-        }
-      } catch (err) {
-        console.error("Error fetching image through proxy:", err);
-        setError(true);
-      } finally {
-        setImageLoading(false);
-      }
-    };
-
-    if (finalLogoUrl && finalLogoUrl.includes('sofascore')) {
-      fetchImageThroughProxy(finalLogoUrl);
-    }
-
-    return () => {
-      if (proxyLogoUrl) URL.revokeObjectURL(proxyLogoUrl);
-    };
-  }, [finalLogoUrl]);
 
   const getInitials = (name: string) => {
     if (!name) return "??";
@@ -71,7 +25,7 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
       .toUpperCase();
   };
 
-  if ((hookLoading || imageLoading) && !propLogoUrl && !proxyLogoUrl) {
+  if (hookLoading && !propLogoUrl) {
     return (
       <div
         className="rounded-full bg-muted animate-pulse flex-shrink-0 flex items-center justify-center"
@@ -82,9 +36,7 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
     );
   }
 
-  const displayUrl = proxyLogoUrl || finalLogoUrl;
-
-  if (!displayUrl || error) {
+  if (!finalLogoUrl || error) {
     return (
       <div 
         className="rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold flex-shrink-0 overflow-hidden"
@@ -97,7 +49,7 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) 
 
   return (
     <img
-      src={displayUrl}
+      src={finalLogoUrl}
       alt={`${teamName} logo`}
       className="object-contain flex-shrink-0"
       style={{ width: size, height: size }}
