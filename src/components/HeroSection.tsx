@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FeaturedPick } from "@/lib/featuredPickStorage";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { useLiveMatchScore } from "@/hooks/useLiveMatchScore";
 
 interface HeroSectionProps {
   pick?: FeaturedPick;
@@ -32,6 +33,7 @@ const statusIcon = {
 
 const HeroSection = ({ pick }: HeroSectionProps) => {
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const { score } = useLiveMatchScore(pick?.homeTeam || "Arsenal", pick?.awayTeam || "Chelsea", pick?.kickoff || "2026-05-03 20:00");
   const data = pick || {
     league: "Premier League",
     kickoff: "20:00",
@@ -122,9 +124,29 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
           </p>
           <div className="flex items-center gap-2.5 md:gap-4">
             <TeamLogo teamName={data.homeTeam} logoUrl={data.homeTeamLogo} size={28} />
-            <p className="font-display text-lg md:text-4xl font-bold text-foreground tracking-tight">
-              {data.homeTeam} <span className="text-muted-foreground font-normal text-sm md:text-4xl">vs</span> {data.awayTeam}
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="font-display text-lg md:text-4xl font-bold text-foreground tracking-tight">
+                {data.homeTeam}
+              </p>
+              
+              {score && (score.home !== null || score.isLive) ? (
+                <div className="flex items-center gap-2 bg-background/20 backdrop-blur-md px-3 py-1 rounded-xl border border-white/10 mx-2">
+                  <span className={`font-display font-black text-xl md:text-4xl ${score.isLive ? 'text-accent animate-pulse' : 'text-white'}`}>
+                    {score.home}
+                  </span>
+                  <span className="text-white/40 text-lg md:text-3xl font-light">:</span>
+                  <span className={`font-display font-black text-xl md:text-4xl ${score.isLive ? 'text-accent animate-pulse' : 'text-white'}`}>
+                    {score.away}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-muted-foreground font-normal text-sm md:text-4xl mx-2">vs</span>
+              )}
+
+              <p className="font-display text-lg md:text-4xl font-bold text-foreground tracking-tight">
+                {data.awayTeam}
+              </p>
+            </div>
             <TeamLogo teamName={data.awayTeam} logoUrl={data.awayTeamLogo} size={28} />
           </div>
           

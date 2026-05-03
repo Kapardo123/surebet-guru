@@ -4,6 +4,7 @@ import TeamLogo from "@/components/TeamLogo";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { useLiveMatchScore } from "@/hooks/useLiveMatchScore";
 
 export interface Tip {
   id: number;
@@ -38,6 +39,7 @@ const statusLabel = {
 
 const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boolean }) => {
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const { score } = useLiveMatchScore(tip.homeTeam, tip.awayTeam, tip.kickoff);
   // Premium tips are locked ONLY if they are 'upcoming' and the user is NOT premium.
   // Once they are won/lost/draw, they are visible to everyone.
   const isSettled = tip.status !== "upcoming";
@@ -119,8 +121,25 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
               <span className="font-display font-bold text-foreground text-sm leading-tight">{tip.homeTeam}</span>
             </div>
 
-            <div className="px-3">
-              <span className="text-xs font-display font-bold text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-md">VS</span>
+            <div className="px-3 flex flex-col items-center gap-1">
+              {score && (score.home !== null || score.isLive) ? (
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center gap-2 bg-muted/80 px-3 py-1 rounded-lg border border-border/50">
+                    <span className={`font-display font-black text-lg ${score.isLive ? 'text-accent animate-pulse' : 'text-foreground'}`}>
+                      {score.home}
+                    </span>
+                    <span className="text-muted-foreground text-xs font-bold">:</span>
+                    <span className={`font-display font-black text-lg ${score.isLive ? 'text-accent animate-pulse' : 'text-foreground'}`}>
+                      {score.away}
+                    </span>
+                  </div>
+                  {score.isLive && (
+                    <span className="text-[9px] font-black text-accent uppercase tracking-widest animate-pulse">Live</span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-xs font-display font-bold text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-md">VS</span>
+              )}
             </div>
 
             <div className="flex items-center gap-3 flex-1 justify-end text-right">
