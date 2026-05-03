@@ -19,48 +19,52 @@ serve(async (req) => {
     // Clean up endpoint
     const cleanPath = endpoint.replace(/^\/+/, '').replace(/^api\//, '').replace(/^v1\//, '')
     
-    // Diagnostic info
     console.log(`[Proxy] Incoming request for: ${cleanPath}`);
-    console.log(`[Proxy] Params: ${JSON.stringify(params)}`);
 
-    // We'll try the most standard URL first
-    const finalUrl = `https://sportapi.ai/api/${cleanPath}`
-    const queryParams = new URLSearchParams(params || {})
-    queryParams.append('token', SPORT_API_KEY)
-    
-    const urlWithParams = `${finalUrl}?${queryParams.toString()}`
-    
-    console.log(`[Proxy] Primary URL: ${urlWithParams}`);
+    const commonHeaders = {
+      'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    };
 
-    // Try primary URL
-    let response = await fetch(urlWithParams, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'X-Api-Key': SPORT_API_KEY
-      }
-    })
-
-    let responseText = await response.text();
-    console.log(`[Proxy] Status: ${response.status}`);
+    // Strategy 1: URL Token (The most documented way)
+    const url1 = `https://sportapi.ai/api/${cleanPath}?token=${SPORT_API_KEY}&${new URLSearchParams(params || "").toString()}`
     
-    // If we get the "Welcome" message, try alternative URL structure
-    if (responseText.includes("Welcome to Sport API")) {
-      console.log("[Proxy] Got Welcome message, trying alternative URL...");
-      const altUrl = `https://api.sportapi.ai/${cleanPath}?token=${SPORT_API_KEY}&${new URLSearchParams(params || "").toString()}`
-      console.log(`[Proxy] Alternative URL: ${altUrl}`);
+    console.log(`[Proxy] Trying Strategy 1: ${url1}`);
+    
+    let response;
+    let responseText;
+    let strategy = "Strategy 1 (URL Token)";
+
+    try {
+      response = await fetch(url1, { method: 'GET', headers: commonHeaders });
+      responseText = await response.text();
       
-      const altResponse = await fetch(altUrl, {
-        method: 'GET',
-        headers: { 'Accept': 'application/json', 'X-Api-Key': SPORT_API_KEY }
-      });
-      
-      const altText = await altResponse.text();
-      if (!altText.includes("Welcome to Sport API")) {
-        console.log("[Proxy] Alternative URL succeeded!");
-        response = altResponse;
-        responseText = altText;
+      // If we get a 502, 503, or the Welcome message, try Strategy 2
+      if (response.status >= 500 || responseText.includes("Welcome to Sport API")) {
+        console.log(`[Proxy] Strategy 1 failed (Status: ${response.status}, Welcome: ${responseText.includes("Welcome")}). Trying Strategy 2...`);
+        
+        // Strategy 2: X-Api-Key Header with api. subdomain
+        const url2 = `https://api.sportapi.ai/v1/${cleanPath}?${new URLSearchParams(params || "").toString()}`
+        strategy = "Strategy 2 (Header + Subdomain)";
+        
+        const altResponse = await fetch(url2, {
+          method: 'GET',
+          headers: {
+            ...commonHeaders,
+            'X-Api-Key': SPORT_API_KEY
+          }
+        });
+        
+        const altText = await altResponse.text();
+        if (altResponse.status === 200 && !altText.includes("Welcome to Sport API")) {
+          console.log("[Proxy] Strategy 2 succeeded!");
+          response = altResponse;
+          responseText = altText;
+        }
       }
+    } catch (err) {
+      console.error(`[Proxy] Fetch error: ${err.message}`);
+      throw err;
     }
 
     let data;
@@ -73,9 +77,9 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       ...data,
       _debug: {
-        url: urlWithParams,
-        status: response.status,
-        headers_sent: ['Accept', 'X-Api-Key']
+        strategy_used: strategy,
+        final_status: response.status,
+        welcome_detected: responseText.includes("Welcome to Sport API")
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

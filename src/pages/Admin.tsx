@@ -39,6 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
 import UpcomingMatchesList from "@/components/UpcomingMatchesList";
 import Logo from "@/components/Logo";
+import { fetchFixturesByDate } from "@/lib/sportApi";
 import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
