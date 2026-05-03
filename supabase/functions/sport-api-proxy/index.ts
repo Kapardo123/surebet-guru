@@ -43,15 +43,15 @@ serve(async (req) => {
 
     const strategies = [
       { 
-        url: `https://sportapi.ai/api/v1/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`, 
+        url: `${BASE_URL}/api/v1/${cleanPath}?token=${SPORT_API_KEY}${queryStr ? `&${queryStr}` : ''}`, 
         name: "Strategy 1 (Main v1 + Token + Headers)"
       },
       { 
-        url: `https://api.sportapi.ai/v1/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`, 
+        url: `https://api.sportapi.ai/v1/${cleanPath}?token=${SPORT_API_KEY}${queryStr ? `&${queryStr}` : ''}`, 
         name: "Strategy 2 (Subdomain v1 + Token + Headers)"
       },
       { 
-        url: `https://sportapi.ai/api/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`, 
+        url: `${BASE_URL}/api/${cleanPath}?token=${SPORT_API_KEY}${queryStr ? `&${queryStr}` : ''}`, 
         name: "Strategy 3 (Standard Path + Token + Headers)"
       }
     ];
