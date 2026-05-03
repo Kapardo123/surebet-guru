@@ -29,6 +29,7 @@ export const useTeamLogo = (teamName: string) => {
     }
 
     const fetchLogo = async () => {
+      console.log(`[useTeamLogo] Searching for: ${teamName}`);
       setLoading(true);
       
       try {
@@ -40,9 +41,14 @@ export const useTeamLogo = (teamName: string) => {
           .maybeSingle();
 
         if (cacheData?.logo_url) {
+          console.log(`[useTeamLogo] Found in cache: ${teamName} -> ${cacheData.logo_url}`);
           setLogoUrl(cacheData.logo_url);
           setLoading(false);
           return;
+        }
+
+        if (cacheError) {
+          console.warn(`[useTeamLogo] Cache check error (table might not exist):`, cacheError);
         }
 
         // 2. Fetch from TheSportsDB
@@ -53,24 +59,35 @@ export const useTeamLogo = (teamName: string) => {
         const query = normalize(teamName);
         const teams = data.teams || [];
 
+        console.log(`[useTeamLogo] TheSportsDB found ${teams.length} potential matches for ${teamName}`);
+
         const best = teams
           .map((team: any) => ({ team, score: scoreTeamMatch(team, query) }))
           .sort((a: any, b: any) => b.score - a.score)[0];
 
-        const badge = best?.score >= 60 ? best.team?.strBadge || null : null;
-
-        // 3. Save to DB cache
+        // Lower threshold to 40 to be more permissive
+        const badge = best?.score >= 40 ? best.team?.strBadge || null : null;
+        
         if (badge) {
+          console.log(`[useTeamLogo] Best match found: ${best.team.strTeam} (Score: ${best.score})`);
+        } else {
+          console.log(`[useTeamLogo] No good match found for ${teamName}`);
+        }
+
+        // 3. Save to DB cache (even if null, to avoid re-searching)
+        try {
           await supabase.from('team_logos_cache').upsert({
             team_name: teamName,
-            logo_url: badge,
+            logo_url: badge || "", // Save empty string if not found
             updated_at: new Date().toISOString()
           }, { onConflict: 'team_name' });
+        } catch (dbErr) {
+          console.error("[useTeamLogo] Failed to save to cache:", dbErr);
         }
 
         setLogoUrl(badge);
       } catch (err) {
-        console.error("Error in useTeamLogo:", err);
+        console.error("[useTeamLogo] Fetch error:", err);
       } finally {
         setLoading(false);
       }
