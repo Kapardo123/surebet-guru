@@ -7,8 +7,8 @@ export interface SofaMatch {
   id: number;
   homeTeam: string;
   awayTeam: string;
-  homeScore: number | null;
-  awayScore: number | null;
+  homeScore: number | string | null;
+  awayScore: number | string | null;
   status: string;
   league: string;
   date: string;
@@ -17,6 +17,7 @@ export interface SofaMatch {
   awayTeamId?: number;
   homeLogo?: string;
   awayLogo?: string;
+  isLive?: boolean;
 }
 
 /**
@@ -111,22 +112,26 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
            if (match) timeStr = match[1];
          }
 
-        return {
-          id: event.id,
-          homeTeam: event.homeTeam?.name || event.home_team?.name || "Unknown",
-          awayTeam: event.awayTeam?.name || event.away_team?.name || "Unknown",
-          homeScore: event.homeScore?.current ?? event.home_score?.current,
-          awayScore: event.awayScore?.current ?? event.away_score?.current,
-          status: statusStr,
-          league: event.tournament?.name || event.league?.name || "Unknown",
-          date: date,
-          time: timeStr,
-          homeTeamId: event.homeTeam?.id || event.home_team?.id,
-          awayTeamId: event.awayTeam?.id || event.away_team?.id,
-          // Remove direct SofaScore logo links to force using useTeamLogo (TheSportsDB + Cache)
-          homeLogo: undefined,
-          awayLogo: undefined,
-        };
+        // Check if match is live
+         const isLive = event.status?.type === 'inprogress' || event.status?.type === 'live';
+
+         return {
+           id: event.id,
+           homeTeam: event.homeTeam?.name || event.home_team?.name || "Unknown",
+           awayTeam: event.awayTeam?.name || event.away_team?.name || "Unknown",
+           homeScore: event.homeScore?.current ?? event.home_score?.current ?? null,
+           awayScore: event.awayScore?.current ?? event.away_score?.current ?? null,
+           status: statusStr,
+           league: event.tournament?.name || event.league?.name || "Unknown",
+           date: date,
+           time: timeStr,
+           homeTeamId: event.homeTeam?.id || event.home_team?.id,
+           awayTeamId: event.awayTeam?.id || event.away_team?.id,
+           isLive: isLive,
+           // Remove direct SofaScore logo links to force using useTeamLogo (TheSportsDB + Cache)
+           homeLogo: undefined,
+           awayLogo: undefined,
+         };
       });
     }
     
