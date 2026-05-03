@@ -18,7 +18,6 @@ serve(async (req) => {
     
     // Build URL with query params
     const url = new URL(`${BASE_URL}${endpoint}`)
-    url.searchParams.append('token', SPORT_API_KEY)
     
     if (params) {
       Object.keys(params).forEach(key => {
@@ -26,7 +25,14 @@ serve(async (req) => {
       })
     }
 
-    const response = await fetch(url.toString())
+    console.log(`[Proxy] Fetching: ${url.toString()}`);
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        'X-Api-Key': SPORT_API_KEY,
+        'Accept': 'application/json'
+      }
+    })
     const data = await response.json()
 
     return new Response(JSON.stringify(data), {
