@@ -32,24 +32,35 @@ serve(async (req) => {
 
     const strategies = [
       { 
-        url: `https://api.sportapi.ai/v1/${cleanPath}?${queryStr}`, 
-        name: "Strategy 1 (Subdomain + v1 + Header Only)",
-        headers: { ...commonHeaders } 
-      },
-      { 
-        url: `https://sportapi.ai/api/v1/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`, 
-        name: "Strategy 2 (Main Domain + v1 + Token)",
-        headers: { ...commonHeaders } 
+        url: `https://sportapi.ai/api/${cleanPath}?${queryStr}`, 
+        name: "Strategy 1 (Docs: Bearer Only)",
+        headers: { 
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${SPORT_API_KEY}`
+        } 
       },
       { 
         url: `https://sportapi.ai/api/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`, 
-        name: "Strategy 3 (Main Domain + Token)",
+        name: "Strategy 2 (Docs: URL Token)",
+        headers: { 'Accept': 'application/json' } 
+      },
+      { 
+        url: `https://api.sportapi.ai/v1/${cleanPath}?${queryStr}`, 
+        name: "Strategy 3 (Subdomain v1 + X-Api-Key)",
+        headers: { 
+          'Accept': 'application/json',
+          'X-Api-Key': SPORT_API_KEY 
+        } 
+      },
+      { 
+        url: `https://sportapi.ai/api/v1/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`, 
+        name: "Strategy 4 (Main v1 + Full Headers)",
         headers: { ...commonHeaders } 
       },
       { 
-        url: `https://api.sportapi.ai/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`, 
-        name: "Strategy 4 (Subdomain + Token)",
-        headers: { ...commonHeaders } 
+        url: `https://sportapi.ai/api/${cleanPath}?date=${params?.date || ''}&token=${SPORT_API_KEY}`, 
+        name: "Strategy 5 (Absolute Minimum)",
+        headers: {} 
       }
     ];
 
@@ -60,12 +71,22 @@ serve(async (req) => {
     for (const strat of strategies) {
       console.log(`[Proxy] Trying ${strat.name}: ${strat.url}`);
       try {
-        const res = await fetch(strat.url, { method: 'GET', headers: strat.headers });
+        // Add a 10-second timeout to each request
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const res = await fetch(strat.url, { 
+          method: 'GET', 
+          headers: strat.headers,
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
         const text = await res.text();
         
         console.log(`[Proxy] ${strat.name} Result - Status: ${res.status}`);
 
-        if (res.status === 200 && !text.includes("Welcome to Sport API")) {
+        if (res.status === 200 && !text.includes("Welcome to Sport API") && !text.includes("Error 502")) {
           console.log(`[Proxy] ${strat.name} SUCCEEDED!`);
           response = res;
           responseText = text;
@@ -79,6 +100,7 @@ serve(async (req) => {
         successfulStrategy = `Failed at ${strat.name}`;
       } catch (err) {
         console.error(`[Proxy] ${strat.name} Error: ${err.message}`);
+        successfulStrategy = `Error at ${strat.name}: ${err.message}`;
       }
     }
 
