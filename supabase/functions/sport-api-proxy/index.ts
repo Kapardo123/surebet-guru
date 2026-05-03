@@ -17,16 +17,11 @@ serve(async (req) => {
     const { endpoint, params } = await req.json()
     
     // Clean up endpoint and build query params
-    let cleanPath = endpoint.replace(/^\/+/, '').replace(/^api\//, '')
+    const cleanPath = endpoint.replace(/^\/+/, '').replace(/^api\//, '')
     
-    // Add v1 if not present (most SportAPI endpoints use v1)
-    if (!cleanPath.startsWith('v1/')) {
-      cleanPath = `v1/${cleanPath}`
-    }
-
     const queryParams = new URLSearchParams(params || {})
     
-    // Add token to URL - this is often the most reliable way for this specific API
+    // According to docs, token can be in Authorization header or sometimes as a param
     queryParams.append('token', SPORT_API_KEY)
     
     const finalUrl = `https://sportapi.ai/api/${cleanPath}?${queryParams.toString()}`
@@ -37,8 +32,8 @@ serve(async (req) => {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'X-Api-Key': SPORT_API_KEY,
-        'Authorization': `Bearer ${SPORT_API_KEY}`
+        'Authorization': `Bearer ${SPORT_API_KEY}`,
+        'X-Api-Key': SPORT_API_KEY
       }
     })
 

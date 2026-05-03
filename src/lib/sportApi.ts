@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const SPORT_API_KEY = "sk_live_7f431190a0515b40375c17e0f9ff8f39fbc6df19";
-const BASE_URL = "https://sportapi.ai/api/v1";
+const BASE_URL = "https://sportapi.ai/api";
 
 export interface SportApiFixture {
   id: number;
