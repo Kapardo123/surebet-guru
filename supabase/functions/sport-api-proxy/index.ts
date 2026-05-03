@@ -24,35 +24,34 @@ serve(async (req) => {
     const commonHeaders = {
       'Accept': 'application/json',
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'X-Api-Key': SPORT_API_KEY,
+      'Authorization': `Bearer ${SPORT_API_KEY}`
     };
 
-    // Strategy 1: URL Token (The most documented way)
+    // Strategy 1: URL Token + Headers (The most aggressive way)
     const url1 = `https://sportapi.ai/api/${cleanPath}?token=${SPORT_API_KEY}&${new URLSearchParams(params || "").toString()}`
     
     console.log(`[Proxy] Trying Strategy 1: ${url1}`);
     
     let response;
     let responseText;
-    let strategy = "Strategy 1 (URL Token)";
+    let strategy = "Strategy 1 (Full Auth)";
 
     try {
       response = await fetch(url1, { method: 'GET', headers: commonHeaders });
       responseText = await response.text();
       
-      // If we get a 502, 503, or the Welcome message, try Strategy 2
-      if (response.status >= 500 || responseText.includes("Welcome to Sport API")) {
-        console.log(`[Proxy] Strategy 1 failed (Status: ${response.status}, Welcome: ${responseText.includes("Welcome")}). Trying Strategy 2...`);
+      // If Strategy 1 fails for ANY reason, try Strategy 2
+      if (response.status !== 200 || responseText.includes("Welcome to Sport API") || responseText.includes("API key required")) {
+        console.log(`[Proxy] Strategy 1 failed (Status: ${response.status}). Trying Strategy 2...`);
         
-        // Strategy 2: X-Api-Key Header with api. subdomain
+        // Strategy 2: Different subdomain + headers
         const url2 = `https://api.sportapi.ai/v1/${cleanPath}?${new URLSearchParams(params || "").toString()}`
-        strategy = "Strategy 2 (Header + Subdomain)";
+        strategy = "Strategy 2 (Subdomain Fallback)";
         
         const altResponse = await fetch(url2, {
           method: 'GET',
-          headers: {
-            ...commonHeaders,
-            'X-Api-Key': SPORT_API_KEY
-          }
+          headers: commonHeaders
         });
         
         const altText = await altResponse.text();
