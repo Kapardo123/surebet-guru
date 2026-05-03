@@ -40,9 +40,6 @@ serve(async (req) => {
     });
 
     const responseText = await response.text();
-    console.log(`[Proxy] Response status: ${response.status}`);
-    console.log(`[Proxy] Response body start: ${responseText.substring(0, 500)}`);
-    
     let data;
     try {
       data = JSON.parse(responseText);
@@ -50,13 +47,7 @@ serve(async (req) => {
       data = { error: "Parse error", raw: responseText };
     }
 
-    return new Response(JSON.stringify({
-      ...data,
-      _debug: {
-        url: finalUrl,
-        status: response.status
-      }
-    }), {
+    return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })

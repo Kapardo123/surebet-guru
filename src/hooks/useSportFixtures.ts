@@ -1,15 +1,8 @@
 import { useState, useEffect } from "react";
-import { fetchFixturesByDate, SportApiFixture, getTeamLogo } from "@/lib/sportApi";
-
-export interface EnhancedUpcomingMatch extends SportApiFixture {
-  homeLogo?: string | null;
-  awayLogo?: string | null;
-  formattedTime?: string;
-  formattedDate?: string;
-}
+import { fetchMatchesByDate, SofaMatch } from "@/lib/sportApi";
 
 export const useSportFixtures = (date?: string, filterTeam?: string) => {
-  const [fixtures, setFixtures] = useState<EnhancedUpcomingMatch[]>([]);
+  const [fixtures, setFixtures] = useState<SofaMatch[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -22,25 +15,15 @@ export const useSportFixtures = (date?: string, filterTeam?: string) => {
 
       setLoading(true);
       const targetDate = date || new Date().toISOString().split('T')[0];
-      const data = await fetchFixturesByDate(targetDate);
+      const data = await fetchMatchesByDate(targetDate);
       
-      const enhancedData = data.map((fixture) => {
-        return {
-          ...fixture,
-          homeLogo: fixture.home_logo || null,
-          awayLogo: fixture.away_logo || null,
-          formattedDate: targetDate,
-          formattedTime: fixture.status === 'NS' || fixture.status === 'not_started' ? "Upcoming" : fixture.status
-        };
-      });
-
-      let filtered = enhancedData;
+      let filtered = data;
       if (filterTeam && filterTeam.length >= 2) {
         const search = filterTeam.toLowerCase();
-        filtered = enhancedData.filter(f => 
-          f.home_team.toLowerCase().includes(search) || 
-          f.away_team.toLowerCase().includes(search) ||
-          f.league_name.toLowerCase().includes(search)
+        filtered = data.filter(f => 
+          f.homeTeam.toLowerCase().includes(search) || 
+          f.awayTeam.toLowerCase().includes(search) ||
+          f.league.toLowerCase().includes(search)
         );
       }
 

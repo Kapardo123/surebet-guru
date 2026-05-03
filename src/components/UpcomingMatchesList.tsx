@@ -20,7 +20,7 @@ const UpcomingMatchesList = ({ onSelectMatch }: Props) => {
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5" />
-            Find Match (SportAPI.ai)
+            Find Match (SofaScore)
           </p>
           <Badge variant="outline" className="text-[9px] opacity-70">FAST LOADING</Badge>
         </div>
@@ -64,9 +64,9 @@ const UpcomingMatchesList = ({ onSelectMatch }: Props) => {
               key={match.id}
               type="button"
               onClick={() => onSelectMatch({
-                homeTeam: match.home_team,
-                awayTeam: match.away_team,
-                league: match.league_name,
+                homeTeam: match.homeTeam,
+                awayTeam: match.awayTeam,
+                league: match.league,
                 date: date,
                 time: match.time || "TBD",
                 homeLogo: match.homeLogo,
@@ -76,17 +76,17 @@ const UpcomingMatchesList = ({ onSelectMatch }: Props) => {
             >
               <div className="flex-1 flex flex-col gap-1.5 overflow-hidden">
                 <div className="flex items-center gap-2">
-                  <TeamLogo teamName={match.home_team} logoUrl={match.homeLogo || undefined} size={18} />
-                  <span className="text-xs font-bold truncate">{match.home_team}</span>
+                  <TeamLogo teamName={match.homeTeam} logoUrl={match.homeLogo || undefined} size={18} />
+                  <span className="text-xs font-bold truncate">{match.homeTeam}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <TeamLogo teamName={match.away_team} logoUrl={match.awayLogo || undefined} size={18} />
-                  <span className="text-xs font-bold truncate">{match.away_team}</span>
+                  <TeamLogo teamName={match.awayTeam} logoUrl={match.awayLogo || undefined} size={18} />
+                  <span className="text-xs font-bold truncate">{match.awayTeam}</span>
                 </div>
               </div>
 
               <div className="flex flex-col items-end gap-1 shrink-0 border-l border-border/20 pl-3">
-                <span className="text-[10px] font-medium text-primary">{match.league_name}</span>
+                <span className="text-[10px] font-medium text-primary">{match.league}</span>
                 <span className="text-[9px] text-muted-foreground uppercase">{match.status}</span>
                 <TrendingUp className="w-3 h-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
