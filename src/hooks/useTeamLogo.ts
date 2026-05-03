@@ -29,65 +29,74 @@ export const useTeamLogo = (teamName: string) => {
     }
 
     const fetchLogo = async () => {
-      console.log(`[useTeamLogo] Searching for: ${teamName}`);
+      console.log(`[useTeamLogo] 🚀 Start search for: "${teamName}"`);
       setLoading(true);
       
       try {
-        // 1. Check local DB cache first
-        const { data: cacheData, error: cacheError } = await supabase
-          .from('team_logos_cache')
-          .select('logo_url')
-          .eq('team_name', teamName)
-          .maybeSingle();
+        // 1. Check local DB cache first (wrap in try-catch to not block if table missing)
+        try {
+          const { data: cacheData } = await supabase
+            .from('team_logos_cache')
+            .select('logo_url')
+            .eq('team_name', teamName)
+            .maybeSingle();
 
-        if (cacheData?.logo_url) {
-          console.log(`[useTeamLogo] Found in cache: ${teamName} -> ${cacheData.logo_url}`);
-          setLogoUrl(cacheData.logo_url);
-          setLoading(false);
-          return;
+          if (cacheData?.logo_url) {
+            console.log(`[useTeamLogo] ✅ Found in Cache: ${cacheData.logo_url}`);
+            setLogoUrl(cacheData.logo_url);
+            setLoading(false);
+            return;
+          }
+        } catch (dbErr) {
+          console.warn(`[useTeamLogo] ⚠️ Cache check failed (Table might be missing):`, dbErr);
         }
 
-        if (cacheError) {
-          console.warn(`[useTeamLogo] Cache check error (table might not exist):`, cacheError);
+        // 2. Fetch from TheSportsDB (Try API key '3' then '1')
+        const tryFetch = async (key: string) => {
+          const url = `https://www.thesportsdb.com/api/v1/json/${key}/searchteams.php?t=${encodeURIComponent(teamName)}`;
+          console.log(`[useTeamLogo] 🔍 Fetching from TheSportsDB (Key ${key})...`);
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          return await res.json();
+        };
+
+        let data = await tryFetch('3');
+        if (!data.teams) {
+          console.log(`[useTeamLogo] 🔄 Key 3 returned nothing, trying Key 1...`);
+          data = await tryFetch('1');
         }
 
-        // 2. Fetch from TheSportsDB
-        const res = await fetch(
-          `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(teamName)}`
-        );
-        const data = await res.json();
         const query = normalize(teamName);
         const teams = data.teams || [];
-
-        console.log(`[useTeamLogo] TheSportsDB found ${teams.length} potential matches for ${teamName}`);
+        console.log(`[useTeamLogo] 📊 Found ${teams.length} teams in API`);
 
         const best = teams
           .map((team: any) => ({ team, score: scoreTeamMatch(team, query) }))
           .sort((a: any, b: any) => b.score - a.score)[0];
 
-        // Lower threshold to 40 to be more permissive
-        const badge = best?.score >= 40 ? best.team?.strBadge || null : null;
+        // Be even more permissive with matching
+        const badge = best?.score >= 30 ? best.team?.strBadge || null : null;
         
         if (badge) {
-          console.log(`[useTeamLogo] Best match found: ${best.team.strTeam} (Score: ${best.score})`);
+          console.log(`[useTeamLogo] ⭐ Match: ${best.team.strTeam} (Score: ${best.score})`);
         } else {
-          console.log(`[useTeamLogo] No good match found for ${teamName}`);
+          console.log(`[useTeamLogo] ❌ No match found for "${teamName}"`);
         }
 
-        // 3. Save to DB cache (even if null, to avoid re-searching)
+        // 3. Save to DB cache
         try {
           await supabase.from('team_logos_cache').upsert({
             team_name: teamName,
-            logo_url: badge || "", // Save empty string if not found
+            logo_url: badge || "", 
             updated_at: new Date().toISOString()
           }, { onConflict: 'team_name' });
         } catch (dbErr) {
-          console.error("[useTeamLogo] Failed to save to cache:", dbErr);
+          console.error("[useTeamLogo] ⚠️ Failed to save to cache:", dbErr);
         }
 
         setLogoUrl(badge);
       } catch (err) {
-        console.error("[useTeamLogo] Fetch error:", err);
+        console.error("[useTeamLogo] ‼️ Error:", err);
       } finally {
         setLoading(false);
       }
