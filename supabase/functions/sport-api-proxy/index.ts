@@ -30,28 +30,29 @@ serve(async (req) => {
 
     const queryStr = new URLSearchParams(params || "").toString();
 
-    const authHeaders = {
-      'X-API-Key': SPORT_API_KEY,
-      'X-Api-Key': SPORT_API_KEY,
-      'x-api-key': SPORT_API_KEY,
-      'Authorization': `Bearer ${SPORT_API_KEY}`
+    // Create a standard Headers object
+    const getHeaders = () => {
+      const h = new Headers();
+      h.set('Accept', 'application/json');
+      h.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      h.set('X-Api-Key', SPORT_API_KEY);
+      h.set('X-API-Key', SPORT_API_KEY);
+      h.set('Authorization', `Bearer ${SPORT_API_KEY}`);
+      return h;
     };
 
     const strategies = [
       { 
-        url: `https://api.sportapi.ai/v1/${cleanPath}?${queryStr}`, 
-        name: "Strategy 1 (Subdomain + v1 + ALL Headers)",
-        headers: { ...authHeaders, 'Accept': 'application/json' } 
+        url: `https://sportapi.ai/api/v1/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`, 
+        name: "Strategy 1 (Main v1 + Token + Headers)"
       },
       { 
-        url: `https://sportapi.ai/api/v1/${cleanPath}?${queryStr}`, 
-        name: "Strategy 2 (Main Domain + v1 + ALL Headers)",
-        headers: { ...authHeaders, 'Accept': 'application/json' } 
+        url: `https://api.sportapi.ai/v1/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`, 
+        name: "Strategy 2 (Subdomain v1 + Token + Headers)"
       },
       { 
         url: `https://sportapi.ai/api/${cleanPath}?token=${SPORT_API_KEY}&${queryStr}`, 
-        name: "Strategy 3 (Main Domain + Token + Headers)",
-        headers: { ...authHeaders, 'Accept': 'application/json' } 
+        name: "Strategy 3 (Standard Path + Token + Headers)"
       }
     ];
 
@@ -68,23 +69,26 @@ serve(async (req) => {
 
         const res = await fetch(strat.url, { 
           method: 'GET', 
-          headers: strat.headers,
+          headers: getHeaders(),
           signal: controller.signal
         });
         
         clearTimeout(timeoutId);
         const text = await res.text();
         
+        const isWelcome = text.includes("Welcome to Sport API");
+        const isAuthError = text.includes("API key required") || text.includes("Unauthorized") || res.status === 401;
+
         diagnosticResults.push({
           name: strat.name,
           status: res.status,
-          isWelcome: text.includes("Welcome to Sport API"),
-          isAuthError: text.includes("API key required") || text.includes("Unauthorized")
+          isWelcome,
+          isAuthError
         });
 
-        console.log(`[Proxy] ${strat.name} Result - Status: ${res.status}`);
+        console.log(`[Proxy] ${strat.name} Result - Status: ${res.status}, Welcome: ${isWelcome}, AuthError: ${isAuthError}`);
 
-        if (res.status === 200 && !text.includes("Welcome to Sport API") && !text.includes("Error 502")) {
+        if (res.status === 200 && !isWelcome && !isAuthError && !text.includes("Error 502")) {
           console.log(`[Proxy] ${strat.name} SUCCEEDED!`);
           response = res;
           responseText = text;
@@ -94,7 +98,7 @@ serve(async (req) => {
         
         response = res;
         responseText = text;
-        successfulStrategy = `Failed all`;
+        successfulStrategy = `Failed all attempts`;
       } catch (err) {
         console.error(`[Proxy] ${strat.name} Error: ${err.message}`);
         diagnosticResults.push({ name: strat.name, error: err.message });
