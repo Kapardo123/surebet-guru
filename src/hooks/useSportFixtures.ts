@@ -7,8 +7,9 @@ export const useSportFixtures = (date?: string, filterTeam?: string) => {
 
   useEffect(() => {
     const loadFixtures = async () => {
-      // Only fetch if no search OR search is at least 3 characters
-      if (filterTeam && filterTeam.length > 0 && filterTeam.length < 3) {
+      // REQUIRE at least 3 characters to search. 
+      // This prevents fetching 800+ matches automatically on page load.
+      if (!filterTeam || filterTeam.length < 3) {
         setFixtures([]);
         setLoading(false);
         return;
@@ -18,15 +19,12 @@ export const useSportFixtures = (date?: string, filterTeam?: string) => {
       const targetDate = date || new Date().toISOString().split('T')[0];
       const data = await fetchMatchesByDate(targetDate);
       
-      let filtered = data;
-      if (filterTeam && filterTeam.length >= 3) {
-        const search = filterTeam.toLowerCase();
-        filtered = data.filter(f => 
-          f.homeTeam.toLowerCase().includes(search) || 
-          f.awayTeam.toLowerCase().includes(search) ||
-          f.league.toLowerCase().includes(search)
-        );
-      }
+      const search = filterTeam.toLowerCase();
+      const filtered = data.filter(f => 
+        f.homeTeam.toLowerCase().includes(search) || 
+        f.awayTeam.toLowerCase().includes(search) ||
+        f.league.toLowerCase().includes(search)
+      );
 
       setFixtures(filtered);
       setLoading(false);
