@@ -53,8 +53,11 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
       } catch (e) {
         setReacted(!!saved);
       }
+    } else {
+      setReacted(false);
     }
-  }, [tip.id]);
+    setLocalLikes(tip.likesCount || 0);
+  }, [tip.id, tip.likesCount]);
 
   const handleReaction = async () => {
     if (reacted) return;

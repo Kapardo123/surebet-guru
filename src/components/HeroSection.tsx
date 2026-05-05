@@ -45,6 +45,8 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
         } catch (e) {
           setReacted(!!saved);
         }
+      } else {
+        setReacted(false);
       }
       setLocalLikes(pick.likesCount || 0);
     }
