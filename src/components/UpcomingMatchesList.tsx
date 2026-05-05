@@ -68,7 +68,9 @@ const UpcomingMatchesList = ({ onSelectMatch }: Props) => {
                 date: date,
                 time: match.time || "TBD",
                 homeLogo: match.homeLogo,
-                awayLogo: match.awayLogo
+                awayLogo: match.awayLogo,
+                homeTeamId: match.homeTeamId,
+                awayTeamId: match.awayTeamId
               })}
               className="flex items-center justify-between gap-3 bg-card border border-border/50 rounded-xl p-3 text-left hover:border-primary/50 hover:bg-muted/50 transition-all cursor-pointer group active:scale-[0.98]"
             >

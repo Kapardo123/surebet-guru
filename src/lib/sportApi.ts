@@ -24,7 +24,7 @@ export interface SofaMatch {
  */
 export const fetchTeamForm = async (teamId: number): Promise<string[]> => {
   try {
-    console.log(`[SofaScore] Fetching form for team: ${teamId}`);
+    console.log(`[SofaScore] Fetching form for team ID: ${teamId}`);
     
     const { data, error } = await supabase.functions.invoke('sport-api-proxy', {
       body: { 
@@ -33,7 +33,12 @@ export const fetchTeamForm = async (teamId: number): Promise<string[]> => {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error(`[SofaScore] Edge function error for team ${teamId}:`, error);
+      throw error;
+    }
+
+    console.log(`[SofaScore] Raw form data for team ${teamId}:`, data);
 
     let events = [];
     if (Array.isArray(data)) {
@@ -44,15 +49,22 @@ export const fetchTeamForm = async (teamId: number): Promise<string[]> => {
       events = data.data.events;
     }
 
+    console.log(`[SofaScore] Extracted ${events.length} events for team ${teamId}`);
+
     // Take last 5 matches
     const last5 = events.slice(0, 5);
 
-    return last5.map((event: any) => {
-      const isHome = event.homeTeam.id === teamId;
+    const form = last5.map((event: any) => {
+      // SofaScore team IDs can be numbers or strings
+      const eventHomeId = Number(event.homeTeam?.id);
+      const eventAwayId = Number(event.awayTeam?.id);
+      const targetTeamId = Number(teamId);
+
+      const isHome = eventHomeId === targetTeamId;
       const homeScore = event.homeScore?.current;
       const awayScore = event.awayScore?.current;
 
-      if (homeScore === undefined || awayScore === undefined) return 'U'; // Unknown/Upcoming
+      if (homeScore === undefined || awayScore === undefined) return 'U';
 
       if (homeScore === awayScore) return 'D';
       
@@ -62,6 +74,9 @@ export const fetchTeamForm = async (teamId: number): Promise<string[]> => {
         return awayScore > homeScore ? 'W' : 'L';
       }
     });
+
+    console.log(`[SofaScore] Final form for team ${teamId}:`, form);
+    return form;
   } catch (error) {
     console.error("[SofaScore] Error fetching team form:", error);
     return [];

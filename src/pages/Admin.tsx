@@ -89,20 +89,39 @@ const Admin = () => {
   };
 
   const handleSelectMatch = async (match: any) => {
-    toast({ title: `Loading match details and form...` });
+    console.log("[Admin] Selecting match:", match);
+    toast({ title: `Loading form for ${match.homeTeam} & ${match.awayTeam}...` });
     
     let homeForm: string[] = [];
     let awayForm: string[] = [];
 
     if (match.homeTeamId && match.awayTeamId) {
       try {
+        console.log(`[Admin] Fetching form for IDs: ${match.homeTeamId} vs ${match.awayTeamId}`);
         [homeForm, awayForm] = await Promise.all([
-          fetchTeamForm(match.homeTeamId),
-          fetchTeamForm(match.awayTeamId)
+          fetchTeamForm(Number(match.homeTeamId)),
+          fetchTeamForm(Number(match.awayTeamId))
         ]);
+        console.log("[Admin] Fetched forms:", { homeForm, awayForm });
+        
+        if (homeForm.length === 0 && awayForm.length === 0) {
+          toast({ 
+            title: "Form not found", 
+            description: "Could not fetch recent matches for these teams.",
+            variant: "default"
+          });
+        }
       } catch (err) {
-        console.error("Error fetching form:", err);
+        console.error("[Admin] Error fetching form:", err);
+        toast({ title: "Error fetching form", variant: "destructive" });
       }
+    } else {
+      console.warn("[Admin] Missing team IDs for form fetch:", match);
+      toast({ 
+        title: "Limited Data", 
+        description: "Team IDs missing. Form cannot be fetched.",
+        variant: "default"
+      });
     }
 
     setFormMetaData({ homeForm, awayForm });
@@ -116,7 +135,6 @@ const Admin = () => {
       homeTeamLogo: match.homeLogo,
       awayTeamLogo: match.awayLogo
     }));
-    toast({ title: `Match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
 
   const handleSelectCouponMatch = (match: any) => {
@@ -133,19 +151,22 @@ const Admin = () => {
   };
 
   const handleSelectFeaturedMatch = async (match: any) => {
-    toast({ title: `Loading featured match details and form...` });
+    console.log("[Admin] Selecting featured match:", match);
+    toast({ title: `Loading form for ${match.homeTeam} & ${match.awayTeam}...` });
     
     let homeForm: string[] = [];
     let awayForm: string[] = [];
 
     if (match.homeTeamId && match.awayTeamId) {
       try {
+        console.log(`[Admin] Fetching form for IDs: ${match.homeTeamId} vs ${match.awayTeamId}`);
         [homeForm, awayForm] = await Promise.all([
-          fetchTeamForm(match.homeTeamId),
-          fetchTeamForm(match.awayTeamId)
+          fetchTeamForm(Number(match.homeTeamId)),
+          fetchTeamForm(Number(match.awayTeamId))
         ]);
+        console.log("[Admin] Fetched forms:", { homeForm, awayForm });
       } catch (err) {
-        console.error("Error fetching form:", err);
+        console.error("[Admin] Error fetching form:", err);
       }
     }
 
@@ -160,7 +181,6 @@ const Admin = () => {
       homeTeamLogo: match.homeLogo,
       awayTeamLogo: match.awayLogo
     }));
-    toast({ title: `Featured match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
 
   // User Premium Management State
