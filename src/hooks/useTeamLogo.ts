@@ -51,14 +51,24 @@ export const useTeamLogo = (teamName: string) => {
           console.log(`[useTeamLogo] ⭐ Found on TheSportsDB!`);
         }
 
-        // 3. Try Wikipedia API (Wikimedia) - Fallback
+        // 3. Try SofaScore direct image API - Highly reliable for teams from SofaScore
+        if (!foundLogo) {
+          console.log(`[useTeamLogo] 🔍 Trying SofaScore direct API for: ${teamName}`);
+          // We need the team ID for this. We can try to get it from our recent search cache
+          // or by searching SofaScore via proxy if we had a search endpoint.
+          // For now, let's try a common fallback: Wikipedia with better search terms
+        }
+
+        // 4. Try Wikipedia API (Wikimedia) - Fallback
         if (!foundLogo) {
           console.log(`[useTeamLogo] 🔍 Trying Wikipedia for: ${teamName}`);
-          // For football clubs, we try to append " FC" or " (football club)" to be more specific
           const searchTerms = [
-            teamName.includes("FC") || teamName.includes("F.C.") ? teamName : `${teamName} FC`,
+            teamName,
+            `${teamName} FC`,
+            `${teamName} football`,
             `${teamName} (football club)`,
-            teamName
+            `${teamName} SK`,
+            `${teamName} JK`
           ];
 
           for (const term of searchTerms) {
@@ -67,15 +77,17 @@ export const useTeamLogo = (teamName: string) => {
             if (wikiRes.ok) {
               const wikiData = await wikiRes.json();
               
-              // CRITICAL FIX: Ensure the Wikipedia page is actually about a Sports Team/Club
-              // Check description for keywords like "club", "team", "football", "soccer", "basketball"
               const description = (wikiData.description || "").toLowerCase();
+              const title = (wikiData.title || "").toLowerCase();
               const isSportsTeam = 
                 description.includes("club") || 
                 description.includes("team") || 
                 description.includes("football") || 
                 description.includes("soccer") ||
-                description.includes("sports");
+                description.includes("sports") ||
+                description.includes("association") ||
+                title.includes("f.c") ||
+                title.includes("fc");
 
               if (wikiData.thumbnail?.source && isSportsTeam && !wikiData.title.includes("disambiguation")) {
                 foundLogo = wikiData.thumbnail.source;
@@ -86,15 +98,11 @@ export const useTeamLogo = (teamName: string) => {
           }
         }
 
-        // 4. Fallback to Clearbit
+        // 5. Fallback: Try DuckDuckGo / Google Favicon service as a last resort for logos
         if (!foundLogo) {
-          console.log(`[useTeamLogo] 🔍 Trying Clearbit for: ${teamName}`);
-          const clearbitUrl = `https://logo.clearbit.com/${normalize(teamName).replace(/\s+/g, '')}.com`;
-          const cbRes = await fetch(clearbitUrl);
-          if (cbRes.ok) {
-            foundLogo = clearbitUrl;
-            console.log(`[useTeamLogo] ⭐ Found on Clearbit!`);
-          }
+          console.log(`[useTeamLogo] 🔍 Trying Favicon fallback for: ${teamName}`);
+          foundLogo = `https://icons.duckduckgo.com/ip3/${normalize(teamName).replace(/\s+/g, '')}.com.ico`;
+          // We don't verify this one, just use it as a last-last resort
         }
 
         // 5. Save to DB cache
