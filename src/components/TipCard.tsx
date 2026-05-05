@@ -1,9 +1,10 @@
 import { Badge } from "@/components/ui/badge";
-import { Clock, Lock, Crown, Flame, ChevronDown, ChevronUp } from "lucide-react";
+import { Clock, Lock, Crown, Flame, ChevronDown, ChevronUp, ThumbsUp } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { incrementReaction } from "@/lib/tipsStorage";
 
 export interface Tip {
   id: number;
@@ -19,6 +20,8 @@ export interface Tip {
   homeTeamLogo?: string | null;
   awayTeamLogo?: string | null;
   description?: string | null;
+  fireCount?: number;
+  likesCount?: number;
 }
 
 const statusVariant = {
@@ -38,6 +41,28 @@ const statusLabel = {
 
 const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boolean }) => {
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [localFire, setLocalFire] = useState(tip.fireCount || 0);
+  const [localLikes, setLocalLikes] = useState(tip.likesCount || 0);
+  const [reacted, setReacted] = useState<{fire: boolean, like: boolean}>({ fire: false, like: false });
+
+  useEffect(() => {
+    const saved = localStorage.getItem(`reaction_${tip.id}`);
+    if (saved) setReacted(JSON.parse(saved));
+  }, [tip.id]);
+
+  const handleReaction = async (type: 'fire' | 'like') => {
+    if (reacted[type]) return;
+
+    const newReacted = { ...reacted, [type]: true };
+    setReacted(newReacted);
+    localStorage.setItem(`reaction_${tip.id}`, JSON.stringify(newReacted));
+
+    if (type === 'fire') setLocalFire(prev => prev + 1);
+    else setLocalLikes(prev => prev + 1);
+
+    await incrementReaction(tip.id, type);
+  };
+
   // Premium tips are locked ONLY if they are 'upcoming' and the user is NOT premium.
   // Once they are won/lost/draw, they are visible to everyone.
   const isSettled = tip.status !== "upcoming";
@@ -162,43 +187,54 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
                 </div>
               </div>
 
-              {/* Analysis / Description Toggle */}
-              {tip.description && (
-                <div className="pt-2">
+              <div className="flex items-center justify-between gap-4 py-1">
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={(e) => { e.preventDefault(); handleReaction('fire'); }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all ${reacted.fire ? 'bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/30' : 'bg-muted/50 text-muted-foreground hover:bg-orange-500/10 hover:text-orange-400'}`}
+                  >
+                    <Flame className={`w-3.5 h-3.5 ${reacted.fire ? 'fill-orange-500' : ''}`} />
+                    <span className="text-[11px] font-black">{localFire}</span>
+                  </button>
+                  <button 
+                    onClick={(e) => { e.preventDefault(); handleReaction('like'); }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all ${reacted.like ? 'bg-primary/20 text-primary ring-1 ring-primary/30' : 'bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary'}`}
+                  >
+                    <ThumbsUp className={`w-3.5 h-3.5 ${reacted.like ? 'fill-primary' : ''}`} />
+                    <span className="text-[11px] font-black">{localLikes}</span>
+                  </button>
+                </div>
+
+                {tip.description && (
                   <button 
                     onClick={() => setShowAnalysis(!showAnalysis)}
                     className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-accent hover:text-accent/80 transition-colors"
                   >
-                    {showAnalysis ? (
-                      <>
-                        <ChevronUp className="w-3.5 h-3.5" />
-                        Hide Analysis
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="w-3.5 h-3.5" />
-                        View Analysis
-                      </>
-                    )}
+                    {showAnalysis ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    {showAnalysis ? "Hide" : "Analysis"}
                   </button>
-                  <AnimatePresence>
-                    {showAnalysis && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="mt-3 p-3.5 rounded-xl bg-accent/5 border border-accent/10">
-                          <p className="text-xs text-muted-foreground leading-relaxed italic whitespace-pre-wrap">
-                            "{tip.description}"
-                          </p>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                )}
+              </div>
+
+              {/* Analysis / Description Toggle */}
+              {tip.description && (
+                <AnimatePresence>
+                  {showAnalysis && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-2 p-3.5 rounded-xl bg-accent/5 border border-accent/10">
+                        <p className="text-xs text-muted-foreground leading-relaxed italic whitespace-pre-wrap">
+                          "{tip.description}"
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               )}
 
               {/* Footer */}

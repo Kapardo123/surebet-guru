@@ -53,6 +53,8 @@ export const loadTips = async (): Promise<Tip[]> => {
     homeTeamLogo: tip.home_team_logo || null,
     awayTeamLogo: tip.away_team_logo || null,
     description: tip.description || null,
+    fireCount: tip.fire_count || 0,
+    likesCount: tip.likes_count || 0,
   }));
 
   setCachedTips(tips);
@@ -74,7 +76,9 @@ export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
       is_premium: tip.isPremium,
       home_team_logo: tip.homeTeamLogo,
       away_team_logo: tip.awayTeamLogo,
-      description: tip.description
+      description: tip.description,
+      fire_count: tip.fireCount || 0,
+      likes_count: tip.likesCount || 0
     }])
     .select()
     .single();
@@ -99,7 +103,9 @@ export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
     isPremium: record.is_premium ?? undefined,
     homeTeamLogo: record.home_team_logo,
     awayTeamLogo: record.away_team_logo,
-    description: record.description
+    description: record.description,
+    fireCount: record.fire_count || 0,
+    likesCount: record.likes_count || 0
   };
 };
 
@@ -127,9 +133,30 @@ export const updateTip = async (updatedTip: Tip) => {
       is_premium: updatedTip.isPremium,
       home_team_logo: updatedTip.homeTeamLogo,
       away_team_logo: updatedTip.awayTeamLogo,
-      description: updatedTip.description
+      description: updatedTip.description,
+      fire_count: updatedTip.fireCount,
+      likes_count: updatedTip.likesCount
     })
     .eq('id', updatedTip.id);
 
   if (error) console.error("Error updating tip:", error);
+};
+
+export const incrementReaction = async (tipId: number, type: 'fire' | 'like') => {
+  const column = type === 'fire' ? 'fire_count' : 'likes_count';
+  
+  // Use RPC for atomic increment to avoid race conditions
+  const { error } = await supabase.rpc('increment_tip_reaction', {
+    tip_id: tipId,
+    reaction_type: column
+  });
+
+  if (error) {
+    // Fallback if RPC doesn't exist yet
+    console.warn("RPC increment_tip_reaction failed, trying manual update:", error);
+    const { data } = await supabase.from('tips').select(column).eq('id', tipId).single();
+    if (data) {
+      await supabase.from('tips').update({ [column]: (data as any)[column] + 1 }).eq('id', tipId);
+    }
+  }
 };

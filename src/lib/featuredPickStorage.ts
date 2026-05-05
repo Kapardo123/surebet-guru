@@ -13,6 +13,8 @@ export interface FeaturedPick {
   homeTeamLogo?: string | null;
   awayTeamLogo?: string | null;
   description?: string | null;
+  fireCount?: number;
+  likesCount?: number;
 }
 
 export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
@@ -41,7 +43,9 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
     status: data.status || "upcoming",
     homeTeamLogo: data.home_team_logo,
     awayTeamLogo: data.away_team_logo,
-    description: data.description
+    description: data.description,
+    fireCount: data.fire_count || 0,
+    likesCount: data.likes_count || 0
   };
 };
 
@@ -60,7 +64,9 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
     status: pick.status || "upcoming",
     home_team_logo: pick.homeTeamLogo,
     away_team_logo: pick.awayTeamLogo,
-    description: pick.description
+    description: pick.description,
+    fire_count: pick.fireCount || 0,
+    likes_count: pick.likesCount || 0
   };
 
   const { error } = await supabase
@@ -73,5 +79,23 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
       throw new Error("SQL_COLUMN_MISSING: status");
     }
     throw new Error(error.message || "Unknown Supabase error");
+  }
+};
+
+export const incrementFeaturedReaction = async (pickId: number, type: 'fire' | 'like') => {
+  const column = type === 'fire' ? 'fire_count' : 'likes_count';
+  
+  // Use RPC for atomic increment
+  const { error } = await supabase.rpc('increment_featured_reaction', { 
+    pick_id: pickId, 
+    reaction_type: column 
+  });
+
+  if (error) {
+    console.warn("RPC increment_featured_reaction failed, trying manual update:", error);
+    const { data } = await supabase.from('featured_picks').select(column).eq('id', pickId).single();
+    if (data) {
+      await supabase.from('featured_picks').update({ [column]: (data as any)[column] + 1 }).eq('id', pickId);
+    }
   }
 };

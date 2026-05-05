@@ -250,7 +250,7 @@ const Admin = () => {
 
   const resetTipForm = () => {
     setEditingTipId(null);
-    setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, description: "", homeTeamLogo: null, awayTeamLogo: null });
+    setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, description: "", homeTeamLogo: null, awayTeamLogo: null, fireCount: 0, likesCount: 0 });
   };
 
   const resetCouponForm = () => {
@@ -297,6 +297,8 @@ const Admin = () => {
         homeTeamLogo: form.homeTeamLogo,
         awayTeamLogo: form.awayTeamLogo,
         description: form.description,
+        fireCount: form.fireCount,
+        likesCount: form.likesCount,
       });
       await refreshData();
       resetTipForm();
@@ -315,6 +317,8 @@ const Admin = () => {
         homeTeamLogo: form.homeTeamLogo,
         awayTeamLogo: form.awayTeamLogo,
         description: form.description,
+        fireCount: form.fireCount,
+        likesCount: form.likesCount,
       });
       
       if (created && form.isPremium) {
@@ -349,6 +353,8 @@ const Admin = () => {
       description: tip.description || "",
       homeTeamLogo: tip.homeTeamLogo || null,
       awayTeamLogo: tip.awayTeamLogo || null,
+      fireCount: tip.fireCount || 0,
+      likesCount: tip.likesCount || 0,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -560,6 +566,8 @@ const Admin = () => {
     description: "",
     homeTeamLogo: null as string | null,
     awayTeamLogo: null as string | null,
+    fireCount: 0,
+    likesCount: 0,
   });
 
   const [couponMatchForm, setCouponMatchForm] = useState({
@@ -702,6 +710,42 @@ const Admin = () => {
                   <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">League</Label>
                   <Input className="h-10 bg-muted/20" placeholder="e.g. La Liga" value={form.league} onChange={(e) => setForm({ ...form, league: e.target.value })} />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Fire Count 🔥</Label>
+                  <Input type="number" className="h-10 bg-muted/20" value={form.fireCount} onChange={(e) => setForm({ ...form, fireCount: parseInt(e.target.value) || 0 })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Likes Count 👍</Label>
+                  <Input type="number" className="h-10 bg-muted/20" value={form.likesCount} onChange={(e) => setForm({ ...form, likesCount: parseInt(e.target.value) || 0 })} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Fire Count 🔥</Label>
+                  <Input type="number" className="h-10 bg-muted/20" value={featured.fireCount || 0} onChange={(e) => setFeatured({ ...featured, fireCount: parseInt(e.target.value) || 0 })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Likes Count 👍</Label>
+                  <Input type="number" className="h-10 bg-muted/20" value={featured.likesCount || 0} onChange={(e) => setFeatured({ ...featured, likesCount: parseInt(e.target.value) || 0 })} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Fire Count 🔥</Label>
+                  <Input type="number" className="h-10 bg-muted/20" value={form.fireCount} onChange={(e) => setForm({ ...form, fireCount: parseInt(e.target.value) || 0 })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Likes Count 👍</Label>
+                  <Input type="number" className="h-10 bg-muted/20" value={form.likesCount} onChange={(e) => setForm({ ...form, likesCount: parseInt(e.target.value) || 0 })} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Home Team</Label>
                   <div className="relative">
@@ -809,6 +853,18 @@ const Admin = () => {
                       <Input className="h-9 text-xs w-20" placeholder="Odds" value={featured.odds} onChange={(e) => setFeatured({ ...featured, odds: e.target.value })} />
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase text-muted-foreground">Fire 🔥</Label>
+                      <Input type="number" className="h-9 text-xs" value={featured.fireCount || 0} onChange={(e) => setFeatured({ ...featured, fireCount: parseInt(e.target.value) || 0 })} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase text-muted-foreground">Likes 👍</Label>
+                      <Input type="number" className="h-9 text-xs" value={featured.likesCount || 0} onChange={(e) => setFeatured({ ...featured, likesCount: parseInt(e.target.value) || 0 })} />
+                    </div>
+                  </div>
+
                   <Button
                     className="w-full gap-2 h-10 font-display uppercase tracking-wider text-[10px] bg-accent hover:bg-accent/90"
                     onClick={async () => {

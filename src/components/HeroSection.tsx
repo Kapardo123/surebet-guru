@@ -1,8 +1,8 @@
-import { Zap, ChevronDown, ChevronUp, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
+import { Zap, ChevronDown, ChevronUp, CheckCircle2, XCircle, MinusCircle, Flame, ThumbsUp } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { motion, AnimatePresence } from "framer-motion";
-import { FeaturedPick } from "@/lib/featuredPickStorage";
-import { useState } from "react";
+import { FeaturedPick, incrementFeaturedReaction } from "@/lib/featuredPickStorage";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 
 interface HeroSectionProps {
@@ -32,6 +32,32 @@ const statusIcon = {
 
 const HeroSection = ({ pick }: HeroSectionProps) => {
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [localFire, setLocalFire] = useState(pick?.fireCount || 0);
+  const [localLikes, setLocalLikes] = useState(pick?.likesCount || 0);
+  const [reacted, setReacted] = useState<{fire: boolean, like: boolean}>({ fire: false, like: false });
+
+  useEffect(() => {
+    if (pick?.id) {
+      const saved = localStorage.getItem(`featured_reaction_${pick.id}`);
+      if (saved) setReacted(JSON.parse(saved));
+      setLocalFire(pick.fireCount || 0);
+      setLocalLikes(pick.likesCount || 0);
+    }
+  }, [pick?.id, pick?.fireCount, pick?.likesCount]);
+
+  const handleReaction = async (type: 'fire' | 'like') => {
+    if (!pick?.id || reacted[type]) return;
+
+    const newReacted = { ...reacted, [type]: true };
+    setReacted(newReacted);
+    localStorage.setItem(`featured_reaction_${pick.id}`, JSON.stringify(newReacted));
+
+    if (type === 'fire') setLocalFire(prev => prev + 1);
+    else setLocalLikes(prev => prev + 1);
+
+    await incrementFeaturedReaction(pick.id, type);
+  };
+
   const data = pick || {
     league: "Premier League",
     kickoff: "20:00",
@@ -177,9 +203,28 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
               <p className="font-display font-bold text-accent text-sm md:text-lg">{data.odds}</p>
             </div>
             <div className="h-8 md:h-10 w-px bg-border" />
-            <div>
-              <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-0.5">Confidence</p>
-              <p className="font-display font-bold text-success text-sm md:text-lg">{data.confidence}</p>
+            <div className="flex-1 flex items-center justify-between">
+              <div>
+                <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-0.5">Confidence</p>
+                <p className="font-display font-bold text-success text-sm md:text-lg">{data.confidence}</p>
+              </div>
+              
+              <div className="flex items-center gap-3 ml-4">
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleReaction('fire'); }}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${reacted.fire ? 'bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/30' : 'bg-white/5 text-white/60 hover:bg-orange-500/10 hover:text-orange-400'}`}
+                >
+                  <Flame className={`w-4 h-4 md:w-5 md:h-5 ${reacted.fire ? 'fill-orange-500' : ''}`} />
+                  <span className="font-display font-black text-sm md:text-lg">{localFire}</span>
+                </button>
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleReaction('like'); }}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${reacted.like ? 'bg-primary/20 text-primary ring-1 ring-primary/30' : 'bg-white/5 text-white/60 hover:bg-primary/10 hover:text-primary'}`}
+                >
+                  <ThumbsUp className={`w-4 h-4 md:w-5 md:h-5 ${reacted.like ? 'fill-primary' : ''}`} />
+                  <span className="font-display font-black text-sm md:text-lg">{localLikes}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
