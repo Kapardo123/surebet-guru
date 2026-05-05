@@ -38,6 +38,7 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
   useEffect(() => {
     if (pick?.id) {
       const saved = localStorage.getItem(`featured_reaction_${pick.id}`);
+      console.log(`HeroSection: Checking reaction for ${pick.id}:`, saved);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -49,6 +50,9 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
         setReacted(false);
       }
       setLocalLikes(pick.likesCount || 0);
+    } else {
+      setReacted(false);
+      setLocalLikes(0);
     }
   }, [pick?.id, pick?.likesCount]);
 
