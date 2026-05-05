@@ -66,8 +66,18 @@ export const useTeamLogo = (teamName: string) => {
             const wikiRes = await fetch(wikiUrl);
             if (wikiRes.ok) {
               const wikiData = await wikiRes.json();
-              // Check if it's actually a sports related page or has a thumbnail
-              if (wikiData.thumbnail?.source && !wikiData.title.includes("Arsenal (disambiguation)")) {
+              
+              // CRITICAL FIX: Ensure the Wikipedia page is actually about a Sports Team/Club
+              // Check description for keywords like "club", "team", "football", "soccer", "basketball"
+              const description = (wikiData.description || "").toLowerCase();
+              const isSportsTeam = 
+                description.includes("club") || 
+                description.includes("team") || 
+                description.includes("football") || 
+                description.includes("soccer") ||
+                description.includes("sports");
+
+              if (wikiData.thumbnail?.source && isSportsTeam && !wikiData.title.includes("disambiguation")) {
                 foundLogo = wikiData.thumbnail.source;
                 console.log(`[useTeamLogo] ⭐ Found on Wikipedia with term: ${term}`);
                 break;
