@@ -1,4 +1,4 @@
-import { Zap, ChevronDown, ChevronUp, CheckCircle2, XCircle, MinusCircle, Flame, ThumbsUp } from "lucide-react";
+import { Zap, ChevronDown, ChevronUp, CheckCircle2, XCircle, MinusCircle, ThumbsUp } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { motion, AnimatePresence } from "framer-motion";
 import { FeaturedPick, incrementFeaturedReaction } from "@/lib/featuredPickStorage";
@@ -32,30 +32,32 @@ const statusIcon = {
 
 const HeroSection = ({ pick }: HeroSectionProps) => {
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const [localFire, setLocalFire] = useState(pick?.fireCount || 0);
   const [localLikes, setLocalLikes] = useState(pick?.likesCount || 0);
-  const [reacted, setReacted] = useState<{fire: boolean, like: boolean}>({ fire: false, like: false });
+  const [reacted, setReacted] = useState(false);
 
   useEffect(() => {
     if (pick?.id) {
       const saved = localStorage.getItem(`featured_reaction_${pick.id}`);
-      if (saved) setReacted(JSON.parse(saved));
-      setLocalFire(pick.fireCount || 0);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setReacted(typeof parsed === 'object' ? !!parsed.like : !!parsed);
+        } catch (e) {
+          setReacted(!!saved);
+        }
+      }
       setLocalLikes(pick.likesCount || 0);
     }
-  }, [pick?.id, pick?.fireCount, pick?.likesCount]);
+  }, [pick?.id, pick?.likesCount]);
 
-  const handleReaction = async (type: 'fire' | 'like') => {
-    if (!pick?.id || reacted[type]) return;
+  const handleReaction = async () => {
+    if (!pick?.id || reacted) return;
 
-    const newReacted = { ...reacted, [type]: true };
-    setReacted(newReacted);
-    localStorage.setItem(`featured_reaction_${pick.id}`, JSON.stringify(newReacted));
+    setReacted(true);
+    localStorage.setItem(`featured_reaction_${pick.id}`, JSON.stringify(true));
+    setLocalLikes(prev => prev + 1);
 
-    if (type === 'fire') setLocalFire(prev => prev + 1);
-    else setLocalLikes(prev => prev + 1);
-
-    await incrementFeaturedReaction(pick.id, type);
+    await incrementFeaturedReaction(pick.id, 'like');
   };
 
   const data = pick || {
@@ -211,18 +213,18 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
               
               <div className="flex items-center gap-3 ml-4">
                 <button 
-                  onClick={(e) => { e.preventDefault(); handleReaction('like'); }}
-                  className={`group relative flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all duration-300 ${reacted.like ? 'bg-primary/25 text-primary ring-2 ring-primary/50' : 'bg-white/5 text-white/60 hover:bg-primary/10 hover:text-primary hover:scale-105 active:scale-95'}`}
+                  onClick={(e) => { e.preventDefault(); handleReaction(); }}
+                  className={`group relative flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all duration-300 ${reacted ? 'bg-primary/25 text-primary ring-2 ring-primary/50' : 'bg-white/5 text-white/60 hover:bg-primary/10 hover:text-primary hover:scale-105 active:scale-95'}`}
                 >
                   <motion.div
-                    animate={reacted.like ? { scale: [1, 1.5, 1], rotate: [0, -15, 0] } : {}}
+                    animate={reacted ? { scale: [1, 1.5, 1], rotate: [0, -15, 0] } : {}}
                     transition={{ duration: 0.5, ease: "backOut" }}
                   >
-                    <ThumbsUp className={`w-5 h-5 md:w-6 md:h-6 ${reacted.like ? 'fill-primary' : 'group-hover:fill-primary/20'}`} />
+                    <ThumbsUp className={`w-5 h-5 md:w-6 md:h-6 ${reacted ? 'fill-primary' : 'group-hover:fill-primary/20'}`} />
                   </motion.div>
                   <span className="font-display font-black text-base md:text-xl">{localLikes}</span>
                   
-                  {reacted.like && (
+                  {reacted && (
                     <motion.span
                       initial={{ opacity: 1, y: 0, scale: 1 }}
                       animate={{ opacity: 0, y: -40, scale: 1.5 }}

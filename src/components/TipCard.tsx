@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Clock, Lock, Crown, Flame, ChevronDown, ChevronUp, ThumbsUp, TrendingUp } from "lucide-react";
+import { Clock, Lock, Crown, ChevronDown, ChevronUp, ThumbsUp, TrendingUp } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,7 +21,6 @@ export interface Tip {
   awayTeamLogo?: string | null;
   description?: string | null;
   likesCount?: number;
-  fireCount?: number;
 }
 
 const statusVariant = {
@@ -41,26 +40,30 @@ const statusLabel = {
 
 const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boolean }) => {
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const [localFire, setLocalFire] = useState(tip.fireCount || 0);
   const [localLikes, setLocalLikes] = useState(tip.likesCount || 0);
-  const [reacted, setReacted] = useState<{fire: boolean, like: boolean}>({ fire: false, like: false });
+  const [reacted, setReacted] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(`reaction_${tip.id}`);
-    if (saved) setReacted(JSON.parse(saved));
+    if (saved) {
+      // Handle legacy object {fire: boolean, like: boolean} or new boolean
+      try {
+        const parsed = JSON.parse(saved);
+        setReacted(typeof parsed === 'object' ? !!parsed.like : !!parsed);
+      } catch (e) {
+        setReacted(!!saved);
+      }
+    }
   }, [tip.id]);
 
-  const handleReaction = async (type: 'fire' | 'like') => {
-    if (reacted[type]) return;
+  const handleReaction = async () => {
+    if (reacted) return;
 
-    const newReacted = { ...reacted, [type]: true };
-    setReacted(newReacted);
-    localStorage.setItem(`reaction_${tip.id}`, JSON.stringify(newReacted));
+    setReacted(true);
+    localStorage.setItem(`reaction_${tip.id}`, JSON.stringify(true));
+    setLocalLikes(prev => prev + 1);
 
-    if (type === 'fire') setLocalFire(prev => prev + 1);
-    else setLocalLikes(prev => prev + 1);
-
-    await incrementReaction(tip.id, type);
+    await incrementReaction(tip.id, 'like');
   };
 
   // Premium tips are locked ONLY if they are 'upcoming' and the user is NOT premium.
@@ -190,18 +193,18 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
               <div className="flex items-center justify-between gap-4 py-1">
                 <div className="flex items-center gap-2">
                   <button 
-                    onClick={(e) => { e.preventDefault(); handleReaction('like'); }}
-                    className={`group relative flex items-center gap-2 px-3.5 py-2 rounded-full transition-all duration-300 ${reacted.like ? 'bg-primary/20 text-primary ring-2 ring-primary/40' : 'bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary hover:scale-105 active:scale-95'}`}
+                    onClick={(e) => { e.preventDefault(); handleReaction(); }}
+                    className={`group relative flex items-center gap-2 px-3.5 py-2 rounded-full transition-all duration-300 ${reacted ? 'bg-primary/20 text-primary ring-2 ring-primary/40' : 'bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary hover:scale-105 active:scale-95'}`}
                   >
                     <motion.div
-                      animate={reacted.like ? { scale: [1, 1.4, 1], rotate: [0, -20, 0] } : {}}
+                      animate={reacted ? { scale: [1, 1.4, 1], rotate: [0, -20, 0] } : {}}
                       transition={{ duration: 0.45, ease: "backOut" }}
                     >
-                      <ThumbsUp className={`w-4 h-4 ${reacted.like ? 'fill-primary' : 'group-hover:fill-primary/20'}`} />
+                      <ThumbsUp className={`w-4 h-4 ${reacted ? 'fill-primary' : 'group-hover:fill-primary/20'}`} />
                     </motion.div>
                     <span className="text-[12px] font-black tracking-tight">{localLikes}</span>
                     
-                    {reacted.like && (
+                    {reacted && (
                       <motion.span
                         initial={{ opacity: 1, y: 0 }}
                         animate={{ opacity: 0, y: -20 }}
