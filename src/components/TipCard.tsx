@@ -44,6 +44,8 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
   const [reacted, setReacted] = useState(false);
 
   useEffect(() => {
+    if (!tip?.id) return;
+
     const saved = localStorage.getItem(`reaction_${tip.id}`);
     if (saved) {
       // Handle legacy object {fire: boolean, like: boolean} or new boolean
@@ -56,7 +58,9 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
     } else {
       setReacted(false);
     }
-    setLocalLikes(tip.likesCount || 0);
+    
+    const serverLikes = tip.likesCount || 0;
+    setLocalLikes(prev => (serverLikes > prev ? serverLikes : prev));
   }, [tip.id, tip.likesCount]);
 
   const handleReaction = async () => {
