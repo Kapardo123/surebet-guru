@@ -46,7 +46,7 @@ export const loadTips = async (): Promise<Tip[]> => {
     homeTeam: tip.home_team,
     awayTeam: tip.away_team,
     prediction: tip.prediction,
-    odds: tip.odds,
+    odds: Number(tip.odds),
     kickoff: tip.kickoff,
     status: isTipStatus(tip.status) ? tip.status : "upcoming",
     isPremium: tip.is_premium ?? undefined,
@@ -54,6 +54,7 @@ export const loadTips = async (): Promise<Tip[]> => {
     awayTeamLogo: tip.away_team_logo || null,
     description: tip.description || null,
     likesCount: tip.likes_count || 0,
+    fireCount: tip.fire_count || 0,
   }));
 
   setCachedTips(tips);
@@ -76,7 +77,8 @@ export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
       home_team_logo: tip.homeTeamLogo,
       away_team_logo: tip.awayTeamLogo,
       description: tip.description,
-      likes_count: tip.likesCount || 0
+      likes_count: tip.likesCount || 0,
+      fire_count: tip.fireCount || 0
     }])
     .select()
     .single();
@@ -95,7 +97,7 @@ export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
     homeTeam: record.home_team,
     awayTeam: record.away_team,
     prediction: record.prediction,
-    odds: record.odds,
+    odds: Number(record.odds),
     kickoff: record.kickoff,
     status: isTipStatus(record.status) ? record.status : "upcoming",
     isPremium: record.is_premium ?? undefined,
@@ -131,15 +133,16 @@ export const updateTip = async (updatedTip: Tip) => {
       home_team_logo: updatedTip.homeTeamLogo,
       away_team_logo: updatedTip.awayTeamLogo,
       description: updatedTip.description,
-      likes_count: updatedTip.likesCount
+      likes_count: updatedTip.likesCount,
+      fire_count: updatedTip.fireCount
     })
     .eq('id', updatedTip.id);
 
   if (error) console.error("Error updating tip:", error);
 };
 
-export const incrementReaction = async (tipId: number, type: 'like') => {
-  const column = 'likes_count';
+export const incrementReaction = async (tipId: number, type: 'like' | 'fire') => {
+  const column = type === 'like' ? 'likes_count' : 'fire_count';
   
   // Use RPC for atomic increment to avoid race conditions
   const { error } = await supabase.rpc('increment_tip_reaction', {

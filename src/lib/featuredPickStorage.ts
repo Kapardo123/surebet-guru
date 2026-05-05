@@ -14,6 +14,7 @@ export interface FeaturedPick {
  awayTeamLogo?: string | null;
   description?: string | null;
   likesCount?: number;
+  fireCount?: number;
 }
 export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
   const { data, error } = await supabase
@@ -42,7 +43,8 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
     homeTeamLogo: data.home_team_logo,
     awayTeamLogo: data.away_team_logo,
     description: data.description,
-    likesCount: data.likes_count || 0
+    likesCount: data.likes_count || 0,
+    fireCount: data.fire_count || 0
   };
 };
 
@@ -62,7 +64,8 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
     home_team_logo: pick.homeTeamLogo,
     away_team_logo: pick.awayTeamLogo,
     description: pick.description,
-    likes_count: pick.likesCount || 0
+    likes_count: pick.likesCount || 0,
+    fire_count: pick.fireCount || 0
   };
 
   const { error } = await supabase
@@ -78,8 +81,8 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
   }
 };
 
-export const incrementFeaturedReaction = async (pickId: number, type: 'like') => {
-  const column = 'likes_count';
+export const incrementFeaturedReaction = async (pickId: number, type: 'like' | 'fire') => {
+  const column = type === 'like' ? 'likes_count' : 'fire_count';
   
   // Use RPC for atomic increment
   const { error } = await supabase.rpc('increment_featured_reaction', { 

@@ -32,7 +32,8 @@ import {
   Trophy,
   PlusCircle,
   LayoutDashboard,
-  TrendingUp
+  TrendingUp,
+  Loader2
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -354,6 +355,7 @@ const Admin = () => {
       homeTeamLogo: tip.homeTeamLogo || null,
       awayTeamLogo: tip.awayTeamLogo || null,
       likesCount: tip.likesCount || 0,
+      fireCount: tip.fireCount || 0,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -566,6 +568,7 @@ const Admin = () => {
     homeTeamLogo: null as string | null,
     awayTeamLogo: null as string | null,
     likesCount: 0,
+    fireCount: 0,
   });
 
   const [couponMatchForm, setCouponMatchForm] = useState({
@@ -710,10 +713,14 @@ const Admin = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Likes Count 👍</Label>
                   <Input type="number" className="h-10 bg-muted/20" value={form.likesCount} onChange={(e) => setForm({ ...form, likesCount: parseInt(e.target.value) || 0 })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Fire Count 🔥</Label>
+                  <Input type="number" className="h-10 bg-muted/20" value={form.fireCount} onChange={(e) => setForm({ ...form, fireCount: parseInt(e.target.value) || 0 })} />
                 </div>
               </div>
 
@@ -826,10 +833,14 @@ const Admin = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-[9px] uppercase text-muted-foreground">Likes 👍</Label>
                       <Input type="number" className="h-9 text-xs" value={featured.likesCount || 0} onChange={(e) => setFeatured({ ...featured, likesCount: parseInt(e.target.value) || 0 })} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase text-muted-foreground">Fire 🔥</Label>
+                      <Input type="number" className="h-9 text-xs" value={featured.fireCount || 0} onChange={(e) => setFeatured({ ...featured, fireCount: parseInt(e.target.value) || 0 })} />
                     </div>
                   </div>
 

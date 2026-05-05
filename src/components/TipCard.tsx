@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Clock, Lock, Crown, Flame, ChevronDown, ChevronUp, ThumbsUp } from "lucide-react";
+import { Clock, Lock, Crown, Flame, ChevronDown, ChevronUp, ThumbsUp, TrendingUp } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,6 +21,7 @@ export interface Tip {
   awayTeamLogo?: string | null;
   description?: string | null;
   likesCount?: number;
+  fireCount?: number;
 }
 
 const statusVariant = {
