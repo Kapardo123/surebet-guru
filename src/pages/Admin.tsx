@@ -719,28 +719,6 @@ const Admin = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Fire Count 🔥</Label>
-                  <Input type="number" className="h-10 bg-muted/20" value={featured.fireCount || 0} onChange={(e) => setFeatured({ ...featured, fireCount: parseInt(e.target.value) || 0 })} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Likes Count 👍</Label>
-                  <Input type="number" className="h-10 bg-muted/20" value={featured.likesCount || 0} onChange={(e) => setFeatured({ ...featured, likesCount: parseInt(e.target.value) || 0 })} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Fire Count 🔥</Label>
-                  <Input type="number" className="h-10 bg-muted/20" value={form.fireCount} onChange={(e) => setForm({ ...form, fireCount: parseInt(e.target.value) || 0 })} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Likes Count 👍</Label>
-                  <Input type="number" className="h-10 bg-muted/20" value={form.likesCount} onChange={(e) => setForm({ ...form, likesCount: parseInt(e.target.value) || 0 })} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
                   <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Home Team</Label>
                   <div className="relative">
                     <Input className="h-10 bg-muted/20" value={form.homeTeam} onChange={(e) => setForm({ ...form, homeTeam: e.target.value })} />

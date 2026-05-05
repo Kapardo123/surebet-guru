@@ -180,7 +180,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
                 <div className="bg-muted/30 rounded-xl p-3.5 border border-border/30">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-1.5">Odds</p>
                   <div className="flex items-center gap-1.5">
-                    <Flame className="w-4 h-4 text-accent" />
+                    <TrendingUp className="w-4 h-4 text-accent" />
                     <p className="font-display font-bold text-accent text-lg leading-none">{tip.odds.toFixed(2)}</p>
                   </div>
                 </div>

@@ -11,11 +11,10 @@ export interface FeaturedPick {
   confidence: string;
   status: "upcoming" | "won" | "lost" | "draw";
   homeTeamLogo?: string | null;
-  awayTeamLogo?: string | null;
+ awayTeamLogo?: string | null;
   description?: string | null;
   likesCount?: number;
 }
-
 export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
   const { data, error } = await supabase
     .from('featured_picks')
