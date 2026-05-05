@@ -62,70 +62,11 @@ const Admin = () => {
     setTips(loadedTips);
     setCoupons(loadedCoupons);
     if (loadedFeatured) {
-      let descriptionText = loadedFeatured.description || "";
-      let homeForm: string[] = [];
-      let awayForm: string[] = [];
-
-      try {
-        if (loadedFeatured.description?.startsWith('{')) {
-          const data = JSON.parse(loadedFeatured.description);
-          descriptionText = data.text || "";
-          homeForm = data.homeForm || [];
-          awayForm = data.awayForm || [];
-          setFeaturedMetaData({ homeForm, awayForm });
-        } else {
-          setFeaturedMetaData(null);
-        }
-      } catch (e) {
-        console.error("Error parsing featured description:", e);
-        setFeaturedMetaData(null);
-      }
-
-      setFeatured({
-        ...loadedFeatured,
-        description: descriptionText
-      });
+      setFeatured(loadedFeatured);
     }
   };
 
   const handleSelectMatch = async (match: any) => {
-    console.log("[Admin] Selecting match:", match);
-    toast({ title: `Loading form for ${match.homeTeam} & ${match.awayTeam}...` });
-    
-    let homeForm: string[] = [];
-    let awayForm: string[] = [];
-
-    if (match.homeTeamId && match.awayTeamId) {
-      try {
-        console.log(`[Admin] Fetching form for IDs: ${match.homeTeamId} vs ${match.awayTeamId}`);
-        [homeForm, awayForm] = await Promise.all([
-          fetchTeamForm(Number(match.homeTeamId)),
-          fetchTeamForm(Number(match.awayTeamId))
-        ]);
-        console.log("[Admin] Fetched forms:", { homeForm, awayForm });
-        
-        if (homeForm.length === 0 && awayForm.length === 0) {
-          toast({ 
-            title: "Form not found", 
-            description: "Could not fetch recent matches for these teams.",
-            variant: "default"
-          });
-        }
-      } catch (err) {
-        console.error("[Admin] Error fetching form:", err);
-        toast({ title: "Error fetching form", variant: "destructive" });
-      }
-    } else {
-      console.warn("[Admin] Missing team IDs for form fetch:", match);
-      toast({ 
-        title: "Limited Data", 
-        description: "Team IDs missing. Form cannot be fetched.",
-        variant: "default"
-      });
-    }
-
-    setFormMetaData({ homeForm, awayForm });
-
     setForm((prev) => ({
       ...prev,
       homeTeam: match.homeTeam,
@@ -135,6 +76,7 @@ const Admin = () => {
       homeTeamLogo: match.homeLogo,
       awayTeamLogo: match.awayLogo
     }));
+    toast({ title: `Match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
 
   const handleSelectCouponMatch = (match: any) => {
@@ -151,27 +93,6 @@ const Admin = () => {
   };
 
   const handleSelectFeaturedMatch = async (match: any) => {
-    console.log("[Admin] Selecting featured match:", match);
-    toast({ title: `Loading form for ${match.homeTeam} & ${match.awayTeam}...` });
-    
-    let homeForm: string[] = [];
-    let awayForm: string[] = [];
-
-    if (match.homeTeamId && match.awayTeamId) {
-      try {
-        console.log(`[Admin] Fetching form for IDs: ${match.homeTeamId} vs ${match.awayTeamId}`);
-        [homeForm, awayForm] = await Promise.all([
-          fetchTeamForm(Number(match.homeTeamId)),
-          fetchTeamForm(Number(match.awayTeamId))
-        ]);
-        console.log("[Admin] Fetched forms:", { homeForm, awayForm });
-      } catch (err) {
-        console.error("[Admin] Error fetching form:", err);
-      }
-    }
-
-    setFeaturedMetaData({ homeForm, awayForm });
-
     setFeatured((prev) => ({
       ...prev,
       homeTeam: match.homeTeam,
@@ -181,6 +102,7 @@ const Admin = () => {
       homeTeamLogo: match.homeLogo,
       awayTeamLogo: match.awayLogo
     }));
+    toast({ title: `Featured match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
 
   // User Premium Management State
@@ -327,7 +249,6 @@ const Admin = () => {
 
   const resetTipForm = () => {
     setEditingTipId(null);
-    setFormMetaData(null);
     setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, description: "", homeTeamLogo: null, awayTeamLogo: null });
   };
 
@@ -360,11 +281,6 @@ const Admin = () => {
       console.error("Date parsing error:", err);
     }
 
-    // Pack metadata into description if available
-    const finalDescription = formMetaData 
-      ? JSON.stringify({ ...formMetaData, text: form.description })
-      : form.description;
-
     if (editingTipId !== null) {
       await updateTip({
         id: editingTipId,
@@ -379,7 +295,7 @@ const Admin = () => {
         isPremium: form.isPremium,
         homeTeamLogo: form.homeTeamLogo,
         awayTeamLogo: form.awayTeamLogo,
-        description: finalDescription,
+        description: form.description,
       });
       await refreshData();
       resetTipForm();
@@ -397,7 +313,7 @@ const Admin = () => {
         isPremium: form.isPremium,
         homeTeamLogo: form.homeTeamLogo,
         awayTeamLogo: form.awayTeamLogo,
-        description: finalDescription,
+        description: form.description,
       });
       
       if (created && form.isPremium) {
@@ -418,23 +334,7 @@ const Admin = () => {
   };
 
   const handleEditTip = (tip: Tip) => {
-    let descriptionText = tip.description || "";
-    let homeForm: string[] = [];
-    let awayForm: string[] = [];
-
-    try {
-      if (tip.description?.startsWith('{')) {
-        const data = JSON.parse(tip.description);
-        descriptionText = data.text || "";
-        homeForm = data.homeForm || [];
-        awayForm = data.awayForm || [];
-      }
-    } catch (e) {
-      console.error("Error parsing tip description for edit:", e);
-    }
-
     setEditingTipId(tip.id);
-    setFormMetaData({ homeForm, awayForm });
     setForm({
       sport: tip.sport,
       league: tip.league,
@@ -445,7 +345,7 @@ const Admin = () => {
       kickoff: tip.kickoff,
       status: tip.status,
       isPremium: tip.isPremium || false,
-      description: descriptionText,
+      description: tip.description || "",
       homeTeamLogo: tip.homeTeamLogo || null,
       awayTeamLogo: tip.awayTeamLogo || null,
     });
@@ -574,16 +474,6 @@ const Admin = () => {
     homeTeamLogo: null as string | null,
     awayTeamLogo: null as string | null,
   });
-
-  const [formMetaData, setFormMetaData] = useState<{
-    homeForm: string[],
-    awayForm: string[]
-  } | null>(null);
-
-  const [featuredMetaData, setFeaturedMetaData] = useState<{
-    homeForm: string[],
-    awayForm: string[]
-  } | null>(null);
 
   const [couponMatchForm, setCouponMatchForm] = useState({
     homeTeam: "",
@@ -774,15 +664,7 @@ const Admin = () => {
                     className="w-full gap-2 h-10 font-display uppercase tracking-wider text-[10px] bg-accent hover:bg-accent/90"
                     onClick={async () => {
                       const { id, ...pickWithoutId } = featured; 
-                      // Pack metadata
-                      const finalFeaturedDescription = featuredMetaData
-                        ? JSON.stringify({ ...featuredMetaData, text: featured.description })
-                        : featured.description;
-                      
-                      await saveFeaturedPick({
-                        ...pickWithoutId,
-                        description: finalFeaturedDescription
-                      });
+                      await saveFeaturedPick(pickWithoutId);
                       await refreshData();
                       toast({ title: "Hero Pick Saved! ⚡" });
                     }}

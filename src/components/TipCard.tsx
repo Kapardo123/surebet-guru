@@ -190,63 +190,9 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
                         transition={{ duration: 0.3 }}
                         className="overflow-hidden"
                       >
-                        <div className="mt-3 p-3.5 rounded-xl bg-accent/5 border border-accent/10 space-y-4">
-                          {/* Form Section */}
-                          {(() => {
-                            try {
-                              if (tip.description?.startsWith('{')) {
-                                const data = JSON.parse(tip.description);
-                                if ((data.homeForm && data.homeForm.length > 0) || (data.awayForm && data.awayForm.length > 0)) {
-                                  const FormBadge = ({ res }: { res: string }) => {
-                                    const colors = {
-                                      'W': 'bg-success text-success-foreground',
-                                      'D': 'bg-yellow-500 text-white',
-                                      'L': 'bg-loss text-white',
-                                      'U': 'bg-muted text-muted-foreground'
-                                    };
-                                    return (
-                                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${colors[res as keyof typeof colors] || colors.U}`}>
-                                        {res}
-                                      </span>
-                                    );
-                                  };
-
-                                  return (
-                                    <div className="space-y-3 pb-2 border-b border-accent/10">
-                                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Team Form (Last 5)</p>
-                                      <div className="flex justify-between items-center gap-4">
-                                        <div className="flex flex-col gap-1.5 flex-1">
-                                          <span className="text-[10px] font-medium truncate">{tip.homeTeam}</span>
-                                          <div className="flex gap-1">
-                                            {data.homeForm?.map((r: string, i: number) => <FormBadge key={i} res={r} />)}
-                                          </div>
-                                        </div>
-                                        <div className="w-px h-8 bg-accent/10" />
-                                        <div className="flex flex-col gap-1.5 flex-1 items-end text-right">
-                                          <span className="text-[10px] font-medium truncate">{tip.awayTeam}</span>
-                                          <div className="flex gap-1">
-                                            {data.awayForm?.map((r: string, i: number) => <FormBadge key={i} res={r} />)}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                }
-                              }
-                            } catch (e) {}
-                            return null;
-                          })()}
-
-                          {/* Actual Description Text */}
+                        <div className="mt-3 p-3.5 rounded-xl bg-accent/5 border border-accent/10">
                           <p className="text-xs text-muted-foreground leading-relaxed italic whitespace-pre-wrap">
-                            "{(() => {
-                              try {
-                                if (tip.description?.startsWith('{')) {
-                                  return JSON.parse(tip.description).text;
-                                }
-                              } catch (e) {}
-                              return tip.description;
-                            })()}"
+                            "{tip.description}"
                           </p>
                         </div>
                       </motion.div>

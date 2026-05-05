@@ -129,98 +129,43 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
           </div>
           
           {/* Analysis / Description Toggle */}
-          <div className="pt-4">
-            <button 
-              onClick={() => setShowAnalysis(!showAnalysis)}
-              className="flex items-center gap-2 text-xs md:text-sm font-bold uppercase tracking-wider text-accent hover:text-accent/80 transition-colors"
-            >
-              {showAnalysis ? (
-                <>
-                  <ChevronUp className="w-4 h-4" />
-                  Hide Match Analysis
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-4 h-4" />
-                  View Match Analysis
-                </>
-              )}
-            </button>
-            <AnimatePresence>
-              {showAnalysis && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
-                >
-                  <div className="mt-4 p-4 md:p-6 rounded-2xl bg-white/5 border border-white/10 space-y-6">
-                    {/* Form Section */}
-                    {(() => {
-                      try {
-                        if (data.description?.startsWith('{')) {
-                          const parsedData = JSON.parse(data.description);
-                          if ((parsedData.homeForm && parsedData.homeForm.length > 0) || (parsedData.awayForm && parsedData.awayForm.length > 0)) {
-                            const FormBadge = ({ res }: { res: string }) => {
-                              const colors = {
-                                'W': 'bg-success text-success-foreground',
-                                'D': 'bg-yellow-500 text-white',
-                                'L': 'bg-loss text-white',
-                                'U': 'bg-muted text-muted-foreground'
-                              };
-                              return (
-                                <span className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-[10px] md:text-xs font-bold ${colors[res as keyof typeof colors] || colors.U}`}>
-                                  {res}
-                                </span>
-                              );
-                            };
-
-                            return (
-                              <div className="space-y-4 pb-4 border-b border-white/10">
-                                <p className="text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-white/40">Team Form (Last 5)</p>
-                                <div className="flex justify-between items-center gap-8">
-                                  <div className="flex flex-col gap-2 flex-1">
-                                    <span className="text-xs md:text-sm font-bold text-white truncate">{data.homeTeam}</span>
-                                    <div className="flex gap-1.5">
-                                      {parsedData.homeForm?.map((r: string, i: number) => <FormBadge key={i} res={r} />)}
-                                    </div>
-                                  </div>
-                                  <div className="w-px h-12 bg-white/10" />
-                                  <div className="flex flex-col gap-2 flex-1 items-end text-right">
-                                    <span className="text-xs md:text-sm font-bold text-white truncate">{data.awayTeam}</span>
-                                    <div className="flex gap-1.5">
-                                      {parsedData.awayForm?.map((r: string, i: number) => <FormBadge key={i} res={r} />)}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          }
-                        }
-                      } catch (e) {}
-                      return null;
-                    })()}
-
-                    {/* Actual Description Text */}
-                    <div className="space-y-2">
-                      <p className="text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-white/40">Expert Analysis</p>
-                      <p className="text-xs md:text-lg text-white/80 leading-relaxed font-light whitespace-pre-wrap italic">
-                        "{(() => {
-                          try {
-                            if (data.description?.startsWith('{')) {
-                              return JSON.parse(data.description).text;
-                            }
-                          } catch (e) {}
-                          return data.description || "No analysis available for this pick.";
-                        })()}"
+          {data.description && (
+            <div className="mt-4">
+              <button 
+                onClick={() => setShowAnalysis(!showAnalysis)}
+                className="flex items-center gap-1.5 text-[10px] md:text-xs font-bold uppercase tracking-widest text-accent hover:text-accent/80 transition-colors"
+              >
+                {showAnalysis ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" />
+                    Hide Analysis
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    View Analysis
+                  </>
+                )}
+              </button>
+              <AnimatePresence>
+                {showAnalysis && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-3 p-4 rounded-xl bg-accent/10 border border-accent/20 max-w-2xl backdrop-blur-sm">
+                      <p className="text-xs md:text-sm text-muted-foreground leading-relaxed italic whitespace-pre-wrap">
+                        "{data.description}"
                       </p>
                     </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
           <div className="flex items-center gap-4 md:gap-6 mt-4 md:mt-6">
             <div>
               <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-0.5">Prediction</p>
