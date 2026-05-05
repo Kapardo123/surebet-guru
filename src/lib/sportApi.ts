@@ -19,6 +19,47 @@ export interface SofaMatch {
   awayLogo?: string;
 }
 
+/**
+ * Fetches the last 5 matches for a team to determine form
+ */
+export const fetchTeamForm = async (teamId: number): Promise<string[]> => {
+  try {
+    console.log(`[SofaScore] Fetching form for team: ${teamId}`);
+    
+    const { data, error } = await supabase.functions.invoke('sport-api-proxy', {
+      body: { 
+        endpoint: `team/${teamId}/events/last/0`,
+        params: {} 
+      }
+    });
+
+    if (error) throw error;
+
+    const events = data?.events || [];
+    // Take last 5 matches
+    const last5 = events.slice(0, 5);
+
+    return last5.map((event: any) => {
+      const isHome = event.homeTeam.id === teamId;
+      const homeScore = event.homeScore?.current;
+      const awayScore = event.awayScore?.current;
+
+      if (homeScore === undefined || awayScore === undefined) return 'U'; // Unknown/Upcoming
+
+      if (homeScore === awayScore) return 'D';
+      
+      if (isHome) {
+        return homeScore > awayScore ? 'W' : 'L';
+      } else {
+        return awayScore > homeScore ? 'W' : 'L';
+      }
+    });
+  } catch (error) {
+    console.error("[SofaScore] Error fetching team form:", error);
+    return [];
+  }
+};
+
 // Global cache for API responses to avoid redundant calls for the same date
 const matchesCache: Record<string, { data: SofaMatch[], timestamp: number }> = {};
 const inFlightRequests: Record<string, Promise<SofaMatch[]>> = {};

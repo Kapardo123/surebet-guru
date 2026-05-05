@@ -27,10 +27,14 @@ serve(async (req) => {
     const sport_slug = params?.sport_slug || 'football';
     
     // Construct final URL
-    let finalUrl = `https://${RAPID_API_HOST}/api/sofascore/v1/${endpoint}?date=${date}`;
+    let finalUrl = `https://${RAPID_API_HOST}/api/sofascore/v1/${endpoint}`;
     
     if (endpoint === 'match/list') {
-      finalUrl += `&sport_slug=${sport_slug}`;
+      finalUrl += `?date=${date}&sport_slug=${sport_slug}`;
+    } else if (endpoint.includes('events/last')) {
+      // No extra query params needed for this endpoint as per SofaScore structure
+    } else {
+      finalUrl += `?date=${date}`;
     }
     
     console.log(`[Proxy] Requesting SofaScore: ${finalUrl}`);

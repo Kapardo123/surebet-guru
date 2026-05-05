@@ -39,7 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
 import UpcomingMatchesList from "@/components/UpcomingMatchesList";
 import Logo from "@/components/Logo";
-import { fetchMatchesByDate } from "@/lib/sportApi";
+import { fetchMatchesByDate, fetchTeamForm } from "@/lib/sportApi";
 import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
@@ -66,7 +66,23 @@ const Admin = () => {
     }
   };
 
-  const handleSelectMatch = (match: any) => {
+  const handleSelectMatch = async (match: any) => {
+    toast({ title: `Loading match details and form...` });
+    
+    let homeForm: string[] = [];
+    let awayForm: string[] = [];
+
+    if (match.homeTeamId && match.awayTeamId) {
+      try {
+        [homeForm, awayForm] = await Promise.all([
+          fetchTeamForm(match.homeTeamId),
+          fetchTeamForm(match.awayTeamId)
+        ]);
+      } catch (err) {
+        console.error("Error fetching form:", err);
+      }
+    }
+
     setForm((prev) => ({
       ...prev,
       homeTeam: match.homeTeam,
@@ -74,7 +90,13 @@ const Admin = () => {
       league: match.league,
       kickoff: `${match.date} ${match.time}`,
       homeTeamLogo: match.homeLogo,
-      awayTeamLogo: match.awayLogo
+      awayTeamLogo: match.awayLogo,
+      // Store form in a structured way within description
+      description: JSON.stringify({ 
+        homeForm, 
+        awayForm, 
+        text: prev.description || "" 
+      })
     }));
     toast({ title: `Match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
@@ -92,7 +114,23 @@ const Admin = () => {
     toast({ title: `Coupon match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
 
-  const handleSelectFeaturedMatch = (match: any) => {
+  const handleSelectFeaturedMatch = async (match: any) => {
+    toast({ title: `Loading featured match details and form...` });
+    
+    let homeForm: string[] = [];
+    let awayForm: string[] = [];
+
+    if (match.homeTeamId && match.awayTeamId) {
+      try {
+        [homeForm, awayForm] = await Promise.all([
+          fetchTeamForm(match.homeTeamId),
+          fetchTeamForm(match.awayTeamId)
+        ]);
+      } catch (err) {
+        console.error("Error fetching form:", err);
+      }
+    }
+
     setFeatured((prev) => ({
       ...prev,
       homeTeam: match.homeTeam,
@@ -100,7 +138,12 @@ const Admin = () => {
       league: match.league,
       kickoff: `${match.date} ${match.time}`,
       homeTeamLogo: match.homeLogo,
-      awayTeamLogo: match.awayLogo
+      awayTeamLogo: match.awayLogo,
+      description: JSON.stringify({ 
+        homeForm, 
+        awayForm, 
+        text: prev.description || "" 
+      })
     }));
     toast({ title: `Featured match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
