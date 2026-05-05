@@ -88,6 +88,7 @@ export const incrementFeaturedReaction = async (pickId: number, type: 'like') =>
   });
 
   if (error) {
+    // Fallback if RPC doesn't exist yet
     console.warn("RPC increment_featured_reaction failed, trying manual update:", error);
     const { data } = await supabase.from('featured_picks').select(column).eq('id', pickId).single();
     if (data) {

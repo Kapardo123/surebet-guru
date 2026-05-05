@@ -36,7 +36,7 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
   const [reacted, setReacted] = useState(false);
 
   useEffect(() => {
-    if (!pick?.id) return; // Prevent reset during loading
+    if (!pick?.id) return;
 
     const saved = localStorage.getItem(`featured_reaction_${pick.id}`);
     if (saved) {
@@ -50,8 +50,7 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
       setReacted(false);
     }
     
-    // Only update likes from server if we haven't reacted locally yet 
-    // or if the server count is higher than our local count
+    // Synchronize with server data
     const serverLikes = pick.likesCount || 0;
     setLocalLikes(prev => (serverLikes > prev ? serverLikes : prev));
   }, [pick?.id, pick?.likesCount]);

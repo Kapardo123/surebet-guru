@@ -85,7 +85,11 @@ const Index = () => {
 
       <main className="container max-w-5xl mx-auto px-4 py-6 md:py-8 space-y-8 md:space-y-10">
         <ScrollReveal>
-          <HeroSection pick={featuredPick} />
+          {featuredPick ? (
+            <HeroSection key={featuredPick.id} pick={featuredPick} />
+          ) : (
+            <HeroSection />
+          )}
         </ScrollReveal>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
