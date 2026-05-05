@@ -35,7 +35,15 @@ export const fetchTeamForm = async (teamId: number): Promise<string[]> => {
 
     if (error) throw error;
 
-    const events = data?.events || [];
+    let events = [];
+    if (Array.isArray(data)) {
+      events = data;
+    } else if (data?.events && Array.isArray(data.events)) {
+      events = data.events;
+    } else if (data?.data?.events && Array.isArray(data.data.events)) {
+      events = data.data.events;
+    }
+
     // Take last 5 matches
     const last5 = events.slice(0, 5);
 

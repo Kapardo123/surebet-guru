@@ -161,7 +161,7 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
                       try {
                         if (data.description?.startsWith('{')) {
                           const parsedData = JSON.parse(data.description);
-                          if (parsedData.homeForm || parsedData.awayForm) {
+                          if ((parsedData.homeForm && parsedData.homeForm.length > 0) || (parsedData.awayForm && parsedData.awayForm.length > 0)) {
                             const FormBadge = ({ res }: { res: string }) => {
                               const colors = {
                                 'W': 'bg-success text-success-foreground',

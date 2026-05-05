@@ -196,7 +196,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
                             try {
                               if (tip.description?.startsWith('{')) {
                                 const data = JSON.parse(tip.description);
-                                if (data.homeForm || data.awayForm) {
+                                if ((data.homeForm && data.homeForm.length > 0) || (data.awayForm && data.awayForm.length > 0)) {
                                   const FormBadge = ({ res }: { res: string }) => {
                                     const colors = {
                                       'W': 'bg-success text-success-foreground',

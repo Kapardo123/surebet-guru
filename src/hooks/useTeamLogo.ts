@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchTeamLogoUrl } from "@/lib/logoFetcher";
 
 const normalize = (value: string) =>
   value
@@ -40,25 +41,44 @@ export const useTeamLogo = (teamName: string) => {
           return;
         }
 
-        // 2. Try Wikipedia API (Wikimedia) - Very reliable for football clubs
-        console.log(`[useTeamLogo] 🔍 Trying Wikipedia for: ${teamName}`);
-        const wikiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(teamName.replace(/\s+/g, '_'))}`;
-        const wikiRes = await fetch(wikiUrl);
-        
         let foundLogo = null;
 
-        if (wikiRes.ok) {
-          const wikiData = await wikiRes.json();
-          if (wikiData.thumbnail?.source) {
-            foundLogo = wikiData.thumbnail.source;
-            console.log(`[useTeamLogo] ⭐ Found on Wikipedia!`);
+        // 2. Try TheSportsDB (via logoFetcher) - Much more accurate for sports
+        console.log(`[useTeamLogo] 🔍 Trying TheSportsDB for: ${teamName}`);
+        foundLogo = await fetchTeamLogoUrl(teamName);
+        
+        if (foundLogo) {
+          console.log(`[useTeamLogo] ⭐ Found on TheSportsDB!`);
+        }
+
+        // 3. Try Wikipedia API (Wikimedia) - Fallback
+        if (!foundLogo) {
+          console.log(`[useTeamLogo] 🔍 Trying Wikipedia for: ${teamName}`);
+          // For football clubs, we try to append " FC" or " (football club)" to be more specific
+          const searchTerms = [
+            teamName.includes("FC") || teamName.includes("F.C.") ? teamName : `${teamName} FC`,
+            `${teamName} (football club)`,
+            teamName
+          ];
+
+          for (const term of searchTerms) {
+            const wikiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term.replace(/\s+/g, '_'))}`;
+            const wikiRes = await fetch(wikiUrl);
+            if (wikiRes.ok) {
+              const wikiData = await wikiRes.json();
+              // Check if it's actually a sports related page or has a thumbnail
+              if (wikiData.thumbnail?.source && !wikiData.title.includes("Arsenal (disambiguation)")) {
+                foundLogo = wikiData.thumbnail.source;
+                console.log(`[useTeamLogo] ⭐ Found on Wikipedia with term: ${term}`);
+                break;
+              }
+            }
           }
         }
 
-        // 3. Fallback to Clearbit if Wikipedia fails
+        // 4. Fallback to Clearbit
         if (!foundLogo) {
           console.log(`[useTeamLogo] 🔍 Trying Clearbit for: ${teamName}`);
-          // Clearbit works better with domain-like strings, so we just use the name
           const clearbitUrl = `https://logo.clearbit.com/${normalize(teamName).replace(/\s+/g, '')}.com`;
           const cbRes = await fetch(clearbitUrl);
           if (cbRes.ok) {
@@ -67,7 +87,7 @@ export const useTeamLogo = (teamName: string) => {
           }
         }
 
-        // 4. Save to DB cache
+        // 5. Save to DB cache
         await supabase.from('team_logos_cache').upsert({
           team_name: teamName,
           logo_url: foundLogo || "", 
