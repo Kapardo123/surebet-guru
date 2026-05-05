@@ -73,39 +73,18 @@ const UpcomingMatchesList = ({ onSelectMatch }: Props) => {
               className="flex items-center justify-between gap-3 bg-card border border-border/50 rounded-xl p-3 text-left hover:border-primary/50 hover:bg-muted/50 transition-all cursor-pointer group active:scale-[0.98]"
             >
               <div className="flex-1 flex flex-col gap-1.5 overflow-hidden">
-                <div className="flex items-center justify-between gap-2 pr-2">
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    <TeamLogo teamName={match.homeTeam} logoUrl={match.homeLogo || undefined} size={18} />
-                    <span className="text-xs font-bold truncate">{match.homeTeam}</span>
-                  </div>
-                  {(match.homeScore !== null || match.isLive) && (
-                    <span className={`text-xs font-black ${match.isLive ? 'text-accent animate-pulse' : 'text-muted-foreground'}`}>
-                      {match.homeScore ?? 0}
-                    </span>
-                  )}
+                <div className="flex items-center gap-2">
+                  <TeamLogo teamName={match.homeTeam} logoUrl={match.homeLogo || undefined} size={18} />
+                  <span className="text-xs font-bold truncate">{match.homeTeam}</span>
                 </div>
-                <div className="flex items-center justify-between gap-2 pr-2">
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    <TeamLogo teamName={match.awayTeam} logoUrl={match.awayLogo || undefined} size={18} />
-                    <span className="text-xs font-bold truncate">{match.awayTeam}</span>
-                  </div>
-                  {(match.awayScore !== null || match.isLive) && (
-                    <span className={`text-xs font-black ${match.isLive ? 'text-accent animate-pulse' : 'text-muted-foreground'}`}>
-                      {match.awayScore ?? 0}
-                    </span>
-                  )}
+                <div className="flex items-center gap-2">
+                  <TeamLogo teamName={match.awayTeam} logoUrl={match.awayLogo || undefined} size={18} />
+                  <span className="text-xs font-bold truncate">{match.awayTeam}</span>
                 </div>
               </div>
 
               <div className="flex flex-col items-end gap-1 shrink-0 border-l border-border/20 pl-3">
-                <div className="flex items-center gap-1.5 text-primary">
-                  {match.isLive && match.liveMinute ? (
-                    <span className="text-[10px] font-black text-accent animate-pulse">{match.liveMinute}</span>
-                  ) : (
-                    <span className="text-[10px] font-bold">{match.time}</span>
-                  )}
-                  <span className="text-[10px] font-medium opacity-80">{match.league}</span>
-                </div>
+                <span className="text-[10px] font-medium text-primary">{match.time} • {match.league}</span>
                 <span className="text-[9px] text-muted-foreground uppercase">{typeof match.status === 'string' ? match.status : 'unknown'}</span>
                 <TrendingUp className="w-3 h-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>

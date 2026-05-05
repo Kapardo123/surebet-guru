@@ -7,8 +7,8 @@ export interface SofaMatch {
   id: number;
   homeTeam: string;
   awayTeam: string;
-  homeScore: number | string | null;
-  awayScore: number | string | null;
+  homeScore: number | null;
+  awayScore: number | null;
   status: string;
   league: string;
   date: string;
@@ -17,8 +17,6 @@ export interface SofaMatch {
   awayTeamId?: number;
   homeLogo?: string;
   awayLogo?: string;
-  isLive?: boolean;
-  liveMinute?: string;
 }
 
 // Global cache for API responses to avoid redundant calls for the same date
@@ -112,21 +110,6 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
           timeStr = event.time;
         }
 
-        const isLive = event.status?.type === 'inprogress' || event.status?.type === 'live';
-        let liveMinute = undefined;
-        if (isLive) {
-          if (event.status?.description === 'HT') {
-            liveMinute = 'HT';
-          } else if (event.time?.currentPeriodStartTimestamp) {
-            const startTs = event.time.currentPeriodStartTimestamp;
-            const nowTs = Math.floor(Date.now() / 1000);
-            const diffMinutes = Math.floor((nowTs - startTs) / 60);
-            const isSecondHalf = event.status?.code === 31;
-            const baseMinute = isSecondHalf ? 45 : 0;
-            liveMinute = `${Math.max(1, baseMinute + diffMinutes)}'`;
-          }
-        }
-
         return {
           id: event.id,
           homeTeam: event.homeTeam?.name || event.home_team?.name || "Unknown",
@@ -137,8 +120,11 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
           league: event.tournament?.name || event.league?.name || "Unknown",
           date: date,
           time: timeStr,
-          isLive,
-          liveMinute
+          homeTeamId: event.homeTeam?.id || event.home_team?.id,
+          awayTeamId: event.awayTeam?.id || event.away_team?.id,
+          // Remove direct SofaScore logo links to force using useTeamLogo (TheSportsDB + Cache)
+          homeLogo: undefined,
+          awayLogo: undefined,
         };
       });
 
