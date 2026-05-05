@@ -521,6 +521,24 @@ const Admin = () => {
     toast({ title: "Coupon removed" });
   };
 
+  const handleClearLogoCache = async () => {
+    if (!window.confirm("Are you sure you want to clear ALL cached team logos? They will be re-fetched on next load.")) return;
+    
+    try {
+      const { error } = await supabase
+        .from('team_logos_cache')
+        .delete()
+        .neq('team_name', 'FORCE_DELETE_ALL_WORKAROUND'); // Delete all rows
+
+      if (error) throw error;
+      
+      toast({ title: "Logo cache cleared! 🧹", description: "Logos will be re-fetched when needed." });
+      refreshData();
+    } catch (err: any) {
+      toast({ title: "Error clearing cache", description: err.message, variant: "destructive" });
+    }
+  };
+
   // Replace old state with simpler mobile-friendly form state
   const [form, setForm] = useState({
     sport: "Football",
@@ -838,6 +856,14 @@ const Admin = () => {
                 }}
               >
                 <Zap className="w-3 h-3 mr-1" /> Test API
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 text-[10px] border-orange-500/30 text-orange-500"
+                onClick={handleClearLogoCache}
+              >
+                <Trash2 className="w-3 h-3 mr-1" /> Clear Logos
               </Button>
               <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={refreshData}><RefreshCw className="w-3 h-3 mr-1" /> Sync</Button>
             </div>
