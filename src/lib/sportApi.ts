@@ -28,7 +28,7 @@ export const fetchTeamForm = async (teamId: number): Promise<string[]> => {
     
     const { data, error } = await supabase.functions.invoke('sport-api-proxy', {
       body: { 
-        endpoint: `team/${teamId}/events/last/0`,
+        endpoint: `team/${teamId}/events/last/5`,
         params: {} 
       }
     });

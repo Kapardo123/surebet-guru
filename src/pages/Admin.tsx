@@ -62,7 +62,29 @@ const Admin = () => {
     setTips(loadedTips);
     setCoupons(loadedCoupons);
     if (loadedFeatured) {
-      setFeatured(loadedFeatured);
+      let descriptionText = loadedFeatured.description || "";
+      let homeForm: string[] = [];
+      let awayForm: string[] = [];
+
+      try {
+        if (loadedFeatured.description?.startsWith('{')) {
+          const data = JSON.parse(loadedFeatured.description);
+          descriptionText = data.text || "";
+          homeForm = data.homeForm || [];
+          awayForm = data.awayForm || [];
+          setFeaturedMetaData({ homeForm, awayForm });
+        } else {
+          setFeaturedMetaData(null);
+        }
+      } catch (e) {
+        console.error("Error parsing featured description:", e);
+        setFeaturedMetaData(null);
+      }
+
+      setFeatured({
+        ...loadedFeatured,
+        description: descriptionText
+      });
     }
   };
 
@@ -83,6 +105,8 @@ const Admin = () => {
       }
     }
 
+    setFormMetaData({ homeForm, awayForm });
+
     setForm((prev) => ({
       ...prev,
       homeTeam: match.homeTeam,
@@ -90,13 +114,7 @@ const Admin = () => {
       league: match.league,
       kickoff: `${match.date} ${match.time}`,
       homeTeamLogo: match.homeLogo,
-      awayTeamLogo: match.awayLogo,
-      // Store form in a structured way within description
-      description: JSON.stringify({ 
-        homeForm, 
-        awayForm, 
-        text: prev.description || "" 
-      })
+      awayTeamLogo: match.awayLogo
     }));
     toast({ title: `Match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
@@ -131,6 +149,8 @@ const Admin = () => {
       }
     }
 
+    setFeaturedMetaData({ homeForm, awayForm });
+
     setFeatured((prev) => ({
       ...prev,
       homeTeam: match.homeTeam,
@@ -138,12 +158,7 @@ const Admin = () => {
       league: match.league,
       kickoff: `${match.date} ${match.time}`,
       homeTeamLogo: match.homeLogo,
-      awayTeamLogo: match.awayLogo,
-      description: JSON.stringify({ 
-        homeForm, 
-        awayForm, 
-        text: prev.description || "" 
-      })
+      awayTeamLogo: match.awayLogo
     }));
     toast({ title: `Featured match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
@@ -292,6 +307,7 @@ const Admin = () => {
 
   const resetTipForm = () => {
     setEditingTipId(null);
+    setFormMetaData(null);
     setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, description: "", homeTeamLogo: null, awayTeamLogo: null });
   };
 
@@ -324,6 +340,11 @@ const Admin = () => {
       console.error("Date parsing error:", err);
     }
 
+    // Pack metadata into description if available
+    const finalDescription = formMetaData 
+      ? JSON.stringify({ ...formMetaData, text: form.description })
+      : form.description;
+
     if (editingTipId !== null) {
       await updateTip({
         id: editingTipId,
@@ -338,7 +359,7 @@ const Admin = () => {
         isPremium: form.isPremium,
         homeTeamLogo: form.homeTeamLogo,
         awayTeamLogo: form.awayTeamLogo,
-        description: form.description,
+        description: finalDescription,
       });
       await refreshData();
       resetTipForm();
@@ -356,7 +377,7 @@ const Admin = () => {
         isPremium: form.isPremium,
         homeTeamLogo: form.homeTeamLogo,
         awayTeamLogo: form.awayTeamLogo,
-        description: form.description,
+        description: finalDescription,
       });
       
       if (created && form.isPremium) {
@@ -377,7 +398,23 @@ const Admin = () => {
   };
 
   const handleEditTip = (tip: Tip) => {
+    let descriptionText = tip.description || "";
+    let homeForm: string[] = [];
+    let awayForm: string[] = [];
+
+    try {
+      if (tip.description?.startsWith('{')) {
+        const data = JSON.parse(tip.description);
+        descriptionText = data.text || "";
+        homeForm = data.homeForm || [];
+        awayForm = data.awayForm || [];
+      }
+    } catch (e) {
+      console.error("Error parsing tip description for edit:", e);
+    }
+
     setEditingTipId(tip.id);
+    setFormMetaData({ homeForm, awayForm });
     setForm({
       sport: tip.sport,
       league: tip.league,
@@ -388,7 +425,7 @@ const Admin = () => {
       kickoff: tip.kickoff,
       status: tip.status,
       isPremium: tip.isPremium || false,
-      description: tip.description || "",
+      description: descriptionText,
       homeTeamLogo: tip.homeTeamLogo || null,
       awayTeamLogo: tip.awayTeamLogo || null,
     });
@@ -499,6 +536,16 @@ const Admin = () => {
     homeTeamLogo: null as string | null,
     awayTeamLogo: null as string | null,
   });
+
+  const [formMetaData, setFormMetaData] = useState<{
+    homeForm: string[],
+    awayForm: string[]
+  } | null>(null);
+
+  const [featuredMetaData, setFeaturedMetaData] = useState<{
+    homeForm: string[],
+    awayForm: string[]
+  } | null>(null);
 
   const [couponMatchForm, setCouponMatchForm] = useState({
     homeTeam: "",
@@ -689,7 +736,15 @@ const Admin = () => {
                     className="w-full gap-2 h-10 font-display uppercase tracking-wider text-[10px] bg-accent hover:bg-accent/90"
                     onClick={async () => {
                       const { id, ...pickWithoutId } = featured; 
-                      await saveFeaturedPick(pickWithoutId);
+                      // Pack metadata
+                      const finalFeaturedDescription = featuredMetaData
+                        ? JSON.stringify({ ...featuredMetaData, text: featured.description })
+                        : featured.description;
+                      
+                      await saveFeaturedPick({
+                        ...pickWithoutId,
+                        description: finalFeaturedDescription
+                      });
                       await refreshData();
                       toast({ title: "Hero Pick Saved! ⚡" });
                     }}
