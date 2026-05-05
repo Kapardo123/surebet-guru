@@ -463,7 +463,7 @@ const Admin = () => {
   const [aiText, setAiText] = useState("");
   const [isAiProcessing, setIsAiProcessing] = useState(false);
 
-  const handleAiImport = async () => {
+  const handleAiImport = async (target: 'tip' | 'hero' | 'coupon') => {
     if (!aiText.trim()) {
       toast({ title: "Paste text first", variant: "destructive" });
       return;
@@ -471,13 +471,16 @@ const Admin = () => {
 
     setIsAiProcessing(true);
     try {
-      // Regex patterns based on the user's template
+      // Improved Regex patterns to handle the updated template
+      const leaguePattern = /^(.+?)\s*(?:\(|$)/i; // Matches first line before any parenthesis or end of line
       const matchPattern = /Match:\s*(.+?)\svs\s*(.+)/i;
       const dateTimePattern = /Date & Time:\s*(\d{2}\.\d{2}\.\d{4}),\s*(\d{2}:\d{2})/i;
       const tipPattern = /Betting Tip:\s*(.+)/i;
       const oddsPattern = /Odds:\s*(\d+\.?\d*)/i;
       const analysisPattern = /Analysis:\s*([\s\S]+)/i;
 
+      const lines = aiText.trim().split('\n');
+      const leagueMatch = lines[0].match(leaguePattern);
       const matchMatch = aiText.match(matchPattern);
       const dateTimeMatch = aiText.match(dateTimePattern);
       const tipMatch = aiText.match(tipPattern);
@@ -486,7 +489,6 @@ const Admin = () => {
 
       if (!matchMatch) throw new Error("Could not find Match (Home vs Away)");
 
-      // Format Date for Input (YYYY-MM-DD HH:MM)
       let formattedDate = "";
       if (dateTimeMatch) {
         const [_, dmy, time] = dateTimeMatch;
@@ -495,6 +497,7 @@ const Admin = () => {
       }
 
       const parsedData = {
+        league: leagueMatch ? leagueMatch[1].trim() : "",
         homeTeam: matchMatch[1].trim(),
         awayTeam: matchMatch[2].trim(),
         kickoff: formattedDate,
@@ -503,16 +506,33 @@ const Admin = () => {
         description: analysisMatch ? analysisMatch[1].trim() : "",
       };
 
-      setForm(prev => ({
-        ...prev,
-        ...parsedData
-      }));
+      if (target === 'tip') {
+        setForm(prev => ({ ...prev, ...parsedData }));
+        toast({ title: "Tip Form Filled! ✨" });
+      } else if (target === 'hero') {
+        setFeatured(prev => ({ 
+          ...prev, 
+          ...parsedData,
+          confidence: "High",
+          status: "upcoming"
+        }));
+        toast({ title: "Hero Section Filled! 🔥" });
+      } else if (target === 'coupon') {
+        setCouponMatchForm({
+          homeTeam: parsedData.homeTeam,
+          awayTeam: parsedData.awayTeam,
+          prediction: parsedData.prediction,
+          odds: parsedData.odds,
+          league: parsedData.league,
+          sport: "Football",
+          kickoff: parsedData.kickoff,
+          homeTeamLogo: null,
+          awayTeamLogo: null
+        });
+        toast({ title: "Coupon Form Filled! 🎫" });
+      }
 
-      toast({ 
-        title: "AI Import Successful! ✨", 
-        description: `Filled data for ${parsedData.homeTeam} vs ${parsedData.awayTeam}` 
-      });
-      setAiText(""); // Clear after success
+      setAiText("");
     } catch (err: any) {
       toast({ title: "Import Failed", description: err.message, variant: "destructive" });
     } finally {
@@ -597,14 +617,32 @@ const Admin = () => {
                   </Button>
                 )}
               </div>
-              <Button 
-                onClick={handleAiImport}
-                disabled={isAiProcessing || !aiText.trim()}
-                className="w-full gap-2 h-11 font-display uppercase tracking-widest text-xs bg-accent hover:bg-accent/90 text-white shadow-lg shadow-accent/20"
-              >
-                {isAiProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardPaste className="w-4 h-4" />}
-                Import to Form
-              </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Button 
+                  onClick={() => handleAiImport('tip')}
+                  disabled={isAiProcessing || !aiText.trim()}
+                  className="gap-2 h-11 font-display uppercase tracking-widest text-[10px] bg-accent hover:bg-accent/90 text-white shadow-lg shadow-accent/20"
+                >
+                  {isAiProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardPaste className="w-4 h-4" />}
+                  Normal Tip
+                </Button>
+                <Button 
+                  onClick={() => handleAiImport('hero')}
+                  disabled={isAiProcessing || !aiText.trim()}
+                  className="gap-2 h-11 font-display uppercase tracking-widest text-[10px] bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Hero Section
+                </Button>
+                <Button 
+                  onClick={() => handleAiImport('coupon')}
+                  disabled={isAiProcessing || !aiText.trim()}
+                  className="gap-2 h-11 font-display uppercase tracking-widest text-[10px] bg-secondary hover:bg-secondary/90 text-white shadow-lg shadow-secondary/20"
+                >
+                  <ClipboardPaste className="w-4 h-4" />
+                  Add to Coupon
+                </Button>
+              </div>
               <p className="text-[10px] text-muted-foreground text-center italic">
                 * Just paste the text from ChatGPT/Claude and click Import. The form below will be filled automatically.
               </p>
