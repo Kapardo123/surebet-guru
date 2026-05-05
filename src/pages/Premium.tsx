@@ -316,8 +316,8 @@ export default function Premium() {
             By subscribing, you agree to our <Link to="/terms" className="underline">Terms of Service</Link>.
           </p>
           <div className="flex flex-col items-center gap-1 opacity-30">
-            <p className="text-[9px] font-black tracking-widest uppercase">App Version 5.0.0</p>
-            <p className="text-[8px] font-bold">Build 500</p>
+            <p className="text-[9px] font-black tracking-widest uppercase">App Version 6.0.0</p>
+            <p className="text-[8px] font-bold">Build 600</p>
           </div>
         </section>
       </main>
