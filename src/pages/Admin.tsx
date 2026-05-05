@@ -512,7 +512,13 @@ const Admin = () => {
       } else if (target === 'hero') {
         setFeatured(prev => ({ 
           ...prev, 
-          ...parsedData,
+          homeTeam: parsedData.homeTeam,
+          awayTeam: parsedData.awayTeam,
+          league: parsedData.league,
+          kickoff: parsedData.kickoff,
+          prediction: parsedData.prediction,
+          odds: parsedData.odds,
+          description: parsedData.description,
           confidence: "High",
           status: "upcoming"
         }));
