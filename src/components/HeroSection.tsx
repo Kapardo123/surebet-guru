@@ -211,18 +211,26 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
               
               <div className="flex items-center gap-3 ml-4">
                 <button 
-                  onClick={(e) => { e.preventDefault(); handleReaction('fire'); }}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${reacted.fire ? 'bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/30' : 'bg-white/5 text-white/60 hover:bg-orange-500/10 hover:text-orange-400'}`}
-                >
-                  <Flame className={`w-4 h-4 md:w-5 md:h-5 ${reacted.fire ? 'fill-orange-500' : ''}`} />
-                  <span className="font-display font-black text-sm md:text-lg">{localFire}</span>
-                </button>
-                <button 
                   onClick={(e) => { e.preventDefault(); handleReaction('like'); }}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${reacted.like ? 'bg-primary/20 text-primary ring-1 ring-primary/30' : 'bg-white/5 text-white/60 hover:bg-primary/10 hover:text-primary'}`}
+                  className={`group relative flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all duration-300 ${reacted.like ? 'bg-primary/25 text-primary ring-2 ring-primary/50' : 'bg-white/5 text-white/60 hover:bg-primary/10 hover:text-primary hover:scale-105 active:scale-95'}`}
                 >
-                  <ThumbsUp className={`w-4 h-4 md:w-5 md:h-5 ${reacted.like ? 'fill-primary' : ''}`} />
-                  <span className="font-display font-black text-sm md:text-lg">{localLikes}</span>
+                  <motion.div
+                    animate={reacted.like ? { scale: [1, 1.5, 1], rotate: [0, -15, 0] } : {}}
+                    transition={{ duration: 0.5, ease: "backOut" }}
+                  >
+                    <ThumbsUp className={`w-5 h-5 md:w-6 md:h-6 ${reacted.like ? 'fill-primary' : 'group-hover:fill-primary/20'}`} />
+                  </motion.div>
+                  <span className="font-display font-black text-base md:text-xl">{localLikes}</span>
+                  
+                  {reacted.like && (
+                    <motion.span
+                      initial={{ opacity: 1, y: 0, scale: 1 }}
+                      animate={{ opacity: 0, y: -40, scale: 1.5 }}
+                      className="absolute top-0 left-1/2 -translate-x-1/2 text-primary font-bold text-sm pointer-events-none"
+                    >
+                      +1
+                    </motion.span>
+                  )}
                 </button>
               </div>
             </div>

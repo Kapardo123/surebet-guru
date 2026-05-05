@@ -20,7 +20,6 @@ export interface Tip {
   homeTeamLogo?: string | null;
   awayTeamLogo?: string | null;
   description?: string | null;
-  fireCount?: number;
   likesCount?: number;
 }
 
@@ -190,18 +189,26 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
               <div className="flex items-center justify-between gap-4 py-1">
                 <div className="flex items-center gap-2">
                   <button 
-                    onClick={(e) => { e.preventDefault(); handleReaction('fire'); }}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all ${reacted.fire ? 'bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/30' : 'bg-muted/50 text-muted-foreground hover:bg-orange-500/10 hover:text-orange-400'}`}
-                  >
-                    <Flame className={`w-3.5 h-3.5 ${reacted.fire ? 'fill-orange-500' : ''}`} />
-                    <span className="text-[11px] font-black">{localFire}</span>
-                  </button>
-                  <button 
                     onClick={(e) => { e.preventDefault(); handleReaction('like'); }}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all ${reacted.like ? 'bg-primary/20 text-primary ring-1 ring-primary/30' : 'bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary'}`}
+                    className={`group relative flex items-center gap-2 px-3.5 py-2 rounded-full transition-all duration-300 ${reacted.like ? 'bg-primary/20 text-primary ring-2 ring-primary/40' : 'bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary hover:scale-105 active:scale-95'}`}
                   >
-                    <ThumbsUp className={`w-3.5 h-3.5 ${reacted.like ? 'fill-primary' : ''}`} />
-                    <span className="text-[11px] font-black">{localLikes}</span>
+                    <motion.div
+                      animate={reacted.like ? { scale: [1, 1.4, 1], rotate: [0, -20, 0] } : {}}
+                      transition={{ duration: 0.45, ease: "backOut" }}
+                    >
+                      <ThumbsUp className={`w-4 h-4 ${reacted.like ? 'fill-primary' : 'group-hover:fill-primary/20'}`} />
+                    </motion.div>
+                    <span className="text-[12px] font-black tracking-tight">{localLikes}</span>
+                    
+                    {reacted.like && (
+                      <motion.span
+                        initial={{ opacity: 1, y: 0 }}
+                        animate={{ opacity: 0, y: -20 }}
+                        className="absolute top-0 left-1/2 -translate-x-1/2 text-primary font-bold text-xs pointer-events-none"
+                      >
+                        +1
+                      </motion.span>
+                    )}
                   </button>
                 </div>
 

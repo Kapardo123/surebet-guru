@@ -353,7 +353,6 @@ const Admin = () => {
       description: tip.description || "",
       homeTeamLogo: tip.homeTeamLogo || null,
       awayTeamLogo: tip.awayTeamLogo || null,
-      fireCount: tip.fireCount || 0,
       likesCount: tip.likesCount || 0,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -566,7 +565,6 @@ const Admin = () => {
     description: "",
     homeTeamLogo: null as string | null,
     awayTeamLogo: null as string | null,
-    fireCount: 0,
     likesCount: 0,
   });
 
@@ -712,11 +710,7 @@ const Admin = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Fire Count 🔥</Label>
-                  <Input type="number" className="h-10 bg-muted/20" value={form.fireCount} onChange={(e) => setForm({ ...form, fireCount: parseInt(e.target.value) || 0 })} />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Likes Count 👍</Label>
                   <Input type="number" className="h-10 bg-muted/20" value={form.likesCount} onChange={(e) => setForm({ ...form, likesCount: parseInt(e.target.value) || 0 })} />
@@ -854,11 +848,7 @@ const Admin = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-[9px] uppercase text-muted-foreground">Fire 🔥</Label>
-                      <Input type="number" className="h-9 text-xs" value={featured.fireCount || 0} onChange={(e) => setFeatured({ ...featured, fireCount: parseInt(e.target.value) || 0 })} />
-                    </div>
+                  <div className="grid grid-cols-1 gap-3">
                     <div className="space-y-1">
                       <Label className="text-[9px] uppercase text-muted-foreground">Likes 👍</Label>
                       <Input type="number" className="h-9 text-xs" value={featured.likesCount || 0} onChange={(e) => setFeatured({ ...featured, likesCount: parseInt(e.target.value) || 0 })} />

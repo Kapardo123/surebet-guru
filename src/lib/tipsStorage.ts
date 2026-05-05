@@ -53,7 +53,6 @@ export const loadTips = async (): Promise<Tip[]> => {
     homeTeamLogo: tip.home_team_logo || null,
     awayTeamLogo: tip.away_team_logo || null,
     description: tip.description || null,
-    fireCount: tip.fire_count || 0,
     likesCount: tip.likes_count || 0,
   }));
 
@@ -77,7 +76,6 @@ export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
       home_team_logo: tip.homeTeamLogo,
       away_team_logo: tip.awayTeamLogo,
       description: tip.description,
-      fire_count: tip.fireCount || 0,
       likes_count: tip.likesCount || 0
     }])
     .select()
@@ -104,7 +102,6 @@ export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
     homeTeamLogo: record.home_team_logo,
     awayTeamLogo: record.away_team_logo,
     description: record.description,
-    fireCount: record.fire_count || 0,
     likesCount: record.likes_count || 0
   };
 };
@@ -134,7 +131,6 @@ export const updateTip = async (updatedTip: Tip) => {
       home_team_logo: updatedTip.homeTeamLogo,
       away_team_logo: updatedTip.awayTeamLogo,
       description: updatedTip.description,
-      fire_count: updatedTip.fireCount,
       likes_count: updatedTip.likesCount
     })
     .eq('id', updatedTip.id);
@@ -142,8 +138,8 @@ export const updateTip = async (updatedTip: Tip) => {
   if (error) console.error("Error updating tip:", error);
 };
 
-export const incrementReaction = async (tipId: number, type: 'fire' | 'like') => {
-  const column = type === 'fire' ? 'fire_count' : 'likes_count';
+export const incrementReaction = async (tipId: number, type: 'like') => {
+  const column = 'likes_count';
   
   // Use RPC for atomic increment to avoid race conditions
   const { error } = await supabase.rpc('increment_tip_reaction', {
