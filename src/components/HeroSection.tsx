@@ -56,7 +56,11 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
   }, [pick?.id, pick?.likesCount]);
 
   const handleReaction = async () => {
-    if (!pick?.id || reacted) return;
+    if (!pick?.id) {
+      console.warn("HeroSection: Cannot react to demo data (no pick.id)");
+      return;
+    }
+    if (reacted) return;
 
     setReacted(true);
     localStorage.setItem(`featured_reaction_${pick.id}`, JSON.stringify(true));
