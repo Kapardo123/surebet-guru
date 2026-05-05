@@ -41,6 +41,7 @@ import UpcomingMatchesList from "@/components/UpcomingMatchesList";
 import Logo from "@/components/Logo";
 import { fetchMatchesByDate, fetchTeamForm } from "@/lib/sportApi";
 import { supabase } from "@/integrations/supabase/client";
+import { Sparkles, ClipboardPaste } from "lucide-react";
 
 const Admin = () => {
   const { toast } = useToast();
@@ -459,6 +460,66 @@ const Admin = () => {
     }
   };
 
+  const [aiText, setAiText] = useState("");
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
+
+  const handleAiImport = async () => {
+    if (!aiText.trim()) {
+      toast({ title: "Paste text first", variant: "destructive" });
+      return;
+    }
+
+    setIsAiProcessing(true);
+    try {
+      // Regex patterns based on the user's template
+      const matchPattern = /Match:\s*(.+?)\svs\s*(.+)/i;
+      const dateTimePattern = /Date & Time:\s*(\d{2}\.\d{2}\.\d{4}),\s*(\d{2}:\d{2})/i;
+      const tipPattern = /Betting Tip:\s*(.+)/i;
+      const oddsPattern = /Odds:\s*(\d+\.?\d*)/i;
+      const analysisPattern = /Analysis:\s*([\s\S]+)/i;
+
+      const matchMatch = aiText.match(matchPattern);
+      const dateTimeMatch = aiText.match(dateTimePattern);
+      const tipMatch = aiText.match(tipPattern);
+      const oddsMatch = aiText.match(oddsPattern);
+      const analysisMatch = aiText.match(analysisPattern);
+
+      if (!matchMatch) throw new Error("Could not find Match (Home vs Away)");
+
+      // Format Date for Input (YYYY-MM-DD HH:MM)
+      let formattedDate = "";
+      if (dateTimeMatch) {
+        const [_, dmy, time] = dateTimeMatch;
+        const [day, month, year] = dmy.split('.');
+        formattedDate = `${year}-${month}-${day} ${time}`;
+      }
+
+      const parsedData = {
+        homeTeam: matchMatch[1].trim(),
+        awayTeam: matchMatch[2].trim(),
+        kickoff: formattedDate,
+        prediction: tipMatch ? tipMatch[1].trim() : "",
+        odds: oddsMatch ? oddsMatch[1].trim() : "",
+        description: analysisMatch ? analysisMatch[1].trim() : "",
+      };
+
+      setForm(prev => ({
+        ...prev,
+        ...parsedData
+      }));
+
+      toast({ 
+        title: "AI Import Successful! ✨", 
+        description: `Filled data for ${parsedData.homeTeam} vs ${parsedData.awayTeam}` 
+      });
+      setAiText(""); // Clear after success
+    } catch (err: any) {
+      toast({ title: "Import Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
   // Replace old state with simpler mobile-friendly form state
   const [form, setForm] = useState({
     sport: "Football",
@@ -507,6 +568,50 @@ const Admin = () => {
       </header>
 
       <main className="container max-w-5xl mx-auto px-4 py-6 space-y-6">
+        {/* SMART AI IMPORT - NEW SECTION */}
+        <Card className="bg-card border-accent/20 shadow-lg overflow-hidden border-2 bg-gradient-to-br from-card to-accent/5">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-accent animate-pulse" />
+                AI Smart Import
+              </h2>
+              <Badge variant="outline" className="text-[9px] border-accent/30 text-accent">TIME SAVER</Badge>
+            </div>
+            <div className="space-y-4">
+              <div className="relative">
+                <textarea 
+                  className="w-full min-h-[120px] rounded-xl border border-input bg-muted/20 px-4 py-3 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-all"
+                  placeholder="Paste AI-generated tip here... (Match, Date, Tip, Odds, Analysis)"
+                  value={aiText}
+                  onChange={(e) => setAiText(e.target.value)}
+                />
+                {aiText && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="absolute right-2 top-2 h-7 w-7 p-0 rounded-full"
+                    onClick={() => setAiText("")}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+              </div>
+              <Button 
+                onClick={handleAiImport}
+                disabled={isAiProcessing || !aiText.trim()}
+                className="w-full gap-2 h-11 font-display uppercase tracking-widest text-xs bg-accent hover:bg-accent/90 text-white shadow-lg shadow-accent/20"
+              >
+                {isAiProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardPaste className="w-4 h-4" />}
+                Import to Form
+              </Button>
+              <p className="text-[10px] text-muted-foreground text-center italic">
+                * Just paste the text from ChatGPT/Claude and click Import. The form below will be filled automatically.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* QUICK FIND MATCH SECTION - MOBILE FIRST */}
         <Card className="bg-card border-primary/20 shadow-lg overflow-hidden border-2">
           <CardContent className="p-4 sm:p-6">
