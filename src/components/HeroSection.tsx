@@ -50,9 +50,10 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
       setReacted(false);
     }
     
-    // Synchronize with server data
+    // Synchronize local likes with server data
     const serverLikes = pick.likesCount || 0;
     setLocalLikes(prev => (serverLikes > prev ? serverLikes : prev));
+    console.log(`HeroSection: Synced with server. ID: ${pick.id}, Server Likes: ${serverLikes}`);
   }, [pick?.id, pick?.likesCount]);
 
   const handleReaction = async () => {
@@ -66,6 +67,7 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
     localStorage.setItem(`featured_reaction_${pick.id}`, JSON.stringify(true));
     setLocalLikes(prev => prev + 1);
 
+    console.log(`HeroSection: Sending reaction for ID: ${pick.id}`);
     await incrementFeaturedReaction(pick.id, 'like');
   };
 
