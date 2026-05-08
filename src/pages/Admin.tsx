@@ -475,16 +475,14 @@ const Admin = () => {
 
     setIsAiProcessing(true);
     try {
-      // Improved Regex patterns to handle the updated template
-      const leaguePattern = /^(.+?)\s*(?:\(|$)/i; // Matches first line before any parenthesis or end of line
-      const matchPattern = /Match:\s*(.+?)\svs\s*(.+)/i;
-      const dateTimePattern = /Date & Time:\s*(\d{2}\.\d{2}\.\d{4}),\s*(\d{2}:\d{2})/i;
-      const tipPattern = /Betting Tip:\s*(.+)/i;
-      const oddsPattern = /Odds:\s*(\d+\.?\d*)/i;
-      const analysisPattern = /Analysis:\s*([\s\S]+)/i;
+      // Improved Regex patterns to handle both English and Polish templates, and matches with/without prefixes
+      const matchPattern = /(?:Match:\s*)?(.+?)\svs\s*(.+)/i;
+      const dateTimePattern = /(?:Date & Time:|Czas:)\s*(\d{2}\.\d{2}\.\d{4}),?\s*(\d{2}:\d{2})/i;
+      const tipPattern = /(?:Betting Tip:|Typ:)\s*(.+)/i;
+      const oddsPattern = /(?:Odds:|Kurs:)\s*(\d+[.,]?\d*)/i;
+      const analysisPattern = /(?:Analysis:|Analiza:)\s*([\s\S]+)/i;
 
-      const lines = aiText.trim().split('\n');
-      const leagueMatch = lines[0].match(leaguePattern);
+      const lines = aiText.trim().split('\n').map(l => l.trim()).filter(l => l !== "");
       const matchMatch = aiText.match(matchPattern);
       const dateTimeMatch = aiText.match(dateTimePattern);
       const tipMatch = aiText.match(tipPattern);
@@ -492,6 +490,15 @@ const Admin = () => {
       const analysisMatch = aiText.match(analysisPattern);
 
       if (!matchMatch) throw new Error("Could not find Match (Home vs Away)");
+
+      const homeTeam = matchMatch[1].trim();
+      const awayTeam = matchMatch[2].trim();
+
+      // Better league detection: if first line is the match, league is empty
+      let league = "";
+      if (lines.length > 0 && !lines[0].toLowerCase().includes("vs")) {
+        league = lines[0].replace(/\(.*\)/, "").trim();
+      }
 
       let formattedDate = "";
       if (dateTimeMatch) {
@@ -501,12 +508,12 @@ const Admin = () => {
       }
 
       const parsedData = {
-        league: leagueMatch ? leagueMatch[1].trim() : "",
-        homeTeam: matchMatch[1].trim(),
-        awayTeam: matchMatch[2].trim(),
+        league: league,
+        homeTeam: homeTeam,
+        awayTeam: awayTeam,
         kickoff: formattedDate,
         prediction: tipMatch ? tipMatch[1].trim() : "",
-        odds: oddsMatch ? oddsMatch[1].trim() : "",
+        odds: oddsMatch ? oddsMatch[1].trim().replace(',', '.') : "",
         description: analysisMatch ? analysisMatch[1].trim() : "",
       };
 
