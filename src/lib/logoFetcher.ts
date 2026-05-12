@@ -28,23 +28,42 @@ const scoreTeamMatch = (team: any, query: string) => {
 };
 
 const fetchWikipediaLogo = async (teamName: string): Promise<string | null> => {
+  const baseClean = teamName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
   const searchTerms = [
     teamName,
+    baseClean,
     `${teamName} FC`,
     `${teamName} CF`,
     `${teamName} SC`,
     `${teamName} SK`,
+    `${teamName} IK`,
+    `${teamName} IF`,
+    `${teamName} BK`,
     `${teamName} JK`,
+    `${teamName} AK`,
+    `${teamName} AC`,
+    `${teamName} AS`,
+    `${teamName} RC`,
+    `${teamName} SD`,
     `${teamName} football`,
     `${teamName} (football club)`,
+    `${baseClean} Fotboll`,
+    `${baseClean} Fotball`,
+    `${baseClean} football club`,
     `${teamName} -`,
-    teamName.replace(/[^a-zA-Z0-9\s]/g, '').trim()
+    `AIK Fotboll`,
+    `IFK ${teamName}`,
+    `FC ${teamName}`,
+    `SC ${teamName}`,
   ];
 
+  const seen = new Set();
+  
   for (const term of searchTerms) {
     try {
       const cleanTerm = term.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-      if (!cleanTerm || cleanTerm.length < 3) continue;
+      if (!cleanTerm || cleanTerm.length < 3 || seen.has(cleanTerm)) continue;
+      seen.add(cleanTerm);
       
       const wikiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cleanTerm)}`;
       const wikiRes = await fetch(wikiUrl);
@@ -60,16 +79,19 @@ const fetchWikipediaLogo = async (teamName: string): Promise<string | null> => {
           description.includes("soccer") ||
           description.includes("sports") ||
           description.includes("association") ||
+          description.includes("vereins") ||
+          description.includes("sport") ||
           title.includes("f.c") ||
           title.includes("fc") ||
           title.includes("s.c") ||
           title.includes("a.c") ||
+          title.includes("ifk") ||
+          title.includes("aik") ||
           description.includes("società") ||
-          description.includes("vereins") ||
-          description.includes("sport");
+          description.includes("sulf");
 
         if (wikiData.thumbnail?.source && isSportsTeam && !wikiData.title.includes("disambiguation")) {
-          console.log(`[LogoFetcher] Found Wikipedia logo for "${term}"`);
+          console.log(`[LogoFetcher] Found Wikipedia logo for "${term}" -> ${wikiData.title}`);
           return wikiData.thumbnail.source;
         }
       }
@@ -82,20 +104,39 @@ const fetchWikipediaLogo = async (teamName: string): Promise<string | null> => {
 };
 
 const fetchSportsDBWithVariations = async (teamName: string): Promise<string | null> => {
+  const baseClean = teamName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
   const variations = [
     teamName,
+    baseClean,
     `${teamName} FC`,
     `${teamName} CF`,
     `${teamName} SC`,
     `${teamName} SK`,
+    `${teamName} IK`,
+    `${teamName} IF`,
+    `${teamName} BK`,
+    `${teamName} JK`,
+    `${teamName} AK`,
     `${teamName} AC`,
     `${teamName} AS`,
     `${teamName} RC`,
-    `${teamName} SC`,
-    teamName.replace(/[^a-zA-Z0-9\s]/g, '').trim()
+    `${teamName} SD`,
+    `${baseClean} Fotboll`,
+    `${baseClean} Fotball`,
+    `AIK Fotboll`,
+    `IFK ${teamName}`,
+    `FC ${teamName}`,
+    `SC ${teamName}`,
+    `IK ${baseClean}`,
+    `BK ${baseClean}`,
   ];
 
+  const seen = new Set();
+  
   for (const variation of variations) {
+    if (seen.has(variation)) continue;
+    seen.add(variation);
+    
     try {
       const res = await fetch(
         `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(variation)}`
@@ -177,17 +218,43 @@ const fetchApiFootballLogo = async (teamName: string): Promise<string | null> =>
   return null;
 };
 
+const fetchSofaScoreLogo = async (teamName: string): Promise<string | null> => {
+  try {
+    const cleanName = teamName.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+    const sofascoreUrl = `https://www.sofascore.com/api/v1/static/team/${cleanName}/image`;
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(sofascoreUrl, { 
+      method: 'HEAD', 
+      signal: controller.signal 
+    });
+    clearTimeout(timeoutId);
+    
+    if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.startsWith('image/')) {
+        console.log(`[LogoFetcher] Found SofaScore logo for "${teamName}"`);
+        return sofascoreUrl;
+      }
+    }
+  } catch {
+    // Ignore errors
+  }
+  return null;
+};
+
 export const fetchTeamLogoUrl = async (teamName: string): Promise<string | null> => {
   if (!teamName || teamName.length < 3) return null;
   
   try {
     console.log(`[LogoFetcher] 🚀 Fetching logo for: "${teamName}"`);
     
-    // 1. Try TheSportsDB with multiple variations
+    // 1. Try TheSportsDB with multiple variations (Swedish, Swiss, etc.)
     let logo = await fetchSportsDBWithVariations(teamName);
     if (logo) return logo;
     
-    // 2. Try Wikipedia
+    // 2. Try Wikipedia with Swedish/Swiss team variations
     console.log(`[LogoFetcher] Trying Wikipedia for: "${teamName}"`);
     logo = await fetchWikipediaLogo(teamName);
     if (logo) return logo;
@@ -197,7 +264,12 @@ export const fetchTeamLogoUrl = async (teamName: string): Promise<string | null>
     logo = await fetchClearbitLogo(teamName);
     if (logo) return logo;
     
-    // 4. Try API-Football / TheSportsDB lookup
+    // 4. Try SofaScore direct
+    console.log(`[LogoFetcher] Trying SofaScore for: "${teamName}"`);
+    logo = await fetchSofaScoreLogo(teamName);
+    if (logo) return logo;
+    
+    // 5. Try API-Football / TheSportsDB lookup
     console.log(`[LogoFetcher] Trying API-Football lookup for: "${teamName}"`);
     logo = await fetchApiFootballLogo(teamName);
     if (logo) return logo;
