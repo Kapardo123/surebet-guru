@@ -11,6 +11,22 @@ const normalize = (value: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
+// Helper to validate if image URL works
+const checkImageUrl = async (url: string): Promise<boolean> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(url, { 
+      method: 'HEAD', 
+      signal: controller.signal 
+    });
+    clearTimeout(timeoutId);
+    return res.ok && res.headers.get('content-type')?.startsWith('image/') === true;
+  } catch {
+    return false;
+  }
+};
+
 export const useTeamLogo = (teamName: string) => {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,7 +43,7 @@ export const useTeamLogo = (teamName: string) => {
       setLoading(true);
       
       try {
-        // 1. Check local DB cache first
+        // 1. Check local DB cache first, but validate the URL!
         const { data: cacheData } = await supabase
           .from('team_logos_cache')
           .select('logo_url')
@@ -35,82 +51,32 @@ export const useTeamLogo = (teamName: string) => {
           .maybeSingle();
 
         if (cacheData?.logo_url) {
-          console.log(`[useTeamLogo] ✅ Found in Cache: ${teamName}`);
-          setLogoUrl(cacheData.logo_url);
-          setLoading(false);
-          return;
-        }
-
-        let foundLogo = null;
-
-        // 2. Try TheSportsDB (via logoFetcher) - Much more accurate for sports
-        console.log(`[useTeamLogo] 🔍 Trying TheSportsDB for: ${teamName}`);
-        foundLogo = await fetchTeamLogoUrl(teamName);
-        
-        if (foundLogo) {
-          console.log(`[useTeamLogo] ⭐ Found on TheSportsDB!`);
-        }
-
-        // 3. Try SofaScore direct image API - Highly reliable for teams from SofaScore
-        if (!foundLogo) {
-          console.log(`[useTeamLogo] 🔍 Trying SofaScore direct API for: ${teamName}`);
-          // We need the team ID for this. We can try to get it from our recent search cache
-          // or by searching SofaScore via proxy if we had a search endpoint.
-          // For now, let's try a common fallback: Wikipedia with better search terms
-        }
-
-        // 4. Try Wikipedia API (Wikimedia) - Fallback
-        if (!foundLogo) {
-          console.log(`[useTeamLogo] 🔍 Trying Wikipedia for: ${teamName}`);
-          const searchTerms = [
-            teamName,
-            `${teamName} FC`,
-            `${teamName} football`,
-            `${teamName} (football club)`,
-            `${teamName} SK`,
-            `${teamName} JK`
-          ];
-
-          for (const term of searchTerms) {
-            const wikiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term.replace(/\s+/g, '_'))}`;
-            const wikiRes = await fetch(wikiUrl);
-            if (wikiRes.ok) {
-              const wikiData = await wikiRes.json();
-              
-              const description = (wikiData.description || "").toLowerCase();
-              const title = (wikiData.title || "").toLowerCase();
-              const isSportsTeam = 
-                description.includes("club") || 
-                description.includes("team") || 
-                description.includes("football") || 
-                description.includes("soccer") ||
-                description.includes("sports") ||
-                description.includes("association") ||
-                title.includes("f.c") ||
-                title.includes("fc");
-
-              if (wikiData.thumbnail?.source && isSportsTeam && !wikiData.title.includes("disambiguation")) {
-                foundLogo = wikiData.thumbnail.source;
-                console.log(`[useTeamLogo] ⭐ Found on Wikipedia with term: ${term}`);
-                break;
-              }
-            }
+          // Validate cached URL first
+          const isValid = await checkImageUrl(cacheData.logo_url);
+          if (isValid) {
+            console.log(`[useTeamLogo] ✅ Found and validated in Cache: ${teamName}`);
+            setLogoUrl(cacheData.logo_url);
+            setLoading(false);
+            return;
+          } else {
+            console.log(`[useTeamLogo] ❌ Cached URL invalid, re-fetching: ${teamName}`);
+            // Remove invalid entry from cache
+            await supabase.from('team_logos_cache').delete().eq('team_name', teamName);
           }
         }
 
-        // 5. Fallback: Try DuckDuckGo / Google Favicon service as a last resort for logos
-        if (!foundLogo) {
-          console.log(`[useTeamLogo] 🔍 Trying Favicon fallback for: ${teamName}`);
-          foundLogo = `https://icons.duckduckgo.com/ip3/${normalize(teamName).replace(/\s+/g, '')}.com.ico`;
-          // We don't verify this one, just use it as a last-last resort
+        // 2. Try logoFetcher (TheSportsDB + Wikipedia)
+        console.log(`[useTeamLogo] 🔍 Trying logoFetcher for: ${teamName}`);
+        const foundLogo = await fetchTeamLogoUrl(teamName);
+        
+        // 3. Save to cache if we found something valid
+        if (foundLogo) {
+          await supabase.from('team_logos_cache').upsert({
+            team_name: teamName,
+            logo_url: foundLogo, 
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'team_name' });
         }
-
-        // 5. Save to DB cache
-        await supabase.from('team_logos_cache').upsert({
-          team_name: teamName,
-          logo_url: foundLogo || "", 
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'team_name' });
 
         setLogoUrl(foundLogo);
       } catch (err) {
