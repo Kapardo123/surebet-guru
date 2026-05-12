@@ -475,15 +475,17 @@ const Admin = () => {
 
     setIsAiProcessing(true);
     try {
-      // Improved Regex patterns to handle both English and Polish templates, and matches with/without prefixes
+      // Regex patterns to handle ALL variations of labels
       const matchPattern = /(?:Match:\s*)?(.+?)\svs\s*(.+)/i;
-      const dateTimePattern = /(?:Date & Time:|Czas:)\s*(\d{2}\.\d{2}\.\d{4}),?\s*(\d{2}:\d{2})/i;
-      const tipPattern = /(?:Betting Tip:|Typ:)\s*(.+)/i;
-      const oddsPattern = /(?:Odds:|Kurs:)\s*(\d+[.,]?\d*)/i;
+      const leaguePattern = /(?:Competition:|League:|Liga:)\s*(.+)/i;
+      const dateTimePattern = /(?:Date & Time:|Czas:|Kickoff:)\s*(\d{2}\.\d{2}\.\d{4}),?\s*(\d{2}:\d{2})/i;
+      const tipPattern = /(?:Betting Tip:|Typ:|Suggested Pick:|Pick:)\s*(.+)/i;
+      const oddsPattern = /(?:Odds:|Kurs:|Estimated Odds:)\s*(\d+[.,]?\d*)/i;
       const analysisPattern = /(?:Analysis:|Analiza:)\s*([\s\S]+)/i;
 
       const lines = aiText.trim().split('\n').map(l => l.trim()).filter(l => l !== "");
       const matchMatch = aiText.match(matchPattern);
+      const leagueMatch = aiText.match(leaguePattern);
       const dateTimeMatch = aiText.match(dateTimePattern);
       const tipMatch = aiText.match(tipPattern);
       const oddsMatch = aiText.match(oddsPattern);
@@ -494,9 +496,10 @@ const Admin = () => {
       const homeTeam = matchMatch[1].trim();
       const awayTeam = matchMatch[2].trim();
 
-      // Better league detection: if first line is the match, league is empty
       let league = "";
-      if (lines.length > 0 && !lines[0].toLowerCase().includes("vs")) {
+      if (leagueMatch) {
+        league = leagueMatch[1].trim();
+      } else if (lines.length > 0 && !lines[0].toLowerCase().includes("vs")) {
         league = lines[0].replace(/\(.*\)/, "").trim();
       }
 
