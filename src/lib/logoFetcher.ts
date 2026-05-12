@@ -51,10 +51,6 @@ const fetchWikipediaLogo = async (teamName: string): Promise<string | null> => {
     `${baseClean} Fotball`,
     `${baseClean} football club`,
     `${teamName} -`,
-    `AIK Fotboll`,
-    `IFK ${teamName}`,
-    `FC ${teamName}`,
-    `SC ${teamName}`,
   ];
 
   const seen = new Set();
@@ -85,8 +81,6 @@ const fetchWikipediaLogo = async (teamName: string): Promise<string | null> => {
           title.includes("fc") ||
           title.includes("s.c") ||
           title.includes("a.c") ||
-          title.includes("ifk") ||
-          title.includes("aik") ||
           description.includes("società") ||
           description.includes("sulf");
 
@@ -123,10 +117,6 @@ const fetchSportsDBWithVariations = async (teamName: string): Promise<string | n
     `${teamName} SD`,
     `${baseClean} Fotboll`,
     `${baseClean} Fotball`,
-    `AIK Fotboll`,
-    `IFK ${teamName}`,
-    `FC ${teamName}`,
-    `SC ${teamName}`,
     `IK ${baseClean}`,
     `BK ${baseClean}`,
   ];
