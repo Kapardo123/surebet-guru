@@ -29,6 +29,18 @@ const scoreTeamMatch = (team: any, query: string) => {
 
 const fetchWikipediaLogo = async (teamName: string): Promise<string | null> => {
   const baseClean = teamName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+  
+  const citySuffixes = ['Stockholm', 'Warsaw', 'Warszawa', 'Berlin', 'Munich', 'München', 'London', 'Paris', 'Madrid', 'Barcelona', 'Rome', 'Roma', 'Milan', 'Milano', 'Vienna', 'Wien', 'Zurich', 'Zürich', 'Basel', 'Bern', 'Oslo', 'Copenhagen', 'København', 'Helsinki', 'Amsterdam', 'Brussels', 'Bruxelles', 'Lisbon', 'Lisboa', 'Porto', 'Dublin', 'Prague', 'Praha', 'Budapest', 'Belgrade', 'Beograd', 'Sofia', 'Bucharest', 'București', 'Athens', 'Athina', 'Lisbon', 'Stockholm', 'Gothenburg', 'Göteborg', 'Malmo', 'Malmö', 'Copenhagen', 'Aarhus', 'Trondheim', 'Bergen', 'Stavanger', 'Reykjavik', 'Reykjavík', 'Tallinn', 'Riga', 'Vilnius', 'Tartu', 'Kaunas', 'Liepaja', 'Daugavpils'];
+  
+  let shortName = baseClean;
+  for (const city of citySuffixes) {
+    const pattern = new RegExp(`\\s+${city}$`, 'i');
+    if (baseClean.match(pattern)) {
+      shortName = baseClean.replace(pattern, '').trim();
+      break;
+    }
+  }
+  
   const searchTerms = [
     teamName,
     `${teamName} FC`,
@@ -63,6 +75,14 @@ const fetchWikipediaLogo = async (teamName: string): Promise<string | null> => {
     `CF ${baseClean}`,
     `AC ${baseClean}`,
     `AS ${baseClean}`,
+    shortName,
+    `${shortName} FC`,
+    `${shortName} Fotboll`,
+    `${shortName} Fotball`,
+    `${shortName} football`,
+    `FC ${shortName}`,
+    `IK ${shortName}`,
+    `IF ${shortName}`,
   ];
 
   const seen = new Set();
@@ -120,6 +140,18 @@ const fetchWikipediaLogo = async (teamName: string): Promise<string | null> => {
 
 const fetchSportsDBWithVariations = async (teamName: string): Promise<string | null> => {
   const baseClean = teamName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+  
+  const citySuffixes = ['Stockholm', 'Warsaw', 'Warszawa', 'Berlin', 'Munich', 'München', 'London', 'Paris', 'Madrid', 'Barcelona', 'Rome', 'Roma', 'Milan', 'Milano', 'Vienna', 'Wien', 'Zurich', 'Zürich', 'Basel', 'Bern', 'Oslo', 'Copenhagen', 'København', 'Helsinki', 'Amsterdam', 'Brussels', 'Bruxelles', 'Lisbon', 'Lisboa', 'Porto', 'Dublin', 'Prague', 'Praha', 'Budapest', 'Belgrade', 'Beograd', 'Sofia', 'Bucharest', 'București', 'Athens', 'Athina', 'Lisbon', 'Stockholm', 'Gothenburg', 'Göteborg', 'Malmo', 'Malmö', 'Copenhagen', 'Aarhus', 'Trondheim', 'Bergen', 'Stavanger', 'Reykjavik', 'Reykjavík', 'Tallinn', 'Riga', 'Vilnius', 'Tartu', 'Kaunas', 'Liepaja', 'Daugavpils'];
+  
+  let shortName = baseClean;
+  for (const city of citySuffixes) {
+    const pattern = new RegExp(`\\s+${city}$`, 'i');
+    if (baseClean.match(pattern)) {
+      shortName = baseClean.replace(pattern, '').trim();
+      break;
+    }
+  }
+  
   const variations = [
     teamName,
     `${teamName} FC`,
@@ -137,6 +169,13 @@ const fetchSportsDBWithVariations = async (teamName: string): Promise<string | n
     `${baseClean} AC`,
     `${baseClean} AS`,
     `${baseClean} RC`,
+    shortName,
+    `${shortName} FC`,
+    `${shortName} Fotboll`,
+    `${shortName} Fotball`,
+    `FC ${shortName}`,
+    `IK ${shortName}`,
+    `IF ${shortName}`,
     `${baseClean} SD`,
     `${baseClean} Fotboll`,
     `${baseClean} Fotball`,
