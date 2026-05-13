@@ -13,15 +13,15 @@ const scoreTeamMatch = (team: any, query: string) => {
   
   if (names.some((name) => name === normalizedQuery)) {
     score = 200;
+  } else if (names.some((name) => name.includes(normalizedQuery) && normalizedQuery.length >= 4)) {
+    const matchLength = normalizedQuery.length;
+    const teamNameLength = Math.max(...names.map(n => n.length));
+    score = Math.round(100 + (matchLength / teamNameLength) * 50);
   } else if (team?.strKeywords) {
     const keywords = team.strKeywords.toLowerCase().split(',').map(k => k.trim());
     if (keywords.includes(normalizedQuery)) {
-      score = 150;
+      score = 100;
     }
-  } else if (names.some((name) => name.startsWith(normalizedQuery))) {
-    score = 100;
-  } else if (names.some((name) => name.includes(normalizedQuery)) && normalizedQuery.length >= 4) {
-    score = 60;
   }
   
   return score;
@@ -31,6 +31,11 @@ const fetchWikipediaLogo = async (teamName: string): Promise<string | null> => {
   const baseClean = teamName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
   const searchTerms = [
     teamName,
+    `${teamName} FC`,
+    `${teamName} football`,
+    `${teamName} (football club)`,
+    `${teamName} -`,
+    `FC ${teamName}`,
     baseClean,
     `${baseClean} FC`,
     `${baseClean} CF`,
@@ -50,7 +55,6 @@ const fetchWikipediaLogo = async (teamName: string): Promise<string | null> => {
     `${baseClean} Fotboll`,
     `${baseClean} Fotball`,
     `${baseClean} football club`,
-    `${teamName} -`,
     `FC ${baseClean}`,
     `IK ${baseClean}`,
     `IF ${baseClean}`,
@@ -65,7 +69,7 @@ const fetchWikipediaLogo = async (teamName: string): Promise<string | null> => {
   
   for (const term of searchTerms) {
     try {
-      const cleanTerm = term.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+      const cleanTerm = term.replace(/\s+/g, '_');
       if (!cleanTerm || cleanTerm.length < 3 || seen.has(cleanTerm)) continue;
       seen.add(cleanTerm);
       
@@ -76,6 +80,14 @@ const fetchWikipediaLogo = async (teamName: string): Promise<string | null> => {
         
         const description = (wikiData.description || "").toLowerCase();
         const title = (wikiData.title || "").toLowerCase();
+        const pageTitle = title;
+        
+        const normalizedTeam = normalize(teamName);
+        const normalizedPageTitle = normalize(pageTitle);
+        
+        const titleMatches = normalizedPageTitle.includes(normalizedTeam) || 
+                            normalizedTeam.includes(normalizedPageTitle);
+        
         const isSportsTeam = 
           description.includes("club") || 
           description.includes("team") || 
@@ -90,9 +102,10 @@ const fetchWikipediaLogo = async (teamName: string): Promise<string | null> => {
           title.includes("s.c") ||
           title.includes("a.c") ||
           description.includes("società") ||
-          description.includes("sulf");
+          description.includes("sulf") ||
+          description.includes("futbol");
 
-        if (wikiData.thumbnail?.source && isSportsTeam && !wikiData.title.includes("disambiguation")) {
+        if (wikiData.thumbnail?.source && isSportsTeam && !wikiData.title.includes("disambiguation") && titleMatches) {
           console.log(`[LogoFetcher] Found Wikipedia logo for "${term}" -> ${wikiData.title}`);
           return wikiData.thumbnail.source;
         }
@@ -109,6 +122,8 @@ const fetchSportsDBWithVariations = async (teamName: string): Promise<string | n
   const baseClean = teamName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
   const variations = [
     teamName,
+    `${teamName} FC`,
+    `FC ${teamName}`,
     baseClean,
     `${baseClean} FC`,
     `${baseClean} CF`,
@@ -153,7 +168,7 @@ const fetchSportsDBWithVariations = async (teamName: string): Promise<string | n
           .map((team: any) => ({ team, score: scoreTeamMatch(team, teamName) }))
           .sort((a: any, b: any) => b.score - a.score)[0];
         
-        if (best?.score >= 60 && best.team?.strBadge) {
+        if (best?.score >= 100 && best.team?.strBadge) {
           console.log(`[LogoFetcher] Found in TheSportsDB with variation "${variation}":`, best.team.strTeam);
           return best.team.strBadge;
         }
@@ -205,7 +220,7 @@ const fetchApiFootballLogo = async (teamName: string): Promise<string | null> =>
         .map((team: any) => ({ team, score: scoreTeamMatch(team, teamName) }))
         .sort((a: any, b: any) => b.score - a.score)[0];
       
-      if (best?.score >= 60 && best.team?.idTeam) {
+      if (best?.score >= 100 && best.team?.idTeam) {
         const logoRes = await fetch(
           `https://www.thesportsdb.com/api/v1/json/3/lookupteam.php?id=${best.team.idTeam}`
         );
@@ -254,23 +269,24 @@ export const fetchTeamLogoUrl = async (teamName: string): Promise<string | null>
   try {
     console.log(`[LogoFetcher] 🚀 Fetching logo for: "${teamName}"`);
     
-    // 1. Try TheSportsDB with multiple variations (Swedish, Swiss, etc.)
-    let logo = await fetchSportsDBWithVariations(teamName);
-    if (logo) return logo;
-    
-    // 2. Try Wikipedia with Swedish/Swiss team variations
+    // 1. Try Wikipedia FIRST (better accuracy for teams with special characters)
     console.log(`[LogoFetcher] Trying Wikipedia for: "${teamName}"`);
-    logo = await fetchWikipediaLogo(teamName);
+    let logo = await fetchWikipediaLogo(teamName);
     if (logo) return logo;
     
-    // 3. Try Clearbit
-    console.log(`[LogoFetcher] Trying Clearbit for: "${teamName}"`);
-    logo = await fetchClearbitLogo(teamName);
+    // 2. Try TheSportsDB with multiple variations
+    console.log(`[LogoFetcher] Trying TheSportsDB for: "${teamName}"`);
+    logo = await fetchSportsDBWithVariations(teamName);
     if (logo) return logo;
     
-    // 4. Try SofaScore direct
+    // 3. Try SofaScore direct
     console.log(`[LogoFetcher] Trying SofaScore for: "${teamName}"`);
     logo = await fetchSofaScoreLogo(teamName);
+    if (logo) return logo;
+    
+    // 4. Try Clearbit
+    console.log(`[LogoFetcher] Trying Clearbit for: "${teamName}"`);
+    logo = await fetchClearbitLogo(teamName);
     if (logo) return logo;
     
     // 5. Try API-Football / TheSportsDB lookup
