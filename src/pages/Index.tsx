@@ -23,6 +23,8 @@ const Index = () => {
   const [tips, setTips] = useState<Tip[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [activeTab, setActiveTab] = useState("tips");
+  const [tips, setTips] = useState<Tip[]>([]);
+  const [recentWins, setRecentWins] = useState<Tip[]>([]);
   const { active: isPremium, daysLeft: premiumDaysLeft, loading: premiumLoading } = usePremiumStatus();
   const { user, signOut } = useAuth();
 
@@ -31,7 +33,11 @@ const Index = () => {
       const loadedTips = await loadTips();
       const loadedCoupons = await loadCoupons();
       
-      setTips(loadedTips);
+      const activeTips = loadedTips.filter(tip => tip.status === 'upcoming');
+      const wonTips = loadedTips.filter(tip => tip.status === 'won');
+      
+      setTips(activeTips);
+      setRecentWins(wonTips);
       setCoupons(loadedCoupons);
     };
     
@@ -79,9 +85,9 @@ const Index = () => {
       </header>
 
       <main className="container max-w-5xl mx-auto px-4 py-6 md:py-8 space-y-8 md:space-y-10">
-        {tips.length > 0 && (
+        {recentWins.length > 0 && (
           <ScrollReveal>
-            <RecentWins tips={tips} />
+            <RecentWins tips={recentWins} />
           </ScrollReveal>
         )}
 
