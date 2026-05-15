@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import HeroSection from "@/components/HeroSection";
 import PageTransition from "@/components/PageTransition";
 import TipCard from "@/components/TipCard";
 import CouponCard from "@/components/CouponCard";
@@ -7,7 +6,6 @@ import RecentWins from "@/components/RecentWins";
 import TodayHotTip from "@/components/TodayHotTip";
 import BottomNav from "@/components/BottomNav";
 import { loadTips } from "@/lib/tipsStorage";
-import { loadFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
 import { loadCoupons, Coupon } from "@/lib/couponStorage";
 import { Tip } from "@/components/TipCard";
 import { Settings, Crown, TrendingUp, Receipt, LogIn, LogOut, Gift } from "lucide-react";
@@ -24,7 +22,6 @@ import { useAuth } from "@/contexts/AuthContext";
 const Index = () => {
   const [tips, setTips] = useState<Tip[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [featuredPick, setFeaturedPick] = useState<FeaturedPick | undefined>();
   const [activeTab, setActiveTab] = useState("tips");
   const { active: isPremium, daysLeft: premiumDaysLeft, loading: premiumLoading } = usePremiumStatus();
   const { user, signOut } = useAuth();
@@ -33,13 +30,9 @@ const Index = () => {
     const fetchData = async () => {
       const loadedTips = await loadTips();
       const loadedCoupons = await loadCoupons();
-      const loadedFeatured = await loadFeaturedPick();
       
       setTips(loadedTips);
       setCoupons(loadedCoupons);
-      if (loadedFeatured) {
-        setFeaturedPick(loadedFeatured);
-      }
     };
     
     fetchData();
@@ -86,20 +79,6 @@ const Index = () => {
       </header>
 
       <main className="container max-w-5xl mx-auto px-4 py-6 md:py-8 space-y-8 md:space-y-10">
-        <ScrollReveal>
-          {featuredPick ? (
-            <HeroSection key={featuredPick.id} pick={featuredPick} />
-          ) : (
-            <HeroSection />
-          )}
-        </ScrollReveal>
-
-        {tips.length > 0 && (
-          <ScrollReveal>
-            <RecentWins tips={tips} />
-          </ScrollReveal>
-        )}
-
         <ScrollReveal>
           <TodayHotTip />
         </ScrollReveal>
