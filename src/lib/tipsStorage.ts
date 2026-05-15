@@ -21,22 +21,24 @@ const setCachedTips = (tips: Tip[]) => {
   } catch (e) {}
 };
 
-export const loadTips = async (): Promise<Tip[]> => {
-  // Return cached data first for instant UI
+export const loadTips = async (publishedOnly: boolean = true): Promise<Tip[]> => {
   const cached = getCachedTips();
   
-  // Return cached immediately if we have it, then fetch in background
-  // but for simplicity we'll just handle the fetch
-  
-  const { data, error } = await supabase
+  let query = supabase
     .from('tips')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(50);
+
+  if (publishedOnly) {
+    query = query.eq('is_published', true);
+  }
+  
+  const { data, error } = await query;
   
   if (error) {
     console.error("Error loading tips:", error);
-    return cached; // Return cached on error
+    return cached;
   }
 
   const tips = (data || []).map((tip: any) => ({
@@ -54,13 +56,97 @@ export const loadTips = async (): Promise<Tip[]> => {
     awayTeamLogo: tip.away_team_logo || null,
     description: tip.description || null,
     likesCount: tip.likes_count || 0,
+    isPublished: tip.is_published ?? true,
   }));
 
-  setCachedTips(tips);
+  if (publishedOnly) {
+    setCachedTips(tips);
+  }
   return tips;
 };
 
-export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
+export const loadAllTips = async (): Promise<Tip[]> => {
+  return loadTips(false);
+};
+
+export const loadDraftTips = async (): Promise<Tip[]> => {
+  const { data, error } = await supabase
+    .from('tips')
+    .select('*')
+    .eq('is_published', false)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error("Error loading draft tips:", error);
+    return [];
+  }
+
+  return (data || []).map((tip: any) => ({
+    id: tip.id,
+    sport: tip.sport,
+    league: tip.league,
+    homeTeam: tip.home_team,
+    awayTeam: tip.away_team,
+    prediction: tip.prediction,
+    odds: Number(tip.odds),
+    kickoff: tip.kickoff,
+    status: isTipStatus(tip.status) ? tip.status : "upcoming",
+    isPremium: tip.is_premium ?? undefined,
+    homeTeamLogo: tip.home_team_logo || null,
+    awayTeamLogo: tip.away_team_logo || null,
+    description: tip.description || null,
+    likesCount: tip.likes_count || 0,
+    isPublished: false,
+  }));
+};
+
+export const publishAllDrafts = async (): Promise<number> => {
+  const { data, error } = await supabase
+    .from('tips')
+    .update({ is_published: true })
+    .eq('is_published', false)
+    .select('id');
+
+  if (error) {
+    console.error("Error publishing drafts:", error);
+    return 0;
+  }
+
+  localStorage.removeItem(TIPS_CACHE_KEY);
+  return data?.length || 0;
+};
+
+export const publishTipById = async (id: number): Promise<boolean> => {
+  const { error } = await supabase
+    .from('tips')
+    .update({ is_published: true })
+    .eq('id', id);
+
+  if (error) {
+    console.error("Error publishing tip:", error);
+    return false;
+  }
+
+  localStorage.removeItem(TIPS_CACHE_KEY);
+  return true;
+};
+
+export const unpublishTipById = async (id: number): Promise<boolean> => {
+  const { error } = await supabase
+    .from('tips')
+    .update({ is_published: false })
+    .eq('id', id);
+
+  if (error) {
+    console.error("Error unpublishing tip:", error);
+    return false;
+  }
+
+  localStorage.removeItem(TIPS_CACHE_KEY);
+  return true;
+};
+
+export const addTip = async (tip: Omit<Tip, "id"> & { isPublished?: boolean }): Promise<Tip | null> => {
   const { data, error } = await (supabase as any)
     .from('tips')
     .insert([{
@@ -73,6 +159,7 @@ export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
       kickoff: tip.kickoff,
       status: tip.status,
       is_premium: tip.isPremium,
+      is_published: tip.isPublished !== undefined ? tip.isPublished : true,
       home_team_logo: tip.homeTeamLogo,
       away_team_logo: tip.awayTeamLogo,
       description: tip.description,
@@ -102,7 +189,8 @@ export const addTip = async (tip: Omit<Tip, "id">): Promise<Tip | null> => {
     homeTeamLogo: record.home_team_logo,
     awayTeamLogo: record.away_team_logo,
     description: record.description,
-    likesCount: record.likes_count || 0
+    likesCount: record.likes_count || 0,
+    isPublished: record.is_published ?? true,
   };
 };
 
@@ -115,7 +203,7 @@ export const deleteTip = async (id: number) => {
   if (error) console.error("Error deleting tip:", error);
 };
 
-export const updateTip = async (updatedTip: Tip) => {
+export const updateTip = async (updatedTip: Tip & { isPublished?: boolean }) => {
   const { error } = await (supabase as any)
     .from('tips')
     .update({
@@ -128,6 +216,7 @@ export const updateTip = async (updatedTip: Tip) => {
       kickoff: updatedTip.kickoff,
       status: updatedTip.status,
       is_premium: updatedTip.isPremium,
+      is_published: updatedTip.isPublished !== undefined ? updatedTip.isPublished : true,
       home_team_logo: updatedTip.homeTeamLogo,
       away_team_logo: updatedTip.awayTeamLogo,
       description: updatedTip.description,
@@ -141,14 +230,12 @@ export const updateTip = async (updatedTip: Tip) => {
 export const incrementReaction = async (tipId: number, type: 'like') => {
   const column = 'likes_count';
   
-  // Use RPC for atomic increment to avoid race conditions
   const { error } = await supabase.rpc('increment_tip_reaction', {
     tip_id: tipId,
     reaction_type: column
   });
 
   if (error) {
-    // Fallback if RPC doesn't exist yet
     console.warn("RPC increment_tip_reaction failed, trying manual update:", error);
     const { data } = await supabase.from('tips').select(column).eq('id', tipId).single();
     if (data) {

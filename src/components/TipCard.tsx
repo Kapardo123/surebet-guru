@@ -17,6 +17,7 @@ export interface Tip {
   kickoff: string;
   status: "upcoming" | "won" | "lost" | "draw";
   isPremium?: boolean;
+  isPublished?: boolean;
   homeTeamLogo?: string | null;
   awayTeamLogo?: string | null;
   description?: string | null;

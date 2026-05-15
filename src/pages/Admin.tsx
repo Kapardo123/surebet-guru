@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { addTip, loadTips, deleteTip, updateTip } from "@/lib/tipsStorage";
+import { addTip, loadTips, deleteTip, updateTip, loadDraftTips, publishAllDrafts, publishTipById, unpublishTipById } from "@/lib/tipsStorage";
 import { addCoupon, loadCoupons, deleteCoupon, updateCoupon, calculateTotalOdds, CouponMatch, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, saveFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
 import { fetchTeamLogoUrl } from "@/lib/logoFetcher";
@@ -42,11 +42,13 @@ import UpcomingMatchesList from "@/components/UpcomingMatchesList";
 import Logo from "@/components/Logo";
 import { fetchMatchesByDate, fetchTeamForm } from "@/lib/sportApi";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, ClipboardPaste, Search, PlusCircle, Pencil, Zap, Users, Bell, X, Crown, Trash2, List, BarChart3, Save, Plus, Receipt } from "lucide-react";
+import { Sparkles, ClipboardPaste, Search, PlusCircle, Pencil, Zap, Users, Bell, X, Crown, Trash2, List, BarChart3, Save, Plus, Receipt, Send, Clock, EyeOff } from "lucide-react";
 
 const Admin = () => {
   const { toast } = useToast();
   const [tips, setTips] = useState<Tip[]>([]);
+  const [draftTips, setDraftTips] = useState<Tip[]>([]);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [featured, setFeatured] = useState<FeaturedPick>({
     league: "", kickoff: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", confidence: "High", status: "upcoming"
@@ -58,10 +60,12 @@ const Admin = () => {
 
   const refreshData = async () => {
     const loadedTips = await loadTips();
+    const loadedDrafts = await loadDraftTips();
     const loadedCoupons = await loadCoupons();
     const loadedFeatured = await loadFeaturedPick();
     
     setTips(loadedTips);
+    setDraftTips(loadedDrafts);
     setCoupons(loadedCoupons);
     if (loadedFeatured) {
       setFeatured(loadedFeatured);
@@ -266,7 +270,7 @@ const Admin = () => {
 
   const resetTipForm = () => {
     setEditingTipId(null);
-    setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, description: "", homeTeamLogo: null, awayTeamLogo: null, likesCount: 0 });
+    setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, isPublished: true, description: "", homeTeamLogo: null, awayTeamLogo: null, likesCount: 0 });
   };
 
   const resetCouponForm = () => {
@@ -332,6 +336,7 @@ const Admin = () => {
         kickoff: kickoffISO,
         status: form.status,
         isPremium: form.isPremium,
+        isPublished: form.isPublished,
         homeTeamLogo: form.homeTeamLogo,
         awayTeamLogo: form.awayTeamLogo,
         description: form.description,
@@ -351,7 +356,7 @@ const Admin = () => {
       
       await refreshData();
       resetTipForm();
-      toast({ title: "Tip added! ✅" });
+      toast({ title: form.isPublished ? "Tip published! ✅" : "Tip saved as draft 📝" });
     }
   };
 
@@ -367,6 +372,7 @@ const Admin = () => {
       kickoff: tip.kickoff,
       status: tip.status,
       isPremium: tip.isPremium || false,
+      isPublished: tip.isPublished ?? true,
       description: tip.description || "",
       homeTeamLogo: tip.homeTeamLogo || null,
       awayTeamLogo: tip.awayTeamLogo || null,
@@ -379,6 +385,39 @@ const Admin = () => {
     await deleteTip(id);
     await refreshData();
     toast({ title: "Tip removed" });
+  };
+
+  const handlePublishAllDrafts = async () => {
+    setIsPublishing(true);
+    try {
+      const count = await publishAllDrafts();
+      toast({ title: `Published ${count} drafts! 🚀` });
+      await refreshData();
+    } catch (error: any) {
+      toast({ title: "Error publishing", description: error.message, variant: "destructive" });
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const handlePublishTip = async (id: number) => {
+    try {
+      await publishTipById(id);
+      toast({ title: "Tip published! ✅" });
+      await refreshData();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleUnpublishTip = async (id: number) => {
+    try {
+      await unpublishTipById(id);
+      toast({ title: "Tip unpublished 📝" });
+      await refreshData();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
   };
 
   const handleAddCouponMatch = async () => {
@@ -601,6 +640,7 @@ const Admin = () => {
     kickoff: "",
     status: "upcoming" as Tip["status"],
     isPremium: false,
+    isPublished: true,
     description: "",
     homeTeamLogo: null as string | null,
     awayTeamLogo: null as string | null,
@@ -817,14 +857,22 @@ const Admin = () => {
               </div>
 
               <div className="flex items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Checkbox id="isPremium" checked={form.isPremium} onCheckedChange={(c) => setForm({ ...form, isPremium: c === true })} />
-                  <Label htmlFor="isPremium" className="flex items-center gap-1.5 text-xs font-bold cursor-pointer">
-                    <Crown className="w-3.5 h-3.5 text-accent" /> Premium Tip
-                  </Label>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <Checkbox id="isPremium" checked={form.isPremium} onCheckedChange={(c) => setForm({ ...form, isPremium: c === true })} />
+                    <Label htmlFor="isPremium" className="flex items-center gap-1.5 text-xs font-bold cursor-pointer">
+                      <Crown className="w-3.5 h-3.5 text-accent" /> Premium
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Checkbox id="isDraft" checked={!form.isPublished} onCheckedChange={(c) => setForm({ ...form, isPublished: !(c === true) })} />
+                    <Label htmlFor="isDraft" className="flex items-center gap-1.5 text-xs font-bold cursor-pointer">
+                      <Clock className="w-3.5 h-3.5 text-yellow-500" /> Save as Draft
+                    </Label>
+                  </div>
                 </div>
                 <Button type="submit" className="h-10 px-6 font-display uppercase tracking-widest text-[10px]">
-                  {editingTipId !== null ? "Save Changes" : "Add Tip"}
+                  {editingTipId !== null ? "Save Changes" : form.isPublished ? "Publish Tip" : "Save Draft"}
                 </Button>
               </div>
             </form>
@@ -1038,46 +1086,106 @@ const Admin = () => {
         )}
 
         {activeTab === 'tips' && (
-          <Card className="bg-card border-border/50">
-            <CardContent className="p-4 sm:p-6">
-              <h2 className="font-display text-lg font-bold mb-4 flex items-center gap-2">
-                <List className="w-5 h-5 text-primary" /> All Tips ({tips.length})
-              </h2>
-              <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v)} className="mb-4">
-                <SelectTrigger className="h-8 text-xs w-28"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="upcoming">Upcoming</SelectItem>
-                  <SelectItem value="won">Won</SelectItem>
-                  <SelectItem value="lost">Lost</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                {filteredTips.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">No tips found.</p>}
-                {filteredTips.map((tip) => {
-                  const status = tip.status === 'won' ? 'win' : tip.status === 'lost' ? 'lost' : 'default';
-                  return (
-                    <div key={tip.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-xl hover:bg-muted/40 group">
-                      <div className="flex items-center gap-2">
-                        <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={18} />
-                        <span className="text-[9px] text-muted-foreground">vs</span>
-                        <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={18} />
-                        <div className="ml-2">
-                          <p className="text-xs font-medium">{tip.homeTeam} vs {tip.awayTeam}</p>
-                          <p className="text-[10px] text-muted-foreground">{tip.prediction} @ {tip.odds}</p>
+          <div className="space-y-4">
+            <Card className="bg-card border-border/50">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-display text-lg font-bold flex items-center gap-2">
+                    <List className="w-5 h-5 text-primary" /> Published Tips ({tips.length})
+                  </h2>
+                  {draftTips.length > 0 && (
+                    <Button 
+                      size="sm" 
+                      className="h-8 gap-1.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                      onClick={handlePublishAllDrafts}
+                      disabled={isPublishing}
+                    >
+                      {isPublishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                      Publish All ({draftTips.length})
+                    </Button>
+                  )}
+                </div>
+                <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v)} className="mb-4">
+                  <SelectTrigger className="h-8 text-xs w-28"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="upcoming">Upcoming</SelectItem>
+                    <SelectItem value="won">Won</SelectItem>
+                    <SelectItem value="lost">Lost</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {filteredTips.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">No published tips found.</p>}
+                  {filteredTips.map((tip) => {
+                    const status = tip.status === 'won' ? 'win' : tip.status === 'lost' ? 'lost' : 'default';
+                    return (
+                      <div key={tip.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-xl hover:bg-muted/40 group">
+                        <div className="flex items-center gap-2">
+                          <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={18} />
+                          <span className="text-[9px] text-muted-foreground">vs</span>
+                          <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={18} />
+                          <div className="ml-2">
+                            <p className="text-xs font-medium">{tip.homeTeam} vs {tip.awayTeam}</p>
+                            <p className="text-[10px] text-muted-foreground">{tip.prediction} @ {tip.odds}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={status}>{tip.status}</Badge>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => handleEditTip(tip)}><Pencil className="w-3 h-3" /></Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-loss opacity-0 group-hover:opacity-100" onClick={() => handleDelete(tip.id)}><Trash2 className="w-3 h-3" /></Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-yellow-500 opacity-0 group-hover:opacity-100" onClick={() => handleUnpublishTip(tip.id)} title="Move to drafts"><EyeOff className="w-3 h-3" /></Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={status}>{tip.status}</Badge>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => handleEditTip(tip)}><Pencil className="w-3 h-3" /></Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-loss opacity-0 group-hover:opacity-100" onClick={() => handleDeleteTip(tip.id)}><Trash2 className="w-3 h-3" /></Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {draftTips.length > 0 && (
+              <Card className="bg-card border-yellow-500/30 shadow-md">
+                <CardContent className="p-4 sm:p-6">
+                  <h2 className="font-display text-lg font-bold mb-4 flex items-center gap-2 text-yellow-500">
+                    <Clock className="w-5 h-5" /> Drafts ({draftTips.length})
+                    <span className="text-[10px] font-normal text-muted-foreground ml-auto">Not visible on main screen</span>
+                  </h2>
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                    {draftTips.map((tip) => {
+                      const status = tip.status === 'won' ? 'win' : tip.status === 'lost' ? 'lost' : 'default';
+                      return (
+                        <div key={tip.id} className="flex items-center justify-between p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-xl hover:bg-yellow-500/10 group">
+                          <div className="flex items-center gap-2">
+                            <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={18} />
+                            <span className="text-[9px] text-muted-foreground">vs</span>
+                            <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={18} />
+                            <div className="ml-2">
+                              <p className="text-xs font-medium">{tip.homeTeam} vs {tip.awayTeam}</p>
+                              <p className="text-[10px] text-muted-foreground">{tip.prediction} @ {tip.odds}</p>
+                              <p className="text-[9px] text-yellow-600">{new Date(tip.kickoff).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={status}>{tip.status}</Badge>
+                            <Badge variant="outline" className="text-yellow-600 border-yellow-500/50">Draft</Badge>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => handleEditTip(tip)}><Pencil className="w-3 h-3" /></Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-loss opacity-0 group-hover:opacity-100" onClick={() => handleDelete(tip.id)}><Trash2 className="w-3 h-3" /></Button>
+                            <Button 
+                              size="sm" 
+                              className="h-6 w-6 bg-green-500 hover:bg-green-600 text-white opacity-0 group-hover:opacity-100" 
+                              onClick={() => handlePublishTip(tip.id)}
+                              title="Publish now"
+                            >
+                              <Send className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {/* COUPONS SECTION */}
