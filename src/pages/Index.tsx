@@ -4,6 +4,7 @@ import PageTransition from "@/components/PageTransition";
 import TipCard from "@/components/TipCard";
 import CouponCard from "@/components/CouponCard";
 import RecentWins from "@/components/RecentWins";
+import TodayHotTip from "@/components/TodayHotTip";
 import BottomNav from "@/components/BottomNav";
 import { loadTips } from "@/lib/tipsStorage";
 import { loadFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
@@ -98,6 +99,10 @@ const Index = () => {
             <RecentWins tips={tips} />
           </ScrollReveal>
         )}
+
+        <ScrollReveal>
+          <TodayHotTip />
+        </ScrollReveal>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-muted/50 border border-border/50 p-1 w-full md:w-auto">

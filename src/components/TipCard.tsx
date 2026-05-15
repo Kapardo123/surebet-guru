@@ -130,12 +130,6 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
           {/* Header */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              {tip.isPremium && (
-                <Badge variant="confidence" className="gap-1 py-0.5 px-2 shadow-sm border-accent/20">
-                  <Crown className="w-3 h-3 animate-pulse" />
-                  <span className="font-bold text-[9px] md:text-[10px]">PREMIUM</span>
-                </Badge>
-              )}
               <Badge variant="sport" className="text-[10px]">{tip.sport}</Badge>
               <span className="text-[11px] text-muted-foreground font-medium truncate max-w-[80px] md:max-w-none">{tip.league}</span>
             </div>
