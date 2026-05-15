@@ -76,11 +76,11 @@ const UpcomingMatchesList = ({ onSelectMatch }: Props) => {
             >
               <div className="flex-1 flex flex-col gap-1.5 overflow-hidden">
                 <div className="flex items-center gap-2">
-                  <TeamLogo teamName={match.homeTeam} logoUrl={match.homeLogo || undefined} size={18} />
+                  <TeamLogo teamName={match.homeTeam} logoUrl={match.homeLogo || undefined} teamId={match.homeTeamId} size={18} />
                   <span className="text-xs font-bold truncate">{match.homeTeam}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <TeamLogo teamName={match.awayTeam} logoUrl={match.awayLogo || undefined} size={18} />
+                  <TeamLogo teamName={match.awayTeam} logoUrl={match.awayLogo || undefined} teamId={match.awayTeamId} size={18} />
                   <span className="text-xs font-bold truncate">{match.awayTeam}</span>
                 </div>
               </div>

@@ -11,32 +11,34 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { 
+    return new Response('ok', {
       headers: {
         ...corsHeaders,
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      } 
+      }
     })
   }
 
   try {
     const { endpoint, params } = await req.json()
-    
-    // Construct SofaScore RapidAPI URL
+
     const date = params?.date || new Date().toISOString().split('T')[0];
     const sport_slug = params?.sport_slug || 'football';
-    
-    // Construct final URL
+
     let finalUrl = `https://${RAPID_API_HOST}/api/sofascore/v1/${endpoint}`;
-    
+
     if (endpoint === 'match/list') {
       finalUrl += `?date=${date}&sport_slug=${sport_slug}`;
     } else if (endpoint.includes('events/last')) {
-      // No extra query params needed for this endpoint as per SofaScore structure
+    } else if (endpoint === 'team/getTeamDetail') {
+      const teamId = params?.teamId;
+      if (teamId) {
+        finalUrl += `?teamId=${teamId}`;
+      }
     } else {
       finalUrl += `?date=${date}`;
     }
-    
+
     console.log(`[Proxy] Requesting SofaScore: ${finalUrl}`);
 
     const response = await fetch(finalUrl, {

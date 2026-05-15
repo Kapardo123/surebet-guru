@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 const normalize = (value: string) =>
   value
     .toLowerCase()
@@ -280,15 +282,15 @@ const fetchSofaScoreLogo = async (teamName: string): Promise<string | null> => {
   try {
     const cleanName = teamName.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
     const sofascoreUrl = `https://www.sofascore.com/api/v1/static/team/${cleanName}/image`;
-    
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch(sofascoreUrl, { 
-      method: 'HEAD', 
-      signal: controller.signal 
+    const res = await fetch(sofascoreUrl, {
+      method: 'HEAD',
+      signal: controller.signal
     });
     clearTimeout(timeoutId);
-    
+
     if (res.ok) {
       const contentType = res.headers.get('content-type') || '';
       if (contentType.startsWith('image/')) {
@@ -302,37 +304,70 @@ const fetchSofaScoreLogo = async (teamName: string): Promise<string | null> => {
   return null;
 };
 
-export const fetchTeamLogoUrl = async (teamName: string): Promise<string | null> => {
-  if (!teamName || teamName.length < 3) return null;
-  
+const fetchSofaScoreLogoById = async (teamId: number): Promise<string | null> => {
+  if (!teamId) return null;
+
   try {
-    console.log(`[LogoFetcher] 🚀 Fetching logo for: "${teamName}"`);
-    
-    // 1. Try Wikipedia FIRST (better accuracy for teams with special characters)
+    console.log(`[LogoFetcher] Fetching SofaScore logo by team ID: ${teamId}`);
+
+    const { data, error } = await supabase.functions.invoke('sport-api-proxy', {
+      body: {
+        endpoint: 'team/getTeamDetail',
+        params: { teamId }
+      }
+    });
+
+    if (error) {
+      console.error(`[LogoFetcher] SofaScore API error:`, error);
+      return null;
+    }
+
+    if (data) {
+      const logoUrl = data?.team?.logo || data?.logo || data?.strLogo || null;
+      if (logoUrl) {
+        console.log(`[LogoFetcher] Found SofaScore logo by ID ${teamId}:`, logoUrl);
+        return logoUrl;
+      }
+    }
+  } catch (err) {
+    console.error(`[LogoFetcher] Error fetching SofaScore logo by ID ${teamId}:`, err);
+  }
+
+  return null;
+};
+
+export const fetchTeamLogoUrl = async (teamName: string, teamId?: number): Promise<string | null> => {
+  if (!teamName || teamName.length < 3) return null;
+
+  try {
+    console.log(`[LogoFetcher] 🚀 Fetching logo for: "${teamName}"${teamId ? ` (ID: ${teamId})` : ''}`);
+
+    if (teamId) {
+      console.log(`[LogoFetcher] Trying SofaScore by ID first: "${teamName}" (ID: ${teamId})`);
+      const logo = await fetchSofaScoreLogoById(teamId);
+      if (logo) return logo;
+    }
+
     console.log(`[LogoFetcher] Trying Wikipedia for: "${teamName}"`);
-    let logo = await fetchWikipediaLogo(teamName);
+    const logo = await fetchWikipediaLogo(teamName);
     if (logo) return logo;
-    
-    // 2. Try TheSportsDB with multiple variations
+
     console.log(`[LogoFetcher] Trying TheSportsDB for: "${teamName}"`);
-    logo = await fetchSportsDBWithVariations(teamName);
-    if (logo) return logo;
-    
-    // 3. Try SofaScore direct
-    console.log(`[LogoFetcher] Trying SofaScore for: "${teamName}"`);
-    logo = await fetchSofaScoreLogo(teamName);
-    if (logo) return logo;
-    
-    // 4. Try Clearbit
+    const logo2 = await fetchSportsDBWithVariations(teamName);
+    if (logo2) return logo2;
+
+    console.log(`[LogoFetcher] Trying SofaScore by name for: "${teamName}"`);
+    const logo3 = await fetchSofaScoreLogo(teamName);
+    if (logo3) return logo3;
+
     console.log(`[LogoFetcher] Trying Clearbit for: "${teamName}"`);
-    logo = await fetchClearbitLogo(teamName);
-    if (logo) return logo;
-    
-    // 5. Try API-Football / TheSportsDB lookup
+    const logo4 = await fetchClearbitLogo(teamName);
+    if (logo4) return logo4;
+
     console.log(`[LogoFetcher] Trying API-Football lookup for: "${teamName}"`);
-    logo = await fetchApiFootballLogo(teamName);
-    if (logo) return logo;
-    
+    const logo5 = await fetchApiFootballLogo(teamName);
+    if (logo5) return logo5;
+
     console.log(`[LogoFetcher] ❌ No logo found for: "${teamName}"`);
     return null;
   } catch (err) {

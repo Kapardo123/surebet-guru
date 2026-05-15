@@ -7,11 +7,12 @@ interface TeamLogoProps {
   teamName: string;
   size?: number;
   logoUrl?: string | null;
+  teamId?: number;
 }
 
-const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl }: TeamLogoProps) => {
+const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl, teamId }: TeamLogoProps) => {
   const [error, setError] = useState(false);
-  const { logoUrl: hookLogoUrl, loading: hookLoading } = useTeamLogo(propLogoUrl ? "" : teamName);
+  const { logoUrl: hookLogoUrl, loading: hookLoading } = useTeamLogo(propLogoUrl ? "" : teamName, teamId);
   const finalLogoUrl = propLogoUrl || hookLogoUrl;
 
   const getInitials = (name: string) => {

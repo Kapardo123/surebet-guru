@@ -27,7 +27,7 @@ const checkImageUrl = async (url: string): Promise<boolean> => {
   }
 };
 
-export const useTeamLogo = (teamName: string) => {
+export const useTeamLogo = (teamName: string, teamId?: number) => {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -39,11 +39,10 @@ export const useTeamLogo = (teamName: string) => {
     }
 
     const fetchLogo = async () => {
-      console.log(`[useTeamLogo] 🚀 Start search for: "${teamName}"`);
+      console.log(`[useTeamLogo] 🚀 Start search for: "${teamName}"${teamId ? ` (ID: ${teamId})` : ''}`);
       setLoading(true);
-      
+
       try {
-        // 1. Check local DB cache first, but validate the URL!
         const { data: cacheData } = await supabase
           .from('team_logos_cache')
           .select('logo_url')
@@ -51,7 +50,6 @@ export const useTeamLogo = (teamName: string) => {
           .maybeSingle();
 
         if (cacheData?.logo_url) {
-          // Validate cached URL first
           const isValid = await checkImageUrl(cacheData.logo_url);
           if (isValid) {
             console.log(`[useTeamLogo] ✅ Found and validated in Cache: ${teamName}`);
@@ -60,20 +58,17 @@ export const useTeamLogo = (teamName: string) => {
             return;
           } else {
             console.log(`[useTeamLogo] ❌ Cached URL invalid, re-fetching: ${teamName}`);
-            // Remove invalid entry from cache
             await supabase.from('team_logos_cache').delete().eq('team_name', teamName);
           }
         }
 
-        // 2. Try logoFetcher (TheSportsDB + Wikipedia)
-        console.log(`[useTeamLogo] 🔍 Trying logoFetcher for: ${teamName}`);
-        const foundLogo = await fetchTeamLogoUrl(teamName);
-        
-        // 3. Save to cache if we found something valid
+        console.log(`[useTeamLogo] 🔍 Trying logoFetcher for: ${teamName}${teamId ? ` (ID: ${teamId})` : ''}`);
+        const foundLogo = await fetchTeamLogoUrl(teamName, teamId);
+
         if (foundLogo) {
           await supabase.from('team_logos_cache').upsert({
             team_name: teamName,
-            logo_url: foundLogo, 
+            logo_url: foundLogo,
             updated_at: new Date().toISOString()
           }, { onConflict: 'team_name' });
         }
@@ -90,7 +85,7 @@ export const useTeamLogo = (teamName: string) => {
     timerRef.current = setTimeout(fetchLogo, 600);
 
     return () => clearTimeout(timerRef.current);
-  }, [teamName]);
+  }, [teamName, teamId]);
 
   return { logoUrl, loading };
 };
