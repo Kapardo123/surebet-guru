@@ -549,7 +549,7 @@ const Admin = () => {
       const leagueInParentheses = text.match(/^\(([^)]+)\)/);
       const matchPattern = /Match:\s*(.+?)\s+vs\s+([^(]+?)(?=\s*(?:Betting Tip|Odds|Date|$))/i;
       const dateTimePattern = /(?:Date\s*&\s*Time:|Czas:|Kickoff:)\s*(\d{2}\.\d{2}\.\d{4}),?\s*(\d{2}:\d{2})/i;
-      const tipPattern = /Betting Tip:\s*([\w\s]+?)(?=\s*Odds:|$)/i;
+      const tipPattern = /Betting Tip:\s*(.+?)(?=\s*Odds:)/i;
       const oddsPattern = /Odds:\s*(\d+[.,]?\d*)/i;
       const analysisPattern = /Analysis:\s*([\s\S]+)/i;
 
