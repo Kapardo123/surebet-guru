@@ -42,7 +42,7 @@ import UpcomingMatchesList from "@/components/UpcomingMatchesList";
 import Logo from "@/components/Logo";
 import { fetchMatchesByDate, fetchTeamForm } from "@/lib/sportApi";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, ClipboardPaste, Search, PlusCircle, Pencil, Zap, Users, Bell, X, Crown, Trash2, List, BarChart3 } from "lucide-react";
+import { Sparkles, ClipboardPaste, Search, PlusCircle, Pencil, Zap, Users, Bell, X, Crown, Trash2, List, BarChart3, Save, Plus } from "lucide-react";
 
 const Admin = () => {
   const { toast } = useToast();
@@ -276,6 +276,8 @@ const Admin = () => {
     setCouponIsPremium(false);
     setCouponStatus("active");
     setCouponMatches([]);
+    setEditingCouponMatchIndex(null);
+    setCouponMatchForm({ homeTeam: "", awayTeam: "", prediction: "", odds: "", league: "", sport: "Football", kickoff: "", homeTeamLogo: null, awayTeamLogo: null });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -385,15 +387,26 @@ const Admin = () => {
       return;
     }
 
-    setCouponMatches([...couponMatches, {
+    const matchData = {
       homeTeam, awayTeam, prediction,
       odds: parseFloat(odds),
       league, sport, kickoff,
       homeTeamLogo,
       awayTeamLogo,
-    }]);
+    };
+
+    if (editingCouponMatchIndex !== null) {
+      const updatedMatches = [...couponMatches];
+      updatedMatches[editingCouponMatchIndex] = matchData;
+      setCouponMatches(updatedMatches);
+      setEditingCouponMatchIndex(null);
+      toast({ title: "Match updated! ✅" });
+    } else {
+      setCouponMatches([...couponMatches, matchData]);
+      toast({ title: "Match added to coupon ✅" });
+    }
+
     setCouponMatchForm({ homeTeam: "", awayTeam: "", prediction: "", odds: "", league: "", sport: "Football", kickoff: "", homeTeamLogo: null, awayTeamLogo: null });
-    toast({ title: "Match added to coupon ✅" });
   };
 
   const handleRemoveCouponMatch = (index: number) => {
@@ -603,6 +616,29 @@ const Admin = () => {
     homeTeamLogo: null as string | null,
     awayTeamLogo: null as string | null,
   });
+
+  const [editingCouponMatchIndex, setEditingCouponMatchIndex] = useState<number | null>(null);
+
+  const handleEditCouponMatch = (index: number) => {
+    const match = couponMatches[index];
+    setCouponMatchForm({
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      prediction: match.prediction,
+      odds: match.odds.toString(),
+      league: match.league,
+      sport: match.sport,
+      kickoff: match.kickoff,
+      homeTeamLogo: match.homeTeamLogo || null,
+      awayTeamLogo: match.awayTeamLogo || null,
+    });
+    setEditingCouponMatchIndex(index);
+  };
+
+  const handleCancelCouponMatchEdit = () => {
+    setCouponMatchForm({ homeTeam: "", awayTeam: "", prediction: "", odds: "", league: "", sport: "Football", kickoff: "", homeTeamLogo: null, awayTeamLogo: null });
+    setEditingCouponMatchIndex(null);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -1177,9 +1213,14 @@ const Admin = () => {
                   </div>
                 </div>
                 
-                <Button type="button" variant="outline" size="sm" className="w-full gap-1.5 h-9 text-[10px] uppercase tracking-wider" onClick={handleAddCouponMatch}>
-                  <Plus className="w-3.5 h-3.5" /> Add Match to Coupon
+                <Button type="button" variant="outline" size="sm" className="w-full gap-1.5 h-9 text-[10px] uppercase tracking-wider" onClick={editingCouponMatchIndex !== null ? handleCancelCouponMatchEdit : handleAddCouponMatch}>
+                  <X className="w-3.5 h-3.5" /> {editingCouponMatchIndex !== null ? "Cancel Edit" : "Add Match to Coupon"}
                 </Button>
+                {editingCouponMatchIndex !== null && (
+                  <Button type="button" size="sm" className="w-full gap-1.5 h-9 text-[10px] uppercase tracking-wider bg-accent hover:bg-accent/90" onClick={handleAddCouponMatch}>
+                    <Save className="w-3.5 h-3.5" /> Update Match
+                  </Button>
+                )}
               </div>
 
               {/* Current coupon matches */}
@@ -1195,7 +1236,7 @@ const Admin = () => {
                   </div>
                   <div className="space-y-1.5">
                     {couponMatches.map((m, i) => (
-                      <div key={i} className="flex items-center justify-between bg-background border border-border/50 rounded-lg p-2.5">
+                      <div key={i} className="flex items-center justify-between bg-background border border-border/50 rounded-lg p-2.5 group">
                         <div className="flex items-center gap-2 overflow-hidden">
                           <TeamLogo teamName={m.homeTeam} logoUrl={m.homeTeamLogo || undefined} size={16} />
                           <div className="truncate">
@@ -1203,9 +1244,14 @@ const Admin = () => {
                             <p className="text-[9px] text-muted-foreground">{m.prediction} @ {m.odds.toFixed(2)}</p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="w-7 h-7 text-loss hover:text-loss" onClick={() => handleRemoveCouponMatch(i)}>
-                          <X className="w-3.5 h-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEditCouponMatch(i)}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="w-7 h-7 text-loss hover:text-loss opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveCouponMatch(i)}>
+                            <X className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
