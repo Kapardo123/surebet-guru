@@ -19,6 +19,48 @@ export interface SofaMatch {
   awayLogo?: string;
 }
 
+export interface StandingTeam {
+  id: number;
+  name: string;
+  shortName: string;
+  slug: string;
+  logo?: string;
+  teamColors?: {
+    primary: string;
+    secondary: string;
+    text: string;
+  };
+}
+
+export interface Standing {
+  position: number;
+  team: StandingTeam;
+  played: number;
+  win: number;
+  draw: number;
+  loss: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalsDiff: number;
+  points: number;
+  form?: string[];
+}
+
+export interface StandingsResponse {
+  tournament: {
+    id: number;
+    name: string;
+    slug: string;
+    logo?: string;
+  };
+  season: {
+    id: number;
+    name: string;
+    year: string;
+  };
+  standings: Standing[][];
+}
+
 // Global cache for API responses to avoid redundant calls for the same date
 const matchesCache: Record<string, { data: SofaMatch[], timestamp: number }> = {};
 const inFlightRequests: Record<string, Promise<SofaMatch[]>> = {};
@@ -146,6 +188,98 @@ export const fetchMatchesByDate = async (date: string): Promise<SofaMatch[]> => 
   } catch (error) {
     console.error("[SofaScore] Error fetching matches:", error);
     delete inFlightRequests[date];
+    return [];
+  }
+};
+
+const standingsCache: Record<string, { data: StandingsResponse, timestamp: number }> = {};
+const standingsCacheTTL = 30 * 60 * 1000;
+
+export const fetchStandings = async (uniqueTournamentId: number, seasonId: number): Promise<StandingsResponse | null> => {
+  const cacheKey = `${uniqueTournamentId}-${seasonId}`;
+  const now = Date.now();
+
+  if (standingsCache[cacheKey] && (now - standingsCache[cacheKey].timestamp < standingsCacheTTL)) {
+    console.log(`[SofaScore] Returning cached standings for ${cacheKey}`);
+    return standingsCache[cacheKey].data;
+  }
+
+  try {
+    console.log(`[SofaScore] Fetching standings for tournament ${uniqueTournamentId}, season ${seasonId}`);
+
+    const { data, error } = await supabase.functions.invoke('sport-api-proxy', {
+      body: {
+        endpoint: 'standings/total',
+        params: {
+          uniqueTournamentId,
+          seasonId
+        }
+      }
+    });
+
+    if (error) throw error;
+
+    const apiStandings = data?.standings?.[0] || [];
+
+    const mappedStandings: Standing[][] = apiStandings.map((group: any) => {
+      return group.rows.map((row: any) => ({
+        position: row.position,
+        team: {
+          id: row.team?.id,
+          name: row.team?.name || "Unknown",
+          shortName: row.team?.shortName || row.team?.name?.slice(0, 3) || "???",
+          slug: row.team?.slug || "",
+          logo: row.team?.logo,
+          teamColors: row.team?.teamColors
+        },
+        played: row.played || 0,
+        win: row.win || 0,
+        draw: row.draw || 0,
+        loss: row.loss || 0,
+        goalsFor: row.goalsFor || 0,
+        goalsAgainst: row.goalsAgainst || 0,
+        goalsDiff: row.goalsDiff || 0,
+        points: row.points || 0,
+        form: row.form || []
+      }));
+    });
+
+    const result: StandingsResponse = {
+      tournament: {
+        id: data?.tournament?.id || uniqueTournamentId,
+        name: data?.tournament?.name || "Unknown Tournament",
+        slug: data?.tournament?.slug || "",
+        logo: data?.tournament?.logo
+      },
+      season: {
+        id: data?.season?.id || seasonId,
+        name: data?.season?.name || "",
+        year: data?.season?.year || ""
+      },
+      standings: mappedStandings
+    };
+
+    standingsCache[cacheKey] = { data: result, timestamp: Date.now() };
+    return result;
+  } catch (error) {
+    console.error("[SofaScore] Error fetching standings:", error);
+    return null;
+  }
+};
+
+export const getTournamentSeasons = async (uniqueTournamentId: number): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('sport-api-proxy', {
+      body: {
+        endpoint: `unique-tournament/${uniqueTournamentId}/seasons`,
+        params: {}
+      }
+    });
+
+    if (error) throw error;
+    return data?.seasons || [];
+  } catch (error) {
+    console.error("[SofaScore] Error fetching seasons:", error);
     return [];
   }
 };

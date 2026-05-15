@@ -35,6 +35,16 @@ serve(async (req) => {
       if (teamId) {
         finalUrl += `?teamId=${teamId}`;
       }
+    } else if (endpoint === 'standings/total' || endpoint === 'standings') {
+      const uniqueTournamentId = params?.uniqueTournamentId;
+      const seasonId = params?.seasonId;
+      if (uniqueTournamentId && seasonId) {
+        finalUrl = `https://${RAPID_API_HOST}/api/sofascore/v1/unique-tournament/${uniqueTournamentId}/season/${seasonId}/standings/total`;
+      } else {
+        finalUrl += `?date=${date}`;
+      }
+    } else if (endpoint.includes('unique-tournament') && endpoint.includes('seasons')) {
+      // Seasons endpoint - URL already contains tournament ID, no extra params needed
     } else {
       finalUrl += `?date=${date}`;
     }
