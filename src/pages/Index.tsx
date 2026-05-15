@@ -23,7 +23,6 @@ const Index = () => {
   const [tips, setTips] = useState<Tip[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [activeTab, setActiveTab] = useState("tips");
-  const [tips, setTips] = useState<Tip[]>([]);
   const [recentWins, setRecentWins] = useState<Tip[]>([]);
   const { active: isPremium, daysLeft: premiumDaysLeft, loading: premiumLoading } = usePremiumStatus();
   const { user, signOut } = useAuth();
