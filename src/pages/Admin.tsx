@@ -124,7 +124,6 @@ const Admin = () => {
   const adminTabs = [
     { id: "tips", label: "Tips", icon: PlusCircle },
     { id: "coupons", label: "Coupons", icon: Receipt },
-    { id: "import", label: "AI Import", icon: Sparkles },
     { id: "hero", label: "Hero Pick", icon: Zap },
     { id: "premium", label: "Premium", icon: Users },
     { id: "stats", label: "Stats", icon: BarChart3 },
@@ -683,70 +682,6 @@ const Admin = () => {
           </div>
         </div>
 
-        {/* AI IMPORT SECTION */}
-        {activeTab === 'import' && (
-          <Card className="bg-card border-accent/20 shadow-lg overflow-hidden border-2 bg-gradient-to-br from-card to-accent/5">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-accent animate-pulse" />
-                  AI Smart Import
-                </h2>
-                <Badge variant="outline" className="text-[9px] border-accent/30 text-accent">TIME SAVER</Badge>
-              </div>
-              <div className="space-y-4">
-                <div className="relative">
-                  <textarea 
-                    className="w-full min-h-[120px] rounded-xl border border-input bg-muted/20 px-4 py-3 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-all"
-                    placeholder="Paste AI-generated tip here... (Match, Date, Tip, Odds, Analysis)"
-                    value={aiText}
-                    onChange={(e) => setAiText(e.target.value)}
-                  />
-                  {aiText && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="absolute right-2 top-2 h-7 w-7 p-0 rounded-full"
-                      onClick={() => setAiText("")}
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </Button>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <Button 
-                    onClick={() => handleAiImport('tip')}
-                    disabled={isAiProcessing || !aiText.trim()}
-                    className="gap-2 h-11 font-display uppercase tracking-widest text-[10px] bg-accent hover:bg-accent/90 text-white shadow-lg shadow-accent/20"
-                  >
-                    {isAiProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardPaste className="w-4 h-4" />}
-                    Normal Tip
-                  </Button>
-                  <Button 
-                    onClick={() => handleAiImport('hero')}
-                    disabled={isAiProcessing || !aiText.trim()}
-                    className="gap-2 h-11 font-display uppercase tracking-widest text-[10px] bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Hero Section
-                  </Button>
-                  <Button 
-                    onClick={() => handleAiImport('coupon')}
-                    disabled={isAiProcessing || !aiText.trim()}
-                    className="gap-2 h-11 font-display uppercase tracking-widest text-[10px] bg-secondary hover:bg-secondary/90 text-white shadow-lg shadow-secondary/20"
-                  >
-                    <ClipboardPaste className="w-4 h-4" />
-                    Add to Coupon
-                  </Button>
-                </div>
-                <p className="text-[10px] text-muted-foreground text-center italic">
-                  * Just paste the text from ChatGPT/Claude and click Import. The form below will be filled automatically.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* QUICK FIND & TIP FORM */}
         {activeTab === 'tips' && (
           <>
@@ -1008,34 +943,7 @@ const Admin = () => {
 
         {/* PREMIUM & PUSH */}
         {activeTab === 'premium' && (
-          <>
-            {/* AI IMPORT - COMPACT */}
-            <Card className="bg-card border-accent/20 shadow-md overflow-hidden border">
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-accent" />
-                  <h3 className="font-display text-xs font-bold">AI Import</h3>
-                </div>
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder="Paste AI-generated tip..."
-                    value={aiText}
-                    onChange={(e) => setAiText(e.target.value)}
-                    className="h-9 text-xs bg-muted/20"
-                  />
-                  <Button 
-                    size="sm" 
-                    className="h-9 px-3 gap-1.5 bg-accent hover:bg-accent/90"
-                    onClick={() => handleAiImport('tip')}
-                    disabled={isAiProcessing || !aiText.trim()}
-                  >
-                    {isAiProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <ClipboardPaste className="w-3 h-3" />}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="bg-card border-border/50">
               <CardContent className="p-4">
                 <h3 className="font-display text-sm font-bold mb-4 flex items-center gap-2">
@@ -1073,7 +981,6 @@ const Admin = () => {
               </CardContent>
             </Card>
           </div>
-          </>
         )}
 
         {/* STATS */}
