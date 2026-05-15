@@ -3,6 +3,7 @@ import HeroSection from "@/components/HeroSection";
 import PageTransition from "@/components/PageTransition";
 import TipCard from "@/components/TipCard";
 import CouponCard from "@/components/CouponCard";
+import RecentWins from "@/components/RecentWins";
 import BottomNav from "@/components/BottomNav";
 import { loadTips } from "@/lib/tipsStorage";
 import { loadFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
@@ -91,6 +92,12 @@ const Index = () => {
             <HeroSection />
           )}
         </ScrollReveal>
+
+        {tips.length > 0 && (
+          <ScrollReveal>
+            <RecentWins tips={tips} />
+          </ScrollReveal>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-muted/50 border border-border/50 p-1 w-full md:w-auto">

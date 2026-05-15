@@ -40,10 +40,9 @@ import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
 import UpcomingMatchesList from "@/components/UpcomingMatchesList";
 import Logo from "@/components/Logo";
-import { fetchMatchesByDate, fetchTeamForm, fetchStandings } from "@/lib/sportApi";
+import { fetchMatchesByDate, fetchTeamForm } from "@/lib/sportApi";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, ClipboardPaste } from "lucide-react";
-import StandingsTable from "@/components/StandingsTable";
 
 const Admin = () => {
   const { toast } = useToast();
@@ -683,19 +682,6 @@ const Admin = () => {
             <p className="text-[10px] text-muted-foreground mt-3 italic">
               * Select a match above to automatically fill the "Add New Tip" form below.
             </p>
-          </CardContent>
-        </Card>
-
-        {/* STANDINGS TABLE - LA LIGA (ID: 8) */}
-        <Card className="bg-card border-accent/20 shadow-lg overflow-hidden border-2">
-          <CardContent className="p-4 sm:p-6">
-            <StandingsTable
-              uniqueTournamentId={8}
-              tournamentName="La Liga"
-              onTeamClick={(teamId, teamName) => {
-                toast({ title: `Selected: ${teamName}`, description: `Team ID: ${teamId}` });
-              }}
-            />
           </CardContent>
         </Card>
 
