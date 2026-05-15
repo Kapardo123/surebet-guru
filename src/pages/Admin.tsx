@@ -576,25 +576,12 @@ const Admin = () => {
         formattedDate = `${year}-${month}-${day} ${time}`;
       }
 
-      let prediction = tipMatch ? tipMatch[1].trim() : "";
-      
-      if (prediction && (prediction.toLowerCase().startsWith(homeTeam.toLowerCase()) || 
-          prediction.toLowerCase().startsWith(awayTeam.toLowerCase()))) {
-        const teamNames = [homeTeam, awayTeam];
-        for (const team of teamNames) {
-          if (prediction.toLowerCase().startsWith(team.toLowerCase())) {
-            prediction = prediction.substring(team.length).trim();
-            break;
-          }
-        }
-      }
-
       const parsedData = {
         league: league,
         homeTeam: homeTeam,
         awayTeam: awayTeam,
         kickoff: formattedDate,
-        prediction: prediction,
+        prediction: tipMatch ? tipMatch[1].trim() : "",
         odds: oddsMatch ? oddsMatch[1].trim().replace(',', '.') : "",
         description: analysisMatch ? analysisMatch[1].trim() : "",
       };
