@@ -750,6 +750,32 @@ const Admin = () => {
         {/* QUICK FIND & TIP FORM */}
         {activeTab === 'tips' && (
           <>
+            {/* AI IMPORT - COMPACT */}
+            <Card className="bg-card border-accent/20 shadow-md overflow-hidden border">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-accent" />
+                  <h3 className="font-display text-xs font-bold">AI Import</h3>
+                </div>
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Paste AI-generated tip..."
+                    value={aiText}
+                    onChange={(e) => setAiText(e.target.value)}
+                    className="h-9 text-xs bg-muted/20"
+                  />
+                  <Button 
+                    size="sm" 
+                    className="h-9 px-3 gap-1.5 bg-accent hover:bg-accent/90"
+                    onClick={() => handleAiImport('tip')}
+                    disabled={isAiProcessing || !aiText.trim()}
+                  >
+                    {isAiProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <ClipboardPaste className="w-3 h-3" />}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="bg-card border-primary/20 shadow-lg overflow-hidden border-2">
               <CardContent className="p-4 sm:p-6">
                 <h2 className="font-display text-lg font-bold text-foreground mb-4 flex items-center gap-2">
@@ -874,7 +900,34 @@ const Admin = () => {
 
         {/* HERO SECTION */}
         {activeTab === 'hero' && (
-          <Card className="bg-card border-accent/30 shadow-accent/10 shadow-xl overflow-hidden">
+          <>
+            {/* AI IMPORT - COMPACT */}
+            <Card className="bg-card border-accent/20 shadow-md overflow-hidden border">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-accent" />
+                  <h3 className="font-display text-xs font-bold">AI Import</h3>
+                </div>
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Paste AI-generated hero pick..."
+                    value={aiText}
+                    onChange={(e) => setAiText(e.target.value)}
+                    className="h-9 text-xs bg-muted/20"
+                  />
+                  <Button 
+                    size="sm" 
+                    className="h-9 px-3 gap-1.5 bg-accent hover:bg-accent/90"
+                    onClick={() => handleAiImport('hero')}
+                    disabled={isAiProcessing || !aiText.trim()}
+                  >
+                    {isAiProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <ClipboardPaste className="w-3 h-3" />}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card border-accent/30 shadow-accent/10 shadow-xl overflow-hidden">
           <CardContent className="p-4 sm:p-6">
             <h2 className="font-display text-lg font-bold text-foreground mb-4 flex items-center gap-2">
               <Zap className="w-5 h-5 text-accent" />
@@ -950,11 +1003,39 @@ const Admin = () => {
             </div>
           </CardContent>
         </Card>
+        </>
         )}
 
         {/* PREMIUM & PUSH */}
         {activeTab === 'premium' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <>
+            {/* AI IMPORT - COMPACT */}
+            <Card className="bg-card border-accent/20 shadow-md overflow-hidden border">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-accent" />
+                  <h3 className="font-display text-xs font-bold">AI Import</h3>
+                </div>
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Paste AI-generated tip..."
+                    value={aiText}
+                    onChange={(e) => setAiText(e.target.value)}
+                    className="h-9 text-xs bg-muted/20"
+                  />
+                  <Button 
+                    size="sm" 
+                    className="h-9 px-3 gap-1.5 bg-accent hover:bg-accent/90"
+                    onClick={() => handleAiImport('tip')}
+                    disabled={isAiProcessing || !aiText.trim()}
+                  >
+                    {isAiProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <ClipboardPaste className="w-3 h-3" />}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="bg-card border-border/50">
               <CardContent className="p-4">
                 <h3 className="font-display text-sm font-bold mb-4 flex items-center gap-2">
@@ -992,6 +1073,7 @@ const Admin = () => {
               </CardContent>
             </Card>
           </div>
+          </>
         )}
 
         {/* STATS */}
@@ -1051,6 +1133,32 @@ const Admin = () => {
         {/* COUPONS SECTION */}
         {activeTab === 'coupons' && (
           <div className="space-y-6">
+            {/* AI IMPORT - COMPACT */}
+            <Card className="bg-card border-accent/20 shadow-md overflow-hidden border">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-accent" />
+                  <h3 className="font-display text-xs font-bold">AI Import</h3>
+                </div>
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Paste AI-generated coupon tips..."
+                    value={aiText}
+                    onChange={(e) => setAiText(e.target.value)}
+                    className="h-9 text-xs bg-muted/20"
+                  />
+                  <Button 
+                    size="sm" 
+                    className="h-9 px-3 gap-1.5 bg-accent hover:bg-accent/90"
+                    onClick={() => handleAiImport('coupon')}
+                    disabled={isAiProcessing || !aiText.trim()}
+                  >
+                    {isAiProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <ClipboardPaste className="w-3 h-3" />}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* ADD / EDIT COUPON - RESTORED & MOBILE FRIENDLY */}
             <Card className={`bg-card border-border/50 ${editingCouponId ? 'ring-2 ring-accent' : ''}`}>
               <CardContent className="p-4 sm:p-6">
@@ -1271,167 +1379,6 @@ const Admin = () => {
             <RefreshCw className="w-3 h-3 mr-1" /> Sync
           </Button>
         </div>
-
-        {/* ADD / EDIT COUPON - RESTORED & MOBILE FRIENDLY */}
-        <Card className={`bg-card border-border/50 ${editingCouponId !== null ? 'ring-2 ring-primary' : ''}`}>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-lg font-bold flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-primary" />
-                {editingCouponId !== null ? "Edit Coupon" : "Create New Coupon"}
-              </h2>
-              {editingCouponId !== null && (
-                <Button variant="ghost" size="sm" className="h-8 px-2" onClick={resetCouponForm}>
-                  <X className="w-4 h-4 mr-1" /> Cancel
-                </Button>
-              )}
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Coupon Name</Label>
-                  <Input placeholder="e.g. Weekend Combo" value={couponName} onChange={(e) => setCouponName(e.target.value)} className="h-10 bg-muted/20" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Stake ($)</Label>
-                  <Input type="number" step="0.01" placeholder="e.g. 10" value={couponStake} onChange={(e) => setCouponStake(e.target.value)} className="h-10 bg-muted/20" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Status</Label>
-                  <Select value={couponStatus} onValueChange={(v) => setCouponStatus(v as Coupon["status"])}>
-                    <SelectTrigger className="h-10 bg-muted/20"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="won">Won ✓</SelectItem>
-                      <SelectItem value="lost">Lost ✗</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end">
-                  <div className="flex items-center gap-3 bg-accent/5 border border-accent/20 rounded-xl px-4 py-2.5 w-full">
-                    <Checkbox id="couponPremium" checked={couponIsPremium} onCheckedChange={(c) => setCouponIsPremium(c === true)} />
-                    <Label htmlFor="couponPremium" className="flex items-center gap-2 cursor-pointer text-xs font-bold">
-                      <Crown className="w-3.5 h-3.5 text-accent" /> Premium Coupon
-                    </Label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Add match to coupon */}
-              <div className="bg-muted/30 rounded-xl p-4 space-y-3 border border-border/50">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-display font-bold">Add Match to Coupon</p>
-                
-                <UpcomingMatchesList onSelectMatch={handleSelectCouponMatch} />
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-[9px] uppercase text-muted-foreground">Home Team</Label>
-                    <Input value={couponMatchForm.homeTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, homeTeam: e.target.value })} className="h-9 text-xs bg-background" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[9px] uppercase text-muted-foreground">Away Team</Label>
-                    <Input value={couponMatchForm.awayTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, awayTeam: e.target.value })} className="h-9 text-xs bg-background" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[9px] uppercase text-muted-foreground">Prediction</Label>
-                    <Input placeholder="e.g. Over 2.5" value={couponMatchForm.prediction} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, prediction: e.target.value })} className="h-9 text-xs bg-background" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[9px] uppercase text-muted-foreground">Odds</Label>
-                    <Input type="number" step="0.01" value={couponMatchForm.odds} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, odds: e.target.value })} className="h-9 text-xs bg-background" />
-                  </div>
-                </div>
-                
-                <Button type="button" variant="outline" size="sm" className="w-full gap-1.5 h-9 text-[10px] uppercase tracking-wider" onClick={editingCouponMatchIndex !== null ? handleCancelCouponMatchEdit : handleAddCouponMatch}>
-                  <X className="w-3.5 h-3.5" /> {editingCouponMatchIndex !== null ? "Cancel Edit" : "Add Match to Coupon"}
-                </Button>
-                {editingCouponMatchIndex !== null && (
-                  <Button type="button" size="sm" className="w-full gap-1.5 h-9 text-[10px] uppercase tracking-wider bg-accent hover:bg-accent/90" onClick={handleAddCouponMatch}>
-                    <Save className="w-3.5 h-3.5" /> Update Match
-                  </Button>
-                )}
-              </div>
-
-              {/* Current coupon matches */}
-              {couponMatches.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between px-1">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-display">
-                      Matches ({couponMatches.length})
-                    </p>
-                    <p className="text-[10px] font-bold">
-                      Total Odds: <span className="text-primary">@{calculateTotalOdds(couponMatches).toFixed(2)}</span>
-                    </p>
-                  </div>
-                  <div className="space-y-1.5">
-                    {couponMatches.map((m, i) => (
-                      <div key={i} className="flex items-center justify-between bg-background border border-border/50 rounded-lg p-2.5 group">
-                        <div className="flex items-center gap-2 overflow-hidden">
-                          <TeamLogo teamName={m.homeTeam} logoUrl={m.homeTeamLogo || undefined} size={16} />
-                          <div className="truncate">
-                            <p className="text-[10px] font-bold truncate">{m.homeTeam} vs {m.awayTeam}</p>
-                            <p className="text-[9px] text-muted-foreground">{m.prediction} @ {m.odds.toFixed(2)}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEditCouponMatch(i)}>
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="w-7 h-7 text-loss hover:text-loss opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveCouponMatch(i)}>
-                            <X className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <Button className="w-full gap-2 h-11 font-display uppercase tracking-wider text-xs shadow-lg shadow-primary/20" onClick={handleSaveCoupon}>
-                {editingCouponId !== null ? <Save className="w-4 h-4" /> : <PlusCircle className="w-4 h-4" />}
-                {editingCouponId !== null ? "Save Coupon Changes" : "Create Coupon"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* EXISTING COUPONS LIST */}
-        {coupons.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="font-display text-lg font-bold">All Coupons ({coupons.length})</h2>
-            <div className="grid grid-cols-1 gap-3">
-              {coupons.map((coupon) => (
-                <Card key={coupon.id} className="bg-card border-border/50 overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <p className="font-display font-bold text-sm">{coupon.name}</p>
-                        {coupon.isPremium && <Badge variant="confidence" className="h-4 px-1 text-[8px] uppercase tracking-tighter"><Crown className="w-2 h-2 mr-0.5" /> Premium</Badge>}
-                      </div>
-                      <Badge variant={coupon.status === "won" ? "win" : coupon.status === "lost" ? "loss" : "outline"} className="text-[8px] h-4 px-1">{coupon.status}</Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-3">
-                      <span>{coupon.matches.length} matches • Total Odds: @{coupon.totalOdds.toFixed(2)}</span>
-                      {coupon.stake && <span>Stake: ${coupon.stake}</span>}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" className="flex-1 h-8 text-[10px] uppercase tracking-wider" onClick={() => handleEditCoupon(coupon)}>
-                        <Pencil className="w-3 h-3 mr-1.5" /> Edit
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-8 w-8 text-loss border-loss/30 hover:bg-loss/10" onClick={() => handleDeleteCoupon(coupon.id)}>
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
 
       </main>
     </div>
