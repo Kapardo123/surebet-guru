@@ -413,7 +413,7 @@ const Admin = () => {
     setCouponMatches(couponMatches.filter((_, i) => i !== index));
   };
 
-  const handleCreateOrUpdateCoupon = async () => {
+  const handleSaveCoupon = async () => {
     if (!couponName || couponMatches.length < 2) {
       toast({ title: "Name and at least 2 matches required", variant: "destructive" });
       return;
@@ -1386,7 +1386,7 @@ const Admin = () => {
                 </div>
               )}
 
-              <Button className="w-full gap-2 h-11 font-display uppercase tracking-wider text-xs shadow-lg shadow-primary/20" onClick={handleCreateOrUpdateCoupon}>
+              <Button className="w-full gap-2 h-11 font-display uppercase tracking-wider text-xs shadow-lg shadow-primary/20" onClick={handleSaveCoupon}>
                 {editingCouponId !== null ? <Save className="w-4 h-4" /> : <PlusCircle className="w-4 h-4" />}
                 {editingCouponId !== null ? "Save Coupon Changes" : "Create Coupon"}
               </Button>
