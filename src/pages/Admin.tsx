@@ -544,32 +544,29 @@ const Admin = () => {
 
     setIsAiProcessing(true);
     try {
-      // Regex patterns to handle ALL variations of labels
-      const matchPattern = /(?:Match:\s*)?(.+?)\svs\s*(.+)/i;
-      const leaguePattern = /(?:Competition:|League:|Liga:)\s*(.+)/i;
+      const text = aiText.trim();
+      
+      const leagueInParentheses = text.match(/^\(([^)]+)\)/);
+      const matchPattern = /(?:Match:\s*)(.+?)\svs\s*(.+)/i;
       const dateTimePattern = /(?:Date & Time:|Czas:|Kickoff:)\s*(\d{2}\.\d{2}\.\d{4}),?\s*(\d{2}:\d{2})/i;
       const tipPattern = /(?:Betting Tip:|Typ:|Suggested Pick:|Pick:)\s*(.+)/i;
       const oddsPattern = /(?:Odds:|Kurs:|Estimated Odds:)\s*(\d+[.,]?\d*)/i;
       const analysisPattern = /(?:Analysis:|Analiza:)\s*([\s\S]+)/i;
 
-      const lines = aiText.trim().split('\n').map(l => l.trim()).filter(l => l !== "");
-      const matchMatch = aiText.match(matchPattern);
-      const leagueMatch = aiText.match(leaguePattern);
-      const dateTimeMatch = aiText.match(dateTimePattern);
-      const tipMatch = aiText.match(tipPattern);
-      const oddsMatch = aiText.match(oddsPattern);
-      const analysisMatch = aiText.match(analysisPattern);
+      const matchMatch = text.match(matchPattern);
+      const dateTimeMatch = text.match(dateTimePattern);
+      const tipMatch = text.match(tipPattern);
+      const oddsMatch = text.match(oddsPattern);
+      const analysisMatch = text.match(analysisPattern);
 
       if (!matchMatch) throw new Error("Could not find Match (Home vs Away)");
 
-      const homeTeam = matchMatch[1].trim();
-      const awayTeam = matchMatch[2].trim();
+      let homeTeam = matchMatch[1].trim();
+      let awayTeam = matchMatch[2].trim();
 
       let league = "";
-      if (leagueMatch) {
-        league = leagueMatch[1].trim();
-      } else if (lines.length > 0 && !lines[0].toLowerCase().includes("vs")) {
-        league = lines[0].replace(/\(.*\)/, "").trim();
+      if (leagueInParentheses) {
+        league = leagueInParentheses[1].trim();
       }
 
       let formattedDate = "";
@@ -579,12 +576,25 @@ const Admin = () => {
         formattedDate = `${year}-${month}-${day} ${time}`;
       }
 
+      let prediction = tipMatch ? tipMatch[1].trim() : "";
+      
+      if (prediction && (prediction.toLowerCase().startsWith(homeTeam.toLowerCase()) || 
+          prediction.toLowerCase().startsWith(awayTeam.toLowerCase()))) {
+        const teamNames = [homeTeam, awayTeam];
+        for (const team of teamNames) {
+          if (prediction.toLowerCase().startsWith(team.toLowerCase())) {
+            prediction = prediction.substring(team.length).trim();
+            break;
+          }
+        }
+      }
+
       const parsedData = {
         league: league,
         homeTeam: homeTeam,
         awayTeam: awayTeam,
         kickoff: formattedDate,
-        prediction: tipMatch ? tipMatch[1].trim() : "",
+        prediction: prediction,
         odds: oddsMatch ? oddsMatch[1].trim().replace(',', '.') : "",
         description: analysisMatch ? analysisMatch[1].trim() : "",
       };
