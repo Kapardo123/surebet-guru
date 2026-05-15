@@ -261,6 +261,7 @@ const Admin = () => {
   const [couponStake, setCouponStake] = useState("");
   const [couponIsPremium, setCouponIsPremium] = useState(false);
   const [couponStatus, setCouponStatus] = useState<Coupon["status"]>("active");
+  const [couponSport, setCouponSport] = useState("Football");
   const [couponMatches, setCouponMatches] = useState<CouponMatch[]>([]);
 
 
@@ -275,6 +276,7 @@ const Admin = () => {
     setCouponStake("");
     setCouponIsPremium(false);
     setCouponStatus("active");
+    setCouponSport("Football");
     setCouponMatches([]);
     setEditingCouponMatchIndex(null);
     setCouponMatchForm({ homeTeam: "", awayTeam: "", prediction: "", odds: "", league: "", sport: "Football", kickoff: "", homeTeamLogo: null, awayTeamLogo: null });
@@ -465,6 +467,7 @@ const Admin = () => {
     setCouponStake(coupon.stake?.toString() || "");
     setCouponIsPremium(coupon.isPremium || false);
     setCouponStatus(coupon.status);
+    setCouponSport(coupon.sport || "Football");
     setCouponMatches([...coupon.matches]);
   };
 
