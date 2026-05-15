@@ -42,7 +42,7 @@ import UpcomingMatchesList from "@/components/UpcomingMatchesList";
 import Logo from "@/components/Logo";
 import { fetchMatchesByDate, fetchTeamForm } from "@/lib/sportApi";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, ClipboardPaste } from "lucide-react";
+import { Sparkles, ClipboardPaste, Search, PlusCircle, Pencil, Zap, Users, Bell, X, Crown, Trash2, List, BarChart3 } from "lucide-react";
 
 const Admin = () => {
   const { toast } = useToast();
@@ -116,6 +116,21 @@ const Admin = () => {
   const [pushTitle, setPushTitle] = useState("");
   const [pushMessage, setPushMessage] = useState("");
   const [isSendingPush, setIsSendingPush] = useState(false);
+
+  // Admin Navigation State
+  const [activeTab, setActiveTab] = useState("tips");
+  const [filterStatus, setFilterStatus] = useState("all");
+
+  const adminTabs = [
+    { id: "tips", label: "Add Tips", icon: PlusCircle },
+    { id: "import", label: "AI Import", icon: Sparkles },
+    { id: "hero", label: "Hero Pick", icon: Zap },
+    { id: "list", label: "All Tips", icon: List },
+    { id: "premium", label: "Premium", icon: Users },
+    { id: "stats", label: "Stats", icon: BarChart3 },
+  ];
+
+  const filteredTips = tips.filter(tip => filterStatus === "all" ? true : tip.status === filterStatus);
 
   const sendPremiumPush = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -609,84 +624,108 @@ const Admin = () => {
       </header>
 
       <main className="container max-w-5xl mx-auto px-4 py-6 space-y-6">
-        {/* SMART AI IMPORT - NEW SECTION */}
-        <Card className="bg-card border-accent/20 shadow-lg overflow-hidden border-2 bg-gradient-to-br from-card to-accent/5">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-accent animate-pulse" />
-                AI Smart Import
-              </h2>
-              <Badge variant="outline" className="text-[9px] border-accent/30 text-accent">TIME SAVER</Badge>
-            </div>
-            <div className="space-y-4">
-              <div className="relative">
-                <textarea 
-                  className="w-full min-h-[120px] rounded-xl border border-input bg-muted/20 px-4 py-3 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-all"
-                  placeholder="Paste AI-generated tip here... (Match, Date, Tip, Odds, Analysis)"
-                  value={aiText}
-                  onChange={(e) => setAiText(e.target.value)}
-                />
-                {aiText && (
+        {/* ADMIN NAVIGATION TABS */}
+        <div className="sticky top-[72px] z-40 bg-background/80 backdrop-blur-lg border border-border/50 rounded-xl p-1">
+          <div className="flex gap-1 overflow-x-auto pb-1">
+            {adminTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? "bg-accent text-white shadow-lg shadow-accent/30"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* AI IMPORT SECTION */}
+        {activeTab === 'import' && (
+          <Card className="bg-card border-accent/20 shadow-lg overflow-hidden border-2 bg-gradient-to-br from-card to-accent/5">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-accent animate-pulse" />
+                  AI Smart Import
+                </h2>
+                <Badge variant="outline" className="text-[9px] border-accent/30 text-accent">TIME SAVER</Badge>
+              </div>
+              <div className="space-y-4">
+                <div className="relative">
+                  <textarea 
+                    className="w-full min-h-[120px] rounded-xl border border-input bg-muted/20 px-4 py-3 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-all"
+                    placeholder="Paste AI-generated tip here... (Match, Date, Tip, Odds, Analysis)"
+                    value={aiText}
+                    onChange={(e) => setAiText(e.target.value)}
+                  />
+                  {aiText && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="absolute right-2 top-2 h-7 w-7 p-0 rounded-full"
+                      onClick={() => setAiText("")}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="absolute right-2 top-2 h-7 w-7 p-0 rounded-full"
-                    onClick={() => setAiText("")}
+                    onClick={() => handleAiImport('tip')}
+                    disabled={isAiProcessing || !aiText.trim()}
+                    className="gap-2 h-11 font-display uppercase tracking-widest text-[10px] bg-accent hover:bg-accent/90 text-white shadow-lg shadow-accent/20"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    {isAiProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardPaste className="w-4 h-4" />}
+                    Normal Tip
                   </Button>
-                )}
+                  <Button 
+                    onClick={() => handleAiImport('hero')}
+                    disabled={isAiProcessing || !aiText.trim()}
+                    className="gap-2 h-11 font-display uppercase tracking-widest text-[10px] bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Hero Section
+                  </Button>
+                  <Button 
+                    onClick={() => handleAiImport('coupon')}
+                    disabled={isAiProcessing || !aiText.trim()}
+                    className="gap-2 h-11 font-display uppercase tracking-widest text-[10px] bg-secondary hover:bg-secondary/90 text-white shadow-lg shadow-secondary/20"
+                  >
+                    <ClipboardPaste className="w-4 h-4" />
+                    Add to Coupon
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground text-center italic">
+                  * Just paste the text from ChatGPT/Claude and click Import. The form below will be filled automatically.
+                </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <Button 
-                  onClick={() => handleAiImport('tip')}
-                  disabled={isAiProcessing || !aiText.trim()}
-                  className="gap-2 h-11 font-display uppercase tracking-widest text-[10px] bg-accent hover:bg-accent/90 text-white shadow-lg shadow-accent/20"
-                >
-                  {isAiProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardPaste className="w-4 h-4" />}
-                  Normal Tip
-                </Button>
-                <Button 
-                  onClick={() => handleAiImport('hero')}
-                  disabled={isAiProcessing || !aiText.trim()}
-                  className="gap-2 h-11 font-display uppercase tracking-widest text-[10px] bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Hero Section
-                </Button>
-                <Button 
-                  onClick={() => handleAiImport('coupon')}
-                  disabled={isAiProcessing || !aiText.trim()}
-                  className="gap-2 h-11 font-display uppercase tracking-widest text-[10px] bg-secondary hover:bg-secondary/90 text-white shadow-lg shadow-secondary/20"
-                >
-                  <ClipboardPaste className="w-4 h-4" />
-                  Add to Coupon
-                </Button>
-              </div>
-              <p className="text-[10px] text-muted-foreground text-center italic">
-                * Just paste the text from ChatGPT/Claude and click Import. The form below will be filled automatically.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* QUICK FIND MATCH SECTION - MOBILE FIRST */}
-        <Card className="bg-card border-primary/20 shadow-lg overflow-hidden border-2">
-          <CardContent className="p-4 sm:p-6">
-            <h2 className="font-display text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <Search className="w-5 h-5 text-primary" />
-              Quick Match Finder
-            </h2>
-            <UpcomingMatchesList onSelectMatch={handleSelectMatch} />
-            <p className="text-[10px] text-muted-foreground mt-3 italic">
-              * Select a match above to automatically fill the "Add New Tip" form below.
-            </p>
-          </CardContent>
-        </Card>
+        {/* QUICK FIND & TIP FORM */}
+        {activeTab === 'tips' && (
+          <>
+            <Card className="bg-card border-primary/20 shadow-lg overflow-hidden border-2">
+              <CardContent className="p-4 sm:p-6">
+                <h2 className="font-display text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                  <Search className="w-5 h-5 text-primary" />
+                  Quick Match Finder
+                </h2>
+                <UpcomingMatchesList onSelectMatch={handleSelectMatch} />
+                <p className="text-[10px] text-muted-foreground mt-3 italic">
+                  * Select a match above to automatically fill the "Add New Tip" form below.
+                </p>
+              </CardContent>
+            </Card>
 
-        {/* ADD / EDIT TIP - RE-LAYOUT FOR MOBILE */}
-        <Card className={`bg-card border-border/50 ${editingTipId !== null ? 'ring-2 ring-primary' : ''}`}>
+            {/* ADD / EDIT TIP - RE-LAYOUT FOR MOBILE */}
+            <Card className={`bg-card border-border/50 ${editingTipId !== null ? 'ring-2 ring-primary' : ''}`}>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-lg font-bold flex items-center gap-2">
@@ -791,9 +830,12 @@ const Admin = () => {
             </form>
           </CardContent>
         </Card>
+          </>
+        )}
 
-        {/* FEATURED PICK (HERO) - SIMPLIFIED */}
-        <Card className="bg-card border-accent/30 shadow-accent/10 shadow-xl overflow-hidden">
+        {/* HERO SECTION */}
+        {activeTab === 'hero' && (
+          <Card className="bg-card border-accent/30 shadow-accent/10 shadow-xl overflow-hidden">
           <CardContent className="p-4 sm:p-6">
             <h2 className="font-display text-lg font-bold text-foreground mb-4 flex items-center gap-2">
               <Zap className="w-5 h-5 text-accent" />
@@ -869,107 +911,198 @@ const Admin = () => {
             </div>
           </CardContent>
         </Card>
+        )}
 
-        {/* PREMIUM & PUSH - COMPACT ON MOBILE */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <Card className="bg-card border-border/50">
-            <CardContent className="p-4">
-              <h3 className="font-display text-sm font-bold mb-4 flex items-center gap-2">
-                <Users className="w-4 h-4 text-accent" /> Premium Access
-              </h3>
-              <form onSubmit={handleGrantPremium} className="space-y-3">
-                <Input className="h-9 text-xs" placeholder="User Email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} />
-                <div className="flex gap-2">
-                  <Select value={premiumDays} onValueChange={premiumDays}>
-                    <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7">7 Days</SelectItem>
-                      <SelectItem value="30">30 Days</SelectItem>
-                      <SelectItem value="365">1 Year</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button type="submit" disabled={isUpdatingPremium} className="h-9 text-[10px] flex-1 bg-accent">Grant</Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card border-border/50">
-            <CardContent className="p-4">
-              <h3 className="font-display text-sm font-bold mb-4 flex items-center gap-2">
-                <Bell className="w-4 h-4 text-accent" /> Send Push
-              </h3>
-              <form onSubmit={sendPremiumPush} className="space-y-3">
-                <Input className="h-9 text-xs" placeholder="Title" value={pushTitle} onChange={(e) => setPushTitle(e.target.value)} />
-                <div className="flex gap-2">
-                  <Input className="h-9 text-xs flex-1" placeholder="Message" value={pushMessage} onChange={(e) => setPushMessage(e.target.value)} />
-                  <Button type="submit" disabled={isSendingPush} className="h-9 text-[10px] bg-accent">Send</Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* ALL TIPS LIST - COMPACT */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display text-lg font-bold">Active Tips ({tips.length})</h2>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8 text-[10px] border-accent/30 text-accent"
-                onClick={async () => {
-                  try {
-                    const date = new Date().toISOString().split('T')[0];
-                    toast({ title: "Testing SofaScore API..." });
-                    const results = await fetchMatchesByDate(date);
-                    console.log("Test results:", results);
-                    if (results.length > 0) {
-                      toast({ title: "API OK! ✅", description: `Found ${results.length} fixtures. Check console for details.` });
-                    } else {
-                      toast({ 
-                        variant: "destructive", 
-                        title: "API Error ❌", 
-                        description: "No events found. Check browser console for debug info." 
-                      });
-                    }
-                  } catch (e) {
-                    toast({ variant: "destructive", title: "Test Failed", description: String(e) });
-                  }
-                }}
-              >
-                <Zap className="w-3 h-3 mr-1" /> Test API
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8 text-[10px] border-orange-500/30 text-orange-500"
-                onClick={handleClearLogoCache}
-              >
-                <Trash2 className="w-3 h-3 mr-1" /> Clear Logos
-              </Button>
-              <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={refreshData}><RefreshCw className="w-3 h-3 mr-1" /> Sync</Button>
-            </div>
-          </div>
-          <div className="space-y-2">
-            {tips.map((tip) => (
-              <div key={tip.id} className="flex items-center justify-between p-3 bg-card border border-border/50 rounded-xl group active:bg-muted/50">
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo || undefined} size={20} />
-                  <div className="truncate">
-                    <p className="text-xs font-bold truncate">{tip.homeTeam} vs {tip.awayTeam}</p>
-                    <p className="text-[10px] text-muted-foreground">{tip.prediction} @ {tip.odds}</p>
+        {/* PREMIUM & PUSH */}
+        {activeTab === 'premium' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="bg-card border-border/50">
+              <CardContent className="p-4">
+                <h3 className="font-display text-sm font-bold mb-4 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-accent" /> Premium Access
+                </h3>
+                <form onSubmit={handleGrantPremium} className="space-y-3">
+                  <Input className="h-9 text-xs" placeholder="User Email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} />
+                  <div className="flex gap-2">
+                    <Select value={premiumDays} onValueChange={premiumDays}>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7">7 Days</SelectItem>
+                        <SelectItem value="30">30 Days</SelectItem>
+                        <SelectItem value="365">1 Year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button type="submit" disabled={isUpdatingPremium} className="h-9 text-[10px] flex-1 bg-accent">Grant</Button>
                   </div>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card border-border/50">
+              <CardContent className="p-4">
+                <h3 className="font-display text-sm font-bold mb-4 flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-accent" /> Send Push Notification
+                </h3>
+                <form onSubmit={sendPremiumPush} className="space-y-3">
+                  <Input className="h-9 text-xs" placeholder="Title" value={pushTitle} onChange={(e) => setPushTitle(e.target.value)} />
+                  <div className="flex gap-2">
+                    <Input className="h-9 text-xs flex-1" placeholder="Message" value={pushMessage} onChange={(e) => setPushMessage(e.target.value)} />
+                    <Button type="submit" disabled={isSendingPush} className="h-9 text-[10px] bg-accent">Send</Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* STATS */}
+        {activeTab === 'stats' && (
+          <Card className="bg-card border-border/50">
+            <CardContent className="p-4 sm:p-6">
+              <h2 className="font-display text-lg font-bold text-foreground mb-6 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-accent" />
+                Statistics
+              </h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="bg-muted/20 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-foreground">{tips.length}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Tips</div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Badge variant={tip.status === "won" ? "win" : tip.status === "lost" ? "loss" : "outline"} className="text-[8px] h-5 px-1">{tip.status}</Badge>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditTip(tip)}><Pencil className="w-3.5 h-3.5" /></Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-loss" onClick={() => handleDelete(tip.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                <div className="bg-green-500/10 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-green-500">{tips.filter(t => t.status === 'won').length}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Won</div>
+                </div>
+                <div className="bg-red-500/10 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-red-500">{tips.filter(t => t.status === 'lost').length}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Lost</div>
+                </div>
+                <div className="bg-accent/10 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-accent">{tips.filter(t => t.status === 'upcoming').length}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Upcoming</div>
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-muted/20 rounded-xl p-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Win Rate</h4>
+                  <div className="text-center">
+                    <span className="text-4xl font-bold text-accent">
+                      {tips.filter(t => t.status === 'won').length > 0 
+                        ? Math.round((tips.filter(t => t.status === 'won').length / (tips.filter(t => t.status !== 'upcoming').length || 1)) * 100)
+                        : 0}%
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-muted/20 rounded-xl p-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Recent Form</h4>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    {['W', 'W', 'L', 'W', 'W'].map((result, i) => (
+                      <div key={i} className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                        result === 'W' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
+                      }`}>
+                        {result}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* TIPS LIST */}
+        {activeTab === 'list' && (
+          <Card className="bg-card border-border/50">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
+                  <List className="w-5 h-5 text-primary" />
+                  All Tips ({tips.length})
+                </h2>
+                <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v)}>
+                  <SelectTrigger className="h-8 text-xs w-24"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="upcoming">Upcoming</SelectItem>
+                    <SelectItem value="won">Won</SelectItem>
+                    <SelectItem value="lost">Lost</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                {filteredTips.map((tip) => (
+                  <div 
+                    key={tip.id} 
+                    className="flex items-center gap-4 p-3 bg-muted/20 rounded-xl hover:bg-muted/40 transition-colors group"
+                  >
+                    <div className="flex items-center gap-2 shrink-0">
+                      <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={28} />
+                      <span className="text-xs font-bold w-8 text-center">VS</span>
+                      <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={28} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium truncate">{tip.homeTeam}</span>
+                        <span className="text-xs text-muted-foreground">vs</span>
+                        <span className="text-sm font-medium truncate">{tip.awayTeam}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant={tip.status === 'won' ? 'win' : tip.status === 'lost' ? 'lost' : 'default'} className="text-[9px]">
+                          {tip.prediction}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">@ {tip.odds}</span>
+                        <span className="text-[10px] text-muted-foreground">{new Date(tip.kickoff).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button variant="ghost" size="sm" className="h-7 px-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEditTip(tip)}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600" onClick={() => handleDeleteTip(tip.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* UTILITY BUTTONS */}
+        <div className="flex items-center justify-end gap-2 flex-wrap">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-8 text-[10px] border-accent/30 text-accent"
+            onClick={async () => {
+              try {
+                const date = new Date().toISOString().split('T')[0];
+                toast({ title: "Testing SofaScore API..." });
+                const results = await fetchMatchesByDate(date);
+                console.log("Test results:", results);
+                if (results.length > 0) {
+                  toast({ title: "API OK! ✅", description: `Found ${results.length} fixtures.` });
+                } else {
+                  toast({ variant: "destructive", title: "API Error ❌", description: "No events found." });
+                }
+              } catch (e) {
+                toast({ variant: "destructive", title: "Test Failed", description: String(e) });
+              }
+            }}
+          >
+            <Zap className="w-3 h-3 mr-1" /> Test API
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-8 text-[10px] border-orange-500/30 text-orange-500"
+            onClick={handleClearLogoCache}
+          >
+            <Trash2 className="w-3 h-3 mr-1" /> Clear Logos
+          </Button>
+          <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={refreshData}>
+            <RefreshCw className="w-3 h-3 mr-1" /> Sync
+          </Button>
         </div>
 
         {/* ADD / EDIT COUPON - RESTORED & MOBILE FRIENDLY */}
