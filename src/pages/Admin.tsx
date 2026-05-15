@@ -1037,6 +1037,49 @@ const Admin = () => {
           </Card>
         )}
 
+        {activeTab === 'tips' && (
+          <Card className="bg-card border-border/50">
+            <CardContent className="p-4 sm:p-6">
+              <h2 className="font-display text-lg font-bold mb-4 flex items-center gap-2">
+                <List className="w-5 h-5 text-primary" /> All Tips ({tips.length})
+              </h2>
+              <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v)} className="mb-4">
+                <SelectTrigger className="h-8 text-xs w-28"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="upcoming">Upcoming</SelectItem>
+                  <SelectItem value="won">Won</SelectItem>
+                  <SelectItem value="lost">Lost</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {filteredTips.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">No tips found.</p>}
+                {filteredTips.map((tip) => {
+                  const status = tip.status === 'won' ? 'win' : tip.status === 'lost' ? 'lost' : 'default';
+                  return (
+                    <div key={tip.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-xl hover:bg-muted/40 group">
+                      <div className="flex items-center gap-2">
+                        <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={18} />
+                        <span className="text-[9px] text-muted-foreground">vs</span>
+                        <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={18} />
+                        <div className="ml-2">
+                          <p className="text-xs font-medium">{tip.homeTeam} vs {tip.awayTeam}</p>
+                          <p className="text-[10px] text-muted-foreground">{tip.prediction} @ {tip.odds}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={status}>{tip.status}</Badge>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => handleEditTip(tip)}><Pencil className="w-3 h-3" /></Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-loss opacity-0 group-hover:opacity-100" onClick={() => handleDeleteTip(tip.id)}><Trash2 className="w-3 h-3" /></Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* COUPONS SECTION */}
         {activeTab === 'coupons' && (
           <div className="space-y-6">
