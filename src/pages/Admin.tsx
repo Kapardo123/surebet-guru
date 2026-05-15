@@ -42,7 +42,7 @@ import UpcomingMatchesList from "@/components/UpcomingMatchesList";
 import Logo from "@/components/Logo";
 import { fetchMatchesByDate, fetchTeamForm } from "@/lib/sportApi";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, ClipboardPaste, Search, PlusCircle, Pencil, Zap, Users, Bell, X, Crown, Trash2, List, BarChart3, Save, Plus } from "lucide-react";
+import { Sparkles, ClipboardPaste, Search, PlusCircle, Pencil, Zap, Users, Bell, X, Crown, Trash2, List, BarChart3, Save, Plus, Receipt } from "lucide-react";
 
 const Admin = () => {
   const { toast } = useToast();
@@ -122,10 +122,10 @@ const Admin = () => {
   const [filterStatus, setFilterStatus] = useState("all");
 
   const adminTabs = [
-    { id: "tips", label: "Add Tips", icon: PlusCircle },
+    { id: "tips", label: "Tips", icon: PlusCircle },
+    { id: "coupons", label: "Coupons", icon: Receipt },
     { id: "import", label: "AI Import", icon: Sparkles },
     { id: "hero", label: "Hero Pick", icon: Zap },
-    { id: "list", label: "All Tips", icon: List },
     { id: "premium", label: "Premium", icon: Users },
     { id: "stats", label: "Stats", icon: BarChart3 },
   ];
@@ -1045,63 +1045,191 @@ const Admin = () => {
           </Card>
         )}
 
-        {/* TIPS LIST */}
-        {activeTab === 'list' && (
-          <Card className="bg-card border-border/50">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
-                  <List className="w-5 h-5 text-primary" />
-                  All Tips ({tips.length})
-                </h2>
-                <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v)}>
-                  <SelectTrigger className="h-8 text-xs w-24"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="upcoming">Upcoming</SelectItem>
-                    <SelectItem value="won">Won</SelectItem>
-                    <SelectItem value="lost">Lost</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                {filteredTips.map((tip) => (
-                  <div 
-                    key={tip.id} 
-                    className="flex items-center gap-4 p-3 bg-muted/20 rounded-xl hover:bg-muted/40 transition-colors group"
-                  >
-                    <div className="flex items-center gap-2 shrink-0">
-                      <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={28} />
-                      <span className="text-xs font-bold w-8 text-center">VS</span>
-                      <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={28} />
+        {/* COUPONS SECTION */}
+        {activeTab === 'coupons' && (
+          <div className="space-y-6">
+            {/* ADD / EDIT COUPON - RESTORED & MOBILE FRIENDLY */}
+            <Card className={`bg-card border-border/50 ${editingCouponId ? 'ring-2 ring-accent' : ''}`}>
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-display text-lg font-bold flex items-center gap-2">
+                    {editingCouponId ? <Pencil className="w-4 h-4 text-accent" /> : <Receipt className="w-4 h-4 text-accent" />}
+                    {editingCouponId ? "Edit Coupon" : "Create New Coupon"}
+                  </h2>
+                  {editingCouponId && (
+                    <Button variant="ghost" size="sm" className="h-8 px-2" onClick={resetCouponForm}>
+                      <X className="w-4 h-4 mr-1" /> Cancel
+                    </Button>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Coupon Name</Label>
+                      <Input className="h-10 bg-muted/20" placeholder="e.g. Weekend Acca" value={couponName} onChange={(e) => setCouponName(e.target.value)} />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium truncate">{tip.homeTeam}</span>
-                        <span className="text-xs text-muted-foreground">vs</span>
-                        <span className="text-sm font-medium truncate">{tip.awayTeam}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant={tip.status === 'won' ? 'win' : tip.status === 'lost' ? 'lost' : 'default'} className="text-[9px]">
-                          {tip.prediction}
-                        </Badge>
-                        <span className="text-[10px] text-muted-foreground">@ {tip.odds}</span>
-                        <span className="text-[10px] text-muted-foreground">{new Date(tip.kickoff).toLocaleDateString()}</span>
-                      </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Stake ($)</Label>
+                      <Input type="number" step="0.01" className="h-10 bg-muted/20" placeholder="0.00" value={couponStake} onChange={(e) => setCouponStake(e.target.value)} />
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button variant="ghost" size="sm" className="h-7 px-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEditTip(tip)}>
-                        <Pencil className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="sm" className="h-7 px-2 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600" onClick={() => handleDeleteTip(tip.id)}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Sport</Label>
+                      <Select value={couponSport} onValueChange={(v) => setCouponSport(v)}>
+                        <SelectTrigger className="h-10 bg-muted/20"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {["Football", "Basketball", "Tennis", "MMA", "Baseball", "Hockey", "Esports"].map((s) => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Status</Label>
+                      <Select value={couponStatus} onValueChange={(v) => setCouponStatus(v as Coupon["status"])}>
+                        <SelectTrigger className="h-10 bg-muted/20"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="won">Won ✓</SelectItem>
+                          <SelectItem value="lost">Lost ✗</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+
+                  <div className="flex items-center gap-3 p-3 bg-accent/5 border border-accent/20 rounded-xl">
+                    <Checkbox id="couponPremium" checked={couponIsPremium} onCheckedChange={(c) => setCouponIsPremium(c === true)} />
+                    <Label htmlFor="couponPremium" className="flex items-center gap-1.5 text-xs font-bold cursor-pointer">
+                      <Crown className="w-3.5 h-3.5 text-accent" /> Premium Coupon
+                    </Label>
+                  </div>
+
+                  {/* COUPON MATCHES LIST */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Matches ({couponMatches.length})</Label>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      {couponMatches.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-4 italic">No matches added yet. Add matches below.</p>
+                      )}
+                      {couponMatches.map((m, i) => (
+                        <div key={i} className="flex items-center justify-between bg-background border border-border/50 rounded-lg p-2.5 group">
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <TeamLogo teamName={m.homeTeam} logoUrl={m.homeTeamLogo || undefined} size={16} />
+                            <div className="truncate">
+                              <p className="text-[10px] font-bold truncate">{m.homeTeam} vs {m.awayTeam}</p>
+                              <p className="text-[9px] text-muted-foreground">{m.prediction} @ {m.odds.toFixed(2)}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEditCouponMatch(i)}>
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="w-7 h-7 text-loss hover:text-loss opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveCouponMatch(i)}>
+                              <X className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {couponMatches.length > 1 && (
+                      <div className="flex items-center justify-between bg-accent/10 rounded-lg p-2">
+                        <span className="text-[10px] uppercase tracking-wider text-accent font-bold">Total Odds:</span>
+                        <span className="text-sm font-bold text-accent">
+                          {couponMatches.reduce((acc, m) => acc * m.odds, 1).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ADD MATCH TO COUPON FORM */}
+                  <div className="p-4 bg-muted/10 border border-border/50 rounded-xl space-y-3">
+                    <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Add Match</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-[9px] uppercase text-muted-foreground">Home Team</Label>
+                        <div className="relative">
+                          <Input className="h-9 text-xs bg-muted/20 pr-7" value={couponMatchForm.homeTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, homeTeam: e.target.value })} />
+                          {couponMatchForm.homeTeamLogo && <div className="absolute right-1.5 top-1/2 -translate-y-1/2"><TeamLogo teamName={couponMatchForm.homeTeam} logoUrl={couponMatchForm.homeTeamLogo} size={18} /></div>}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] uppercase text-muted-foreground">Away Team</Label>
+                        <div className="relative">
+                          <Input className="h-9 text-xs bg-muted/20 pr-7" value={couponMatchForm.awayTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, awayTeam: e.target.value })} />
+                          {couponMatchForm.awayTeamLogo && <div className="absolute right-1.5 top-1/2 -translate-y-1/2"><TeamLogo teamName={couponMatchForm.awayTeam} logoUrl={couponMatchForm.awayTeamLogo} size={18} /></div>}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] uppercase text-muted-foreground">Prediction</Label>
+                        <Input className="h-9 text-xs bg-muted/20" value={couponMatchForm.prediction} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, prediction: e.target.value })} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] uppercase text-muted-foreground">Odds</Label>
+                        <Input type="number" step="0.01" className="h-9 text-xs bg-muted/20" value={couponMatchForm.odds} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, odds: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" size="sm" className="w-full gap-1.5 h-9 text-[10px] uppercase tracking-wider" onClick={editingCouponMatchIndex !== null ? handleCancelCouponMatchEdit : handleAddCouponMatch}>
+                        <X className="w-3.5 h-3.5" /> {editingCouponMatchIndex !== null ? "Cancel Edit" : "Add Match to Coupon"}
+                      </Button>
+                      {editingCouponMatchIndex !== null && (
+                        <Button type="button" size="sm" className="w-full gap-1.5 h-9 text-[10px] uppercase tracking-wider bg-accent hover:bg-accent/90" onClick={handleAddCouponMatch}>
+                          <Save className="w-3.5 h-3.5" /> Update Match
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <Button 
+                    type="button" 
+                    className="w-full h-11 font-display uppercase tracking-widest text-[10px] bg-accent hover:bg-accent/90"
+                    onClick={handleSaveCoupon}
+                  >
+                    {editingCouponId ? "Save Coupon Changes" : "Save Coupon"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* COUPONS LIST */}
+            <Card className="bg-card border-border/50">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-accent" />
+                    Saved Coupons ({coupons.length})
+                  </h2>
+                </div>
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {coupons.map((c) => (
+                    <div key={c.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-xl hover:bg-muted/40 transition-colors group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                          <span className="text-lg font-bold text-accent">{c.matches.length}</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold">{c.name}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {c.matches.length} picks • Odds: {c.matches.reduce((acc, m) => acc * m.odds, 1).toFixed(2)} • {c.status}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Badge variant={c.status === 'won' ? 'win' : c.status === 'lost' ? 'lost' : 'default'} className="text-[9px]">{c.status}</Badge>
+                        {c.isPremium && <Crown className="w-3.5 h-3.5 text-accent" />}
+                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEditCoupon(c)}>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-loss hover:text-loss opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDeleteCoupon(c.id)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* UTILITY BUTTONS */}
