@@ -216,7 +216,7 @@ const SplashScreen = () => {
                 <div 
                   className="absolute inset-y-0 left-0 rounded-full transition-all duration-200 ease-out"
                   style={{ 
-                    width: `${Math.min(idx === 0 ? progress * 33.3 : Math.max(0, Math.min((progress - idx * 33.3) * 33.3, 100))}%` ,
+                    width: `${Math.min(idx === 0 ? progress * 33.3 : Math.max(0, (progress - idx * 33.3) * 33.3))}%` ,
                     background: `linear-gradient(90deg, ${item.color}, ${item.toColor})`,
                     boxShadow: `0 0 8px ${item.color}40, inset 0 1px 0 rgba(255,255,255,0.2)`,
                   }}
@@ -228,7 +228,7 @@ const SplashScreen = () => {
                   color: progress > item.threshold ? `${item.color}99` : 'rgba(255,255,255,0.15)',
                 }}
               >
-                {Math.round(Math.min(idx === 0 ? progress * 33.3 : Math.max(0, Math.min((progress - idx * 33.3) * 33.3, 100))))}%
+                {Math.round(Math.min(idx === 0 ? progress * 33.3 : Math.max(0, (progress - idx * 33.3) * 33.3)))}%
               </span>
             </div>
           ))}
