@@ -79,6 +79,12 @@ const Index = () => {
       </header>
 
       <main className="container max-w-5xl mx-auto px-4 py-6 md:py-8 space-y-8 md:space-y-10">
+        {tips.length > 0 && (
+          <ScrollReveal>
+            <RecentWins tips={tips} />
+          </ScrollReveal>
+        )}
+
         <ScrollReveal>
           <TodayHotTip />
         </ScrollReveal>
