@@ -38,6 +38,39 @@ export const loadTips = async (publishedOnly: boolean = true): Promise<Tip[]> =>
   
   if (error) {
     console.error("Error loading tips:", error);
+    
+    if (error.code === '42703' || error.message?.includes('is_published')) {
+      console.log("Column is_published does not exist, loading all tips...");
+      const { data: allData, error: allError } = await supabase
+        .from('tips')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (!allError && allData) {
+        const tips = allData.map((tip: any) => ({
+          id: tip.id,
+          sport: tip.sport,
+          league: tip.league,
+          homeTeam: tip.home_team,
+          awayTeam: tip.away_team,
+          prediction: tip.prediction,
+          odds: Number(tip.odds),
+          kickoff: tip.kickoff,
+          status: isTipStatus(tip.status) ? tip.status : "upcoming",
+          isPremium: tip.is_premium ?? undefined,
+          homeTeamLogo: tip.home_team_logo || null,
+          awayTeamLogo: tip.away_team_logo || null,
+          description: tip.description || null,
+          likesCount: tip.likes_count || 0,
+          isPublished: true,
+        }));
+        
+        setCachedTips(tips);
+        return tips;
+      }
+    }
+    
     return cached;
   }
 
