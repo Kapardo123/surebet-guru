@@ -40,21 +40,26 @@ const RecentWins = ({ tips }: RecentWinsProps) => {
         {wonTips.map((tip, index) => (
           <div
             key={tip.id}
-            className="flex items-center gap-3 p-2.5 bg-card/50 rounded-xl hover:bg-card/80 transition-colors"
+            className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 bg-card/50 rounded-xl hover:bg-card/80 transition-colors"
           >
-            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-green-500/20 text-green-500 text-[10px] font-bold shrink-0">
-              {index + 1}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-green-500/20 text-green-500 text-[10px] font-bold shrink-0">
+                {index + 1}
+              </div>
+
+              <div className="flex flex-col gap-1 min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo || undefined} size={16} />
+                  <span className="text-xs font-medium">{tip.homeTeam}</span>
+                </div>
+                <div className="flex items-center gap-1.5 ml-7">
+                  <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo || undefined} size={16} />
+                  <span className="text-xs font-medium text-muted-foreground">{tip.awayTeam}</span>
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo || undefined} size={16} />
-              <span className="text-xs font-medium truncate">{tip.homeTeam}</span>
-              <span className="text-muted-foreground text-xs">vs</span>
-              <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo || undefined} size={16} />
-              <span className="text-xs font-medium truncate">{tip.awayTeam}</span>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 pl-9 sm:pl-0 sm:shrink-0">
               <Badge variant="win" className="text-[9px] px-1.5 py-0 h-4">
                 {tip.prediction}
               </Badge>
