@@ -18,6 +18,20 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "logo.png", "splash.png"],
+      workbox: {
+        navigateFallback: "/index.html",
+        navigateFallbackAllowlist: [/^\/(?!api|app-ads\.txt).*/],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "images",
+              expiration: { maxEntries: 50, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+        ],
+      },
       manifest: {
         name: "Great Sport Bets",
         short_name: "GreatSportBets",
