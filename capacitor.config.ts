@@ -12,15 +12,8 @@ const config: CapacitorConfig = {
       presentationOptions: ["badge", "sound", "alert"],
     },
     AdMob: {
-      // Tutaj wklej swoje testowe lub produkcyjne ID reklam
-      // Dla testów możesz użyć oficjalnych testowych ID z Google
-      // Android:
-      // appId: 'ca-app-pub-3940256099942544~3347511713', // Testowy
-      // iOS:
-      // appId: 'ca-app-pub-3940256099942544~1458002611', // Testowy
-      // Aby włączyć testowe reklamy (zawsze dla developmentu!)
-      testingDevices: [''], // Tutaj dodaj ID swojego urządzenia testowego
-      initializeForTesting: true, // Włącz tryb testowy (ważne!)
+      appId: 'ca-app-pub-1532874051579555~6005647513', // PRODUKCYJNE
+      initializeForTesting: false, // Wyłącz tryb testowy dla produkcji
     },
   },
 };
