@@ -11,7 +11,11 @@
       "destination": "/test-json.json"
     },
     {
-      "source": "/((?!.well-known|test-json).*)",
+      "source": "/app-ads.txt",
+      "destination": "/app-ads.txt"
+    },
+    {
+      "source": "/((?!.well-known|test-json|app-ads).*)",
       "destination": "/index.html"
     }
   ]
