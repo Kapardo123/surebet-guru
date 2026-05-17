@@ -84,12 +84,6 @@ const Index = () => {
       </header>
 
       <main className="container max-w-5xl mx-auto px-4 py-6 md:py-8 space-y-8 md:space-y-10">
-        {recentWins.length > 0 && (
-          <ScrollReveal>
-            <RecentWins tips={recentWins} />
-          </ScrollReveal>
-        )}
-
         <ScrollReveal>
           <TodayHotTip />
         </ScrollReveal>
@@ -166,6 +160,12 @@ const Index = () => {
             )}
           </TabsContent>
         </Tabs>
+
+        {recentWins.length > 0 && (
+          <ScrollReveal>
+            <RecentWins tips={recentWins} />
+          </ScrollReveal>
+        )}
       </main>
 
       <footer className="border-t border-border/50 mt-16 pb-24 md:pb-0">
