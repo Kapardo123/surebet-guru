@@ -19,8 +19,6 @@ const RecentWins = ({ tips }: RecentWinsProps) => {
 
   if (wonTips.length === 0) return null;
 
-  const totalOdds = wonTips.reduce((acc, tip) => acc * tip.odds, 1);
-
   return (
     <div className="bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-transparent border border-green-500/20 rounded-2xl p-4 md:p-5">
       <div className="flex items-center justify-between mb-4">
@@ -29,10 +27,6 @@ const RecentWins = ({ tips }: RecentWinsProps) => {
           <h3 className="font-display text-sm font-bold text-green-500 uppercase tracking-wider">
             Recent Wins
           </h3>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="hidden sm:inline">Combined odds:</span>
-          <Badge variant="win" className="text-[10px]">{totalOdds.toFixed(2)}</Badge>
         </div>
       </div>
 

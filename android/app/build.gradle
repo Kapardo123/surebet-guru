@@ -3,6 +3,16 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.surebet.guru"
     compileSdk = rootProject.ext.compileSdkVersion
+
+    signingConfigs {
+        release {
+            storeFile file('C:\\Users\\Serwisant\\Desktop\\Tor Browser\\greatsportbets')
+            storePassword 'Nobiles22'
+            keyAlias 'greatsportbets'
+            keyPassword 'Nobiles22'
+        }
+    }
+
     defaultConfig {
         applicationId "com.surebet.guru"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -20,6 +30,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
 }
