@@ -42,7 +42,7 @@ import UpcomingMatchesList from "@/components/UpcomingMatchesList";
 import Logo from "@/components/Logo";
 import { fetchMatchesByDate, fetchTeamForm } from "@/lib/sportApi";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, ClipboardPaste, Search, PlusCircle, Pencil, Zap, Users, Bell, X, Crown, Trash2, List, BarChart3, Save, Plus, Receipt, Send, Clock, EyeOff } from "lucide-react";
+import { Sparkles, ClipboardPaste, Search, PlusCircle, Pencil, Zap, Users, Bell, X, Crown, Trash2, List, Save, Plus, Receipt, Send, Clock, EyeOff } from "lucide-react";
 
 const Admin = () => {
   const { toast } = useToast();
@@ -130,7 +130,6 @@ const Admin = () => {
     { id: "coupons", label: "Coupons", icon: Receipt },
     { id: "hero", label: "Hero Pick", icon: Zap },
     { id: "premium", label: "Premium", icon: Users },
-    { id: "stats", label: "Stats", icon: BarChart3 },
   ];
 
   const filteredTips = tips.filter(tip => filterStatus === "all" ? true : tip.status === filterStatus);
@@ -1026,60 +1025,6 @@ const Admin = () => {
               </CardContent>
             </Card>
           </div>
-        )}
-
-        {/* STATS */}
-        {activeTab === 'stats' && (
-          <Card className="bg-card border-border/50">
-            <CardContent className="p-4 sm:p-6">
-              <h2 className="font-display text-lg font-bold text-foreground mb-6 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-accent" />
-                Statistics
-              </h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div className="bg-muted/20 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-foreground">{tips.length}</div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Tips</div>
-                </div>
-                <div className="bg-green-500/10 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-green-500">{tips.filter(t => t.status === 'won').length}</div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Won</div>
-                </div>
-                <div className="bg-red-500/10 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-red-500">{tips.filter(t => t.status === 'lost').length}</div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Lost</div>
-                </div>
-                <div className="bg-accent/10 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-accent">{tips.filter(t => t.status === 'upcoming').length}</div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Upcoming</div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-muted/20 rounded-xl p-4">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Win Rate</h4>
-                  <div className="text-center">
-                    <span className="text-4xl font-bold text-accent">
-                      {tips.filter(t => t.status === 'won').length > 0 
-                        ? Math.round((tips.filter(t => t.status === 'won').length / (tips.filter(t => t.status !== 'upcoming').length || 1)) * 100)
-                        : 0}%
-                    </span>
-                  </div>
-                </div>
-                <div className="bg-muted/20 rounded-xl p-4">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Recent Form</h4>
-                  <div className="flex items-center justify-center gap-2 mt-2">
-                    {['W', 'W', 'L', 'W', 'W'].map((result, i) => (
-                      <div key={i} className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
-                        result === 'W' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
-                      }`}>
-                        {result}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         )}
 
         {activeTab === 'tips' && (
