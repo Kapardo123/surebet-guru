@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
       includeAssets: ["favicon.ico", "logo.png", "splash.png"],
       workbox: {
         navigateFallback: "/index.html",
-        navigateFallbackAllowlist: [/^\/(?!api|app-ads\.txt|google.*\.html).*/],
+        navigateFallbackAllowlist: [/^\/(?!api|app-ads\.txt|google.*\.html|\.well-known).*/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.(?:png|jpg|jpeg|svg|gif|webp)$/,
