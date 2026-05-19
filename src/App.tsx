@@ -16,6 +16,8 @@ import TermsOfService from "./pages/TermsOfService";
 import DataDeletion from "./pages/DataDeletion";
 import NotFound from "./pages/NotFound";
 import SplashScreen from "./components/SplashScreen";
+import UpdateRequiredModal from "./components/UpdateRequiredModal";
+import { useAppUpdate } from "@/hooks/useAppUpdate";
 import { useEffect, useState } from "react";
 import { initRevenueCat } from "@/integrations/revenuecat";
 
@@ -51,6 +53,15 @@ const AnimatedRoutes = () => {
 
 const AppContent = () => {
   const [error, setError] = useState<string | null>(globalError);
+  const {
+    needsUpdate,
+    forceUpdate,
+    currentVersion,
+    latestVersion,
+    message,
+    downloadUrl,
+    loading: updateLoading
+  } = useAppUpdate();
 
   useEffect(() => {
     const handleAppError = (e: any) => setError(e.detail);
@@ -93,6 +104,18 @@ const AppContent = () => {
       <Toaster />
       <Sonner />
       <AnimatedRoutes />
+      
+      {/* Update Modal - shows over everything */}
+      {!updateLoading && needsUpdate && (
+        <UpdateRequiredModal
+          isOpen={needsUpdate}
+          forceUpdate={forceUpdate}
+          currentVersion={currentVersion}
+          latestVersion={latestVersion}
+          message={message}
+          downloadUrl={downloadUrl}
+        />
+      )}
     </AuthProvider>
   );
 };
