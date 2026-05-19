@@ -224,6 +224,23 @@ const TodayHotTip = () => {
                   <p className="font-display font-bold text-success text-sm">{data.confidence}</p>
                 </div>
               </div>
+
+              {data.description && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                  className="mt-5 p-4 bg-gradient-to-br from-accent/5 to-transparent rounded-xl border border-accent/20"
+                >
+                  <div className="flex items-start gap-2">
+                    <Gift className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider text-accent font-bold mb-2">Analysis</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed italic">{data.description}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
         </motion.div>
