@@ -2,15 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { AdMob, AdRewardItem, RewardAdOptions, AdLoadOptions, AdShowOptions } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
 
-// Sprawdź czy działamy na natywnej platformie (iOS/Android)
 export const isNativePlatform = Capacitor.isNativePlatform();
 
 export const useAdMob = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isRewardedAdReady, setIsRewardedAdReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rewardReceived, setRewardReceived] = useState<boolean>(false);
 
-  // Inicjalizacja AdMob
   const initialize = useCallback(async () => {
     if (!isNativePlatform) {
       console.log('AdMob: Nie działamy na natywnej platformie, pomijamy inicjalizację');
@@ -25,18 +24,18 @@ export const useAdMob = () => {
     }
   }, []);
 
-  // Załaduj reklamę nagrodzoną
   const loadRewardedAd = useCallback(async (adUnitId?: string) => {
     if (!isNativePlatform) return false;
 
     setIsLoading(true);
     setError(null);
+    setRewardReceived(false);
 
     try {
       const options: AdLoadOptions = {
         adId: adUnitId || (Capacitor.getPlatform() === 'android'
-          ? 'ca-app-pub-1532874051579555/1810109997' // Produkcyjny Android Rewarded
-          : 'ca-app-pub-3940256099942544/1712485313' // Testowy iOS Rewarded
+          ? 'ca-app-pub-1532874051579555/1810109997'
+          : 'ca-app-pub-3940256099942544/1712485313'
         ),
       };
 
@@ -54,48 +53,80 @@ export const useAdMob = () => {
     }
   }, []);
 
-  // Pokaż reklamę nagrodzoną
   const showRewardedAd = useCallback(async (): Promise<AdRewardItem | null> => {
     if (!isNativePlatform) {
       console.log('AdMob: Tylko na natywne platformy');
       return null;
     }
     if (!isRewardedAdReady) {
-      console.log('AdMob: Brak załadowanej reklamy');
-      // Spróbuj załadować ponownie
+      console.log('AdMob: Brak załadowanej reklamy, ładowam...');
       const loaded = await loadRewardedAd();
       if (!loaded) return null;
     }
 
     setIsLoading(true);
     setError(null);
+    setRewardReceived(false);
 
     try {
-      const result = await AdMob.showRewardVideoAd();
-      setIsRewardedAdReady(false); // Po pokazaniu trzeba załadować ponownie
+      // Nasłuchuj na event nagrody
+      const handler = await AdMob.addListener('onRewarded', (info: any) => {
+        console.log('AdMob: Nagroda odebrana!', info);
+        setRewardReceived(true);
+      });
 
-      if (result.reward) {
-        console.log('AdMob: Użytkownik otrzymał nagrodę:', result.reward);
-        return result.reward;
+      // Pokaż reklamę
+      const result = await AdMob.showRewardVideoAd();
+      
+      // Usuń listener
+      await handler.remove();
+      
+      setIsRewardedAdReady(false);
+
+      // Sprawdź czy otrzymaliśmy nagrodę przez event LUB przez result
+      if (rewardReceived || result?.reward) {
+        console.log('AdMob: ✅ Użytkownik otrzymał nagrodę!');
+        
+        // Załaduj następną reklamę w tle
+        setTimeout(() => loadRewardedAd(), 1000);
+        
+        return result?.reward || { type: '', amount: 0 };
       } else {
-        console.log('AdMob: Użytkownik nie otrzymał nagrody');
+        console.log('AdMob: ⚠️ Użytkownik nie dokończył reklamy lub brak nagrody');
+        
+        // Przeładuj reklamę na przyszłość
+        setTimeout(() => loadRewardedAd(), 2000);
+        
         return null;
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('AdMob: Błąd wyświetlania rewarded ad:', err);
+      
+      // Jeśli błąd to "cancelled" - użytkownik zamknął reklamę
+      if (err?.message?.includes('cancel') || err?.message?.includes('Cancel')) {
+        console.log('AdMob: Użytkownik zamknął reklamę ręcznie');
+        setTimeout(() => loadRewardedAd(), 2000);
+      }
+      
       setError('Nie udało się wyświetlić reklamy');
       setIsRewardedAdReady(false);
       return null;
     } finally {
       setIsLoading(false);
     }
-  }, [isRewardedAdReady, loadRewardedAd]);
+  }, [isRewardedAdReady, rewardReceived, loadRewardedAd]);
 
-  // Załaduj reklamę przy starcie
   useEffect(() => {
     if (isNativePlatform) {
       initialize().then(() => loadRewardedAd());
     }
+
+    // Cleanup listeners przy unmount
+    return () => {
+      if (isNativePlatform) {
+        AdMob.removeAllListeners().catch(() => {});
+      }
+    };
   }, [initialize, loadRewardedAd]);
 
   return {
@@ -103,6 +134,7 @@ export const useAdMob = () => {
     isRewardedAdReady,
     isNativePlatform,
     error,
+    rewardReceived,
     initialize,
     loadRewardedAd,
     showRewardedAd,

@@ -25,7 +25,7 @@ const statusLabel = {
 const TodayHotTip = () => {
   const [pick, setPick] = useState<FeaturedPick | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
-  const { isLoading, isRewardedAdReady, error, showRewardedAd, loadRewardedAd } = useAdMob();
+  const { isLoading, isRewardedAdReady, error, rewardReceived, showRewardedAd, loadRewardedAd } = useAdMob();
 
   useEffect(() => {
     // Sprawdź, czy tip został już odblokowany w localStorage
@@ -44,16 +44,26 @@ const TodayHotTip = () => {
 
   const handleWatchAd = async () => {
     try {
+      console.log('TodayHotTip: Rozpoczynanie wyświetlania reklamy...');
       const reward = await showRewardedAd();
-      if (reward) {
-        // Użytkownik obejrzał reklamę do końca i otrzymał nagrodę!
+      
+      console.log('TodayHotTab: Wynik reklamy:', { reward, rewardReceived });
+      
+      // Odblokuj jeśli otrzymaliśmy nagrodę (przez event LUB przez result)
+      if (reward || rewardReceived) {
+        console.log('✅ TodayHotTip: Tip odblokowany!');
         setIsUnlocked(true);
         localStorage.setItem("hotTipUnlocked", "true");
+      } else {
+        console.log('⚠️ TodayHotTip: Reklama nie dokończona lub brak nagrody');
+        // Spróbuj załadować nową reklamę
+        setTimeout(() => loadRewardedAd(), 1000);
       }
     } catch (err) {
-      console.error("Błąd podczas wyświetlania reklamy:", err);
-      // Jeśli coś poszło nie tak, spróbuj załadować nową reklamę
-      await loadRewardedAd();
+      console.error("❌ Błąd podczas wyświetlania reklamy:", err);
+      
+      // Zawsze próbuj przeładować reklamę po błędzie
+      setTimeout(() => loadRewardedAd(), 2000);
     }
   };
 
