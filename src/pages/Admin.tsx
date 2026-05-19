@@ -916,6 +916,26 @@ const Admin = () => {
               <div className="space-y-4">
                 <UpcomingMatchesList onSelectMatch={handleSelectFeaturedMatch} />
                 <div className="space-y-3 p-4 bg-muted/10 rounded-xl border border-border/50">
+                  <div className="space-y-1">
+                    <Label className="text-[9px] uppercase text-muted-foreground">League</Label>
+                    <Input className="h-9 text-xs" placeholder="e.g. UEFA Champions League" value={featured.league} onChange={(e) => setFeatured({ ...featured, league: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] uppercase text-muted-foreground">Kickoff Time</Label>
+                    <Input className="h-9 text-xs" placeholder="e.g. 21:00" value={featured.kickoff} onChange={(e) => setFeatured({ ...featured, kickoff: e.target.value })} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1 relative">
+                      <Label className="text-[9px] uppercase text-muted-foreground">Home Team</Label>
+                      <Input className="h-9 text-xs bg-muted/20 pr-8" placeholder="Home team" value={featured.homeTeam} onChange={(e) => setFeatured({ ...featured, homeTeam: e.target.value })} />
+                      {featured.homeTeamLogo && <div className="absolute right-1.5 top-[22px]"><TeamLogo teamName={featured.homeTeam} logoUrl={featured.homeTeamLogo} size={18} /></div>}
+                    </div>
+                    <div className="space-y-1 relative">
+                      <Label className="text-[9px] uppercase text-muted-foreground">Away Team</Label>
+                      <Input className="h-9 text-xs bg-muted/20 pr-8" placeholder="Away team" value={featured.awayTeam} onChange={(e) => setFeatured({ ...featured, awayTeam: e.target.value })} />
+                      {featured.awayTeamLogo && <div className="absolute right-1.5 top-[22px]"><TeamLogo teamName={featured.awayTeam} logoUrl={featured.awayTeamLogo} size={18} /></div>}
+                    </div>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-[9px] uppercase text-muted-foreground">Confidence</Label>
