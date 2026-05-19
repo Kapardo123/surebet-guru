@@ -109,7 +109,6 @@ const AppContent = () => {
       {!updateLoading && needsUpdate && (
         <UpdateRequiredModal
           isOpen={needsUpdate}
-          forceUpdate={forceUpdate}
           currentVersion={currentVersion}
           latestVersion={latestVersion}
           message={message}
