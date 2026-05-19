@@ -34,10 +34,8 @@ export const useAdMob = () => {
 
     try {
       const options: AdLoadOptions = {
-        // Domyślne testowe ID reklam od Google
-        // W produkcji zastąp własnymi!
         adId: adUnitId || (Capacitor.getPlatform() === 'android'
-          ? 'ca-app-pub-3940256099942544/5224354917' // Testowy Android Rewarded
+          ? 'ca-app-pub-1532874051579555/1810109997' // Produkcyjny Android Rewarded
           : 'ca-app-pub-3940256099942544/1712485313' // Testowy iOS Rewarded
         ),
       };
