@@ -21,8 +21,8 @@ interface UpdateStatus {
   loading: boolean;
 }
 
-const CURRENT_VERSION = "10.0.0";
-const CURRENT_BUILD = 1000;
+const CURRENT_VERSION = "11.0.0";
+const CURRENT_BUILD = 1100;
 
 export const useAppUpdate = (): UpdateStatus => {
   const [status, setStatus] = useState<UpdateStatus>({

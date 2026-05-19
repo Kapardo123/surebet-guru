@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 
 const APP_VERSION = {
-  version: "10.0.0",
-  build: 1000,
+  version: "11.0.0",
+  build: 1100,
   forceUpdate: true,
   releaseDate: "2026-05-19",
   updateMessage: "New version available! 🚀 Enhanced AdMob integration, improved UI, and bug fixes.",
