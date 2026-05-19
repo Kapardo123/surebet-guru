@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { Zap, Play, Gift, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Zap, Play, Gift, Loader2, Crown } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { motion } from "framer-motion";
 import { FeaturedPick, loadFeaturedPick } from "@/lib/featuredPickStorage";
-import { useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAdMob } from "@/hooks/useAdMob";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 
 const statusVariant = {
   upcoming: "outline" as const,
@@ -26,21 +26,28 @@ const TodayHotTip = () => {
   const [pick, setPick] = useState<FeaturedPick | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const { isLoading, isRewardedAdReady, error, rewardReceived, showRewardedAd, loadRewardedAd } = useAdMob();
+  const { active: isPremium } = usePremiumStatus();
 
   useEffect(() => {
-    // Sprawdź, czy tip został już odblokowany w localStorage
+    // Premium users always have access - auto unlock
+    if (isPremium) {
+      setIsUnlocked(true);
+      return;
+    }
+
+    // Check if already unlocked via ad
     const savedUnlocked = localStorage.getItem("hotTipUnlocked");
     if (savedUnlocked === "true") {
       setIsUnlocked(true);
     }
 
-    // Załaduj dane tipu
+    // Load tip data
     loadFeaturedPick().then((featured) => {
       if (featured) {
         setPick(featured);
       }
     });
-  }, []);
+  }, [isPremium]);
 
   const handleWatchAd = async () => {
     try {
@@ -164,6 +171,12 @@ const TodayHotTip = () => {
                   <Zap className="w-4 h-4 animate-pulse" />
                   <span className="text-xs font-semibold uppercase tracking-wider">Today's Hot Tip</span>
                 </div>
+                {isPremium && (
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-400 px-2 py-1 rounded-full border border-pink-500/30">
+                    <Crown className="w-3 h-3" />
+                    <span className="text-[9px] font-bold uppercase tracking-wider">Premium</span>
+                  </div>
+                )}
               </div>
               {(data.status && data.status !== "upcoming") && (
                 <Badge variant={statusVariant[data.status]} className="gap-1.5 py-1.5 px-3">
