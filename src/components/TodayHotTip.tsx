@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Zap, Play, Gift, Loader2, Crown } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { FeaturedPick, loadFeaturedPick } from "@/lib/featuredPickStorage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ const statusLabel = {
 const TodayHotTip = () => {
   const [pick, setPick] = useState<FeaturedPick | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false);
   const { isLoading, isRewardedAdReady, error, rewardReceived, showRewardedAd, loadRewardedAd } = useAdMob();
   const { active: isPremium } = usePremiumStatus();
 
@@ -226,20 +227,43 @@ const TodayHotTip = () => {
               </div>
 
               {data.description && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="mt-5 p-4 bg-gradient-to-br from-accent/5 to-transparent rounded-xl border border-accent/20"
-                >
-                  <div className="flex items-start gap-2">
-                    <Gift className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-[9px] uppercase tracking-wider text-accent font-bold mb-2">Analysis</p>
-                      <p className="text-xs text-muted-foreground leading-relaxed italic">{data.description}</p>
-                    </div>
-                  </div>
-                </motion.div>
+                <div className="mt-5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAnalysis(!showAnalysis)}
+                    className="w-full gap-2 h-9 text-xs font-display uppercase tracking-wider text-accent hover:bg-accent/10 hover:text-accent border border-accent/20 rounded-lg transition-all"
+                  >
+                    <Gift className={`w-4 h-4 transition-transform ${showAnalysis ? 'rotate-180' : ''}`} />
+                    {showAnalysis ? 'Hide Analysis' : 'Show Analysis'}
+                    {showAnalysis ? (
+                      <svg className="w-3 h-3 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </Button>
+
+                  <AnimatePresence>
+                    {showAnalysis && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="mt-2 p-4 bg-gradient-to-br from-accent/5 to-transparent rounded-xl border border-accent/20 overflow-hidden"
+                      >
+                        <div className="flex items-start gap-2">
+                          <Gift className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                          <p className="text-xs text-muted-foreground leading-relaxed italic">{data.description}</p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               )}
             </div>
           </div>

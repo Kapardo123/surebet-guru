@@ -59,12 +59,14 @@ const Index = () => {
               </Button>
             </Link>
             <div className="hidden md:flex items-center gap-2">
-              <Link to="/premium">
-                <Button size="sm" className="gap-1.5 bg-gradient-to-r from-accent to-accent/80 text-accent-foreground hover:from-accent/90 hover:to-accent/70 shadow-lg shadow-accent/20 font-display text-xs uppercase tracking-wider">
-                  <Crown className="w-3.5 h-3.5" />
-                  Go Premium
-                </Button>
-              </Link>
+              {!isPremium && (
+                <Link to="/premium">
+                  <Button size="sm" className="gap-1.5 bg-gradient-to-r from-accent to-accent/80 text-accent-foreground hover:from-accent/90 hover:to-accent/70 shadow-lg shadow-accent/20 font-display text-xs uppercase tracking-wider">
+                    <Crown className="w-3.5 h-3.5" />
+                    Go Premium
+                  </Button>
+                </Link>
+              )}
               {user ? (
                 <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={signOut}>
                   <LogOut className="w-4 h-4" />
