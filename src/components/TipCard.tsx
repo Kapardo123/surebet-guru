@@ -129,9 +129,9 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
               {tip.isPremium && !isSettled && (
-                <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-1.5 md:px-2 py-0.5 md:py-1 text-[8px] md:text-[9px] font-display font-bold uppercase tracking-wider rounded-full flex items-center gap-0.5 md:gap-1 shadow-md shadow-pink-500/40">
-                  <Crown className="w-2 h-2 md:w-2.5 md:h-2.5" />
-                  <span>PRO</span>
+                <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-2 md:px-2.5 py-0.5 md:py-1 text-[9px] md:text-[10px] font-display font-bold uppercase tracking-wider rounded-full flex items-center gap-1 md:gap-1.5 shadow-lg shadow-pink-500/40">
+                  <Crown className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                  <span>Premium</span>
                 </div>
               )}
               <Badge variant="sport" className="text-[9px] md:text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/30">{tip.sport}</Badge>
