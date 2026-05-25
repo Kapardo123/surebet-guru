@@ -129,8 +129,8 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
               {tip.isPremium && !isSettled && (
-                <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-2 md:px-2.5 py-0.5 md:py-1 text-[9px] md:text-[10px] font-display font-bold uppercase tracking-wider rounded-full flex items-center gap-1 md:gap-1.5 shadow-lg shadow-pink-500/40">
-                  <Crown className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 text-white px-2.5 md:px-3 py-1 md:py-1.5 text-[9px] md:text-[10px] font-display font-bold uppercase tracking-wider rounded-full flex items-center gap-1.5 shadow-lg shadow-pink-500/50 animate-pulse">
+                  <Crown className="w-3 h-3 md:w-3.5 md:h-3.5 fill-white" />
                   <span>Premium</span>
                 </div>
               )}

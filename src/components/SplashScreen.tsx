@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 
 const SplashScreen = () => {
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showContent, setShowContent] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
 
   useEffect(() => {
+    const splashShown = sessionStorage.getItem('splash_shown');
+    if (splashShown) return;
+    
+    setIsVisible(true);
     setShowContent(true);
 
     const duration = 5000;
@@ -26,6 +30,7 @@ const SplashScreen = () => {
 
     const hideTimer = setTimeout(() => {
       setIsVisible(false);
+      sessionStorage.setItem('splash_shown', 'true');
     }, duration + 200);
 
     return () => {
