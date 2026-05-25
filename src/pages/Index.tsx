@@ -82,33 +82,33 @@ const Index = () => {
 
       {/* Modern Glass Header */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border/30 shadow-lg shadow-black/5">
-        <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="container max-w-6xl mx-auto px-3 md:px-4 py-3 md:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 md:gap-3">
             <Logo />
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <PremiumBadge active={isPremium} daysLeft={premiumDaysLeft} loading={premiumLoading} />
             
             <div className="hidden md:flex items-center gap-2.5">
               {!isPremium && (
                 <Link to="/premium">
                   <Button size="sm" 
-                          className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold uppercase tracking-wider text-xs shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105 rounded-full px-5 py-2.5 border border-purple-400/20">
-                    <Crown className="w-4 h-4" />
+                          className="gap-1.5 md:gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold uppercase tracking-wider text-xs shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105 rounded-full px-4 md:px-5 py-2 md:py-2.5 border border-purple-400/20">
+                    <Crown className="w-3.5 h-3.5 md:w-4 md:h-4" />
                     Go Premium
                   </Button>
                 </Link>
               )}
               
               {user ? (
-                <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200 rounded-full px-4" onClick={signOut}>
+                <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200 rounded-full px-3 md:px-4" onClick={signOut}>
                   <LogOut className="w-4 h-4" />
-                  <span className="text-xs font-medium">{user.email?.split("@")[0]}</span>
+                  <span className="text-xs font-medium hidden lg:inline">{user.email?.split("@")[0]}</span>
                 </Button>
               ) : (
                 <Link to="/auth">
-                  <Button variant="outline" size="sm" className="gap-2 text-xs font-medium border-border/50 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all duration-200 rounded-full px-4">
+                  <Button variant="outline" size="sm" className="gap-2 text-xs font-medium border-border/50 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all duration-200 rounded-full px-3 md:px-4">
                     <LogIn className="w-4 h-4" />
                     Sign In
                   </Button>
@@ -117,8 +117,8 @@ const Index = () => {
             </div>
 
             {/* Mobile menu button */}
-            <Link to="/admin" className="md:hidden p-2 hover:bg-muted/50 rounded-lg transition-colors">
-              <Settings className="w-5 h-5 text-muted-foreground" />
+            <Link to="/admin" className="md:hidden p-1.5 md:p-2 hover:bg-muted/50 rounded-lg transition-colors">
+              <Settings className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
             </Link>
           </div>
         </div>
