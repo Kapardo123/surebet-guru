@@ -26,19 +26,13 @@ const TodayHotTip = () => {
   const [pick, setPick] = useState<FeaturedPick | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const { isLoading, isRewardedAdReady, error, rewardReceived, showRewardedAd, loadRewardedAd } = useAdMob();
+  const [lastUnlockedTipId, setLastUnlockedTipId] = useState<string | null>(null);
+  const { isLoading, isRewardedAdReady, error, showRewardedAd, loadRewardedAd } = useAdMob();
   const { active: isPremium } = usePremiumStatus();
 
   useEffect(() => {
     // Premium users always have access - auto unlock
     if (isPremium) {
-      setIsUnlocked(true);
-      return;
-    }
-
-    // Check if already unlocked via ad
-    const savedUnlocked = localStorage.getItem("hotTipUnlocked");
-    if (savedUnlocked === "true") {
       setIsUnlocked(true);
     }
 
@@ -46,31 +40,55 @@ const TodayHotTip = () => {
     loadFeaturedPick().then((featured) => {
       if (featured) {
         setPick(featured);
+
+        // Check if this is a NEW tip (different from last unlocked)
+        const currentTipId = `${featured.homeTeam}-${featured.awayTeam}-${featured.kickoff}`;
+        const savedTipId = localStorage.getItem("lastUnlockedTipId");
+        
+        if (!isPremium && savedTipId && savedTipId !== currentTipId) {
+          console.log('🔄 New tip detected - resetting unlock status');
+          setIsUnlocked(false);
+          localStorage.setItem("hotTipUnlocked", "false");
+        }
+
+        // Restore unlock status for current tip
+        if (!isPremium) {
+          const savedUnlocked = localStorage.getItem("hotTipUnlocked");
+          if (savedUnlocked === "true") {
+            setIsUnlocked(true);
+            setLastUnlockedTipId(currentTipId);
+          }
+        }
       }
     });
   }, [isPremium]);
 
   const handleWatchAd = async () => {
     try {
-      console.log('TodayHotTip: Rozpoczynanie wyświetlania reklamy...');
-      const reward = await showRewardedAd();
+      console.log('⏳ TodayHotTip: Rozpoczynanie wyświetlania reklamy...');
+      const gotReward = await showRewardedAd();
       
-      console.log('TodayHotTab: Wynik reklamy:', { reward, rewardReceived });
+      console.log(`📊 TodayHotTip: Wynik reklamy: ${gotReward ? 'NAGRODA' : 'BRAK NAGRODY'}`);
       
-      // Odblokuj jeśli otrzymaliśmy nagrodę (przez event LUB przez result)
-      if (reward || rewardReceived) {
+      if (gotReward) {
         console.log('✅ TodayHotTip: Tip odblokowany!');
+        
+        // Zapisz stan odblokowania
         setIsUnlocked(true);
         localStorage.setItem("hotTipUnlocked", "true");
+        
+        // Zapisz ID obecnego tipu jako odblokowany
+        if (pick) {
+          const currentTipId = `${pick.homeTeam}-${pick.awayTeam}-${pick.kickoff}`;
+          localStorage.setItem("lastUnlockedTipId", currentTipId);
+          setLastUnlockedTipId(currentTipId);
+        }
       } else {
         console.log('⚠️ TodayHotTip: Reklama nie dokończona lub brak nagrody');
-        // Spróbuj załadować nową reklamę
         setTimeout(() => loadRewardedAd(), 1000);
       }
     } catch (err) {
       console.error("❌ Błąd podczas wyświetlania reklamy:", err);
-      
-      // Zawsze próbuj przeładować reklamę po błędzie
       setTimeout(() => loadRewardedAd(), 2000);
     }
   };
