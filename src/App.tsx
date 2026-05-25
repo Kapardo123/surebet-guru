@@ -10,7 +10,6 @@ import Admin from "./pages/Admin";
 import Premium from "./pages/Premium";
 import Coupons from "./pages/Coupons";
 import Auth from "./pages/Auth";
-import Referral from "./pages/Referral";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import DataDeletion from "./pages/DataDeletion";
@@ -42,7 +41,6 @@ const AnimatedRoutes = () => {
       <Route path="/premium" element={<Premium />} />
       <Route path="/coupons" element={<Coupons />} />
       <Route path="/auth" element={<Auth />} />
-      <Route path="/referral" element={<Referral />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="/deletion" element={<DataDeletion />} />
