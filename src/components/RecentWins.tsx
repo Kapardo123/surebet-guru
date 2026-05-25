@@ -229,8 +229,8 @@ const RecentWins = ({ tips, coupons = [], heroPick }: RecentWinsProps) => {
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <PartyPopper className="w-4 h-4 text-blue-500 shrink-0" />
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold text-blue-400">KUPON WYGRANY</span>
-                    <span className="text-[10px] text-muted-foreground">Kliknij aby zobaczyć podgląd</span>
+                    <span className="text-xs font-bold text-blue-400">COUPON WON</span>
+                    <span className="text-[10px] text-muted-foreground">Tap to view details</span>
                   </div>
                 </div>
               ) : (
