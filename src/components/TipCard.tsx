@@ -84,10 +84,10 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
   const getTimeRemaining = () => {
     if (tip.status !== 'won' || !tip.wonAt) return null;
 
-    const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+    const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
     const wonTime = new Date(tip.wonAt).getTime();
     const elapsed = Date.now() - wonTime;
-    const remaining = TWELVE_HOURS_MS - elapsed;
+    const remaining = EIGHT_HOURS_MS - elapsed;
 
     if (remaining <= 0) return null; // Już minęło
 
@@ -160,9 +160,6 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
             <Badge variant={statusVariant[tip.status]} className="gap-1.5 shrink-0">
               {tip.isPremium && isSettled && <Crown className="w-3 h-3" />}
               <span className="whitespace-nowrap">{statusLabel[tip.status]}</span>
-              {timeRemaining && (
-                <span className="text-[9px] opacity-75">({timeRemaining})</span>
-              )}
             </Badge>
           </div>
 

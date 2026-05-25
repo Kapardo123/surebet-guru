@@ -32,17 +32,17 @@ const Index = () => {
       const loadedTips = await loadTips();
       const loadedCoupons = await loadCoupons();
 
-      // 12 godzin w milisekundach
-      const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+      // 8 godzin w milisekundach
+      const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
 
-      // Tips: aktywne + wygrane (tylko z ostatnich 12h)
+      // Tips: aktywne + wygrane (tylko z ostatnich 8h)
       const now = Date.now();
       const visibleTips = loadedTips.filter(tip => {
         if (tip.status === 'upcoming') return true;
         if (tip.status === 'won' && tip.wonAt) {
           const wonTime = new Date(tip.wonAt).getTime();
           const hoursSinceWin = now - wonTime;
-          return hoursSinceWin < TWELVE_HOURS_MS;
+          return hoursSinceWin < EIGHT_HOURS_MS;
         }
         return false;
       });
