@@ -38,20 +38,10 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
         {/* Top gradient line - Blue to Cyan */}
         <div className="h-[3px] w-full bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500" />
 
-        {/* Premium badge */}
-        {coupon.isPremium && (
-          <div className="absolute top-3 right-0 z-10">
-            <div className="bg-gradient-to-l from-blue-500 to-cyan-500 text-white px-3 py-1.5 text-[10px] font-display font-bold uppercase tracking-wider rounded-l-full flex items-center gap-1.5 shadow-lg shadow-blue-500/40">
-              <Crown className="w-3 h-3" />
-              Premium
-            </div>
-          </div>
-        )}
-
         <div className="p-4 md:p-5 space-y-3 md:space-y-4">
           {/* Header with icon */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 md:gap-3 min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 md:gap-2.5 min-w-0 flex-1">
               <div className="w-9 h-9 md:w-11 md:h-11 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center ring-2 ring-blue-500/30 flex-shrink-0">
                 <Receipt className="w-4 w-4 md:w-5 md:h-5 text-blue-400" />
               </div>
@@ -62,9 +52,17 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
                 )}
               </div>
             </div>
-            <Badge variant={statusVariant[coupon.status]} className="shrink-0 text-[10px] px-2 py-0.5">
-              {statusLabel[coupon.status]}
-            </Badge>
+            <div className="flex items-center gap-1.5 md:gap-2 shrink-0 flex-wrap">
+              {coupon.isPremium && (
+                <div className="bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 text-white px-2 md:px-2.5 py-0.5 md:py-1 text-[8px] md:text-[9px] font-display font-bold uppercase tracking-wider rounded-full flex items-center gap-1 shadow-md shadow-blue-500/40">
+                  <Crown className="w-2 h-2 md:w-2.5 md:h-2.5 fill-white" />
+                  <span>PRO</span>
+                </div>
+              )}
+              <Badge variant={statusVariant[coupon.status]} className="text-[9px] md:text-[10px] px-1.5 md:px-2 py-0.5">
+                {statusLabel[coupon.status]}
+              </Badge>
+            </div>
           </div>
 
           {locked ? (
