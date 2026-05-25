@@ -40,6 +40,7 @@ export interface Coupon {
   status: "active" | "won" | "lost" | "pending";
   createdAt: string;
   isPremium?: boolean;
+  wonAt?: string | null; // ISO timestamp kiedy kupon wygrał
 }
 
 const isCouponStatus = (value: unknown): value is Coupon["status"] =>
@@ -115,6 +116,7 @@ export const loadCoupons = async (): Promise<Coupon[]> => {
       status,
       createdAt: coupon.created_at,
       isPremium: coupon.is_premium ?? undefined,
+      wonAt: coupon.won_at || null,
     };
   });
 
@@ -124,6 +126,9 @@ export const loadCoupons = async (): Promise<Coupon[]> => {
 
 export const addCoupon = async (coupon: Omit<Coupon, "id" | "totalOdds" | "createdAt">): Promise<Coupon | null> => {
   const totalOdds = calculateTotalOdds(coupon.matches);
+  // Automatycznie ustawiaj won_at gdy status = "won"
+  const wonAt = coupon.status === 'won' ? new Date().toISOString() : null;
+
   const { data, error } = await supabase
     .from('coupons')
     .insert([{
@@ -132,7 +137,8 @@ export const addCoupon = async (coupon: Omit<Coupon, "id" | "totalOdds" | "creat
       total_odds: totalOdds,
       stake: coupon.stake,
       status: coupon.status,
-      is_premium: coupon.isPremium
+      is_premium: coupon.isPremium,
+      won_at: wonAt
     }])
     .select()
     .single();
@@ -150,7 +156,8 @@ export const addCoupon = async (coupon: Omit<Coupon, "id" | "totalOdds" | "creat
     stake: data.stake ?? undefined,
     status: isCouponStatus(data.status) ? data.status : "active",
     createdAt: data.created_at,
-    isPremium: data.is_premium ?? undefined
+    isPremium: data.is_premium ?? undefined,
+    wonAt: data.won_at || null,
   };
 };
 
@@ -165,6 +172,11 @@ export const deleteCoupon = async (id: number) => {
 
 export const updateCoupon = async (updatedCoupon: Coupon) => {
   const totalOdds = calculateTotalOdds(updatedCoupon.matches);
+  // Automatycznie ustawiaj won_at gdy status = "won"
+  const wonAt = updatedCoupon.status === 'won' ? new Date().toISOString() : null;
+
+  console.log('📝 Updating coupon:', updatedCoupon.id, 'Status:', updatedCoupon.status, 'wonAt:', wonAt);
+
   const { error } = await supabase
     .from('coupons')
     .update({
@@ -173,9 +185,16 @@ export const updateCoupon = async (updatedCoupon: Coupon) => {
       total_odds: totalOdds,
       stake: updatedCoupon.stake,
       status: updatedCoupon.status,
-      is_premium: updatedCoupon.isPremium
+      is_premium: updatedCoupon.isPremium,
+      won_at: wonAt
     })
     .eq('id', updatedCoupon.id);
 
-  if (error) console.error("Error updating coupon:", error);
+  if (error) {
+    console.error("❌ Error updating coupon:", error);
+    return false;
+  }
+
+  console.log('✅ Coupon updated successfully:', updatedCoupon.id);
+  return true;
 };

@@ -11,9 +11,10 @@ export interface FeaturedPick {
   confidence: string;
   status: "upcoming" | "won" | "lost" | "draw";
   homeTeamLogo?: string | null;
- awayTeamLogo?: string | null;
+  awayTeamLogo?: string | null;
   description?: string | null;
   likesCount?: number;
+  wonAt?: string | null; // ISO timestamp kiedy typ wygrał
 }
 export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
   const { data, error } = await supabase
@@ -42,12 +43,16 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
     homeTeamLogo: data.home_team_logo,
     awayTeamLogo: data.away_team_logo,
     description: data.description,
-    likesCount: data.likes_count || 0
+    likesCount: data.likes_count || 0,
+    wonAt: data.won_at || null
   };
 };
 
 export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
-  // We always INSERT a new record. 
+  // Automatycznie ustawiaj won_at gdy status = "won"
+  const wonAt = pick.status === 'won' ? new Date().toISOString() : null;
+
+  // We always INSERT a new record.
   // This ensures the latest "Save" is always the one with the newest 'created_at'.
   // loadFeaturedPick always fetches the newest record, so this guarantees the UI updates correctly.
   const dataToSave: any = {
@@ -62,7 +67,8 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
     home_team_logo: pick.homeTeamLogo,
     away_team_logo: pick.awayTeamLogo,
     description: pick.description,
-    likes_count: pick.likesCount || 0
+    likes_count: pick.likesCount || 0,
+    won_at: wonAt
   };
 
   const { error } = await supabase

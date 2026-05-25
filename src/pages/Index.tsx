@@ -7,6 +7,7 @@ import TodayHotTip from "@/components/TodayHotTip";
 import BottomNav from "@/components/BottomNav";
 import { loadTips } from "@/lib/tipsStorage";
 import { loadCoupons, Coupon } from "@/lib/couponStorage";
+import { loadFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
 import { Tip } from "@/components/TipCard";
 import { Settings, Crown, TrendingUp, Receipt, LogIn, LogOut, Gift } from "lucide-react";
 import PremiumBadge from "@/components/PremiumBadge";
@@ -24,6 +25,7 @@ const Index = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [activeTab, setActiveTab] = useState("tips");
   const [recentWins, setRecentWins] = useState<Tip[]>([]);
+  const [heroPick, setHeroPick] = useState<FeaturedPick | null>(null);
   const { active: isPremium, daysLeft: premiumDaysLeft, loading: premiumLoading } = usePremiumStatus();
   const { user, signOut } = useAuth();
 
@@ -31,6 +33,7 @@ const Index = () => {
     const fetchData = async () => {
       const loadedTips = await loadTips();
       const loadedCoupons = await loadCoupons();
+      const loadedHeroPick = await loadFeaturedPick();
 
       // 8 godzin w milisekundach
       const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
@@ -47,16 +50,34 @@ const Index = () => {
         return false;
       });
 
-      // Recent Wins: WSZYSTKIE wygrane (bez limitu czasu)
+      // Kupony: aktywne + wygrane (tylko z ostatnich 8h)
+      // UWAGA: Wygrane kupony są dostępne DLA WSZYSTKICH użytkowników!
+      const visibleCoupons = loadedCoupons.filter(coupon => {
+        if (coupon.status === 'active' || coupon.status === 'pending') {
+          // Premium kupony tylko dla premium userów
+          if (coupon.isPremium && !isPremium) return false;
+          return true;
+        }
+        if (coupon.status === 'won' && coupon.wonAt) {
+          // Wygrane kupony - dla WSZYSTKICH przez 8h
+          const wonTime = new Date(coupon.wonAt).getTime();
+          const hoursSinceWin = now - wonTime;
+          return hoursSinceWin < EIGHT_HOURS_MS;
+        }
+        return false;
+      });
+
+      // Recent Wins: WSZYSTKIE wygrane tipsy (bez limitu czasu dla RecentWins)
       const allWonTips = loadedTips.filter(tip => tip.status === 'won');
 
       setTips(visibleTips);
       setRecentWins(allWonTips);
-      setCoupons(loadedCoupons);
+      setCoupons(visibleCoupons);
+      setHeroPick(loadedHeroPick);
     };
 
     fetchData();
-  }, []);
+  }, [isPremium]);
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0 relative">
@@ -178,9 +199,9 @@ const Index = () => {
           </TabsContent>
         </Tabs>
 
-        {recentWins.length > 0 && (
+        {(recentWins.length > 0 || coupons.some(c => c.status === 'won') || heroPick?.status === 'won') && (
           <ScrollReveal>
-            <RecentWins tips={recentWins} />
+            <RecentWins tips={recentWins} coupons={coupons} heroPick={heroPick} />
           </ScrollReveal>
         )}
       </main>
