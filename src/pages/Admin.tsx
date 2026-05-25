@@ -506,7 +506,8 @@ const Admin = () => {
     setCouponIsPremium(coupon.isPremium || false);
     setCouponStatus(coupon.status);
     setCouponSport(coupon.sport || "Football");
-    setCoupons([...coupon.matches]);
+    setCouponMatches([...coupon.matches]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDeleteCoupon = async (id: number) => {
