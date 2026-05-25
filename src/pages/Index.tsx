@@ -84,18 +84,7 @@ const Index = () => {
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border/30 shadow-lg shadow-black/5">
         <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <Logo />
-              <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse" />
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="font-display text-base font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                SureBet Guru
-              </h1>
-              <p className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase">
-                Premium Tips Platform
-              </p>
-            </div>
+            <Logo />
           </div>
           
           <div className="flex items-center gap-3">
