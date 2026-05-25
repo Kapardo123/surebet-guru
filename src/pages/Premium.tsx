@@ -317,7 +317,7 @@ export default function Premium() {
           </p>
           <div className="flex flex-col items-center gap-1 opacity-30">
             <p className="text-[9px] font-black tracking-widest uppercase">App Version 12.0.0</p>
-            <p className="text-[8px] font-bold">Build 1200</p>
+            <p className="text-[8px] font-bold">Build 1300</p>
           </div>
         </section>
       </main>
