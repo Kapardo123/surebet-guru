@@ -20,7 +20,8 @@ const statusLabel = {
 };
 
 const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsPremium?: boolean }) => {
-  const locked = coupon.isPremium && !userIsPremium;
+  const isSettled = coupon.status === "won" || coupon.status === "lost";
+  const locked = coupon.isPremium && !userIsPremium && !isSettled;
 
   return (
     <motion.div
