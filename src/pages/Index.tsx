@@ -31,15 +31,30 @@ const Index = () => {
     const fetchData = async () => {
       const loadedTips = await loadTips();
       const loadedCoupons = await loadCoupons();
-      
-      const activeTips = loadedTips.filter(tip => tip.status === 'upcoming');
-      const wonTips = loadedTips.filter(tip => tip.status === 'won');
-      
-      setTips(activeTips);
-      setRecentWins(wonTips);
+
+      // 12 godzin w milisekundach
+      const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+
+      // Tips: aktywne + wygrane (tylko z ostatnich 12h)
+      const now = Date.now();
+      const visibleTips = loadedTips.filter(tip => {
+        if (tip.status === 'upcoming') return true;
+        if (tip.status === 'won' && tip.wonAt) {
+          const wonTime = new Date(tip.wonAt).getTime();
+          const hoursSinceWin = now - wonTime;
+          return hoursSinceWin < TWELVE_HOURS_MS;
+        }
+        return false;
+      });
+
+      // Recent Wins: WSZYSTKIE wygrane (bez limitu czasu)
+      const allWonTips = loadedTips.filter(tip => tip.status === 'won');
+
+      setTips(visibleTips);
+      setRecentWins(allWonTips);
       setCoupons(loadedCoupons);
     };
-    
+
     fetchData();
   }, []);
 

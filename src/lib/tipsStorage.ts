@@ -64,6 +64,7 @@ export const loadTips = async (publishedOnly: boolean = true): Promise<Tip[]> =>
           description: tip.description || null,
           likesCount: tip.likes_count || 0,
           isPublished: true,
+          wonAt: tip.won_at || null,
         }));
         
         setCachedTips(tips);
@@ -90,6 +91,7 @@ export const loadTips = async (publishedOnly: boolean = true): Promise<Tip[]> =>
     description: tip.description || null,
     likesCount: tip.likes_count || 0,
     isPublished: tip.is_published ?? true,
+    wonAt: tip.won_at || null,
   }));
 
   if (publishedOnly) {
@@ -180,6 +182,9 @@ export const unpublishTipById = async (id: number): Promise<boolean> => {
 };
 
 export const addTip = async (tip: Omit<Tip, "id"> & { isPublished?: boolean }): Promise<Tip | null> => {
+  // Automatycznie ustawiaj won_at gdy status = "won"
+  const wonAt = tip.status === 'won' ? new Date().toISOString() : null;
+
   const { data, error } = await (supabase as any)
     .from('tips')
     .insert([{
@@ -196,7 +201,8 @@ export const addTip = async (tip: Omit<Tip, "id"> & { isPublished?: boolean }): 
       home_team_logo: tip.homeTeamLogo,
       away_team_logo: tip.awayTeamLogo,
       description: tip.description,
-      likes_count: tip.likesCount || 0
+      likes_count: tip.likesCount || 0,
+      won_at: wonAt
     }])
     .select()
     .single();
@@ -237,6 +243,9 @@ export const deleteTip = async (id: number) => {
 };
 
 export const updateTip = async (updatedTip: Tip & { isPublished?: boolean }) => {
+  // Automatycznie ustawiaj won_at gdy status = "won"
+  const wonAt = updatedTip.status === 'won' ? new Date().toISOString() : null;
+
   const { error } = await (supabase as any)
     .from('tips')
     .update({
@@ -253,7 +262,8 @@ export const updateTip = async (updatedTip: Tip & { isPublished?: boolean }) => 
       home_team_logo: updatedTip.homeTeamLogo,
       away_team_logo: updatedTip.awayTeamLogo,
       description: updatedTip.description,
-      likes_count: updatedTip.likesCount
+      likes_count: updatedTip.likesCount,
+      won_at: wonAt
     })
     .eq('id', updatedTip.id);
 
