@@ -126,20 +126,21 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
 
         {/* Premium badge */}
         {tip.isPremium && !isSettled && (
-          <div className="absolute top-3 left-0 z-10">
-            <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-3 py-1.5 text-[10px] font-display font-bold uppercase tracking-wider rounded-r-full flex items-center gap-1.5 shadow-lg shadow-pink-500/40">
-              <Crown className="w-3 h-3" />
-              Premium
+          <div className="absolute top-2 left-[-2px] z-10">
+            <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-2 md:px-3 py-1 md:py-1.5 text-[9px] md:text-[10px] font-display font-bold uppercase tracking-wider rounded-r-full flex items-center gap-1 md:gap-1.5 shadow-lg shadow-pink-500/40">
+              <Crown className="w-2.5 h-2.5 md:w-3 md:h-3" />
+              <span className="hidden sm:inline">Premium</span>
+              <span className="sm:hidden">PRO</span>
             </div>
           </div>
         )}
 
-        <div className="p-4 md:p-5 space-y-3 md:space-y-4">
+        <div className="p-4 md:p-5 space-y-3 md:space-y-4 pt-6 md:pt-5">
           {/* Header */}
           <div className="flex items-start justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="sport" className="text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/30">{tip.sport}</Badge>
-              <span className="text-[11px] text-muted-foreground font-medium truncate max-w-[100px] sm:max-w-[150px] md:max-w-none">{tip.league}</span>
+            <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+              <Badge variant="sport" className="text-[9px] md:text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/30">{tip.sport}</Badge>
+              <span className="text-[10px] md:text-[11px] text-muted-foreground font-medium truncate max-w-[90px] sm:max-w-[130px] md:max-w-none">{tip.league}</span>
             </div>
             <Badge variant={statusVariant[tip.status]} className="gap-1 shrink-0 text-[10px] px-2 py-0.5">
               {tip.isPremium && isSettled && <Crown className="w-2.5 h-2.5" />}
