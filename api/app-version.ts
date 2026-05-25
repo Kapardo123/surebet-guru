@@ -3,11 +3,11 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 
 const APP_VERSION = {
-  version: "11.0.0",
-  build: 1100,
+  version: "12.0.0",
+  build: 1200,
   forceUpdate: true,
-  releaseDate: "2026-05-19",
-  updateMessage: "New version available! 🚀 Enhanced AdMob integration, improved UI, and bug fixes.",
+  releaseDate: "2026-05-25",
+  updateMessage: "New version available! 🚀 Enhanced UI, improved mobile layout, and bug fixes.",
   downloadUrl: "https://play.google.com/store/apps/details?id=com.surebet.guru",
   minSupportedVersion: "9.0.0"
 };
