@@ -4,7 +4,7 @@ import { Coupon } from "@/lib/couponStorage";
 import { FeaturedPick } from "@/lib/featuredPickStorage";
 import TeamLogo from "@/components/TeamLogo";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, TrendingUp, Clock, Star, Ticket, ChevronDown, ChevronUp, X, Crown } from "lucide-react";
+import { Trophy, TrendingUp, Clock, Star, Ticket, ChevronDown, ChevronUp, X, Crown, PartyPopper } from "lucide-react";
 
 interface RecentWinsProps {
   tips: Tip[];
@@ -224,17 +224,27 @@ const RecentWins = ({ tips, coupons = [], heroPick }: RecentWinsProps) => {
                 )}
               </div>
 
-              {/* Drużyny */}
-              <div className="flex flex-col gap-1 min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <TeamLogo teamName={item.homeTeam} size={16} />
-                  <span className="text-xs font-medium truncate">{item.homeTeam}</span>
+              {/* Treść - różna dla kuponów i tipów */}
+              {item.type === 'coupon' ? (
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <PartyPopper className="w-4 h-4 text-blue-500 shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-blue-400">KUPON WYGRANY</span>
+                    <span className="text-[10px] text-muted-foreground">Kliknij aby zobaczyć podgląd</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 ml-7">
-                  <TeamLogo teamName={item.awayTeam} size={16} />
-                  <span className="text-xs font-medium text-muted-foreground truncate">{item.awayTeam}</span>
+              ) : (
+                <div className="flex flex-col gap-1 min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <TeamLogo teamName={item.homeTeam} size={16} />
+                    <span className="text-xs font-medium truncate">{item.homeTeam}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 ml-7">
+                    <TeamLogo teamName={item.awayTeam} size={16} />
+                    <span className="text-xs font-medium text-muted-foreground truncate">{item.awayTeam}</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Info o wygranej */}
               <div className="flex items-center gap-2 pl-9 sm:pl-0 sm:shrink-0">
