@@ -58,12 +58,13 @@ const Admin = () => {
     refreshData();
   }, []);
 
-  const refreshData = async () => {
-    const loadedTips = await loadTips();
+  const refreshData = async (forceRefresh: boolean = false) => {
+    console.log('🔄 Refreshing data (force:', forceRefresh, ')');
+    const loadedTips = await loadTips(true, forceRefresh);
     const loadedDrafts = await loadDraftTips();
     const loadedCoupons = await loadCoupons();
     const loadedFeatured = await loadFeaturedPick();
-    
+
     setTips(loadedTips);
     setDraftTips(loadedDrafts);
     setCoupons(loadedCoupons);
@@ -321,7 +322,7 @@ const Admin = () => {
         description: form.description,
         likesCount: form.likesCount,
       });
-      await refreshData();
+      await refreshData(true); // Force refresh after update
       resetTipForm();
       toast({ title: "Tip updated! ✅" });
     } else {
@@ -353,7 +354,7 @@ const Admin = () => {
         } catch (pushError) {}
       }
       
-      await refreshData();
+      await refreshData(true); // Force refresh after add
       resetTipForm();
       toast({ title: form.isPublished ? "Tip published! ✅" : "Tip saved as draft 📝" });
     }
@@ -382,7 +383,7 @@ const Admin = () => {
 
   const handleDelete = async (id: number) => {
     await deleteTip(id);
-    await refreshData();
+    await refreshData(true); // Force refresh after delete
     toast({ title: "Tip removed" });
   };
 
@@ -391,7 +392,7 @@ const Admin = () => {
     try {
       const count = await publishAllDrafts();
       toast({ title: `Published ${count} drafts! 🚀` });
-      await refreshData();
+      await refreshData(true); // Force refresh after publish all
     } catch (error: any) {
       toast({ title: "Error publishing", description: error.message, variant: "destructive" });
     } finally {
@@ -403,7 +404,7 @@ const Admin = () => {
     try {
       await publishTipById(id);
       toast({ title: "Tip published! ✅" });
-      await refreshData();
+      await refreshData(true); // Force refresh after publish
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
@@ -413,7 +414,7 @@ const Admin = () => {
     try {
       await unpublishTipById(id);
       toast({ title: "Tip unpublished 📝" });
-      await refreshData();
+      await refreshData(true); // Force refresh after unpublish
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
@@ -469,7 +470,7 @@ const Admin = () => {
         isPremium: couponIsPremium,
         createdAt: coupons.find(c => c.id === editingCouponId)?.createdAt || new Date().toISOString(),
       });
-      await refreshData();
+      await refreshData(true); // Force refresh after coupon update
       resetCouponForm();
       toast({ title: "Coupon updated! 🎫" });
     } else {
@@ -484,15 +485,15 @@ const Admin = () => {
       if (createdCoupon && couponIsPremium) {
         try {
           await supabase.functions.invoke("send-premium-push", {
-            body: { 
-              title: "New Premium Coupon! 🎫", 
-              message: `${couponName} with total odds ${calculateTotalOdds(couponMatches).toFixed(2)}` 
+            body: {
+              title: "New Premium Coupon! 🎫",
+              message: `${couponName} with total odds ${calculateTotalOdds(couponMatches).toFixed(2)}`
             }
           });
         } catch (pushError) {}
       }
 
-      await refreshData();
+      await refreshData(true); // Force refresh after coupon add
       resetCouponForm();
       toast({ title: "Coupon created! 🎫" });
     }
@@ -505,12 +506,12 @@ const Admin = () => {
     setCouponIsPremium(coupon.isPremium || false);
     setCouponStatus(coupon.status);
     setCouponSport(coupon.sport || "Football");
-    setCouponMatches([...coupon.matches]);
+    setCoupons([...coupon.matches]);
   };
 
   const handleDeleteCoupon = async (id: number) => {
     await deleteCoupon(id);
-    await refreshData();
+    await refreshData(true); // Force refresh after coupon delete
     toast({ title: "Coupon removed" });
   };
 
@@ -978,9 +979,9 @@ const Admin = () => {
                   <Button
                     className="w-full gap-2 h-10 font-display uppercase tracking-wider text-[10px] bg-accent hover:bg-accent/90"
                     onClick={async () => {
-                      const { id, ...pickWithoutId } = featured; 
+                      const { id, ...pickWithoutId } = featured;
                       await saveFeaturedPick(pickWithoutId);
-                      await refreshData();
+                      await refreshData(true); // Force refresh after hero update
                       toast({ title: "Hero Pick Saved! ⚡" });
                     }}
                   >

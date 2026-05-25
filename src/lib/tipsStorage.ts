@@ -21,9 +21,21 @@ const setCachedTips = (tips: Tip[]) => {
   } catch (e) {}
 };
 
-export const loadTips = async (publishedOnly: boolean = true): Promise<Tip[]> => {
-  const cached = getCachedTips();
-  
+const clearTipsCache = () => {
+  try {
+    localStorage.removeItem(TIPS_CACHE_KEY);
+    console.log('🗑️ Tips cache cleared');
+  } catch (e) {
+    console.error('Error clearing tips cache:', e);
+  }
+};
+
+export const loadTips = async (publishedOnly: boolean = true, forceRefresh: boolean = false): Promise<Tip[]> => {
+  // Jeśli forceRefresh - pomijamy cache całkowicie
+  const cached = forceRefresh ? [] : getCachedTips();
+
+  console.log(`📦 Loading tips (published: ${publishedOnly}, force: ${forceRefresh}, cached: ${cached.length})`);
+
   let query = supabase
     .from('tips')
     .select('*')
@@ -212,6 +224,10 @@ export const addTip = async (tip: Omit<Tip, "id"> & { isPublished?: boolean }): 
     return null;
   }
 
+  // Czyść cache po dodaniu - wymuś pobranie świeżych danych
+  clearTipsCache();
+  console.log('✅ Tip added successfully');
+
   const record = data as any;
 
   return {
@@ -246,6 +262,8 @@ export const updateTip = async (updatedTip: Tip & { isPublished?: boolean }) => 
   // Automatycznie ustawiaj won_at gdy status = "won"
   const wonAt = updatedTip.status === 'won' ? new Date().toISOString() : null;
 
+  console.log('📝 Updating tip:', updatedTip.id, 'Status:', updatedTip.status, 'wonAt:', wonAt);
+
   const { error } = await (supabase as any)
     .from('tips')
     .update({
@@ -267,7 +285,15 @@ export const updateTip = async (updatedTip: Tip & { isPublished?: boolean }) => 
     })
     .eq('id', updatedTip.id);
 
-  if (error) console.error("Error updating tip:", error);
+  if (error) {
+    console.error("❌ Error updating tip:", error);
+    return false;
+  }
+
+  // Czyść cache po aktualizacji - wymuś pobranie świeżych danych
+  clearTipsCache();
+  console.log('✅ Tip updated successfully:', updatedTip.id);
+  return true;
 };
 
 export const incrementReaction = async (tipId: number, type: 'like') => {
