@@ -31,17 +31,14 @@ const TodayHotTip = () => {
   const { active: isPremium } = usePremiumStatus();
 
   useEffect(() => {
-    // Premium users always have access - auto unlock
     if (isPremium) {
       setIsUnlocked(true);
     }
 
-    // Load tip data
     loadFeaturedPick().then((featured) => {
       if (featured) {
         setPick(featured);
 
-        // Check if this is a NEW tip (different from last unlocked)
         const currentTipId = `${featured.homeTeam}-${featured.awayTeam}-${featured.kickoff}`;
         const savedTipId = localStorage.getItem("lastUnlockedTipId");
         
@@ -51,7 +48,6 @@ const TodayHotTip = () => {
           localStorage.setItem("hotTipUnlocked", "false");
         }
 
-        // Restore unlock status for current tip
         if (!isPremium) {
           const savedUnlocked = localStorage.getItem("hotTipUnlocked");
           if (savedUnlocked === "true") {
@@ -73,11 +69,9 @@ const TodayHotTip = () => {
       if (gotReward) {
         console.log('✅ TodayHotTip: Tip odblokowany!');
         
-        // Zapisz stan odblokowania
         setIsUnlocked(true);
         localStorage.setItem("hotTipUnlocked", "true");
         
-        // Zapisz ID obecnego tipu jako odblokowany
         if (pick) {
           const currentTipId = `${pick.homeTeam}-${pick.awayTeam}-${pick.kickoff}`;
           localStorage.setItem("lastUnlockedTipId", currentTipId);
@@ -116,7 +110,7 @@ const TodayHotTip = () => {
           <div className="absolute inset-0 overflow-hidden">
             <motion.div
               className="absolute w-[400px] h-[400px] rounded-full blur-[100px] opacity-20"
-              style={{ background: "radial-gradient(circle, hsl(45 100% 50%), transparent 70%)" }}
+              style={{ background: "radial-gradient(circle, hsl(280 100% 60%), transparent 70%)" }}
               animate={{
                 x: ["-10%", "10%", "-5%"],
                 y: ["-10%", "10%", "-5%"],
@@ -127,14 +121,14 @@ const TodayHotTip = () => {
 
           <div className="relative z-10 flex flex-col items-center text-center">
             <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-center gap-1.5 bg-amber-500/20 text-amber-400 px-3 py-1.5 rounded-full">
+              <div className="flex items-center gap-1.5 bg-purple-500/20 text-purple-400 px-3 py-1.5 rounded-full">
                 <Zap className="w-4 h-4 animate-pulse" />
                 <span className="text-xs font-semibold uppercase tracking-wider">Today's Hot Tip</span>
               </div>
             </div>
 
-            <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-4">
-              <Gift className="w-8 h-8 text-amber-400" />
+            <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center mb-4">
+              <Gift className="w-8 h-8 text-purple-400" />
             </div>
 
             <h3 className="font-display text-xl font-bold mb-2">Unlock Premium Tip</h3>
@@ -145,7 +139,7 @@ const TodayHotTip = () => {
             <Button
               onClick={handleWatchAd}
               disabled={isLoading || !isRewardedAdReady}
-              className="w-full max-w-xs h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold uppercase tracking-wider text-sm shadow-lg shadow-amber-500/30 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full max-w-xs h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold uppercase tracking-wider text-sm shadow-lg shadow-purple-500/30 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -174,7 +168,7 @@ const TodayHotTip = () => {
           <div className="absolute inset-0 overflow-hidden">
             <motion.div
               className="absolute w-[400px] h-[400px] rounded-full blur-[100px] opacity-25"
-              style={{ background: "radial-gradient(circle, hsl(45 100% 50%), transparent 70%)" }}
+              style={{ background: "radial-gradient(circle, hsl(280 100% 60%), transparent 70%)" }}
               animate={{
                 x: ["-10%", "10%", "-5%"],
                 y: ["-10%", "10%", "-5%"],
@@ -186,7 +180,7 @@ const TodayHotTip = () => {
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="flex items-center gap-1.5 bg-amber-500/20 text-amber-400 px-3 py-1.5 rounded-full">
+                <div className="flex items-center gap-1.5 bg-purple-500/20 text-purple-400 px-3 py-1.5 rounded-full">
                   <Zap className="w-4 h-4 animate-pulse" />
                   <span className="text-xs font-semibold uppercase tracking-wider">Today's Hot Tip</span>
                 </div>
@@ -212,7 +206,7 @@ const TodayHotTip = () => {
               </p>
 
               <div className="flex items-center justify-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center ring-2 ring-amber-500/30">
+                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center ring-2 ring-purple-500/30">
                   <TeamLogo teamName={data.homeTeam} logoUrl={data.homeTeamLogo} size={32} />
                 </div>
                 <div className="text-center">
@@ -224,7 +218,7 @@ const TodayHotTip = () => {
                     {data.awayTeam}
                   </p>
                 </div>
-                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center ring-2 ring-amber-500/30">
+                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center ring-2 ring-purple-500/30">
                   <TeamLogo teamName={data.awayTeam} logoUrl={data.awayTeamLogo} size={32} />
                 </div>
               </div>
@@ -236,7 +230,7 @@ const TodayHotTip = () => {
                 </div>
                 <div className="bg-muted/30 rounded-xl p-4 text-center">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-1">Odds</p>
-                  <p className="font-display font-bold text-amber-400 text-sm">{data.odds}</p>
+                  <p className="font-display font-bold text-purple-400 text-sm">{data.odds}</p>
                 </div>
                 <div className="bg-muted/30 rounded-xl p-4 text-center">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-1">Confidence</p>
