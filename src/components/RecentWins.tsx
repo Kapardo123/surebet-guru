@@ -287,12 +287,13 @@ const RecentWins = ({ tips, coupons = [], heroPick }: RecentWinsProps) => {
                     {item.prediction}
                   </Badge>
                   <span className="text-[10px] md:text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 md:px-2 py-0.5 md:py-1 rounded-full">@ {item.odds}</span>
-                  {item.wonAt && (
-                    <span className="text-[8px] md:text-[9px] text-muted-foreground/70 flex items-center gap-0.5">
-                      <Clock className="w-2.5 h-2.5 md:w-3 md:h-3 text-emerald-400/50" />
-                      {new Date(item.wonAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                    </span>
-                  )}
+                  <span className="text-[8px] md:text-[9px] text-muted-foreground/70 flex items-center gap-0.5">
+                    <Clock className="w-2.5 h-2.5 md:w-3 md:h-3 text-emerald-400/50" />
+                    {item.wonAt 
+                      ? new Date(item.wonAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+                      : new Date(item.kickoff).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+                    }
+                  </span>
                 </div>
               </div>
 
