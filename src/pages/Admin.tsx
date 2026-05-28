@@ -33,7 +33,13 @@ import {
   PlusCircle,
   LayoutDashboard,
   TrendingUp,
-  Loader2
+  Loader2,
+  Sparkles,
+  ClipboardPaste,
+  List,
+  Send,
+  Clock,
+  EyeOff
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -42,7 +48,6 @@ import UpcomingMatchesList from "@/components/UpcomingMatchesList";
 import Logo from "@/components/Logo";
 import { fetchMatchesByDate, fetchTeamForm } from "@/lib/sportApi";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, ClipboardPaste, Search, PlusCircle, Pencil, Zap, Users, Bell, X, Crown, Trash2, List, Save, Plus, Receipt, Send, Clock, EyeOff } from "lucide-react";
 
 const Admin = () => {
   const { toast } = useToast();
