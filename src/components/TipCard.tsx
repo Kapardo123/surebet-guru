@@ -101,27 +101,27 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={`relative overflow-hidden rounded-2xl group ${locked ? "select-none" : ""}`}
+      className={`relative overflow-hidden rounded-2xl group hover-lift ${locked ? "select-none" : ""}`}
     >
-      {/* Synthwave glow effect */}
+      {/* Dynamic gradient glow based on type */}
       <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${
         tip.isPremium 
           ? 'bg-gradient-to-br from-pink-500/20 via-purple-500/10 to-transparent' 
-          : 'bg-gradient-to-br from-purple-500/20 via-pink-500/10 to-transparent'
+          : 'bg-gradient-to-br from-blue-500/20 via-cyan-500/10 to-transparent'
       }`} />
 
       <div
-        className={`relative rounded-2xl backdrop-blur-sm overflow-hidden transition-all duration-300 ${
+        className={`relative rounded-2xl backdrop-blur-sm overflow-hidden transition-all duration-300 card-modern ${
           tip.isPremium 
-            ? 'bg-gradient-to-br from-card via-pink-950/5 to-purple-950/10 border border-pink-500/30 shadow-xl shadow-pink-500/10 group-hover:shadow-pink-500/20 group-hover:-translate-y-1'
-            : 'bg-gradient-to-br from-card via-purple-950/5 to-background border border-border/40 shadow-lg shadow-black/5 group-hover:border-purple-500/30 group-hover:-translate-y-1'
+            ? 'border-pink-500/30 shadow-xl shadow-pink-500/10 hover:shadow-pink-500/20'
+            : 'border-blue-500/20 shadow-lg shadow-black/5 hover:border-blue-500/30 hover:shadow-blue-500/10'
         }`}
       >
-        {/* Top gradient line */}
-        <div className={`h-[3px] w-full ${
+        {/* Top gradient line - dynamic per type */}
+        <div className={`h-[3px] w-full gradient-animated ${
           tip.isPremium 
-            ? 'bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500' 
-            : 'bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500'
+            ? 'gradient-premium' 
+            : 'gradient-tips'
         }`} />
 
         <div className="p-3 sm:p-4 md:p-5 space-y-2.5 sm:space-y-3 md:space-y-4">

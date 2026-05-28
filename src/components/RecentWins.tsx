@@ -200,27 +200,27 @@ const RecentWins = ({ tips, coupons = [], heroPick }: RecentWinsProps) => {
   );
 
   return (
-    <div className="relative overflow-hidden rounded-2xl">
-      {/* Glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/15 via-green-500/10 to-transparent opacity-60 pointer-events-none" />
+    <div className="relative overflow-hidden rounded-2xl hover-lift">
+      {/* Gold glow effect for wins */}
+      <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/15 via-amber-500/10 to-transparent opacity-60 pointer-events-none" />
 
-      <div className="relative bg-gradient-to-br from-card via-emerald-950/5 to-green-950/5 border border-emerald-500/30 rounded-2xl p-4 md:p-6 shadow-lg shadow-black/5">
+      <div className="relative rounded-2xl p-4 md:p-6 shadow-lg shadow-black/5 card-modern border-yellow-500/30">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 md:mb-5 gap-2">
           <div className="flex items-center gap-2.5 md:gap-3 min-w-0 flex-1">
-            <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 flex-shrink-0">
+            <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl gradient-wins flex items-center justify-center shadow-lg shadow-yellow-500/30 flex-shrink-0">
               <Trophy className="w-4 h-4 md:w-5 md:h-5 text-white" />
             </div>
             <div className="min-w-0">
-              <h3 className="font-display text-sm md:text-base font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent uppercase tracking-wider truncate">
+              <h3 className="font-display text-sm md:text-base font-bold text-gradient-wins uppercase tracking-wider truncate">
                 Recent Wins
               </h3>
               <p className="text-[9px] md:text-[10px] text-muted-foreground font-medium tracking-wide">Latest victories</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1 md:py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex-shrink-0">
-            <Flame className="w-3 h-3 md:w-3.5 md:h-3.5 text-orange-400" />
-            <span className="text-[10px] md:text-[11px] font-bold text-emerald-400">{sortedWins.length} wins</span>
+          <div className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1 md:py-1.5 rounded-full badge-hot flex-shrink-0">
+            <Flame className="w-3 h-3 md:w-3.5 md:h-3.5" />
+            <span className="text-[10px] md:text-[11px] font-bold">{sortedWins.length} wins</span>
           </div>
         </div>
 

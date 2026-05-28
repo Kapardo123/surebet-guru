@@ -44,16 +44,16 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={`relative overflow-hidden rounded-2xl group w-full ${locked ? "select-none" : ""}`}
+      className={`relative overflow-hidden rounded-2xl group w-full hover-lift ${locked ? "select-none" : ""}`}
     >
-      {/* Blue/Cyan glow effect */}
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/20 via-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      {/* Dynamic gradient glow - Green for coupons */}
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
       <div
-        className="relative rounded-2xl backdrop-blur-sm bg-gradient-to-br from-card via-blue-950/5 to-cyan-950/10 border border-blue-500/30 overflow-hidden transition-all duration-300 shadow-lg shadow-black/5 group-hover:border-cyan-400/40 group-hover:shadow-blue-500/15 group-hover:-translate-y-1"
+        className="relative rounded-2xl backdrop-blur-sm overflow-hidden transition-all duration-300 card-modern border-emerald-500/30 shadow-lg shadow-black/5 hover:border-emerald-400/40 hover:shadow-emerald-500/15"
       >
-        {/* Top gradient line - Blue to Cyan */}
-        <div className="h-[3px] w-full bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500" />
+        {/* Top gradient line - Green animated */}
+        <div className="h-[3px] w-full gradient-animated gradient-coupons" />
 
         <div className="p-4 md:p-5 space-y-3 md:space-y-4">
           {/* Header with icon */}

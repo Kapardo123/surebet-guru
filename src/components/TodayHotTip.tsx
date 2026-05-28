@@ -217,8 +217,10 @@ const TodayHotTip = () => {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
-          className="relative overflow-hidden rounded-2xl glass gradient-border p-6"
+          className="relative overflow-hidden rounded-2xl glass hover-lift gradient-border"
         >
+          {/* Animated top line - Hot gradient */}
+          <div className="h-[3px] w-full gradient-animated gradient-hot" />
           <div className="absolute inset-0 overflow-hidden">
             <motion.div
               className="absolute w-[400px] h-[400px] rounded-full blur-[100px] opacity-25"
