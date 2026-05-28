@@ -6,9 +6,11 @@ import PageTransition from "@/components/PageTransition";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Crown, Receipt, ArrowLeft, Sparkles } from "lucide-react";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 
 const Coupons = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const { active: isPremium } = usePremiumStatus();
 
   useEffect(() => {
     const fetchCoupons = async () => {
@@ -90,7 +92,7 @@ const Coupons = () => {
         {/* Coupons Grid */}
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2 max-w-5xl mx-auto">
           {coupons.map((coupon) => (
-            <CouponCard key={coupon.id} coupon={coupon} />
+            <CouponCard key={coupon.id} coupon={coupon} userIsPremium={isPremium} />
           ))}
         </div>
 
