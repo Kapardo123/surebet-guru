@@ -53,8 +53,8 @@ export const useAdMob = () => {
 
   const showRewardedAd = useCallback(async (): Promise<boolean> => {
     if (!isNativePlatform) {
-      console.log('AdMob: Tylko na natywne platformy');
-      return false;
+      console.log('AdMob: Web mode - symulacja nagrody');
+      return true;
     }
 
     if (!isRewardedAdReady) {
@@ -67,64 +67,84 @@ export const useAdMob = () => {
     setError(null);
 
     try {
-      // Tworzymy Promise, który rozwiąże się gdy otrzymamy nagrodę
-      let rewardResolved = false;
       let didReceiveReward = false;
 
-      // Nasłuchuj na event nagrody
-      const handler = await AdMob.addListener('onRewarded', (info: any) => {
-        console.log('🎁 AdMob: EVENT - Nagroda odebrana!', info);
-        didReceiveReward = true;
-        rewardResolved = true;
+      console.log('⏳ AdMob: Rejestrowanie listenera nagrody...');
+      
+      const rewardPromise = new Promise<boolean>((resolve) => {
+        let resolved = false;
+        
+        const cleanup = async () => {
+          try {
+            await handler.remove();
+          } catch (e) {}
+        };
+
+        const handler = AdMob.addListener('onUserEarnedReward', (info: any) => {
+          console.log('🎁 AdMob: EVENT - Nagroda odebrana!', info);
+          didReceiveReward = true;
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            resolve(true);
+          }
+        });
+
+        setTimeout(async () => {
+          if (!resolved) {
+            resolved = true;
+            console.log('⏰ AdMob: Timeout - sprawdzam result');
+            await cleanup();
+            resolve(didReceiveReward);
+          }
+        }, 3000);
+
+        (async () => {
+          try {
+            console.log('📺 AdMob: Wyświetlanie reklamy...');
+            const result = await AdMob.showRewardVideoAd();
+            console.log('📊 AdMob: Reklama zamknięta, result:', JSON.stringify(result));
+            
+            if (result && (result as any).reward) {
+              didReceiveReward = true;
+              console.log('✅ AdMOB: Nagroda w result!');
+            }
+            
+            if (!resolved) {
+              resolved = true;
+              await cleanup();
+              setTimeout(() => resolve(didReceiveReward), 500);
+            }
+          } catch (err: any) {
+            console.error('❌ AdMob: Błąd reklamy:', err?.message || err);
+            
+            if (!resolved) {
+              resolved = true;
+              await cleanup();
+              resolve(false);
+            }
+          }
+        })();
       });
 
-      // Pokaż reklamę i czekaj na wynik
-      console.log('⏳ AdMob: Wyświetlanie reklamy...');
-      const result = await AdMob.showRewardVideoAd();
-      
-      // Dajemy czas na event (500ms)
-      if (!rewardResolved) {
-        console.log('⏳ AdMob: Czekam na event nagrody...');
-        await new Promise(resolve => setTimeout(resolve, 800));
-      }
-
-      // Usuń listener
-      await handler.remove();
+      const gotReward = await rewardPromise;
       
       setIsRewardedAdReady(false);
 
-      // Sprawdź czy dostaliśmy nagrodę przez EVENT lub RESULT
-      const gotReward = didReceiveReward || !!result?.reward;
-
       if (gotReward) {
-        console.log('✅ AdMob: NAGRODA PRZYZNANA! (event:', didReceiveReward, ', result:', !!result?.reward, ')');
-        
-        // Załaduj następną reklamę w tle
+        console.log('✅ AdMob: NAGRODA PRZYZNANA!');
         setTimeout(() => loadRewardedAd(), 1500);
-        
         return true;
       } else {
-        console.log('❌ AdMob: BRAK NAGRODY - użytkownik zamknął reklamę przed końcem');
-        
-        // Przeładuj reklamę na przyszłość
+        console.log('❌ AdMob: BRAK NAGRODY');
         setTimeout(() => loadRewardedAd(), 2000);
-        
         return false;
       }
     } catch (err: any) {
       console.error('❌ AdMob: Błąd wyświetlania rewarded ad:', err);
-      
-      // Jeśli błąd to "cancelled" - użytkownik zamknął reklamę
-      if (err?.message?.includes('cancel') || err?.message?.includes('Cancel')) {
-        console.log('🚫 AdMob: Użytkownik zamknął reklamę ręcznie');
-      }
-      
       setError('Błąd reklamy: ' + (err?.message || 'Unknown error'));
       setIsRewardedAdReady(false);
-      
-      // Przeładuj po błędzie
       setTimeout(() => loadRewardedAd(), 2500);
-      
       return false;
     } finally {
       setIsLoading(false);
