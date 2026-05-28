@@ -217,7 +217,9 @@ const RecentWins = ({ tips, coupons = [], heroPick }: RecentWinsProps) => {
               <h3 className="font-display text-xs sm:text-sm md:text-base font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent uppercase tracking-wider truncate">
                 Recent Wins
               </h3>
-              <p className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground font-medium tracking-wide hidden sm:block">Latest victories</p>
+              <p className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground font-medium tracking-wide">
+                Latest {sortedWins.length} wins
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-1 md:py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex-shrink-0">
@@ -266,24 +268,26 @@ const RecentWins = ({ tips, coupons = [], heroPick }: RecentWinsProps) => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 min-w-0 flex-1">
+                  <div className="flex flex-col gap-1 sm:gap-1.5 md:gap-2 min-w-0 flex-1">
                     {/* Home team */}
-                    <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
+                    <div className="flex items-center gap-1 sm:gap-1.5">
                       <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-500/30 flex-shrink-0">
                         <TeamLogo teamName={item.homeTeam} size={12} />
                       </div>
-                      <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold truncate">{item.homeTeam}</span>
+                      <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold">{item.homeTeam}</span>
                     </div>
                     
-                    {/* VS separator - Hidden on very small screens */}
-                    <span className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground/40 flex-shrink-0 hidden xs:inline">vs</span>
+                    {/* VS separator */}
+                    <div className="flex items-center gap-1 sm:gap-1.5 ml-5 sm:ml-6 md:ml-7">
+                      <span className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground/50 font-semibold">VS</span>
+                    </div>
                     
-                    {/* Away team - Hidden on mobile, shown on sm+ */}
-                    <div className="items-center gap-1 sm:gap-1.5 min-w-0 flex-1 hidden sm:flex">
+                    {/* Away team - Always visible */}
+                    <div className="flex items-center gap-1 sm:gap-1.5">
                       <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-green-500/10 flex items-center justify-center ring-1 ring-green-500/30 flex-shrink-0">
                         <TeamLogo teamName={item.awayTeam} size={12} />
                       </div>
-                      <span className="text-[10px] sm:text-[11px] md:text-xs font-medium text-muted-foreground truncate">{item.awayTeam}</span>
+                      <span className="text-[10px] sm:text-[11px] md:text-xs font-medium text-muted-foreground">{item.awayTeam}</span>
                     </div>
                   </div>
                 )}
