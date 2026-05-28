@@ -90,26 +90,26 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05, duration: 0.3 }}
-                    className="bg-blue-500/5 rounded-xl p-3 md:p-4 border border-blue-500/20 hover:bg-blue-500/8 hover:border-blue-500/30 transition-all"
+                    className="bg-blue-500/5 rounded-xl p-2.5 sm:p-3 md:p-4 border border-blue-500/20 hover:bg-blue-500/8 hover:border-blue-500/30 transition-all"
                   >
-                    <div className="flex items-start justify-between gap-3 md:gap-4">
-                      <div className="flex flex-col gap-2 md:gap-3 min-w-0 flex-1">
-                        <div className="flex items-center gap-2 md:gap-3">
-                          <div className="w-7 h-7 md:w-9 md:h-9 rounded-full bg-blue-500/10 flex items-center justify-center ring-1 md:ring-2 ring-blue-500/30 flex-shrink-0">
-                            <TeamLogo teamName={match.homeTeam} logoUrl={match.homeTeamLogo} size={18} />
+                    <div className="flex items-center justify-between gap-2 sm:gap-3">
+                      <div className="flex flex-col gap-1.5 sm:gap-2 min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+                          <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 rounded-full bg-blue-500/10 flex items-center justify-center ring-1 md:ring-2 ring-blue-500/30 flex-shrink-0">
+                            <TeamLogo teamName={match.homeTeam} logoUrl={match.homeTeamLogo} size={16} />
                           </div>
-                          <span className="text-xs md:text-sm font-semibold text-foreground leading-tight truncate">{match.homeTeam}</span>
+                          <span className="text-[11px] sm:text-xs md:text-sm font-semibold text-foreground leading-tight">{match.homeTeam}</span>
                         </div>
-                        <div className="flex items-center gap-2 md:gap-3">
-                          <div className="w-7 h-7 md:w-9 md:h-9 rounded-full bg-cyan-500/10 flex items-center justify-center ring-1 md:ring-2 ring-cyan-500/30 flex-shrink-0">
-                            <TeamLogo teamName={match.awayTeam} logoUrl={match.awayLogo} size={18} />
+                        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+                          <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 rounded-full bg-cyan-500/10 flex items-center justify-center ring-1 md:ring-2 ring-cyan-500/30 flex-shrink-0">
+                            <TeamLogo teamName={match.awayTeam} logoUrl={match.awayLogo} size={16} />
                           </div>
-                          <span className="text-xs md:text-sm font-medium text-muted-foreground leading-tight truncate">{match.awayTeam}</span>
+                          <span className="text-[11px] sm:text-xs md:text-sm font-medium text-muted-foreground leading-tight">{match.awayTeam}</span>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end shrink-0 pt-0.5 md:pt-1 min-w-fit">
-                        <span className="text-[10px] md:text-xs font-bold text-blue-400 mb-0.5 md:mb-1">{match.prediction}</span>
-                        <span className="font-display font-bold text-cyan-400 text-base md:text-xl leading-none drop-shadow-sm">{match.odds.toFixed(2)}</span>
+                      <div className="flex flex-col items-end shrink-0 pl-1">
+                        <span className="text-[9px] sm:text-[10px] md:text-xs font-bold text-blue-400 mb-0.5">{match.prediction}</span>
+                        <span className="font-display font-bold text-cyan-400 text-sm sm:text-base md:text-xl leading-none drop-shadow-sm">{match.odds.toFixed(2)}</span>
                       </div>
                     </div>
                   </motion.div>

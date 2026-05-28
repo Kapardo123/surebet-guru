@@ -151,7 +151,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
               }`}>
                 <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={24} />
               </div>
-              <span className="font-display font-bold text-foreground text-xs sm:text-sm md:text-base leading-tight truncate">{tip.homeTeam}</span>
+              <span className="font-display font-bold text-foreground text-xs sm:text-sm md:text-base leading-tight">{tip.homeTeam}</span>
             </div>
 
             <div className="px-2.5 sm:px-2 md:px-4 flex-shrink-0 order-first sm:order-none">
@@ -159,7 +159,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-1 justify-end text-right min-w-0 w-full sm:w-auto">
-              <span className="font-display font-bold text-foreground text-xs sm:text-sm md:text-base leading-tight truncate">{tip.awayTeam}</span>
+              <span className="font-display font-bold text-foreground text-xs sm:text-sm md:text-base leading-tight">{tip.awayTeam}</span>
               <div className={`w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
                 tip.isPremium ? 'ring-2 ring-pink-500/30 bg-pink-500/5' : 'ring-2 ring-purple-500/30 bg-purple-500/5'
               }`}>
@@ -192,7 +192,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
                     : 'bg-purple-500/5 border-purple-500/20'
                 }`}>
                   <p className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-1 sm:mb-1.5 md:mb-2 font-medium">Prediction</p>
-                  <p className="font-display font-bold text-foreground text-[11px] sm:text-xs md:text-sm truncate">{tip.prediction}</p>
+                  <p className="font-display font-bold text-foreground text-[11px] sm:text-xs md:text-sm">{tip.prediction}</p>
                 </div>
                 <div className={`rounded-xl p-2.5 sm:p-3 md:p-4 border transition-all hover:scale-[1.02] ${
                   tip.isPremium 
