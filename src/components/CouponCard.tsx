@@ -22,6 +22,8 @@ const statusLabel = {
 const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsPremium?: boolean }) => {
   const isSettled = coupon.status === "won" || coupon.status === "lost";
   const locked = coupon.isPremium && !userIsPremium && !isSettled;
+  
+  console.log('🎫 CouponCard:', coupon.name, '| isPremium:', coupon.isPremium, '| userIsPremium:', userIsPremium, '| status:', coupon.status, '| isSettled:', isSettled, '| LOCKED:', locked);
 
   return (
     <motion.div
@@ -83,46 +85,48 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
           ) : (
             <>
               {/* Matches */}
-              <div className="space-y-2 md:space-y-2.5">
+              <div className="space-y-2 md:space-y-3">
                 {coupon.matches.map((match, i) => (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05, duration: 0.3 }}
-                    className="bg-blue-500/5 rounded-xl p-3 sm:p-3.5 md:p-4 border border-blue-500/20 hover:bg-blue-500/8 hover:border-blue-500/30 transition-all"
+                    className="bg-blue-500/5 rounded-xl p-3 sm:p-4 border border-blue-500/20 hover:bg-blue-500/8 hover:border-blue-500/30 transition-all"
                   >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      {/* Teams Row */}
-                      <div className="flex items-center justify-between gap-1.5 flex-1">
-                        {/* Home Team */}
-                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-                          <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full bg-blue-500/10 flex items-center justify-center ring-1.5 ring-blue-500/30 flex-shrink-0">
-                            <TeamLogo teamName={match.homeTeam} logoUrl={match.homeTeamLogo} size={18} />
-                          </div>
-                          <span className="text-xs sm:text-sm font-semibold text-foreground leading-tight text-left">{match.homeTeam}</span>
+                    {/* Teams Row - Centered VS Layout */}
+                    <div className="flex items-center justify-between gap-1 sm:gap-2 mb-3">
+                      {/* Home Team */}
+                      <div className="flex flex-col items-center gap-1.5 flex-1">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-500/15 to-blue-600/5 flex items-center justify-center ring-2 ring-blue-500/25 shadow-lg shadow-blue-500/10">
+                          <TeamLogo teamName={match.homeTeam} logoUrl={match.homeTeamLogo} size={22} />
                         </div>
-
-                        {/* VS Badge */}
-                        <div className="px-2 py-0.5 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-lg border border-border/20 flex-shrink-0">
-                          <span className="text-[9px] sm:text-[10px] font-display font-bold text-muted-foreground">VS</span>
-                        </div>
-
-                        {/* Away Team */}
-                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 justify-end">
-                          <span className="text-xs sm:text-sm font-medium text-muted-foreground leading-tight text-right">{match.awayTeam}</span>
-                          <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full bg-cyan-500/10 flex items-center justify-center ring-1.5 ring-cyan-500/30 flex-shrink-0">
-                            <TeamLogo teamName={match.awayTeam} logoUrl={match.awayLogo} size={18} />
-                          </div>
-                        </div>
+                        <span className="text-xs sm:text-sm font-bold text-foreground leading-tight text-center line-clamp-2">{match.homeTeam}</span>
                       </div>
 
-                      {/* Prediction & Odds - Right Side */}
-                      <div className="flex items-center justify-between gap-4 pl-0 sm:pl-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/10">
-                        <div className="px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                          <span className="text-[10px] sm:text-[11px] font-bold text-blue-400 uppercase tracking-wide">{match.prediction}</span>
+                      {/* VS Badge - Centered */}
+                      <div className="px-3 py-1.5 bg-gradient-to-r from-blue-500 via-cyan-500 to-cyan-500 rounded-xl shadow-md shadow-blue-500/20 flex-shrink-0">
+                        <span className="text-[11px] sm:text-xs font-display font-black text-white uppercase tracking-widest">VS</span>
+                      </div>
+
+                      {/* Away Team */}
+                      <div className="flex flex-col items-center gap-1.5 flex-1">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-cyan-500/15 to-cyan-600/5 flex items-center justify-center ring-2 ring-cyan-500/25 shadow-lg shadow-cyan-500/10">
+                          <TeamLogo teamName={match.awayTeam} logoUrl={match.awayLogo} size={22} />
                         </div>
-                        <span className="font-display font-bold text-base sm:text-lg md:text-xl text-cyan-400 drop-shadow-sm whitespace-nowrap">{match.odds.toFixed(2)}</span>
+                        <span className="text-xs sm:text-sm font-bold text-muted-foreground leading-tight text-center line-clamp-2">{match.awayTeam}</span>
+                      </div>
+                    </div>
+
+                    {/* Prediction & Odds Row */}
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-3 border-t border-border/20">
+                      <div className="text-center px-3 py-2 rounded-lg bg-blue-500/8 border border-blue-500/20">
+                        <p className="text-[9px] sm:text-[10px] text-blue-400 font-bold uppercase tracking-wider mb-0.5">Tip</p>
+                        <p className="text-sm sm:text-base font-black text-foreground">{match.prediction}</p>
+                      </div>
+                      <div className="text-center px-3 py-2 rounded-lg bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/25">
+                        <p className="text-[9px] sm:text-[10px] text-cyan-400 font-bold uppercase tracking-wider mb-0.5">Odds</p>
+                        <p className="text-base sm:text-lg font-black text-cyan-400 drop-shadow-sm">{match.odds.toFixed(2)}</p>
                       </div>
                     </div>
                   </motion.div>

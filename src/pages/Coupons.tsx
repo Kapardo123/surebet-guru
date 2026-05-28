@@ -14,11 +14,17 @@ const Coupons = () => {
 
   useEffect(() => {
     const fetchCoupons = async () => {
+      console.log('🎫 Coupons: Pobieranie kuponów...');
       const loaded = await loadCoupons();
+      console.log('🎫 Coupons: Pobrano', loaded.length, 'kuponów:', loaded);
       setCoupons(loaded);
     };
     fetchCoupons();
   }, []);
+
+  useEffect(() => {
+    console.log('🎫 Coupons: Status premium zmieniony - isPremium:', isPremium);
+  }, [isPremium]);
 
   return (
     <PageTransition>
