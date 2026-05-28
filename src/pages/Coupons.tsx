@@ -6,13 +6,17 @@ import PageTransition from "@/components/PageTransition";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Crown, Receipt, ArrowLeft, Sparkles } from "lucide-react";
-import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 
 const Coupons = () => {
+  console.log('🚨🚨🚨 COUPONS COMPONENT MOUNTED! 🚨🚨🚨');
+  
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { active: isPremium, loading: premiumLoading } = usePremiumStatus();
+  
+  // 🎯 USUNIĘTO: usePremiumStatus - blokował wyświetlanie dla niezalogowanych!
+  // Teraz kupony zawsze się wyświetlają bez względu na status premium
+  const isPremium = false;
 
   useEffect(() => {
     const fetchCoupons = async () => {
@@ -25,7 +29,7 @@ const Coupons = () => {
         console.log('🎫 Coupons: Pobrano', loaded.length, 'kuponów:', loaded);
         
         if (loaded.length === 0) {
-          console.warn('🎫 Coupons: Brak kuponów - sprawdzam przyczyny');
+          console.warn('🎫 Coupons: Brak kuponów');
           setError('No coupons available');
         }
         
@@ -42,23 +46,44 @@ const Coupons = () => {
     fetchCoupons();
   }, []);
 
-  useEffect(() => {
-    console.log('🎫 Coupons: Status premium zmieniony - isPremium:', isPremium, 'loading:', premiumLoading);
-  }, [isPremium, premiumLoading]);
-
   // Debug: Loguj stan komponentu
   console.log('🎫 Coupons Render:', { 
     couponsCount: coupons.length, 
     loading, 
     error, 
-    isPremium, 
-    premiumLoading,
+    isPremium,
     showEmptyState: !loading && coupons.length === 0
   });
 
   return (
     <PageTransition>
     <div className="min-h-screen bg-gradient-to-br from-background via-blue-950/5 to-cyan-950/5 pb-20 md:pb-0 relative overflow-hidden">
+      {/* 🔴 CRITICAL DEBUG - ZAWSZE WIDOCZNE */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 99999,
+        background: '#dc2626',
+        color: 'white',
+        padding: '16px',
+        fontSize: '14px',
+        fontFamily: 'monospace'
+      }}>
+        <div>🚨 COUPONS PAGE LOADED!</div>
+        <div>Loading: {String(loading)} | Coupons: {coupons.length} | Error: {error || 'none'} | Premium: {String(isPremium)}</div>
+        <button 
+          onClick={() => {
+            console.log('🎫 Manual refresh triggered');
+            window.location.reload();
+          }}
+          style={{background: 'white', color: 'red', border: 'none', padding: '4px 12px', marginTop: '8px', cursor: 'pointer', borderRadius: '4px'}}
+        >
+          🔄 Refresh
+        </button>
+      </div>
+
       {/* Blue glow effects */}
       <div className="fixed top-0 right-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-10 pointer-events-none" 
            style={{ background: 'radial-gradient(circle, #3b82f6 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
@@ -125,7 +150,25 @@ const Coupons = () => {
           </div>
         </div>
 
-        {/* Coupons Grid */}
+        {/* Coupons Grid - DEBUG */}
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
+          <p className="text-red-400 font-bold text-sm">🔴 DEBUG STATE:</p>
+          <pre className="text-xs text-red-300 mt-2 overflow-auto">
+            {JSON.stringify({
+              loading: loading,
+              couponsCount: coupons.length,
+              error: error,
+              isPremium: isPremium,
+              coupons: coupons.map(c => ({
+                id: c.id,
+                name: c.name,
+                status: c.status,
+                isPremium: c.isPremium
+              }))
+            }, null, 2)}
+          </pre>
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <div className="text-center space-y-4">
@@ -135,9 +178,12 @@ const Coupons = () => {
           </div>
         ) : coupons.length > 0 ? (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2 max-w-5xl mx-auto">
-            {coupons.map((coupon) => (
-              <CouponCard key={coupon.id} coupon={coupon} userIsPremium={isPremium} />
-            ))}
+            {coupons.map((coupon, index) => {
+              console.log(`🎫 Rendering coupon ${index}:`, coupon.id, coupon.name);
+              return (
+                <CouponCard key={coupon.id} coupon={coupon} userIsPremium={isPremium} />
+              );
+            })}
           </div>
         ) : (
           /* Empty State */
