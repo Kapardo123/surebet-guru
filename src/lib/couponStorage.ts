@@ -94,6 +94,8 @@ export const calculateTotalOdds = (matches: CouponMatch[]): number => {
 export const loadCoupons = async (): Promise<Coupon[]> => {
   const cached = getCachedCoupons();
 
+  console.log('🎫 loadCoupons: Start - cache:', cached.length);
+
   const { data, error } = await supabase
     .from('coupons')
     .select('*')
@@ -101,9 +103,11 @@ export const loadCoupons = async (): Promise<Coupon[]> => {
     .limit(30);
 
   if (error) {
-    console.error("Error loading coupons:", error);
+    console.error("❌ Error loading coupons:", error);
     return cached;
   }
+
+  console.log('🎫 loadCoupons: Pobrano z bazy:', data?.length || 0, 'rekordów');
 
   const coupons = (data || []).map((coupon) => {
     const status = isCouponStatus(coupon.status) ? coupon.status : "active";
@@ -121,6 +125,7 @@ export const loadCoupons = async (): Promise<Coupon[]> => {
   });
 
   setCachedCoupons(coupons);
+  console.log('🎫 loadCoupons: Zwracam', coupons.length, 'kuponów');
   return coupons;
 };
 

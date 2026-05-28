@@ -143,27 +143,30 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
             </Badge>
           </div>
 
-          {/* Teams */}
-          <div className="flex flex-col sm:flex-row items-center justify-between py-2 md:py-3 px-0.5 gap-2 sm:gap-0">
-            <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-1 min-w-0 w-full sm:w-auto">
-              <div className={`w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+          {/* Teams - Vertical Layout */}
+          <div className="flex flex-col items-center gap-2.5 py-2 md:py-3 px-0.5">
+            {/* Home Team */}
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4 w-full justify-center">
+              <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-13 md:h-13 rounded-full flex items-center justify-center flex-shrink-0 ${
                 tip.isPremium ? 'ring-2 ring-pink-500/30 bg-pink-500/5' : 'ring-2 ring-purple-500/30 bg-purple-500/5'
               }`}>
-                <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={24} />
+                <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={26} />
               </div>
-              <span className="font-display font-bold text-foreground text-xs sm:text-sm md:text-base leading-tight">{tip.homeTeam}</span>
+              <span className="font-display font-bold text-foreground text-sm sm:text-base md:text-lg leading-tight text-center">{tip.homeTeam}</span>
             </div>
 
-            <div className="px-2.5 sm:px-2 md:px-4 flex-shrink-0 order-first sm:order-none">
-              <span className="text-[10px] sm:text-[11px] md:text-xs font-display font-bold text-muted-foreground bg-gradient-to-r from-purple-500/10 to-pink-500/10 px-2 sm:px-2 md:px-3 py-0.5 sm:py-1 md:py-1.5 rounded-lg border border-border/30">VS</span>
+            {/* VS Badge - Centered */}
+            <div className="px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-xl shadow-md shadow-purple-500/20">
+              <span className="text-xs sm:text-sm font-display font-black text-white uppercase tracking-widest">VS</span>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-1 justify-end text-right min-w-0 w-full sm:w-auto">
-              <span className="font-display font-bold text-foreground text-xs sm:text-sm md:text-base leading-tight">{tip.awayTeam}</span>
-              <div className={`w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+            {/* Away Team */}
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4 w-full justify-center">
+              <span className="font-display font-bold text-foreground text-sm sm:text-base md:text-lg leading-tight text-center">{tip.awayTeam}</span>
+              <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-13 md:h-13 rounded-full flex items-center justify-center flex-shrink-0 ${
                 tip.isPremium ? 'ring-2 ring-pink-500/30 bg-pink-500/5' : 'ring-2 ring-purple-500/30 bg-purple-500/5'
               }`}>
-                <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={24} />
+                <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={26} />
               </div>
             </div>
           </div>
