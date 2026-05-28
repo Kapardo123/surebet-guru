@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Zap, Play, Gift, Loader2, Crown } from "lucide-react";
+import { Zap, Play, Gift, Loader2, Crown, Lock } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { motion, AnimatePresence } from "framer-motion";
 import { FeaturedPick, loadFeaturedPick } from "@/lib/featuredPickStorage";
@@ -119,27 +119,81 @@ const TodayHotTip = () => {
             />
           </div>
 
-          <div className="relative z-10 flex flex-col items-center text-center">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-center gap-1.5 bg-purple-500/20 text-purple-400 px-3 py-1.5 rounded-full">
-                <Zap className="w-4 h-4 animate-pulse" />
-                <span className="text-xs font-semibold uppercase tracking-wider">Today's Hot Tip</span>
+          <div className="relative z-10 space-y-5">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 bg-purple-500/20 text-purple-400 px-3 py-1.5 rounded-full">
+                  <Zap className="w-4 h-4 animate-pulse" />
+                  <span className="text-xs font-semibold uppercase tracking-wider">Today's Hot Tip</span>
+                </div>
+              </div>
+              {(data.status && data.status !== "upcoming") && (
+                <Badge variant={statusVariant[data.status]} className="gap-1 py-1 px-2.5">
+                  <span className="font-display font-bold uppercase tracking-wider text-[9px]">
+                    {statusLabel[data.status]}
+                  </span>
+                </Badge>
+              )}
+            </div>
+
+            {/* Match Info */}
+            <p className="text-muted-foreground text-xs uppercase tracking-[0.2em] text-center font-medium">
+              {data.league} • {data.kickoff}
+            </p>
+
+            {/* Teams Preview */}
+            <div className="flex flex-col items-center gap-3 py-3">
+              {/* Home Team */}
+              <div className="flex items-center gap-3 w-full justify-center">
+                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center ring-2 ring-purple-500/30">
+                  <TeamLogo teamName={data.homeTeam} logoUrl={data.homeTeamLogo} size={32} />
+                </div>
+                <span className="font-display text-lg font-bold text-foreground">{data.homeTeam}</span>
+              </div>
+
+              {/* VS Badge */}
+              <div className="px-3 py-1.5 bg-muted/60 border border-border/40 rounded-lg">
+                <span className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider">VS</span>
+              </div>
+
+              {/* Away Team */}
+              <div className="flex items-center gap-3 w-full justify-center">
+                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center ring-2 ring-purple-500/30">
+                  <TeamLogo teamName={data.awayTeam} logoUrl={data.awayTeamLogo} size={32} />
+                </div>
+                <span className="font-display text-lg font-bold text-foreground">{data.awayTeam}</span>
               </div>
             </div>
 
-            <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center mb-4">
-              <Gift className="w-8 h-8 text-purple-400" />
+            {/* Locked Content Overlay */}
+            <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/25 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-center gap-2 text-purple-400">
+                <Lock className="w-4 h-4" />
+                <span className="font-display text-sm font-bold uppercase tracking-wider">Premium Content Locked</span>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2 opacity-30">
+                <div className="bg-background/40 rounded-lg p-2 text-center">
+                  <p className="text-[8px] text-muted-foreground uppercase">Prediction</p>
+                  <p className="text-xs font-bold text-foreground">???</p>
+                </div>
+                <div className="bg-background/40 rounded-lg p-2 text-center">
+                  <p className="text-[8px] text-muted-foreground uppercase">Odds</p>
+                  <p className="text-xs font-bold text-foreground">?.??</p>
+                </div>
+                <div className="bg-background/40 rounded-lg p-2 text-center">
+                  <p className="text-[8px] text-muted-foreground uppercase">Confidence</p>
+                  <p className="text-xs font-bold text-foreground">???</p>
+                </div>
+              </div>
             </div>
 
-            <h3 className="font-display text-xl font-bold mb-2">Unlock Premium Tip</h3>
-            <p className="text-muted-foreground text-sm mb-6 max-w-xs">
-              Watch a short ad to reveal our highest confidence pick for today
-            </p>
-
+            {/* CTA Button */}
             <Button
               onClick={handleWatchAd}
               disabled={isLoading || !isRewardedAdReady}
-              className="w-full max-w-xs h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold uppercase tracking-wider text-sm shadow-lg shadow-purple-500/30 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold uppercase tracking-wider text-sm shadow-lg shadow-purple-500/30 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -150,10 +204,10 @@ const TodayHotTip = () => {
             </Button>
 
             {error && (
-              <p className="text-red-500 text-xs mt-3">{error}</p>
+              <p className="text-red-500 text-xs text-center">{error}</p>
             )}
 
-            <p className="text-[10px] text-muted-foreground mt-3">
+            <p className="text-[10px] text-muted-foreground text-center">
               ~30 seconds • No purchase necessary
             </p>
           </div>
