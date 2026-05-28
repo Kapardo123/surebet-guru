@@ -24,7 +24,11 @@ export const useAdMob = () => {
   }, []);
 
   const loadRewardedAd = useCallback(async (adUnitId?: string) => {
-    if (!isNativePlatform) return false;
+    if (!isNativePlatform) {
+      console.log('🌐 AdMob: Web mode - reklama zawsze gotowa');
+      setIsRewardedAdReady(true);
+      return true;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -157,6 +161,9 @@ export const useAdMob = () => {
         console.log('🔄 AdMob: Początkowe ładowanie reklamy...');
         loadRewardedAd();
       });
+    } else {
+      console.log('🌐 AdMob: Web mode - ustawiam gotowość reklamy');
+      setIsRewardedAdReady(true);
     }
 
     // Cleanup listeners przy unmount
