@@ -9,7 +9,7 @@ import { loadTips } from "@/lib/tipsStorage";
 import { loadCoupons, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
 import { Tip } from "@/components/TipCard";
-import { Settings, Crown, TrendingUp, Receipt, LogIn, LogOut, Sparkles } from "lucide-react";
+import { Crown, TrendingUp, Receipt, LogIn, LogOut, Sparkles } from "lucide-react";
 import PremiumBadge from "@/components/PremiumBadge";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Link } from "react-router-dom";
@@ -115,11 +115,6 @@ const Index = () => {
                 </Link>
               )}
             </div>
-
-            {/* Mobile menu button */}
-            <Link to="/admin" className="md:hidden p-1.5 md:p-2 hover:bg-muted/50 rounded-lg transition-colors">
-              <Settings className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
-            </Link>
           </div>
         </div>
       </header>
