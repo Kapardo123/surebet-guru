@@ -22,9 +22,10 @@ const statusLabel = {
 const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsPremium?: boolean }) => {
   const isSettled = coupon.status === "won" || coupon.status === "lost";
   
-  // 🎯 ZAWSZE POKAZUJ KUPONY - NIE BLOKUJ!
-  // Wszystkie kupony są widoczne dla wszystkich użytkowników
-  const locked = false;
+  // 🎯 LOGIKA KŁODKI:
+  // - Premium kupon + użytkownik BEZ premium + NIE rozstrzygnięty → 🔒 ZABLOKOWANY
+  // - Wszystkie inne przypadki → 🔓 PEŁNY DOSTĘP
+  const locked = coupon.isPremium && !userIsPremium && !isSettled;
   
   console.log('🎫 CouponCard:', {
     name: coupon.name,
@@ -34,7 +35,8 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
     status: coupon.status,
     isSettled: isSettled,
     locked: locked,
-    willShow: true
+    willShow: true, // Zawsze widoczny!
+    contentLocked: locked // Treść zablokowana?
   });
 
   return (
