@@ -19,6 +19,8 @@ const Coupons = () => {
   const isPremium = false;
 
   useEffect(() => {
+    console.log('🎯🎯🎯 USE EFFECT STARTED! 🎯🎯🎯');
+    
     const fetchCoupons = async () => {
       console.log('🎫 Coupons: Pobieranie kuponów...');
       setLoading(true);
@@ -27,32 +29,39 @@ const Coupons = () => {
       try {
         const loaded = await loadCoupons();
         console.log('🎫 Coupons: Pobrano', loaded.length, 'kuponów:', loaded);
+        console.log('🎫 Coupons: PRZED setCoupons - loaded:', JSON.stringify(loaded));
         
         if (loaded.length === 0) {
           console.warn('🎫 Coupons: Brak kuponów');
           setError('No coupons available');
         }
         
+        console.log('🎫 Coupons: WYWOŁUJĘ setCoupons z', loaded.length, 'elementami!');
         setCoupons(loaded);
+        console.log('🎫 Coupons: PO setCoupons - stan powinien być zaktualizowany');
+        
       } catch (err) {
         console.error('❌ Coupons: Błąd pobierania:', err);
         setError('Failed to load coupons');
         setCoupons([]);
       } finally {
+        console.log('🎫 Coupons: Ustawiam setLoading(false)');
         setLoading(false);
       }
     };
     
+    console.log('🎫 Coupons: WYWOŁUJĘ fetchCoupons()...');
     fetchCoupons();
   }, []);
 
-  // Debug: Loguj stan komponentu
-  console.log('🎫 Coupons Render:', { 
+  // Debug: Loguj stan komponentu PRZED renderem
+  console.log('🎫🎫🎫 COUPONS RENDER 🎫🎫🎫', { 
     couponsCount: coupons.length, 
     loading, 
     error, 
     isPremium,
-    showEmptyState: !loading && coupons.length === 0
+    showEmptyState: !loading && coupons.length === 0,
+    timestamp: new Date().toISOString()
   });
 
   return (

@@ -49,9 +49,9 @@ const Index = () => {
       });
 
       const visibleCoupons = loadedCoupons.filter(coupon => {
+        // 🎯 ZAWSZE POKAZUJ KUPONY - BEZ BLOKADY PREMIUM!
         if (coupon.status === 'active' || coupon.status === 'pending') {
-          if (coupon.isPremium && !isPremium) return false;
-          return true;
+          return true; // ← ZAWSZE POKAZUJ!
         }
         if (coupon.status === 'won' && coupon.wonAt) {
           const wonTime = new Date(coupon.wonAt).getTime();
