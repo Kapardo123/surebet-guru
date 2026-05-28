@@ -21,9 +21,23 @@ const statusLabel = {
 
 const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsPremium?: boolean }) => {
   const isSettled = coupon.status === "won" || coupon.status === "lost";
+  
+  // ZAWSZE pokazuj kupony:
+  // - Nie-premium (isPremium=false)
+  // - Rozstrzygnięte (won/lost)
+  // - Premium + użytkownik ma premium
   const locked = coupon.isPremium && !userIsPremium && !isSettled;
   
-  console.log('🎫 CouponCard:', coupon.name, '| isPremium:', coupon.isPremium, '| userIsPremium:', userIsPremium, '| status:', coupon.status, '| isSettled:', isSettled, '| LOCKED:', locked);
+  console.log('🎫 CouponCard:', {
+    name: coupon.name,
+    id: coupon.id,
+    isPremium: coupon.isPremium,
+    userIsPremium: userIsPremium,
+    status: coupon.status,
+    isSettled: isSettled,
+    locked: locked,
+    willShow: !locked
+  });
 
   return (
     <motion.div

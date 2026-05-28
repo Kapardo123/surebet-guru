@@ -10,21 +10,51 @@ import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 
 const Coupons = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const { active: isPremium } = usePremiumStatus();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { active: isPremium, loading: premiumLoading } = usePremiumStatus();
 
   useEffect(() => {
     const fetchCoupons = async () => {
       console.log('🎫 Coupons: Pobieranie kuponów...');
-      const loaded = await loadCoupons();
-      console.log('🎫 Coupons: Pobrano', loaded.length, 'kuponów:', loaded);
-      setCoupons(loaded);
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const loaded = await loadCoupons();
+        console.log('🎫 Coupons: Pobrano', loaded.length, 'kuponów:', loaded);
+        
+        if (loaded.length === 0) {
+          console.warn('🎫 Coupons: Brak kuponów - sprawdzam przyczyny');
+          setError('No coupons available');
+        }
+        
+        setCoupons(loaded);
+      } catch (err) {
+        console.error('❌ Coupons: Błąd pobierania:', err);
+        setError('Failed to load coupons');
+        setCoupons([]);
+      } finally {
+        setLoading(false);
+      }
     };
+    
     fetchCoupons();
   }, []);
 
   useEffect(() => {
-    console.log('🎫 Coupons: Status premium zmieniony - isPremium:', isPremium);
-  }, [isPremium]);
+    console.log('🎫 Coupons: Status premium zmieniony - isPremium:', isPremium, 'loading:', premiumLoading);
+  }, [isPremium, premiumLoading]);
+
+  // Debug: Loguj stan komponentu
+  console.log('🎫 Coupons Render:', { 
+    couponsCount: coupons.length, 
+    loading, 
+    error, 
+    isPremium, 
+    premiumLoading,
+    showEmptyState: !loading && coupons.length === 0
+  });
 
   return (
     <PageTransition>
@@ -96,24 +126,34 @@ const Coupons = () => {
         </div>
 
         {/* Coupons Grid */}
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2 max-w-5xl mx-auto">
-          {coupons.map((coupon) => (
-            <CouponCard key={coupon.id} coupon={coupon} userIsPremium={isPremium} />
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {coupons.length === 0 && (
+        {loading ? (
+          <div className="flex items-center justify-center py-24">
+            <div className="text-center space-y-4">
+              <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto" />
+              <p className="text-muted-foreground font-display text-sm font-semibold">Loading coupons...</p>
+            </div>
+          </div>
+        ) : coupons.length > 0 ? (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2 max-w-5xl mx-auto">
+            {coupons.map((coupon) => (
+              <CouponCard key={coupon.id} coupon={coupon} userIsPremium={isPremium} />
+            ))}
+          </div>
+        ) : (
+          /* Empty State */
           <div className="text-center py-24 space-y-5 max-w-md mx-auto">
             <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 mx-auto flex items-center justify-center border border-blue-500/20">
               <Receipt className="w-11 h-11 text-blue-400" />
             </div>
             <div className="space-y-2">
               <p className="text-muted-foreground font-display text-lg font-semibold">
-                No coupons yet
+                {error || 'No coupons yet'}
               </p>
               <p className="text-muted-foreground/60 text-sm leading-relaxed">
-                Check back soon for new premium accumulators with high odds
+                {error === 'Failed to load coupons' 
+                  ? 'There was an error loading coupons. Please try again later.'
+                  : 'Check back soon for new premium accumulators with high odds'
+                }
               </p>
             </div>
             <div className="pt-4">

@@ -96,37 +96,93 @@ export const loadCoupons = async (): Promise<Coupon[]> => {
 
   console.log('🎫 loadCoupons: Start - cache:', cached.length);
 
-  const { data, error } = await supabase
-    .from('coupons')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(30);
+  try {
+    const { data, error } = await supabase
+      .from('coupons')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(30);
 
-  if (error) {
-    console.error("❌ Error loading coupons:", error);
+    console.log('🎫 loadCoupons: Supabase response:', { data: data?.length || 0, error: error?.message || 'none' });
+
+    if (error) {
+      console.error("❌ Error loading coupons:", error.code, error.message, error.details);
+      
+      // Fallback do cache jeśli jest
+      if (cached.length > 0) {
+        console.log('🎫 loadCoupons: Używam cache:', cached.length, 'kuponów');
+        return cached;
+      }
+      
+      // Spróbuj pobrać publiczne kupony (bez RLS)
+      try {
+        const { data: publicData, error: publicError } = await supabase
+          .rpc('get_public_coupons')
+          .limit(30);
+        
+        if (!publicError && publicData) {
+          console.log('🎫 loadCoupons: Pobrano publiczne kupony:', publicData.length);
+          const coupons = processCouponData(publicData);
+          setCachedCoupons(coupons);
+          return coupons;
+        }
+      } catch (e) {
+        console.warn('🎫 loadCoupons: Public RPC failed:', e);
+      }
+      
+      return cached;
+    }
+
+    if (!data || data.length === 0) {
+      console.log('🎫 loadCoupons: Brak danych z Supabase');
+      return cached;
+    }
+
+    console.log('🎫 loadCoupons: Pobrano z bazy:', data.length, 'rekordów');
+    
+    const coupons = processCouponData(data);
+    setCachedCoupons(coupons);
+    console.log('🎫 loadCoupons: Zwracam', coupons.length, 'kuponów');
+    return coupons;
+    
+  } catch (err) {
+    console.error('❌ loadCoupons: Critical error:', err);
     return cached;
   }
+};
 
-  console.log('🎫 loadCoupons: Pobrano z bazy:', data?.length || 0, 'rekordów');
-
-  const coupons = (data || []).map((coupon) => {
+const processCouponData = (data: any[]): Coupon[] => {
+  return (data || []).map((coupon, index) => {
+    console.log(`🎫 Processing coupon ${index}:`, {
+      id: coupon.id,
+      name: coupon.name,
+      status: coupon.status,
+      is_premium: coupon.is_premium,
+      matches_count: Array.isArray(coupon.matches) ? coupon.matches.length : 0
+    });
+    
+    const matches = deserializeMatches(coupon.matches);
+    console.log(`🎫 Coupon ${index} matches deserialized:`, matches.length);
+    
     const status = isCouponStatus(coupon.status) ? coupon.status : "active";
     return {
       id: coupon.id,
-      name: coupon.name,
-      matches: deserializeMatches(coupon.matches),
-      totalOdds: Number(coupon.total_odds),
+      name: coupon.name || `Coupon #${coupon.id}`,
+      matches: matches,
+      totalOdds: Number(coupon.total_odds) || calculateTotalOdds(matches),
       stake: coupon.stake ?? undefined,
       status,
-      createdAt: coupon.created_at,
-      isPremium: coupon.is_premium ?? undefined,
+      createdAt: coupon.created_at || new Date().toISOString(),
+      isPremium: coupon.is_premium ?? false,
       wonAt: coupon.won_at || null,
     };
+  }).filter(coupon => {
+    const isValid = coupon.name && coupon.matches.length > 0;
+    if (!isValid) {
+      console.warn('🎫 Invalid coupon filtered:', coupon.id, coupon.name, 'matches:', coupon.matches.length);
+    }
+    return isValid;
   });
-
-  setCachedCoupons(coupons);
-  console.log('🎫 loadCoupons: Zwracam', coupons.length, 'kuponów');
-  return coupons;
 };
 
 export const addCoupon = async (coupon: Omit<Coupon, "id" | "totalOdds" | "createdAt">): Promise<Coupon | null> => {
