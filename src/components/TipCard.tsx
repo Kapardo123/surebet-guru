@@ -150,24 +150,24 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
               <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-13 md:h-13 rounded-full flex items-center justify-center flex-shrink-0 ${
                 tip.isPremium ? 'ring-2 ring-pink-500/30 bg-pink-500/5' : 'ring-2 ring-purple-500/30 bg-purple-500/5'
               }`}>
-                <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={26} />
+                <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={26} sport={tip.sport} />
               </div>
               <span className="font-display font-bold text-foreground text-sm sm:text-base md:text-lg leading-tight text-center">{tip.homeTeam}</span>
             </div>
 
             {/* VS Badge - Centered */}
-            <div className="px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-xl shadow-md shadow-purple-500/20">
-              <span className="text-xs sm:text-sm font-display font-black text-white uppercase tracking-widest">VS</span>
+            <div className="px-3 py-1 sm:py-1.5 bg-muted/60 border border-border/40 rounded-lg">
+              <span className="text-[11px] sm:text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider">VS</span>
             </div>
 
             {/* Away Team */}
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4 w-full justify-center">
-              <span className="font-display font-bold text-foreground text-sm sm:text-base md:text-lg leading-tight text-center">{tip.awayTeam}</span>
               <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-13 md:h-13 rounded-full flex items-center justify-center flex-shrink-0 ${
                 tip.isPremium ? 'ring-2 ring-pink-500/30 bg-pink-500/5' : 'ring-2 ring-purple-500/30 bg-purple-500/5'
               }`}>
-                <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={26} />
+                <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={26} sport={tip.sport} />
               </div>
+              <span className="font-display font-bold text-foreground text-sm sm:text-base md:text-lg leading-tight text-center">{tip.awayTeam}</span>
             </div>
           </div>
 

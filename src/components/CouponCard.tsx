@@ -99,7 +99,7 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
                       {/* Home Team */}
                       <div className="flex flex-col items-center gap-1.5 flex-1">
                         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-500/15 to-blue-600/5 flex items-center justify-center ring-2 ring-blue-500/25 shadow-lg shadow-blue-500/10">
-                          <TeamLogo teamName={match.homeTeam} logoUrl={match.homeTeamLogo} size={22} />
+                          <TeamLogo teamName={match.homeTeam} logoUrl={match.homeTeamLogo} size={22} sport={match.sport} />
                         </div>
                         <span className="text-xs sm:text-sm font-bold text-foreground leading-tight text-center line-clamp-2">{match.homeTeam}</span>
                       </div>
@@ -112,7 +112,7 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
                       {/* Away Team */}
                       <div className="flex flex-col items-center gap-1.5 flex-1">
                         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-cyan-500/15 to-cyan-600/5 flex items-center justify-center ring-2 ring-cyan-500/25 shadow-lg shadow-cyan-500/10">
-                          <TeamLogo teamName={match.awayTeam} logoUrl={match.awayLogo} size={22} />
+                          <TeamLogo teamName={match.awayTeam} logoUrl={match.awayLogo} size={22} sport={match.sport} />
                         </div>
                         <span className="text-xs sm:text-sm font-bold text-muted-foreground leading-tight text-center line-clamp-2">{match.awayTeam}</span>
                       </div>
