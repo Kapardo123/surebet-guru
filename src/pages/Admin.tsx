@@ -686,17 +686,21 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="sticky top-0 z-50 glass border-b border-border/50">
-        <div className="container max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 relative overflow-hidden">
+      {/* Synthwave glow effects */}
+      <div className="fixed top-0 left-1/3 w-[400px] h-[400px] rounded-full blur-[100px] opacity-10 pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)' }} />
+      
+      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-[#0a0015]/80 via-[#150025]/80 to-[#0a0020]/80 border-b border-purple-500/20 shadow-xl shadow-black/30">
+        <div className="container max-w-6xl mx-auto px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 md:gap-3">
             <Link to="/" className="flex items-center gap-2.5">
               <Logo />
             </Link>
-            <Badge variant="confidence" className="font-display text-[10px] uppercase tracking-wider">Admin</Badge>
+            <Badge variant="confidence" className="font-display text-[10px] uppercase tracking-wider bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 border-purple-500/30">Admin</Badge>
           </div>
           <Link to="/">
-            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
+            <Button variant="ghost" size="sm" className="gap-1.5 text-purple-300/70 hover:text-pink-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-pink-500/30">
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Back</span>
             </Button>
@@ -706,16 +710,16 @@ const Admin = () => {
 
       <main className="container max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* ADMIN NAVIGATION TABS */}
-        <div className="sticky top-[72px] z-40 bg-background/80 backdrop-blur-lg border border-border/50 rounded-xl p-1">
+        <div className="sticky top-[72px] z-40 bg-[#0a0015]/80 backdrop-blur-xl border border-purple-500/20 rounded-xl p-1 shadow-lg shadow-black/20">
           <div className="flex gap-1 overflow-x-auto pb-1">
             {adminTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
                   activeTab === tab.id
-                    ? "bg-accent text-white shadow-lg shadow-accent/30"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    ? "bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 text-white shadow-lg shadow-pink-500/30"
+                    : "text-purple-300/70 hover:text-pink-300 hover:bg-white/5"
                 }`}
               >
                 <tab.icon className="w-4 h-4" />

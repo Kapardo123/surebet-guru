@@ -4,6 +4,7 @@ import { Receipt, Clock, Crown, Lock, Layers, Sparkles } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { memo } from "react";
 
 const statusVariant = {
   active: "outline" as const,
@@ -21,29 +22,10 @@ const statusLabel = {
 
 const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsPremium?: boolean }) => {
   const isSettled = coupon.status === "won" || coupon.status === "lost";
-  
-  // 🎯 LOGIKA KŁODKI:
-  // - Premium kupon + użytkownik BEZ premium + NIE rozstrzygnięty → 🔒 ZABLOKOWANY
-  // - Wszystkie inne przypadki → 🔓 PEŁNY DOSTĘP
   const locked = coupon.isPremium && !userIsPremium && !isSettled;
-  
-  console.log('🎫 CouponCard:', {
-    name: coupon.name,
-    id: coupon.id,
-    isPremium: coupon.isPremium,
-    userIsPremium: userIsPremium,
-    status: coupon.status,
-    isSettled: isSettled,
-    locked: locked,
-    willShow: true, // Zawsze widoczny!
-    contentLocked: locked // Treść zablokowana?
-  });
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
       className={`relative overflow-hidden rounded-2xl group w-full ${locked ? "select-none" : ""}`}
     >
       {/* Blue/Cyan glow effect */}
@@ -185,4 +167,4 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
   );
 };
 
-export default CouponCard;
+export default memo(CouponCard);

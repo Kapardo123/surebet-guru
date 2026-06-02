@@ -13,12 +13,12 @@ const SplashScreen = () => {
 
     const fadeTimer = setTimeout(() => {
       setIsFadingOut(true);
-    }, 2200);
+    }, 3800);
 
     const hideTimer = setTimeout(() => {
       setIsVisible(false);
       sessionStorage.setItem('splash_shown', 'true');
-    }, 2700);
+    }, 4300);
 
     return () => {
       clearTimeout(fadeTimer);
@@ -35,7 +35,7 @@ const SplashScreen = () => {
         animate={{ opacity: isFadingOut ? 0 : 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
-        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-br from-[#0a0a0f] via-[#0d0d15] to-[#050508] overflow-hidden"
+        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] overflow-hidden"
       >
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
@@ -43,11 +43,11 @@ const SplashScreen = () => {
           <motion.div 
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[500px] rounded-full"
             style={{
-              background: 'radial-gradient(circle, rgba(16,185,129,0.12) 0%, rgba(59,130,246,0.08) 40%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(236,72,153,0.15) 0%, rgba(139,92,246,0.12) 40%, transparent 70%)',
               filter: 'blur(80px)',
             }}
             animate={{
-              scale: [1, 1.1, 1],
+              scale: [1, 1.15, 1],
               rotate: [0, 180, 360],
             }}
             transition={{
@@ -57,16 +57,16 @@ const SplashScreen = () => {
             }}
           />
           
-          {/* Secondary orb */}
+          {/* Secondary orb - Cyan/Magenta */}
           <motion.div 
             className="absolute top-1/3 right-1/4 w-[300px] h-[300px] rounded-full"
             style={{
-              background: 'radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 60%)',
+              background: 'radial-gradient(circle, rgba(6,182,212,0.12) 0%, rgba(217,70,239,0.08) 60%)',
               filter: 'blur(60px)',
             }}
             animate={{
-              y: [0, -30, 0],
-              x: [0, 20, 0],
+              y: [0, -35, 0],
+              x: [0, 25, 0],
             }}
             transition={{
               duration: 6,
@@ -75,16 +75,16 @@ const SplashScreen = () => {
             }}
           />
           
-          {/* Tertiary orb */}
+          {/* Tertiary orb - Neon Purple */}
           <motion.div 
             className="absolute bottom-1/4 left-1/3 w-[250px] h-[250px] rounded-full"
             style={{
-              background: 'radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 60%)',
+              background: 'radial-gradient(circle, rgba(168,85,247,0.10) 0%, rgba(236,72,153,0.06) 60%)',
               filter: 'blur(50px)',
             }}
             animate={{
-              y: [0, 25, 0],
-              x: [0, -15, 0],
+              y: [0, 30, 0],
+              x: [0, -20, 0],
             }}
             transition={{
               duration: 7,
@@ -105,63 +105,6 @@ const SplashScreen = () => {
 
         {/* Main Content */}
         <div className="relative z-10 flex flex-col items-center justify-center px-6">
-          {/* Icon Container with Ring Animation */}
-          <motion.div 
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="relative mb-8 sm:mb-10 md:mb-12"
-          >
-            {/* Rotating ring */}
-            <motion.div 
-              className="absolute inset-0 w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-            >
-              <div 
-                className="w-full h-full rounded-full border-2 border-transparent"
-                style={{
-                  backgroundImage: 'linear-gradient(to right, #10b981, #3b82f6, #f59e0b, #10b981)',
-                  WebkitMask: 'linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)',
-                  WebkitMaskComposite: 'xor',
-                  maskComposite: 'exclude',
-                }}
-              />
-            </motion.div>
-
-            {/* Inner glow circle */}
-            <div 
-              className="absolute inset-2 sm:inset-2.5 md:inset-3 rounded-full"
-              style={{
-                background: 'radial-gradient(circle, rgba(16,185,129,0.2), transparent 70%)',
-                filter: 'blur(10px)'
-              }}
-            />
-            
-            {/* Trophy Icon Container */}
-            <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center bg-gradient-to-br from-emerald-500/10 to-blue-500/10 backdrop-blur-sm border border-white/5">
-              <svg 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                className="w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12"
-                style={{
-                  stroke: 'url(#trophyGradient)',
-                  strokeWidth: 1.5
-                }}
-              >
-                <defs>
-                  <linearGradient id="trophyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#10b981" />
-                    <stop offset="50%" stopColor="#3b82f6" />
-                    <stop offset="100%" stopColor="#f59e0b" />
-                  </linearGradient>
-                </defs>
-                <path d="M8 21h8M12 17v4M7 4h10c0 2.76-2.24 5-5 5s-5-2.24-5-5zM5 4h14v2a3 3 0 01-3 3H8a3 3 0 01-3-3V4z"/>
-                <path d="M5 4V3a1 1 0 011-1h12a1 1 0 011 1v1M19 4v3a3 3 0 01-3 3M5 4v3a3 3 0 003 3"/>
-              </svg>
-            </div>
-          </motion.div>
-
           {/* Title Text */}
           <div className="text-center mb-8 sm:mb-10 md:mb-12">
             {/* Great */}
@@ -186,11 +129,11 @@ const SplashScreen = () => {
                 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-none"
                 style={{ 
                   fontFamily: "'Space Grotesk', sans-serif",
-                  background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 50%, #f59e0b 100%)',
+                  background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #06b6d4 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
-                  filter: 'drop-shadow(0 0 30px rgba(16,185,129,0.3))'
+                  filter: 'drop-shadow(0 0 30px rgba(236,72,153,0.3))'
                 }}
               >
                 SPORT BETS
@@ -200,7 +143,7 @@ const SplashScreen = () => {
               <div 
                 className="absolute inset-0 blur-2xl opacity-30 -z-10"
                 style={{
-                  background: 'linear-gradient(135deg, #10b981, #3b82f6, #f59e0b)',
+                  background: 'linear-gradient(135deg, #ec4899, #a855f7, #06b6d4)',
                   filter: 'blur(40px)'
                 }}
               />
@@ -225,14 +168,14 @@ const SplashScreen = () => {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="flex items-center gap-3 mb-8 sm:mb-10 md:mb-12"
           >
-            <div className="h-[1px] w-12 sm:w-16 md:w-20 bg-gradient-to-r from-transparent to-emerald-500/40" />
+            <div className="h-[1px] w-12 sm:w-16 md:w-20 bg-gradient-to-r from-transparent to-pink-500/40" />
             
             {/* Animated dots */}
             <div className="flex gap-1.5">
               {[0, 1, 2].map((i) => (
                 <motion.div
                   key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-emerald-400"
+                  className="w-1.5 h-1.5 rounded-full bg-purple-400"
                   animate={{
                     scale: [1, 1.3, 1],
                     opacity: [0.5, 1, 0.5]
@@ -243,13 +186,13 @@ const SplashScreen = () => {
                     delay: i * 0.2
                   }}
                   style={{
-                    boxShadow: '0 0 10px rgba(16,185,129,0.5)'
+                    boxShadow: '0 0 10px rgba(168,85,247,0.5)'
                   }}
                 />
               ))}
             </div>
             
-            <div className="h-[1px] w-12 sm:w-16 md:w-20 bg-gradient-to-l from-transparent to-blue-500/40" />
+            <div className="h-[1px] w-12 sm:w-16 md:w-20 bg-gradient-to-l from-transparent to-cyan-500/40" />
           </motion.div>
 
           {/* Loading Indicator */}
@@ -264,8 +207,8 @@ const SplashScreen = () => {
               <motion.div 
                 className="h-full rounded-full relative"
                 style={{
-                  background: 'linear-gradient(90deg, #10b981, #3b82f6, #f59e0b)',
-                  boxShadow: '0 0 10px rgba(16,185,129,0.4)'
+                  background: 'linear-gradient(90deg, #ec4899, #a855f7, #06b6d4)',
+                  boxShadow: '0 0 10px rgba(236,72,153,0.4)'
                 }}
                 initial={{ width: '0%' }}
                 animate={{ width: '100%' }}
@@ -315,7 +258,7 @@ const SplashScreen = () => {
           </div>
           
           <p className="text-[8px] sm:text-[9px] font-medium tracking-wider text-white/10 uppercase">
-            v13.0.0 • Premium Platform
+            v16.0.0 • Premium Platform
           </p>
         </motion.div>
       </motion.div>

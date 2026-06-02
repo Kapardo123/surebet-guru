@@ -23,6 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const Index = () => {
   const [tips, setTips] = useState<Tip[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [allWonCoupons, setAllWonCoupons] = useState<Coupon[]>([]);
   const [activeTab, setActiveTab] = useState("tips");
   const [recentWins, setRecentWins] = useState<Tip[]>([]);
   const [heroPick, setHeroPick] = useState<FeaturedPick | null>(null);
@@ -62,10 +63,12 @@ const Index = () => {
       });
 
       const allWonTips = loadedTips.filter(tip => tip.status === 'won');
+      const allWonCouponsList = loadedCoupons.filter(coupon => coupon.status === 'won');
 
       setTips(visibleTips);
       setRecentWins(allWonTips);
       setCoupons(visibleCoupons);
+      setAllWonCoupons(allWonCouponsList);
       setHeroPick(loadedHeroPick);
     };
 
@@ -73,42 +76,47 @@ const Index = () => {
   }, [isPremium]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-purple-950/5 to-pink-950/5 pb-20 md:pb-0 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-hidden">
       {/* Synthwave glow effects */}
-      <div className="fixed top-0 left-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-10 pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)', transform: 'translate(-30%, -30%)' }} />
-      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-10 pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(30%, 30%)' }} />
+      <div className="fixed top-0 left-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(-30%, -30%)' }} />
+      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', transform: 'translate(30%, 30%)' }} />
+      <div className="fixed top-1/2 left-1/2 w-[400px] h-[400px] rounded-full blur-[100px] opacity-10 pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)', transform: 'translate(-50%, -50%)' }} />
 
-      {/* Modern Glass Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border/30 shadow-lg shadow-black/5">
-        <div className="container max-w-6xl mx-auto px-3 md:px-4 py-3 md:py-4 flex items-center justify-between">
+      {/* Modern Glass Header - Synthwave Style */}
+      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-[#0a0015]/80 via-[#150025]/80 to-[#0a0020]/80 border-b border-purple-500/20 shadow-xl shadow-black/30">
+        <div className="container max-w-6xl mx-auto px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2.5 md:gap-3">
             <Logo />
           </div>
           
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-2 md:gap-2.5">
             <PremiumBadge active={isPremium} daysLeft={premiumDaysLeft} loading={premiumLoading} />
             
-            <div className="hidden md:flex items-center gap-2.5">
+            <div className="hidden md:flex items-center gap-2">
               {!isPremium && (
                 <Link to="/premium">
                   <Button size="sm" 
-                          className="gap-1.5 md:gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold uppercase tracking-wider text-xs shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105 rounded-full px-4 md:px-5 py-2 md:py-2.5 border border-purple-400/20">
-                    <Crown className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    Go Premium
+                          className="gap-1.5 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 hover:from-pink-400 hover:via-purple-400 hover:to-cyan-400 text-white font-bold uppercase tracking-wider text-[11px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-all duration-300 hover:scale-105 rounded-full px-4 py-2 border border-white/10 relative overflow-hidden group">
+                    <span className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <span className="relative flex items-center gap-1.5">
+                      <Crown className="w-3.5 h-3.5" />
+                      Go Premium
+                    </span>
                   </Button>
                 </Link>
               )}
               
               {user ? (
-                <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200 rounded-full px-3 md:px-4" onClick={signOut}>
+                <Button variant="ghost" size="sm" className="gap-2 text-purple-300/70 hover:text-pink-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-pink-500/30" onClick={signOut}>
                   <LogOut className="w-4 h-4" />
                   <span className="text-xs font-medium hidden lg:inline">{user.email?.split("@")[0]}</span>
                 </Button>
               ) : (
                 <Link to="/auth">
-                  <Button variant="outline" size="sm" className="gap-2 text-xs font-medium border-border/50 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all duration-200 rounded-full px-3 md:px-4">
+                  <Button variant="outline" size="sm" className="gap-2 text-xs font-medium border-purple-500/30 text-purple-300 hover:border-cyan-500/50 hover:text-cyan-400 hover:bg-cyan-500/5 transition-all duration-200 rounded-full px-3 md:px-3.5 shadow-sm">
                     <LogIn className="w-4 h-4" />
                     Sign In
                   </Button>
@@ -124,26 +132,20 @@ const Index = () => {
         {/* Hero Section with Today's Hot Tip */}
         <ScrollReveal>
           <div className="space-y-3 mb-8">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10 px-4 py-2 rounded-full border border-purple-500/20">
-                <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
-                <span className="text-xs font-bold uppercase tracking-widest text-purple-400">Featured</span>
-              </div>
-            </div>
             <TodayHotTip />
           </div>
         </ScrollReveal>
 
         {/* Modern Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="bg-muted/40 backdrop-blur-sm border border-border/30 p-1.5 w-full md:w-auto rounded-2xl shadow-lg shadow-black/5">
+          <TabsList className="bg-white/5 backdrop-blur-xl border border-purple-500/20 p-1.5 w-full md:w-auto rounded-2xl shadow-xl shadow-black/20">
             <TabsTrigger value="tips" 
-                        className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 rounded-xl py-3 transition-all duration-300">
+                        className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:via-purple-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-pink-500/30 rounded-xl py-3 transition-all duration-300 text-purple-300/70 hover:text-purple-200">
               <TrendingUp className="w-4 h-4" />
               Single Tips
             </TabsTrigger>
             <TabsTrigger value="coupons" 
-                        className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 rounded-xl py-3 transition-all duration-300">
+                        className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:via-purple-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-pink-500/30 rounded-xl py-3 transition-all duration-300 text-purple-300/70 hover:text-purple-200">
               <Receipt className="w-4 h-4" />
               Coupons
             </TabsTrigger>
@@ -225,9 +227,9 @@ const Index = () => {
         </Tabs>
 
         {/* Recent Wins Section */}
-        {(recentWins.length > 0 || coupons.some(c => c.status === 'won') || heroPick?.status === 'won') && (
+        {(recentWins.length > 0 || allWonCoupons.length > 0 || heroPick?.status === 'won') && (
           <ScrollReveal>
-            <RecentWins tips={recentWins} coupons={coupons} heroPick={heroPick} />
+            <RecentWins tips={recentWins} coupons={allWonCoupons} heroPick={heroPick} />
           </ScrollReveal>
         )}
       </main>

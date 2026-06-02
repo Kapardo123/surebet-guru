@@ -6,10 +6,12 @@ const ParticleBackground = () => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
     if (!ctx) return;
 
     let animId: number;
+    let isRunning = true;
+    let resizeTimer: ReturnType<typeof setTimeout>;
     let particles: { x: number; y: number; vx: number; vy: number; size: number; color: string; alpha: number }[] = [];
 
     const colors = [
@@ -19,8 +21,12 @@ const ParticleBackground = () => {
     ];
 
     const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        createParticles();
+      }, 200);
     };
 
     const createParticles = () => {
@@ -37,9 +43,14 @@ const ParticleBackground = () => {
     };
 
     const animate = () => {
+      if (!isRunning) {
+        animId = requestAnimationFrame(animate);
+        return;
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      particles.forEach((p) => {
+      for (const p of particles) {
         p.x += p.vx;
         p.y += p.vy;
 
@@ -52,15 +63,16 @@ const ParticleBackground = () => {
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = `hsla(${p.color}, ${p.alpha})`;
         ctx.fill();
-      });
+      }
 
-      // Draw connections
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
+      const len = particles.length;
+      for (let i = 0; i < len; i++) {
+        for (let j = i + 1; j < len; j++) {
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 120) {
+          const distSq = dx * dx + dy * dy;
+          if (distSq < 14400) {
+            const dist = Math.sqrt(distSq);
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
@@ -74,18 +86,22 @@ const ParticleBackground = () => {
       animId = requestAnimationFrame(animate);
     };
 
+    const handleVisibility = () => {
+      isRunning = !document.hidden;
+    };
+
     resize();
     createParticles();
     animate();
 
-    window.addEventListener("resize", () => {
-      resize();
-      createParticles();
-    });
+    window.addEventListener("resize", resize);
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       cancelAnimationFrame(animId);
+      clearTimeout(resizeTimer);
       window.removeEventListener("resize", resize);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
 

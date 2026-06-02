@@ -3,7 +3,7 @@ import { Clock, Lock, Crown, ChevronDown, ChevronUp, ThumbsUp, TrendingUp, Spark
 import TeamLogo from "@/components/TeamLogo";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { incrementReaction } from "@/lib/tipsStorage";
 
 export interface Tip {
@@ -77,7 +77,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
   const isSettled = tip.status !== "upcoming";
   const locked = tip.isPremium && !userIsPremium && !isSettled;
 
-  const formatKickoff = (kickoffStr: string) => {
+  const formatKickoff = useCallback((kickoffStr: string) => {
     try {
       if (!kickoffStr) return "TBD";
       
@@ -94,13 +94,10 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
       return cleanKickoff || "TBD";
     } catch (e) {}
     return String(kickoffStr);
-  };
+  }, []);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
       className={`relative overflow-hidden rounded-2xl group ${locked ? "select-none" : ""}`}
     >
       {/* Synthwave glow effect */}
@@ -293,4 +290,4 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
   );
 };
 
-export default TipCard;
+export default memo(TipCard);
