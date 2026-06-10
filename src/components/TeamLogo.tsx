@@ -11,36 +11,29 @@ interface TeamLogoProps {
 
 const TennisBall = ({ size }: { size: number }) => (
   <svg
-    width={size * 0.7}
-    height={size * 0.7}
+    width={size * 0.75}
+    height={size * 0.75}
     viewBox="0 0 32 32"
-    className="text-emerald-500"
+    xmlns="http://www.w3.org/2000/svg"
   >
-    <circle cx="16" cy="16" r="13" fill="url(#tbgrad)" stroke="#059669" strokeWidth="1.5" />
-    <ellipse cx="11" cy="16" rx="3" ry="9" fill="none" stroke="#065f46" strokeWidth="1.2" opacity="0.55" />
-    <ellipse cx="21" cy="16" rx="3" ry="9" fill="none" stroke="#065f46" strokeWidth="1.2" opacity="0.55" />
-    <path d="M8 9 Q16 12 24 9" fill="none" stroke="#065f46" strokeWidth="1.2" opacity="0.55" strokeLinecap="round" />
-    <path d="M8 23 Q16 20 24 23" fill="none" stroke="#065f46" strokeWidth="1.2" opacity="0.55" strokeLinecap="round" />
-    <circle cx="12" cy="10" r="2" fill="white" opacity="0.35" />
     <defs>
-      <radialGradient id="tbgrad" cx="0.35" cy="0.35" r="0.7">
-        <stop offset="0%" stopColor="#86efac" />
-        <stop offset="60%" stopColor="#34d399" />
-        <stop offset="100%" stopColor="#059669" />
+      <radialGradient id="tbgrad" cx="0.35" cy="0.35" r="0.75">
+        <stop offset="0%" stopColor="#fffbe6" />
+        <stop offset="35%" stopColor="#fde047" />
+        <stop offset="70%" stopColor="#facc15" />
+        <stop offset="100%" stopColor="#854d0e" />
       </radialGradient>
     </defs>
+    <circle cx="16" cy="16" r="13" fill="url(#tbgrad)" stroke="#854d0e" strokeWidth="1.3" />
+    <path d="M3 16 Q16 10 29 16" fill="none" stroke="#ffffff" strokeWidth="1.3" opacity="0.85" strokeLinecap="round" />
+    <path d="M16 3 Q10 16 16 29" fill="none" stroke="#ffffff" strokeWidth="1.3" opacity="0.85" strokeLinecap="round" />
+    <ellipse cx="11" cy="10" rx="2.5" ry="1.3" fill="#ffffff" opacity="0.55" />
   </svg>
-);
-
-const TennisRacket = ({ size }: { size: number }) => (
-  <div className="flex items-center justify-center" style={{ width: size, height: size }}>
-    <TennisBall size={size} />
-  </div>
 );
 
 export const SportIcon = ({ sport, size = 12 }: { sport: string; size?: number }) => {
   const isTennis = sport?.toLowerCase().includes("tennis");
-  if (isTennis) return <TennisBall size={size * 1.4} />;
+  if (isTennis) return <TennisBall size={size * 1.5} />;
   return null;
 };
 
@@ -88,10 +81,10 @@ const TeamLogo = ({
   if (isTennis) {
     return (
       <div
-        className="rounded-full bg-gradient-to-br from-emerald-500/15 to-green-600/10 border border-emerald-500/25 flex items-center justify-center flex-shrink-0"
+        className="rounded-full bg-gradient-to-br from-yellow-400/20 to-amber-500/10 border border-yellow-400/30 flex items-center justify-center flex-shrink-0"
         style={{ width: size, height: size }}
       >
-        <TennisRacket size={size} />
+        <TennisBall size={size} />
       </div>
     );
   }

@@ -289,14 +289,15 @@ const RecentWins = ({ tips, coupons = [], heroPick }: RecentWinsProps) => {
                     <div className="flex flex-col gap-0.5 sm:gap-1 md:gap-1.5 min-w-0">
                       <div className="flex items-center gap-1 sm:gap-1.5">
                         <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-500/30 flex-shrink-0">
-                          <TeamLogo teamName={item.homeTeam} size={12} sport={item.sport || undefined} />
+                          <TeamLogo teamName={item.homeTeam} size={12} />
                         </div>
                         <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold truncate">{item.homeTeam}</span>
                         <span className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground/50 font-semibold flex-shrink-0">VS</span>
                         <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-green-500/10 flex items-center justify-center ring-1 ring-green-500/30 flex-shrink-0">
-                          <TeamLogo teamName={item.awayTeam} size={12} sport={item.sport || undefined} />
+                          <TeamLogo teamName={item.awayTeam} size={12} />
                         </div>
                         <span className="text-[10px] sm:text-[11px] md:text-xs font-medium text-muted-foreground truncate">{item.awayTeam}</span>
+                        {item.sport && <SportIcon sport={item.sport} size={9} />}
                       </div>
                     </div>
                   )}
