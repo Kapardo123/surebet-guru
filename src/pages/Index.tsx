@@ -11,6 +11,7 @@ import { loadFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
 import { Tip } from "@/components/TipCard";
 import { Crown, TrendingUp, Receipt, LogIn, LogOut, Sparkles } from "lucide-react";
 import PremiumBadge from "@/components/PremiumBadge";
+import FilterBar, { PremiumFilter } from "@/components/FilterBar";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,10 @@ const Index = () => {
   const [allWonCoupons, setAllWonCoupons] = useState<Coupon[]>([]);
   const [activeTab, setActiveTab] = useState("tips");
   const [recentWins, setRecentWins] = useState<Tip[]>([]);
+  const [tipSport, setTipSport] = useState("All");
+  const [tipPremium, setTipPremium] = useState<PremiumFilter>("all");
+  const [couponSport, setCouponSport] = useState("All");
+  const [couponPremium, setCouponPremium] = useState<PremiumFilter>("all");
   const [heroPick, setHeroPick] = useState<FeaturedPick | null>(null);
   const { active: isPremium, daysLeft: premiumDaysLeft, loading: premiumLoading } = usePremiumStatus();
   const { user, signOut } = useAuth();
@@ -74,6 +79,35 @@ const Index = () => {
 
     fetchData();
   }, [isPremium]);
+
+  const tipSports = Array.from(
+    new Set(tips.map((t) => t.sport).filter(Boolean) as string[])
+  ).sort();
+
+  const couponSports = Array.from(
+    new Set(
+      coupons
+        .map((c) => c.matches?.[0]?.sport)
+        .filter(Boolean) as string[]
+    )
+  ).sort();
+
+  const filteredTips = tips.filter((tip) => {
+    if (tipSport !== "All" && tip.sport !== tipSport) return false;
+    if (tipPremium === "premium" && !tip.isPremium) return false;
+    if (tipPremium === "free" && tip.isPremium) return false;
+    return true;
+  });
+
+  const filteredCoupons = coupons.filter((coupon) => {
+    if (couponSport !== "All") {
+      const matchSport = coupon.matches?.[0]?.sport;
+      if (matchSport !== couponSport) return false;
+    }
+    if (couponPremium === "premium" && !coupon.isPremium) return false;
+    if (couponPremium === "free" && coupon.isPremium) return false;
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-hidden">
@@ -161,19 +195,34 @@ const Index = () => {
                 </h2>
               </div>
               <span className="text-xs text-muted-foreground font-display uppercase tracking-wider bg-gradient-to-r from-purple-500/10 to-pink-500/10 px-4 py-2 rounded-full border border-purple-500/20 font-medium">
-                {tips.length} picks
+                {filteredTips.length} picks
               </span>
             </div>
 
+            {tipSports.length > 0 && (
+              <div className="bg-white/3 backdrop-blur-xl border border-purple-500/15 rounded-2xl p-3 md:p-4 shadow-lg shadow-black/10">
+                <FilterBar
+                  sports={tipSports}
+                  activeSport={tipSport}
+                  onSportChange={setTipSport}
+                  activePremium={tipPremium}
+                  onPremiumChange={setTipPremium}
+                  totalItems={tips.length}
+                  filteredItems={filteredTips.length}
+                  accent="purple"
+                />
+              </div>
+            )}
+
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2">
-              {tips.map((tip, i) => (
+              {filteredTips.map((tip, i) => (
                 <ScrollReveal key={tip.id} delay={i * 0.08}>
                   <TipCard tip={tip} userIsPremium={isPremium} />
                 </ScrollReveal>
               ))}
             </div>
 
-            {tips.length === 0 && (
+            {filteredTips.length === 0 && (
               <div className="text-center py-20 md:py-28 space-y-4">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 mx-auto flex items-center justify-center border border-purple-500/20">
                   <TrendingUp className="w-9 h-9 text-purple-400" />
@@ -198,19 +247,34 @@ const Index = () => {
                 </h2>
               </div>
               <span className="text-xs text-muted-foreground font-display uppercase tracking-wider bg-gradient-to-r from-blue-500/10 to-cyan-500/10 px-4 py-2 rounded-full border border-blue-500/20 font-medium">
-                {coupons.length} coupons
+                {filteredCoupons.length} coupons
               </span>
             </div>
 
+            {couponSports.length > 0 && (
+              <div className="bg-white/3 backdrop-blur-xl border border-blue-500/15 rounded-2xl p-3 md:p-4 shadow-lg shadow-black/10">
+                <FilterBar
+                  sports={couponSports}
+                  activeSport={couponSport}
+                  onSportChange={setCouponSport}
+                  activePremium={couponPremium}
+                  onPremiumChange={setCouponPremium}
+                  totalItems={coupons.length}
+                  filteredItems={filteredCoupons.length}
+                  accent="blue"
+                />
+              </div>
+            )}
+
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2">
-              {coupons.map((coupon, i) => (
+              {filteredCoupons.map((coupon, i) => (
                 <ScrollReveal key={coupon.id} delay={i * 0.08}>
                   <CouponCard coupon={coupon} userIsPremium={isPremium} />
                 </ScrollReveal>
               ))}
             </div>
 
-            {coupons.length === 0 && (
+            {filteredCoupons.length === 0 && (
               <div className="text-center py-20 md:py-28 space-y-4">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 mx-auto flex items-center justify-center border border-blue-500/20">
                   <Receipt className="w-9 h-9 text-blue-400" />
