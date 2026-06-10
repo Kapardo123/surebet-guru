@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 export type PremiumFilter = "all" | "premium" | "free";
 
 interface FilterBarProps {
-  sports: string[];
-  activeSport: string;
-  onSportChange: (sport: string) => void;
+  sports?: string[];
+  activeSport?: string;
+  onSportChange?: (sport: string) => void;
   activePremium: PremiumFilter;
   onPremiumChange: (value: PremiumFilter) => void;
   totalItems: number;
@@ -62,38 +62,40 @@ const FilterBar = ({
       </div>
 
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <div className="flex flex-wrap gap-1.5 flex-1">
-            <button
-              onClick={() => onSportChange("All")}
-              className={`text-xs px-2.5 py-1.5 rounded-full border font-medium transition-all ${
-                activeSport === "All"
-                  ? `bg-gradient-to-r ${c.active} text-white border-transparent shadow-md shadow-black/30`
-                  : `border ${c.border} ${c.text} hover:${c.borderActive} hover:bg-white/5`
-              }`}
-            >
-              <span className="flex items-center gap-1.5">
-                <Trophy className="w-3 h-3" />
-                All
-              </span>
-            </button>
-            {sports.map((sport) => (
+        {sports && sports.length > 0 && onSportChange && (
+          <div className="flex items-center gap-2">
+            <div className="flex flex-wrap gap-1.5 flex-1">
               <button
-                key={sport}
-                onClick={() => onSportChange(sport)}
+                onClick={() => onSportChange("All")}
                 className={`text-xs px-2.5 py-1.5 rounded-full border font-medium transition-all ${
-                  activeSport === sport
+                  activeSport === "All"
                     ? `bg-gradient-to-r ${c.active} text-white border-transparent shadow-md shadow-black/30`
                     : `border ${c.border} ${c.text} hover:${c.borderActive} hover:bg-white/5`
                 }`}
               >
-                {sport}
+                <span className="flex items-center gap-1.5">
+                  <Trophy className="w-3 h-3" />
+                  All
+                </span>
               </button>
-            ))}
+              {sports.map((sport) => (
+                <button
+                  key={sport}
+                  onClick={() => onSportChange(sport)}
+                  className={`text-xs px-2.5 py-1.5 rounded-full border font-medium transition-all ${
+                    activeSport === sport
+                      ? `bg-gradient-to-r ${c.active} text-white border-transparent shadow-md shadow-black/30`
+                      : `border ${c.border} ${c.text} hover:${c.borderActive} hover:bg-white/5`
+                  }`}
+                >
+                  {sport}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="flex items-center gap-1.5 pt-1 border-t border-border/20">
+        <div className={`flex items-center gap-1.5 ${sports && sports.length > 0 && onSportChange ? "pt-1 border-t border-border/20" : ""}`}>
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-bold mr-1">
             TYPE
           </span>

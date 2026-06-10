@@ -29,7 +29,6 @@ const Index = () => {
   const [recentWins, setRecentWins] = useState<Tip[]>([]);
   const [tipSport, setTipSport] = useState("All");
   const [tipPremium, setTipPremium] = useState<PremiumFilter>("all");
-  const [couponSport, setCouponSport] = useState("All");
   const [couponPremium, setCouponPremium] = useState<PremiumFilter>("all");
   const [heroPick, setHeroPick] = useState<FeaturedPick | null>(null);
   const { active: isPremium, daysLeft: premiumDaysLeft, loading: premiumLoading } = usePremiumStatus();
@@ -84,14 +83,6 @@ const Index = () => {
     new Set(tips.map((t) => t.sport).filter(Boolean) as string[])
   ).sort();
 
-  const couponSports = Array.from(
-    new Set(
-      coupons
-        .map((c) => c.matches?.[0]?.sport)
-        .filter(Boolean) as string[]
-    )
-  ).sort();
-
   const filteredTips = tips.filter((tip) => {
     if (tipSport !== "All" && tip.sport !== tipSport) return false;
     if (tipPremium === "premium" && !tip.isPremium) return false;
@@ -100,10 +91,6 @@ const Index = () => {
   });
 
   const filteredCoupons = coupons.filter((coupon) => {
-    if (couponSport !== "All") {
-      const matchSport = coupon.matches?.[0]?.sport;
-      if (matchSport !== couponSport) return false;
-    }
     if (couponPremium === "premium" && !coupon.isPremium) return false;
     if (couponPremium === "free" && coupon.isPremium) return false;
     return true;
@@ -251,12 +238,9 @@ const Index = () => {
               </span>
             </div>
 
-            {couponSports.length > 0 && (
+            {coupons.length > 0 && (
               <div className="bg-white/3 backdrop-blur-xl border border-blue-500/15 rounded-2xl p-3 md:p-4 shadow-lg shadow-black/10">
                 <FilterBar
-                  sports={couponSports}
-                  activeSport={couponSport}
-                  onSportChange={setCouponSport}
                   activePremium={couponPremium}
                   onPremiumChange={setCouponPremium}
                   totalItems={coupons.length}
