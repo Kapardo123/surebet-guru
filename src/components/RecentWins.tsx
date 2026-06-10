@@ -84,36 +84,55 @@ const ExpandedCouponView = ({ coupon, onClose }: { coupon: Coupon; onClose: () =
     </div>
 
     {/* Matches list - all visible on every screen */}
-    <div className="space-y-1 sm:space-y-1.5 md:space-y-2">
+    <div className="space-y-2 sm:space-y-2.5 md:space-y-3">
       {coupon.matches.map((match, idx) => (
         <div
           key={idx}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 p-2 sm:p-2.5 md:p-3 bg-gradient-to-r from-card/80 to-card/40 rounded-lg border border-border/20 hover:border-blue-500/30 transition-all"
+          className="flex flex-col gap-1.5 p-2.5 sm:p-3 md:p-3.5 bg-gradient-to-r from-card/80 to-card/40 rounded-lg border border-border/20 hover:border-blue-500/30 transition-all"
         >
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-            <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
-              <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-blue-500/10 flex items-center justify-center ring-1 ring-blue-500/30 flex-shrink-0">
-                <TeamLogo teamName={match.homeTeam} size={10} sport={match.sport} />
-              </div>
-              <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold truncate">{match.homeTeam}</span>
-            </div>
-            <span className="text-[9px] sm:text-[10px] text-muted-foreground/60 flex-shrink-0">vs</span>
-            <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
-              <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-cyan-500/10 flex items-center justify-center ring-1 ring-cyan-500/30 flex-shrink-0">
-                <TeamLogo teamName={match.awayTeam} size={10} sport={match.sport} />
-              </div>
-              <span className="text-[10px] sm:text-[11px] md:text-xs font-medium text-muted-foreground truncate">{match.awayTeam}</span>
-            </div>
+          {/* Match info row - sport, league, kickoff */}
+          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 pb-1.5 border-b border-border/15">
+            {match.sport && (
+              <span className="inline-flex items-center gap-1 text-[8px] sm:text-[9px] md:text-[10px] font-bold text-blue-400 bg-blue-500/10 px-1.5 sm:px-2 py-0.5 rounded-full">
+                <SportIcon sport={match.sport} size={8} />
+                {match.sport}
+              </span>
+            )}
+            {match.league && (
+              <span className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground bg-muted/30 px-1.5 sm:px-2 py-0.5 rounded">{match.league}</span>
+            )}
+            {match.kickoff && (
+              <span className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground flex items-center gap-0.5 ml-auto sm:ml-0">
+                <Clock className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 text-cyan-400/60" />
+                {new Date(match.kickoff).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0 ml-0 sm:ml-2 md:ml-3">
-            {match.league && (
-              <span className="text-[7px] sm:text-[8px] md:text-[9px] text-muted-foreground/60 bg-muted/30 px-1 sm:px-1.5 py-0.5 rounded hidden sm:inline">{match.league}</span>
-            )}
-            <Badge variant="win" className="text-[7px] sm:text-[8px] md:text-[9px] px-1 sm:px-1.5 md:px-2 py-0 h-4 sm:h-4 md:h-5 font-bold whitespace-nowrap">
-              {match.prediction}
-            </Badge>
-            <span className="text-[9px] sm:text-[10px] md:text-xs font-bold text-cyan-400 whitespace-nowrap">@ {Number(match.odds).toFixed(2)}</span>
+          {/* Teams & prediction row */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+              <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
+                <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-blue-500/10 flex items-center justify-center ring-1 ring-blue-500/30 flex-shrink-0">
+                  <TeamLogo teamName={match.homeTeam} size={10} sport={match.sport} />
+                </div>
+                <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold truncate">{match.homeTeam}</span>
+              </div>
+              <span className="text-[9px] sm:text-[10px] text-muted-foreground/60 flex-shrink-0">vs</span>
+              <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
+                <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-cyan-500/10 flex items-center justify-center ring-1 ring-cyan-500/30 flex-shrink-0">
+                  <TeamLogo teamName={match.awayTeam} size={10} sport={match.sport} />
+                </div>
+                <span className="text-[10px] sm:text-[11px] md:text-xs font-medium text-muted-foreground truncate">{match.awayTeam}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0 sm:ml-2 md:ml-3">
+              <Badge variant="win" className="text-[7px] sm:text-[8px] md:text-[9px] px-1 sm:px-1.5 md:px-2 py-0 h-4 sm:h-4 md:h-5 font-bold whitespace-nowrap">
+                {match.prediction}
+              </Badge>
+              <span className="text-[9px] sm:text-[10px] md:text-xs font-bold text-cyan-400 whitespace-nowrap">@ {Number(match.odds).toFixed(2)}</span>
+            </div>
           </div>
         </div>
       ))}
@@ -289,15 +308,14 @@ const RecentWins = ({ tips, coupons = [], heroPick }: RecentWinsProps) => {
                     <div className="flex flex-col gap-0.5 sm:gap-1 md:gap-1.5 min-w-0">
                       <div className="flex items-center gap-1 sm:gap-1.5">
                         <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-500/30 flex-shrink-0">
-                          <TeamLogo teamName={item.homeTeam} size={12} />
+                          <TeamLogo teamName={item.homeTeam} size={12} sport={item.sport || undefined} />
                         </div>
                         <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold truncate">{item.homeTeam}</span>
                         <span className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground/50 font-semibold flex-shrink-0">VS</span>
                         <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-green-500/10 flex items-center justify-center ring-1 ring-green-500/30 flex-shrink-0">
-                          <TeamLogo teamName={item.awayTeam} size={12} />
+                          <TeamLogo teamName={item.awayTeam} size={12} sport={item.sport || undefined} />
                         </div>
                         <span className="text-[10px] sm:text-[11px] md:text-xs font-medium text-muted-foreground truncate">{item.awayTeam}</span>
-                        {item.sport && <SportIcon sport={item.sport} size={9} />}
                       </div>
                     </div>
                   )}

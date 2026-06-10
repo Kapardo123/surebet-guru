@@ -93,6 +93,34 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
                     transition={{ delay: i * 0.05, duration: 0.3 }}
                     className="bg-blue-500/5 rounded-xl p-3 sm:p-4 border border-blue-500/20 hover:bg-blue-500/8 hover:border-blue-500/30 transition-all"
                   >
+                    {/* Match info header - sport, league, kickoff */}
+                    {(match.sport || match.league || match.kickoff) && (
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 pb-2 mb-2 border-b border-border/20">
+                        {match.sport && (
+                          <span className="inline-flex items-center gap-1 text-[8px] sm:text-[9px] md:text-[10px] font-bold text-blue-400 bg-blue-500/10 px-1.5 sm:px-2 py-0.5 rounded-full">
+                            <SportIcon sport={match.sport} size={8} />
+                            {match.sport}
+                          </span>
+                        )}
+                        {match.league && (
+                          <span className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground bg-muted/30 px-1.5 sm:px-2 py-0.5 rounded">{match.league}</span>
+                        )}
+                        {match.kickoff && (
+                          <span className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground flex items-center gap-0.5 ml-auto sm:ml-0">
+                            <Clock className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 text-cyan-400/60" />
+                            {(() => {
+                              try {
+                                const d = new Date(match.kickoff);
+                                return !isNaN(d.getTime())
+                                  ? d.toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                                  : String(match.kickoff);
+                              } catch { return String(match.kickoff); }
+                            })()}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     {/* Teams Row - Centered VS Layout */}
                     <div className="flex items-center justify-between gap-1 sm:gap-2 mb-3">
                       {/* Home Team */}

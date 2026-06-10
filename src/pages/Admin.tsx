@@ -1654,21 +1654,28 @@ const Admin = () => {
                         <p className="text-xs text-muted-foreground text-center py-4 italic">No matches added yet. Add matches below.</p>
                       )}
                       {couponMatches.map((m, i) => (
-                        <div key={i} className="flex items-center justify-between bg-background border border-border/50 rounded-lg p-2.5 group">
-                          <div className="flex items-center gap-2 overflow-hidden">
-                            <TeamLogo teamName={m.homeTeam} logoUrl={m.homeTeamLogo || undefined} size={16} />
-                            <div className="truncate">
-                              <p className="text-[10px] font-bold truncate">{m.homeTeam} vs {m.awayTeam}</p>
-                              <p className="text-[9px] text-muted-foreground">{m.prediction} @ {m.odds.toFixed(2)}</p>
+                        <div key={i} className="flex flex-col gap-1 bg-background border border-border/50 rounded-lg p-2.5 group">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 overflow-hidden min-w-0 flex-1">
+                              <TeamLogo teamName={m.homeTeam} logoUrl={m.homeTeamLogo || undefined} size={16} />
+                              <div className="min-w-0 truncate">
+                                <p className="text-[10px] font-bold truncate">{m.homeTeam} vs {m.awayTeam}</p>
+                                <p className="text-[9px] text-muted-foreground truncate">{m.prediction} @ {m.odds.toFixed(2)}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEditCouponMatch(i)}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="w-7 h-7 text-loss hover:text-loss opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveCouponMatch(i)}>
+                                <X className="w-3.5 h-3.5" />
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEditCouponMatch(i)}>
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="w-7 h-7 text-loss hover:text-loss opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveCouponMatch(i)}>
-                              <X className="w-3.5 h-3.5" />
-                            </Button>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {m.sport && <span className="text-[8px] font-bold text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded">{m.sport}</span>}
+                            {m.league && <span className="text-[8px] text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded">{m.league}</span>}
+                            {m.kickoff && <span className="text-[8px] text-muted-foreground">{new Date(m.kickoff).toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>}
                           </div>
                         </div>
                       ))}
@@ -1786,6 +1793,32 @@ const Admin = () => {
                         <Input type="number" step="0.01" className="h-9 text-xs bg-muted/20" value={couponMatchForm.odds} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, odds: e.target.value })} />
                       </div>
                     </div>
+
+                    {/* Sport, League, Kickoff row */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className="space-y-1">
+                        <Label className="text-[9px] uppercase text-muted-foreground">Sport</Label>
+                        <Select value={couponMatchForm.sport || "Football"} onValueChange={(v) => setCouponMatchForm({ ...couponMatchForm, sport: v })}>
+                          <SelectTrigger className="h-9 text-xs bg-muted/20">
+                            <SelectValue placeholder="Select sport" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {["Football", "Basketball", "Tennis", "Baseball", "Hockey", "MMA", "Esports", "Volleyball", "Handball", "Rugby"].map((s) => (
+                              <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] uppercase text-muted-foreground">League</Label>
+                        <Input className="h-9 text-xs bg-muted/20" placeholder="e.g. Premier League" value={couponMatchForm.league} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, league: e.target.value })} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] uppercase text-muted-foreground">Kickoff</Label>
+                        <Input type="datetime-local" className="h-9 text-xs bg-muted/20" value={couponMatchForm.kickoff} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, kickoff: e.target.value })} />
+                      </div>
+                    </div>
+
                     {couponHomeCandidates.length > 0 && (
                       <div className="p-2 bg-muted/20 border border-border/30 rounded-lg">
                         <Label className="text-[8px] uppercase text-muted-foreground mb-1 block">Home Team Logos</Label>
