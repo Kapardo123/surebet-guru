@@ -2,7 +2,7 @@ import { useState, useMemo, memo } from "react";
 import { Tip } from "@/components/TipCard";
 import { Coupon } from "@/lib/couponStorage";
 import { FeaturedPick } from "@/lib/featuredPickStorage";
-import TeamLogo from "@/components/TeamLogo";
+import TeamLogo, { SportIcon } from "@/components/TeamLogo";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, TrendingUp, Clock, Star, Ticket, ChevronDown, ChevronUp, X, Crown, PartyPopper, Sparkles, Flame } from "lucide-react";
 
@@ -23,6 +23,7 @@ type WinItem = {
   wonAt?: string | null;
   name?: string;
   isPremium?: boolean;
+  sport?: string | null;
   couponData?: Coupon;
 };
 
@@ -55,7 +56,10 @@ const ExpandedCouponView = ({ coupon, onClose }: { coupon: Coupon; onClose: () =
         <div className="min-w-0 flex-1">
           <h4 className="font-display text-[11px] sm:text-xs md:text-sm font-bold text-blue-400 truncate">{coupon.name}</h4>
           {coupon.sport && (
-            <span className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground block truncate">{coupon.sport}</span>
+            <span className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground block truncate flex items-center gap-1">
+              <SportIcon sport={coupon.sport} size={7} />
+              {coupon.sport}
+            </span>
           )}
         </div>
         {coupon.isPremium && <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 text-blue-400 flex-shrink-0" />}
@@ -89,14 +93,14 @@ const ExpandedCouponView = ({ coupon, onClose }: { coupon: Coupon; onClose: () =
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
             <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
               <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-blue-500/10 flex items-center justify-center ring-1 ring-blue-500/30 flex-shrink-0">
-                <TeamLogo teamName={match.homeTeam} size={10} />
+                <TeamLogo teamName={match.homeTeam} size={10} sport={match.sport} />
               </div>
               <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold truncate">{match.homeTeam}</span>
             </div>
             <span className="text-[9px] sm:text-[10px] text-muted-foreground/60 flex-shrink-0">vs</span>
             <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
               <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-cyan-500/10 flex items-center justify-center ring-1 ring-cyan-500/30 flex-shrink-0">
-                <TeamLogo teamName={match.awayTeam} size={10} />
+                <TeamLogo teamName={match.awayTeam} size={10} sport={match.sport} />
               </div>
               <span className="text-[10px] sm:text-[11px] md:text-xs font-medium text-muted-foreground truncate">{match.awayTeam}</span>
             </div>
@@ -147,7 +151,8 @@ const RecentWins = ({ tips, coupons = [], heroPick }: RecentWinsProps) => {
           odds: tip.odds,
           kickoff: tip.kickoff,
           wonAt: tip.wonAt || null,
-          isPremium: tip.isPremium
+          isPremium: tip.isPremium,
+          sport: tip.sport
         });
       });
 
@@ -167,6 +172,7 @@ const RecentWins = ({ tips, coupons = [], heroPick }: RecentWinsProps) => {
             wonAt: coupon.wonAt || null,
             name: coupon.name,
             isPremium: coupon.isPremium,
+            sport: coupon.sport,
             couponData: coupon
           });
         }
@@ -182,7 +188,8 @@ const RecentWins = ({ tips, coupons = [], heroPick }: RecentWinsProps) => {
         odds: parseFloat(heroPick.odds) || heroPick.odds,
         kickoff: heroPick.kickoff,
         wonAt: null,
-        isPremium: true
+        isPremium: true,
+        sport: heroPick.sport
       });
     }
 
@@ -282,12 +289,12 @@ const RecentWins = ({ tips, coupons = [], heroPick }: RecentWinsProps) => {
                     <div className="flex flex-col gap-0.5 sm:gap-1 md:gap-1.5 min-w-0">
                       <div className="flex items-center gap-1 sm:gap-1.5">
                         <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-500/30 flex-shrink-0">
-                          <TeamLogo teamName={item.homeTeam} size={12} />
+                          <TeamLogo teamName={item.homeTeam} size={12} sport={item.sport || undefined} />
                         </div>
                         <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold truncate">{item.homeTeam}</span>
                         <span className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground/50 font-semibold flex-shrink-0">VS</span>
                         <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-green-500/10 flex items-center justify-center ring-1 ring-green-500/30 flex-shrink-0">
-                          <TeamLogo teamName={item.awayTeam} size={12} />
+                          <TeamLogo teamName={item.awayTeam} size={12} sport={item.sport || undefined} />
                         </div>
                         <span className="text-[10px] sm:text-[11px] md:text-xs font-medium text-muted-foreground truncate">{item.awayTeam}</span>
                       </div>

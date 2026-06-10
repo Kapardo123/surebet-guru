@@ -57,7 +57,7 @@ const Admin = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [featured, setFeatured] = useState<FeaturedPick>({
-    league: "", kickoff: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", confidence: "High", status: "upcoming", homeTeamLogo: null, awayTeamLogo: null
+    league: "", kickoff: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", confidence: "High", status: "upcoming", homeTeamLogo: null, awayTeamLogo: null, sport: "Football"
   });
 
   useEffect(() => {
@@ -113,7 +113,8 @@ const Admin = () => {
       league: match.league,
       kickoff: `${match.date} ${match.time}`,
       homeTeamLogo: match.homeLogo,
-      awayTeamLogo: match.awayLogo
+      awayTeamLogo: match.awayLogo,
+      sport: match.sport || "Football"
     }));
     toast({ title: `Featured match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
@@ -1193,6 +1194,19 @@ const Admin = () => {
                   <div className="space-y-1">
                     <Label className="text-[9px] uppercase text-muted-foreground">League</Label>
                     <Input className="h-9 text-xs" placeholder="e.g. UEFA Champions League" value={featured.league} onChange={(e) => setFeatured({ ...featured, league: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] uppercase text-muted-foreground">Sport</Label>
+                    <Select value={featured.sport || "Football"} onValueChange={(v) => setFeatured({ ...featured, sport: v })}>
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue placeholder="Sport" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["Football", "Basketball", "Tennis", "MMA", "Baseball", "Hockey", "Esports"].map((s) => (
+                          <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[9px] uppercase text-muted-foreground">Kickoff Time</Label>

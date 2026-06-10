@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTeamLogo, getCachedTeamLogo, setCachedTeamLogo } from "@/hooks/useTeamLogo";
-import { Shield, Loader2 } from "lucide-react";
+import { Shield, Loader2, Circle } from "lucide-react";
 
 interface TeamLogoProps {
   teamName: string;
@@ -9,23 +9,40 @@ interface TeamLogoProps {
   sport?: string;
 }
 
-const TennisRacket = ({ size }: { size: number }) => (
+const TennisBall = ({ size }: { size: number }) => (
   <svg
-    width={size * 0.6}
-    height={size * 0.6}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="text-foreground/70"
+    width={size * 0.7}
+    height={size * 0.7}
+    viewBox="0 0 32 32"
+    className="text-emerald-500"
   >
-    <path d="M17.5 6.5a4.95 4.95 0 1 0-7 7" />
-    <path d="M20 9c0-3.87-3.13-7-7-7s-7 3.13-7 7c0 1.94.79 3.7 2.06 4.97L4 18l3 3 4.03-4.03A6.97 6.97 0 0 0 16 17c3.87 0 7-3.13 7-7h-3z" />
-    <circle cx="14" cy="8" r="2.5" />
+    <circle cx="16" cy="16" r="13" fill="url(#tbgrad)" stroke="#059669" strokeWidth="1.5" />
+    <ellipse cx="11" cy="16" rx="3" ry="9" fill="none" stroke="#065f46" strokeWidth="1.2" opacity="0.55" />
+    <ellipse cx="21" cy="16" rx="3" ry="9" fill="none" stroke="#065f46" strokeWidth="1.2" opacity="0.55" />
+    <path d="M8 9 Q16 12 24 9" fill="none" stroke="#065f46" strokeWidth="1.2" opacity="0.55" strokeLinecap="round" />
+    <path d="M8 23 Q16 20 24 23" fill="none" stroke="#065f46" strokeWidth="1.2" opacity="0.55" strokeLinecap="round" />
+    <circle cx="12" cy="10" r="2" fill="white" opacity="0.35" />
+    <defs>
+      <radialGradient id="tbgrad" cx="0.35" cy="0.35" r="0.7">
+        <stop offset="0%" stopColor="#86efac" />
+        <stop offset="60%" stopColor="#34d399" />
+        <stop offset="100%" stopColor="#059669" />
+      </radialGradient>
+    </defs>
   </svg>
 );
+
+const TennisRacket = ({ size }: { size: number }) => (
+  <div className="flex items-center justify-center" style={{ width: size, height: size }}>
+    <TennisBall size={size} />
+  </div>
+);
+
+export const SportIcon = ({ sport, size = 12 }: { sport: string; size?: number }) => {
+  const isTennis = sport?.toLowerCase().includes("tennis");
+  if (isTennis) return <TennisBall size={size * 1.4} />;
+  return null;
+};
 
 const getInitials = (name: string) => {
   if (!name) return "??";

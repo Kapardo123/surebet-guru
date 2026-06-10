@@ -13,7 +13,8 @@ export interface FeaturedPick {
   homeTeamLogo?: string | null;
   awayTeamLogo?: string | null;
   description?: string | null;
-  wonAt?: string | null; // ISO timestamp kiedy typ wygrał
+  wonAt?: string | null;
+  sport?: string | null;
 }
 export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
   const { data, error } = await supabase
@@ -42,7 +43,8 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
     homeTeamLogo: data.home_team_logo,
     awayTeamLogo: data.away_team_logo,
     description: data.description,
-    wonAt: data.won_at || null
+    wonAt: data.won_at || null,
+    sport: data.sport || null
   };
 };
 
@@ -65,7 +67,8 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
     home_team_logo: pick.homeTeamLogo,
     away_team_logo: pick.awayTeamLogo,
     description: pick.description,
-    won_at: wonAt
+    won_at: wonAt,
+    sport: pick.sport
   };
 
   const { error } = await supabase

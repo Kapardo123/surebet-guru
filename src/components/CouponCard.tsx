@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Coupon } from "@/lib/couponStorage";
 import { Receipt, Clock, Crown, Lock, Layers, Sparkles } from "lucide-react";
-import TeamLogo from "@/components/TeamLogo";
+import TeamLogo, { SportIcon } from "@/components/TeamLogo";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { memo } from "react";
@@ -47,7 +47,10 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
               <div className="min-w-0">
                 <h3 className="font-display font-bold text-sm md:text-base text-foreground truncate">{coupon.name}</h3>
                 {coupon.sport && (
-                  <span className="text-[9px] md:text-[10px] text-muted-foreground font-medium tracking-wider uppercase">{coupon.sport}</span>
+                  <span className="text-[9px] md:text-[10px] text-muted-foreground font-medium tracking-wider uppercase inline-flex items-center gap-1">
+                    <SportIcon sport={coupon.sport} size={8} />
+                    {coupon.sport}
+                  </span>
                 )}
               </div>
             </div>

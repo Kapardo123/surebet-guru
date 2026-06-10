@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Clock, Lock, Crown, ChevronDown, ChevronUp, TrendingUp, Sparkles } from "lucide-react";
-import TeamLogo from "@/components/TeamLogo";
+import TeamLogo, { SportIcon } from "@/components/TeamLogo";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useCallback, memo } from "react";
@@ -98,7 +98,10 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
                   <span>Premium</span>
                 </div>
               )}
-              <Badge variant="sport" className="text-[9px] md:text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/30">{tip.sport}</Badge>
+              <Badge variant="sport" className="text-[9px] md:text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/30 gap-1 inline-flex">
+                <SportIcon sport={tip.sport} size={8} />
+                {tip.sport}
+              </Badge>
               <span className="text-[10px] md:text-[11px] text-muted-foreground font-medium truncate max-w-[90px] sm:max-w-[130px] md:max-w-none">{tip.league}</span>
             </div>
             <Badge variant={statusVariant[tip.status]} className="gap-1 shrink-0 text-[10px] px-2 py-0.5">

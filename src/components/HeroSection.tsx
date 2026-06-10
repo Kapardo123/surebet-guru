@@ -1,5 +1,5 @@
 import { Zap, ChevronDown, ChevronUp, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
-import TeamLogo from "@/components/TeamLogo";
+import TeamLogo, { SportIcon } from "@/components/TeamLogo";
 import { motion, AnimatePresence } from "framer-motion";
 import { FeaturedPick } from "@/lib/featuredPickStorage";
 import { useState } from "react";
@@ -101,6 +101,12 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
               <Zap className="w-3 h-3 md:w-3.5 md:h-3.5 animate-pulse-glow" />
               <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider">Featured Pick</span>
             </div>
+            {data.sport && (
+              <Badge variant="sport" className="text-[8px] md:text-[9px] bg-purple-500/10 text-purple-400 border-purple-500/30 gap-1 inline-flex px-2 py-0.5">
+                <SportIcon sport={data.sport} size={7} />
+                {data.sport}
+              </Badge>
+            )}
           </div>
           {currentStatus !== "upcoming" && (
             <Badge variant={statusVariant[currentStatus]} className="gap-1.5 py-1.5 px-3">
@@ -122,11 +128,11 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
             {data.league} • {formatKickoff(data.kickoff)}
           </p>
           <div className="flex items-center gap-2.5 md:gap-4">
-            <TeamLogo teamName={data.homeTeam} logoUrl={data.homeTeamLogo} size={28} />
+            <TeamLogo teamName={data.homeTeam} logoUrl={data.homeTeamLogo} size={28} sport={data.sport || undefined} />
             <p className="font-display text-lg md:text-4xl font-bold text-foreground tracking-tight">
               {data.homeTeam} <span className="text-muted-foreground font-normal text-sm md:text-4xl">vs</span> {data.awayTeam}
             </p>
-            <TeamLogo teamName={data.awayTeam} logoUrl={data.awayTeamLogo} size={28} />
+            <TeamLogo teamName={data.awayTeam} logoUrl={data.awayTeamLogo} size={28} sport={data.sport || undefined} />
           </div>
           
           {/* Analysis / Description Toggle */}
