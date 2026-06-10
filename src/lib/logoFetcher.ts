@@ -1,5 +1,7 @@
 // ============ POMOCNICZE ============
 
+const CUSTOM_TEAM_LOGOS_KEY = "custom_team_logos_v1";
+
 const normalize = (value: string): string =>
   value
     .toLowerCase()
@@ -7,6 +9,54 @@ const normalize = (value: string): string =>
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]/g, "")
     .trim();
+
+export const saveCustomTeamLogo = (teamName: string, dataUrl: string) => {
+  const key = teamName.trim().toLowerCase();
+  if (!key || key.length < 2) return;
+  try {
+    const raw = localStorage.getItem(CUSTOM_TEAM_LOGOS_KEY);
+    const store: Record<string, string> = raw ? JSON.parse(raw) : {};
+    store[key] = dataUrl;
+    localStorage.setItem(CUSTOM_TEAM_LOGOS_KEY, JSON.stringify(store));
+  } catch {
+    return;
+  }
+};
+
+export const getCustomTeamLogo = (teamName: string): LogoCandidate | null => {
+  const key = teamName.trim().toLowerCase();
+  if (!key || key.length < 2) return null;
+  try {
+    const raw = localStorage.getItem(CUSTOM_TEAM_LOGOS_KEY);
+    if (!raw) return null;
+    const store: Record<string, string> = JSON.parse(raw);
+    if (store[key]) {
+      return {
+        url: store[key],
+        source: "Custom (Plik)",
+        teamName: teamName.trim(),
+        score: 300,
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+export const deleteCustomTeamLogo = (teamName: string) => {
+  const key = teamName.trim().toLowerCase();
+  if (!key || key.length < 2) return;
+  try {
+    const raw = localStorage.getItem(CUSTOM_TEAM_LOGOS_KEY);
+    if (!raw) return;
+    const store: Record<string, string> = JSON.parse(raw);
+    delete store[key];
+    localStorage.setItem(CUSTOM_TEAM_LOGOS_KEY, JSON.stringify(store));
+  } catch {
+    return;
+  }
+};
 
 const makeQueries = (teamName: string): string[] => {
   const clean = teamName.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
@@ -670,7 +720,11 @@ const mergeAllResults = (
 export const fetchTeamLogoUrl = async (teamName: string): Promise<string | null> => {
   if (!teamName || teamName.trim().length < 3) return null;
 
-  // Najpierw sprawdz fallback (natychmiast, zero requestu)
+  // Najpierw sprawdz CUSTOM LOGO wgrany przez admina (NAJWYZSZY PRIORYTET)
+  const custom = getCustomTeamLogo(teamName);
+  if (custom) return custom.url;
+
+  // Następnie sprawdz fallback (natychmiast, zero requestu)
   const fallback = getFallbackLogo(teamName);
   if (fallback) return fallback.url;
 
@@ -696,6 +750,8 @@ export const fetchTeamLogoCandidates = async (
 ): Promise<LogoCandidate[]> => {
   if (!teamName || teamName.trim().length < 3) return [];
 
+  // Custom logo wgrany z dysku - NAJWYZSZY PRIORYTET
+  const custom = getCustomTeamLogo(teamName);
   // Fallback - od razu dodaj jako pierwszy wynik jesli pasuje
   const fallback = getFallbackLogo(teamName);
 
@@ -709,13 +765,29 @@ export const fetchTeamLogoCandidates = async (
       fetchMultiLangWikipediaLogos(teamName).catch(() => []),
     ]);
 
-    const merged = mergeAllResults(fallback, sportsDB, sofa, wiki, wikimedia, wikidata, multiLang);
-    return merged.slice(0, 15).map((r) => ({
+    // Custom logo jest najwazniejsze - zawsze na poczatku gdy istnieje
+    const resultsStart: LogoCandidate[] = [];
+    if (custom) resultsStart.push(custom);
+    if (fallback) resultsStart.push(fallback);
+
+    const merged = mergeAllResults(null, sportsDB, sofa, wiki, wikimedia, wikidata, multiLang);
+    const combined = [...resultsStart, ...merged];
+    const seen = new Set<string>();
+    const unique: LogoCandidate[] = [];
+    for (const r of combined) {
+      if (!seen.has(r.url)) {
+        seen.add(r.url);
+        unique.push(r);
+      }
+    }
+    return unique.slice(0, 15).map((r) => ({
       url: r.url,
       source: r.source,
       teamName: r.teamName,
     }));
   } catch {
-    return fallback ? [{ url: fallback.url, source: fallback.source, teamName: fallback.teamName }] : [];
+    const fallbackRes = fallback ? [{ url: fallback.url, source: fallback.source, teamName: fallback.teamName }] : [];
+    const customRes = custom ? [{ url: custom.url, source: custom.source, teamName: custom.teamName }] : [];
+    return [...customRes, ...fallbackRes];
   }
 };

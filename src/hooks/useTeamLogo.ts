@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { fetchTeamLogoUrl } from "@/lib/logoFetcher";
+import { fetchTeamLogoUrl, getCustomTeamLogo } from "@/lib/logoFetcher";
 
 const LOGO_CACHE_KEY = "team_logos_cache";
 const MAX_CACHE_ENTRIES = 200;
@@ -51,6 +51,13 @@ export const useTeamLogo = (teamName: string) => {
   useEffect(() => {
     if (!teamName || teamName.length < 3) {
       setLogoUrl(null);
+      return;
+    }
+
+    // NAJWYZSZY PRIORYTET: custom logo wgrany z dysku przez admina
+    const custom = getCustomTeamLogo(teamName);
+    if (custom) {
+      setLogoUrl(custom.url);
       return;
     }
 

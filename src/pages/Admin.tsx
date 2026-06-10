@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { addTip, loadTips, deleteTip, updateTip, loadDraftTips, publishAllDrafts, publishTipById, unpublishTipById } from "@/lib/tipsStorage";
 import { addCoupon, loadCoupons, deleteCoupon, updateCoupon, calculateTotalOdds, CouponMatch, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, saveFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
-import { fetchTeamLogoUrl, fetchTeamLogoCandidates, LogoCandidate } from "@/lib/logoFetcher";
+import { fetchTeamLogoUrl, fetchTeamLogoCandidates, LogoCandidate, saveCustomTeamLogo } from "@/lib/logoFetcher";
 import { Tip } from "@/components/TipCard";
 import { 
   Plus, 
@@ -39,7 +39,8 @@ import {
   List,
   Send,
   Clock,
-  EyeOff
+  EyeOff,
+  Upload
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -304,6 +305,41 @@ const Admin = () => {
     } finally {
       setLoadingAwayLogos(false);
     }
+  };
+
+  const handleLogoUpload = (
+    teamName: string,
+    onSuccess: (url: string) => void,
+    onRefresh?: () => void,
+  ) => {
+    if (!teamName || teamName.trim().length < 2) {
+      toast({ title: "Najpierw wpisz nazwę drużyny", variant: "destructive" });
+      return;
+    }
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        toast({ title: "Plik jest za duży (max 2MB)", variant: "destructive" });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        saveCustomTeamLogo(teamName.trim(), dataUrl);
+        onSuccess(dataUrl);
+        if (onRefresh) onRefresh();
+        toast({ title: `Logo "${teamName.trim()}" zapisane z dysku` });
+      };
+      reader.onerror = () => {
+        toast({ title: "Błąd odczytu pliku", variant: "destructive" });
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
   };
 
   const fetchFeaturedHomeCandidates = async () => {
@@ -901,7 +937,7 @@ const Admin = () => {
                   <div className="space-y-1.5">
                     <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Home Team</Label>
                     <div className="relative">
-                      <Input className="h-10 bg-muted/20 pr-20" value={form.homeTeam} onChange={(e) => setForm({ ...form, homeTeam: e.target.value })} />
+                      <Input className="h-10 bg-muted/20 pr-28" value={form.homeTeam} onChange={(e) => setForm({ ...form, homeTeam: e.target.value })} />
                       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                         {form.homeTeamLogo && <TeamLogo teamName={form.homeTeam} logoUrl={form.homeTeamLogo} size={20} />}
                         <Button
@@ -911,12 +947,23 @@ const Admin = () => {
                           className="h-7 px-2 text-[10px] text-muted-foreground hover:text-primary"
                           onClick={fetchHomeCandidates}
                           disabled={loadingHomeLogos}
+                          title="Wyszukaj logo w internecie"
                         >
                           {loadingHomeLogos ? (
                             <Loader2 className="w-3 h-3 animate-spin" />
                           ) : (
                             <Search className="w-3 h-3" />
                           )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-[10px] text-muted-foreground hover:text-primary"
+                          onClick={() => handleLogoUpload(form.homeTeam, (url) => setForm({ ...form, homeTeamLogo: url }), fetchHomeCandidates)}
+                          title="Wgraj logo z dysku"
+                        >
+                          <Upload className="w-3 h-3" />
                         </Button>
                         {form.homeTeamLogo && (
                           <Button
@@ -935,7 +982,7 @@ const Admin = () => {
                   <div className="space-y-1.5">
                     <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Away Team</Label>
                     <div className="relative">
-                      <Input className="h-10 bg-muted/20 pr-20" value={form.awayTeam} onChange={(e) => setForm({ ...form, awayTeam: e.target.value })} />
+                      <Input className="h-10 bg-muted/20 pr-28" value={form.awayTeam} onChange={(e) => setForm({ ...form, awayTeam: e.target.value })} />
                       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                         {form.awayTeamLogo && <TeamLogo teamName={form.awayTeam} logoUrl={form.awayTeamLogo} size={20} />}
                         <Button
@@ -945,12 +992,23 @@ const Admin = () => {
                           className="h-7 px-2 text-[10px] text-muted-foreground hover:text-primary"
                           onClick={fetchAwayCandidates}
                           disabled={loadingAwayLogos}
+                          title="Wyszukaj logo w internecie"
                         >
                           {loadingAwayLogos ? (
                             <Loader2 className="w-3 h-3 animate-spin" />
                           ) : (
                             <Search className="w-3 h-3" />
                           )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-[10px] text-muted-foreground hover:text-primary"
+                          onClick={() => handleLogoUpload(form.awayTeam, (url) => setForm({ ...form, awayTeamLogo: url }), fetchAwayCandidates)}
+                          title="Wgraj logo z dysku"
+                        >
+                          <Upload className="w-3 h-3" />
                         </Button>
                         {form.awayTeamLogo && (
                           <Button
@@ -1144,7 +1202,7 @@ const Admin = () => {
                     <div className="space-y-1 relative">
                       <Label className="text-[9px] uppercase text-muted-foreground">Home Team</Label>
                       <div className="relative">
-                        <Input className="h-9 text-xs bg-muted/20 pr-20" placeholder="Home team" value={featured.homeTeam} onChange={(e) => setFeatured({ ...featured, homeTeam: e.target.value })} />
+                        <Input className="h-9 text-xs bg-muted/20 pr-28" placeholder="Home team" value={featured.homeTeam} onChange={(e) => setFeatured({ ...featured, homeTeam: e.target.value })} />
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                           {featured.homeTeamLogo && <TeamLogo teamName={featured.homeTeam} logoUrl={featured.homeTeamLogo} size={18} />}
                           <Button
@@ -1154,12 +1212,23 @@ const Admin = () => {
                             className="h-6 px-1.5 text-[9px] text-muted-foreground hover:text-primary"
                             onClick={fetchFeaturedHomeCandidates}
                             disabled={loadingFeaturedHome}
+                            title="Wyszukaj logo w internecie"
                           >
                             {loadingFeaturedHome ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
                             ) : (
                               <Search className="w-3 h-3" />
                             )}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-1.5 text-[9px] text-muted-foreground hover:text-primary"
+                            onClick={() => handleLogoUpload(featured.homeTeam, (url) => setFeatured({ ...featured, homeTeamLogo: url }), fetchFeaturedHomeCandidates)}
+                            title="Wgraj logo z dysku"
+                          >
+                            <Upload className="w-3 h-3" />
                           </Button>
                           {featured.homeTeamLogo && (
                             <Button
@@ -1178,7 +1247,7 @@ const Admin = () => {
                     <div className="space-y-1 relative">
                       <Label className="text-[9px] uppercase text-muted-foreground">Away Team</Label>
                       <div className="relative">
-                        <Input className="h-9 text-xs bg-muted/20 pr-20" placeholder="Away team" value={featured.awayTeam} onChange={(e) => setFeatured({ ...featured, awayTeam: e.target.value })} />
+                        <Input className="h-9 text-xs bg-muted/20 pr-28" placeholder="Away team" value={featured.awayTeam} onChange={(e) => setFeatured({ ...featured, awayTeam: e.target.value })} />
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                           {featured.awayTeamLogo && <TeamLogo teamName={featured.awayTeam} logoUrl={featured.awayTeamLogo} size={18} />}
                           <Button
@@ -1188,12 +1257,23 @@ const Admin = () => {
                             className="h-6 px-1.5 text-[9px] text-muted-foreground hover:text-primary"
                             onClick={fetchFeaturedAwayCandidates}
                             disabled={loadingFeaturedAway}
+                            title="Wyszukaj logo w internecie"
                           >
                             {loadingFeaturedAway ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
                             ) : (
                               <Search className="w-3 h-3" />
                             )}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-1.5 text-[9px] text-muted-foreground hover:text-primary"
+                            onClick={() => handleLogoUpload(featured.awayTeam, (url) => setFeatured({ ...featured, awayTeamLogo: url }), fetchFeaturedAwayCandidates)}
+                            title="Wgraj logo z dysku"
+                          >
+                            <Upload className="w-3 h-3" />
                           </Button>
                           {featured.awayTeamLogo && (
                             <Button
@@ -1596,7 +1676,7 @@ const Admin = () => {
                       <div className="space-y-1">
                         <Label className="text-[9px] uppercase text-muted-foreground">Home Team</Label>
                         <div className="relative">
-                          <Input className="h-9 text-xs bg-muted/20 pr-16" value={couponMatchForm.homeTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, homeTeam: e.target.value })} />
+                          <Input className="h-9 text-xs bg-muted/20 pr-24" value={couponMatchForm.homeTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, homeTeam: e.target.value })} />
                           <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
                             {couponMatchForm.homeTeamLogo && <TeamLogo teamName={couponMatchForm.homeTeam} logoUrl={couponMatchForm.homeTeamLogo} size={14} />}
                             <Button
@@ -1606,12 +1686,23 @@ const Admin = () => {
                               className="h-6 px-1 text-[8px] text-muted-foreground hover:text-primary"
                               onClick={fetchCouponHomeCandidates}
                               disabled={loadingCouponHome}
+                              title="Wyszukaj logo w internecie"
                             >
                               {loadingCouponHome ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
                               ) : (
                                 <Search className="w-3 h-3" />
                               )}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1 text-[8px] text-muted-foreground hover:text-primary"
+                              onClick={() => handleLogoUpload(couponMatchForm.homeTeam, (url) => setCouponMatchForm({ ...couponMatchForm, homeTeamLogo: url }), fetchCouponHomeCandidates)}
+                              title="Wgraj logo z dysku"
+                            >
+                              <Upload className="w-3 h-3" />
                             </Button>
                             {couponMatchForm.homeTeamLogo && (
                               <Button
@@ -1630,7 +1721,7 @@ const Admin = () => {
                       <div className="space-y-1">
                         <Label className="text-[9px] uppercase text-muted-foreground">Away Team</Label>
                         <div className="relative">
-                          <Input className="h-9 text-xs bg-muted/20 pr-16" value={couponMatchForm.awayTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, awayTeam: e.target.value })} />
+                          <Input className="h-9 text-xs bg-muted/20 pr-24" value={couponMatchForm.awayTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, awayTeam: e.target.value })} />
                           <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
                             {couponMatchForm.awayTeamLogo && <TeamLogo teamName={couponMatchForm.awayTeam} logoUrl={couponMatchForm.awayTeamLogo} size={14} />}
                             <Button
@@ -1640,12 +1731,23 @@ const Admin = () => {
                               className="h-6 px-1 text-[8px] text-muted-foreground hover:text-primary"
                               onClick={fetchCouponAwayCandidates}
                               disabled={loadingCouponAway}
+                              title="Wyszukaj logo w internecie"
                             >
                               {loadingCouponAway ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
                               ) : (
                                 <Search className="w-3 h-3" />
                               )}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1 text-[8px] text-muted-foreground hover:text-primary"
+                              onClick={() => handleLogoUpload(couponMatchForm.awayTeam, (url) => setCouponMatchForm({ ...couponMatchForm, awayTeamLogo: url }), fetchCouponAwayCandidates)}
+                              title="Wgraj logo z dysku"
+                            >
+                              <Upload className="w-3 h-3" />
                             </Button>
                             {couponMatchForm.awayTeamLogo && (
                               <Button
