@@ -49,12 +49,8 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
 };
 
 export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
-  // Automatycznie ustawiaj won_at gdy status = "won"
   const wonAt = pick.status === 'won' ? new Date().toISOString() : null;
 
-  // We always INSERT a new record.
-  // This ensures the latest "Save" is always the one with the newest 'created_at'.
-  // loadFeaturedPick always fetches the newest record, so this guarantees the UI updates correctly.
   const dataToSave: any = {
     league: pick.league,
     kickoff: pick.kickoff,
@@ -68,8 +64,12 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
     away_team_logo: pick.awayTeamLogo,
     description: pick.description,
     won_at: wonAt,
-    sport: pick.sport
   };
+
+  // Tylko dodaj sport jezeli pole zostalo juz dodane do bazy (unika bledu PGRST204)
+  if (pick.sport) {
+    dataToSave.sport = pick.sport;
+  }
 
   const { error } = await supabase
     .from('featured_picks')
@@ -77,6 +77,15 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
 
   if (error) {
     console.error("Supabase error saving featured pick:", error);
+    // Jesli kolumna sport nie istnieje, sprobuj zapisac bez niej
+    if (error.code === 'PGRST204' || error.message?.includes('sport')) {
+      console.warn("Kolumna 'sport' nie istnieje w bazie - probuje zapisac bez niej...");
+      const retryData = { ...dataToSave };
+      delete retryData.sport;
+      const { error: retryError } = await supabase.from('featured_picks').insert([retryData]);
+      if (retryError) throw new Error(retryError.message || "Unknown Supabase error");
+      return;
+    }
     if (error.code === '42703' || error.message?.includes('column "status"')) {
       throw new Error("SQL_COLUMN_MISSING: status");
     }
