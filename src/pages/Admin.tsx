@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { addTip, loadTips, deleteTip, updateTip, loadDraftTips, publishAllDrafts, publishTipById, unpublishTipById } from "@/lib/tipsStorage";
 import { addCoupon, loadCoupons, deleteCoupon, updateCoupon, calculateTotalOdds, CouponMatch, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, saveFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
-import { fetchTeamLogoUrl } from "@/lib/logoFetcher";
+import { fetchTeamLogoUrl, fetchTeamLogoCandidates, LogoCandidate } from "@/lib/logoFetcher";
 import { Tip } from "@/components/TipCard";
 import { 
   Plus, 
@@ -275,7 +275,35 @@ const Admin = () => {
 
   const resetTipForm = () => {
     setEditingTipId(null);
-    setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, isPublished: true, description: "", homeTeamLogo: null, awayTeamLogo: null, likesCount: 0 });
+    setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, isPublished: true, description: "", homeTeamLogo: null, awayTeamLogo: null });
+    setHomeLogoCandidates([]);
+    setAwayLogoCandidates([]);
+  };
+
+  const fetchHomeCandidates = async () => {
+    if (!form.homeTeam || form.homeTeam.length < 3) return;
+    setLoadingHomeLogos(true);
+    try {
+      const candidates = await fetchTeamLogoCandidates(form.homeTeam);
+      setHomeLogoCandidates(candidates);
+    } catch {
+      setHomeLogoCandidates([]);
+    } finally {
+      setLoadingHomeLogos(false);
+    }
+  };
+
+  const fetchAwayCandidates = async () => {
+    if (!form.awayTeam || form.awayTeam.length < 3) return;
+    setLoadingAwayLogos(true);
+    try {
+      const candidates = await fetchTeamLogoCandidates(form.awayTeam);
+      setAwayLogoCandidates(candidates);
+    } catch {
+      setAwayLogoCandidates([]);
+    } finally {
+      setLoadingAwayLogos(false);
+    }
   };
 
   const resetCouponForm = () => {
@@ -325,7 +353,6 @@ const Admin = () => {
         homeTeamLogo: form.homeTeamLogo,
         awayTeamLogo: form.awayTeamLogo,
         description: form.description,
-        likesCount: form.likesCount,
       });
       await refreshData(true); // Force refresh after update
       resetTipForm();
@@ -345,7 +372,6 @@ const Admin = () => {
         homeTeamLogo: form.homeTeamLogo,
         awayTeamLogo: form.awayTeamLogo,
         description: form.description,
-        likesCount: form.likesCount,
       });
       
       if (created && form.isPremium) {
@@ -381,7 +407,6 @@ const Admin = () => {
       description: tip.description || "",
       homeTeamLogo: tip.homeTeamLogo || null,
       awayTeamLogo: tip.awayTeamLogo || null,
-      likesCount: tip.likesCount || 0,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -647,8 +672,12 @@ const Admin = () => {
     description: "",
     homeTeamLogo: null as string | null,
     awayTeamLogo: null as string | null,
-    likesCount: 0,
   });
+
+  const [homeLogoCandidates, setHomeLogoCandidates] = useState<LogoCandidate[]>([]);
+  const [awayLogoCandidates, setAwayLogoCandidates] = useState<LogoCandidate[]>([]);
+  const [loadingHomeLogos, setLoadingHomeLogos] = useState(false);
+  const [loadingAwayLogos, setLoadingAwayLogos] = useState(false);
 
   const [couponMatchForm, setCouponMatchForm] = useState({
     homeTeam: "",
@@ -805,28 +834,142 @@ const Admin = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Likes Count 👍</Label>
-                  <Input type="number" className="h-10 bg-muted/20" value={form.likesCount} onChange={(e) => setForm({ ...form, likesCount: parseInt(e.target.value) || 0 })} />
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Home Team</Label>
+                    <div className="relative">
+                      <Input className="h-10 bg-muted/20 pr-20" value={form.homeTeam} onChange={(e) => setForm({ ...form, homeTeam: e.target.value })} />
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                        {form.homeTeamLogo && <TeamLogo teamName={form.homeTeam} logoUrl={form.homeTeamLogo} size={20} />}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-[10px] text-muted-foreground hover:text-primary"
+                          onClick={fetchHomeCandidates}
+                          disabled={loadingHomeLogos}
+                        >
+                          {loadingHomeLogos ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Search className="w-3 h-3" />
+                          )}
+                        </Button>
+                        {form.homeTeamLogo && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-[10px] text-loss/70 hover:text-loss"
+                            onClick={() => setForm({ ...form, homeTeamLogo: null })}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Away Team</Label>
+                    <div className="relative">
+                      <Input className="h-10 bg-muted/20 pr-20" value={form.awayTeam} onChange={(e) => setForm({ ...form, awayTeam: e.target.value })} />
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                        {form.awayTeamLogo && <TeamLogo teamName={form.awayTeam} logoUrl={form.awayTeamLogo} size={20} />}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-[10px] text-muted-foreground hover:text-primary"
+                          onClick={fetchAwayCandidates}
+                          disabled={loadingAwayLogos}
+                        >
+                          {loadingAwayLogos ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Search className="w-3 h-3" />
+                          )}
+                        </Button>
+                        {form.awayTeamLogo && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-[10px] text-loss/70 hover:text-loss"
+                            onClick={() => setForm({ ...form, awayTeamLogo: null })}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
+                {homeLogoCandidates.length > 0 && (
+                  <div className="p-3 bg-muted/30 border border-border/30 rounded-xl">
+                    <Label className="text-[9px] uppercase tracking-wider text-muted-foreground mb-2 block">
+                      Home Team Logos — click to select
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {homeLogoCandidates.map((candidate, i) => (
+                        <button
+                          type="button"
+                          key={`home-${i}`}
+                          onClick={() => {
+                            setForm({ ...form, homeTeamLogo: candidate.url });
+                            setHomeLogoCandidates([]);
+                          }}
+                          className={`w-14 h-14 rounded-lg border-2 flex items-center justify-center overflow-hidden transition-all ${
+                            form.homeTeamLogo === candidate.url
+                              ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                              : "border-border/50 bg-muted/50 hover:border-primary/50 hover:bg-primary/5"
+                          }`}
+                          title={`${candidate.teamName} (${candidate.source})`}
+                        >
+                          <img src={candidate.url} alt="" className="w-10 h-10 object-contain" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {awayLogoCandidates.length > 0 && (
+                  <div className="p-3 bg-muted/30 border border-border/30 rounded-xl">
+                    <Label className="text-[9px] uppercase tracking-wider text-muted-foreground mb-2 block">
+                      Away Team Logos — click to select
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {awayLogoCandidates.map((candidate, i) => (
+                        <button
+                          type="button"
+                          key={`away-${i}`}
+                          onClick={() => {
+                            setForm({ ...form, awayTeamLogo: candidate.url });
+                            setAwayLogoCandidates([]);
+                          }}
+                          className={`w-14 h-14 rounded-lg border-2 flex items-center justify-center overflow-hidden transition-all ${
+                            form.awayTeamLogo === candidate.url
+                              ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                              : "border-border/50 bg-muted/50 hover:border-primary/50 hover:bg-primary/5"
+                          }`}
+                          title={`${candidate.teamName} (${candidate.source})`}
+                        >
+                          <img src={candidate.url} alt="" className="w-10 h-10 object-contain" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {(homeLogoCandidates.length > 0 || awayLogoCandidates.length > 0) && (
+                  <p className="text-[9px] text-muted-foreground text-center">
+                    Kliknij logo aby je zaakceptować i zapisać do bazy danych
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Home Team</Label>
-                  <div className="relative">
-                    <Input className="h-10 bg-muted/20" value={form.homeTeam} onChange={(e) => setForm({ ...form, homeTeam: e.target.value })} />
-                    {form.homeTeamLogo && <div className="absolute right-2 top-1/2 -translate-y-1/2"><TeamLogo teamName={form.homeTeam} logoUrl={form.homeTeamLogo} size={20} /></div>}
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Away Team</Label>
-                  <div className="relative">
-                    <Input className="h-10 bg-muted/20" value={form.awayTeam} onChange={(e) => setForm({ ...form, awayTeam: e.target.value })} />
-                    {form.awayTeamLogo && <div className="absolute right-2 top-1/2 -translate-y-1/2"><TeamLogo teamName={form.awayTeam} logoUrl={form.awayTeamLogo} size={20} /></div>}
-                  </div>
-                </div>
                 <div className="space-y-1.5">
                   <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Prediction</Label>
                   <Input className="h-10 bg-muted/20" placeholder="e.g. Home Win" value={form.prediction} onChange={(e) => setForm({ ...form, prediction: e.target.value })} />
@@ -976,13 +1119,6 @@ const Admin = () => {
                     <div className="flex gap-2">
                       <Input className="h-9 text-xs flex-1" placeholder="Prediction" value={featured.prediction} onChange={(e) => setFeatured({ ...featured, prediction: e.target.value })} />
                       <Input className="h-9 text-xs w-20" placeholder="Odds" value={featured.odds} onChange={(e) => setFeatured({ ...featured, odds: e.target.value })} />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-[9px] uppercase text-muted-foreground">Likes 👍</Label>
-                      <Input type="number" className="h-9 text-xs" value={featured.likesCount || 0} onChange={(e) => setFeatured({ ...featured, likesCount: parseInt(e.target.value) || 0 })} />
                     </div>
                   </div>
 

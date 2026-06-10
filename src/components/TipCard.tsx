@@ -1,10 +1,9 @@
 import { Badge } from "@/components/ui/badge";
-import { Clock, Lock, Crown, ChevronDown, ChevronUp, ThumbsUp, TrendingUp, Sparkles } from "lucide-react";
+import { Clock, Lock, Crown, ChevronDown, ChevronUp, TrendingUp, Sparkles } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useCallback, memo } from "react";
-import { incrementReaction } from "@/lib/tipsStorage";
+import { useState, useCallback, memo } from "react";
 
 export interface Tip {
   id: number;
@@ -21,7 +20,6 @@ export interface Tip {
   homeTeamLogo?: string | null;
   awayTeamLogo?: string | null;
   description?: string | null;
-  likesCount?: number;
   wonAt?: string | null;
 }
 
@@ -42,37 +40,6 @@ const statusLabel = {
 
 const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boolean }) => {
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const [localLikes, setLocalLikes] = useState(tip.likesCount || 0);
-  const [reacted, setReacted] = useState(false);
-
-  useEffect(() => {
-    if (!tip?.id) return;
-
-    const saved = localStorage.getItem(`reaction_${tip.id}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setReacted(typeof parsed === 'object' ? !!parsed.like : !!parsed);
-      } catch (e) {
-        setReacted(!!saved);
-      }
-    } else {
-      setReacted(false);
-    }
-    
-    const serverLikes = tip.likesCount || 0;
-    setLocalLikes(prev => (serverLikes > prev ? serverLikes : prev));
-  }, [tip.id, tip.likesCount]);
-
-  const handleReaction = async () => {
-    if (reacted) return;
-
-    setReacted(true);
-    localStorage.setItem(`reaction_${tip.id}`, JSON.stringify(true));
-    setLocalLikes(prev => prev + 1);
-
-    await incrementReaction(tip.id, 'like');
-  };
 
   const isSettled = tip.status !== "upcoming";
   const locked = tip.isPremium && !userIsPremium && !isSettled;
@@ -208,35 +175,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
               </div>
 
               <div className="flex items-center justify-between gap-1.5 sm:gap-2 md:gap-4 py-1">
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={(e) => { e.preventDefault(); handleReaction(); }}
-                    className={`group relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-full transition-all duration-300 ${
-                      reacted 
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25' 
-                        : 'bg-muted/50 text-muted-foreground hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-pink-500/10 hover:text-purple-400 hover:scale-105 active:scale-95 border border-border/30'
-                    }`}
-                  >
-                    <motion.div
-                      animate={reacted ? { scale: [1, 1.4, 1], rotate: [0, -20, 0] } : {}}
-                      transition={{ duration: 0.45, ease: "backOut" }}
-                    >
-                      <ThumbsUp className={`w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 ${reacted ? 'fill-white' : 'group-hover:fill-purple-400'}`} />
-                    </motion.div>
-                    <span className="text-[10px] sm:text-[11px] md:text-[12px] font-black tracking-tight">{localLikes}</span>
-                    
-                    {reacted && (
-                      <motion.span
-                        initial={{ opacity: 1, y: 0 }}
-                        animate={{ opacity: 0, y: -20 }}
-                        className="absolute top-0 left-1/2 -translate-x-1/2 text-white font-bold text-xs pointer-events-none"
-                      >
-                        +1
-                      </motion.span>
-                    )}
-                  </button>
-                </div>
-
+                <div />
                 {tip.description && (
                   <button 
                     onClick={() => setShowAnalysis(!showAnalysis)}

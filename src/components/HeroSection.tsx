@@ -1,8 +1,8 @@
-import { Zap, ChevronDown, ChevronUp, CheckCircle2, XCircle, MinusCircle, ThumbsUp } from "lucide-react";
+import { Zap, ChevronDown, ChevronUp, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { motion, AnimatePresence } from "framer-motion";
-import { FeaturedPick, incrementFeaturedReaction } from "@/lib/featuredPickStorage";
-import { useState, useEffect } from "react";
+import { FeaturedPick } from "@/lib/featuredPickStorage";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 
 interface HeroSectionProps {
@@ -32,44 +32,6 @@ const statusIcon = {
 
 const HeroSection = ({ pick }: HeroSectionProps) => {
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const [localLikes, setLocalLikes] = useState(pick?.likesCount || 0);
-  const [reacted, setReacted] = useState(false);
-
-  useEffect(() => {
-    if (!pick?.id) return;
-
-    const saved = localStorage.getItem(`featured_reaction_${pick.id}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setReacted(typeof parsed === 'object' ? !!parsed.like : !!parsed);
-      } catch (e) {
-        setReacted(!!saved);
-      }
-    } else {
-      setReacted(false);
-    }
-    
-    // Synchronize local likes with server data
-    const serverLikes = pick.likesCount || 0;
-    setLocalLikes(prev => (serverLikes > prev ? serverLikes : prev));
-    console.log(`HeroSection: Synced with server. ID: ${pick.id}, Server Likes: ${serverLikes}`);
-  }, [pick?.id, pick?.likesCount]);
-
-  const handleReaction = async () => {
-    if (!pick?.id) {
-      console.warn("HeroSection: Cannot react to demo data (no pick.id)");
-      return;
-    }
-    if (reacted) return;
-
-    setReacted(true);
-    localStorage.setItem(`featured_reaction_${pick.id}`, JSON.stringify(true));
-    setLocalLikes(prev => prev + 1);
-
-    console.log(`HeroSection: Sending reaction for ID: ${pick.id}`);
-    await incrementFeaturedReaction(pick.id, 'like');
-  };
 
   const data = pick || {
     league: "Premier League",
@@ -220,31 +182,6 @@ const HeroSection = ({ pick }: HeroSectionProps) => {
               <div>
                 <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-0.5">Confidence</p>
                 <p className="font-display font-bold text-success text-sm md:text-lg">{data.confidence}</p>
-              </div>
-              
-              <div className="flex items-center gap-3 ml-4">
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleReaction(); }}
-                  className={`group relative flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all duration-300 ${reacted ? 'bg-primary/25 text-primary ring-2 ring-primary/50' : 'bg-white/5 text-white/60 hover:bg-primary/10 hover:text-primary hover:scale-105 active:scale-95'}`}
-                >
-                  <motion.div
-                    animate={reacted ? { scale: [1, 1.5, 1], rotate: [0, -15, 0] } : {}}
-                    transition={{ duration: 0.5, ease: "backOut" }}
-                  >
-                    <ThumbsUp className={`w-5 h-5 md:w-6 md:h-6 ${reacted ? 'fill-primary' : 'group-hover:fill-primary/20'}`} />
-                  </motion.div>
-                  <span className="font-display font-black text-base md:text-xl">{localLikes}</span>
-                  
-                  {reacted && (
-                    <motion.span
-                      initial={{ opacity: 1, y: 0, scale: 1 }}
-                      animate={{ opacity: 0, y: -40, scale: 1.5 }}
-                      className="absolute top-0 left-1/2 -translate-x-1/2 text-primary font-bold text-sm pointer-events-none"
-                    >
-                      +1
-                    </motion.span>
-                  )}
-                </button>
               </div>
             </div>
           </div>

@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
-import { useTeamLogo } from "@/hooks/useTeamLogo";
+import { useTeamLogo, getCachedTeamLogo, setCachedTeamLogo } from "@/hooks/useTeamLogo";
 import { Shield, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface TeamLogoProps {
   teamName: string;
   size?: number;
   logoUrl?: string | null;
-  teamId?: number;
   sport?: string;
 }
 
@@ -29,16 +27,50 @@ const TennisRacket = ({ size }: { size: number }) => (
   </svg>
 );
 
-const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl, teamId, sport }: TeamLogoProps) => {
+const getInitials = (name: string) => {
+  if (!name) return "??";
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+};
+
+const TeamLogo = ({
+  teamName,
+  size = 28,
+  logoUrl: propLogoUrl,
+  sport,
+}: TeamLogoProps) => {
   const [error, setError] = useState(false);
-  const { logoUrl: hookLogoUrl, loading: hookLoading } = useTeamLogo(propLogoUrl ? "" : teamName, teamId);
-  const finalLogoUrl = propLogoUrl || hookLogoUrl;
-  
-  const isTennis = sport?.toLowerCase().includes('tennis');
+  const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
+
+  const { logoUrl: hookLogoUrl, loading: hookLoading } = useTeamLogo(
+    propLogoUrl ? "" : teamName,
+  );
+
+  useEffect(() => {
+    if (propLogoUrl) {
+      setResolvedUrl(propLogoUrl);
+      setCachedTeamLogo(teamName, propLogoUrl);
+    } else {
+      const cached = getCachedTeamLogo(teamName);
+      if (cached) {
+        setResolvedUrl(cached);
+      } else if (hookLogoUrl) {
+        setResolvedUrl(hookLogoUrl);
+      }
+    }
+    setError(false);
+  }, [propLogoUrl, hookLogoUrl, teamName]);
+
+  const isTennis = sport?.toLowerCase().includes("tennis");
 
   if (isTennis) {
     return (
-      <div 
+      <div
         className="rounded-full bg-gradient-to-br from-emerald-500/15 to-green-600/10 border border-emerald-500/25 flex items-center justify-center flex-shrink-0"
         style={{ width: size, height: size }}
       >
@@ -47,18 +79,7 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl, teamId, sport }: 
     );
   }
 
-  const getInitials = (name: string) => {
-    if (!name) return "??";
-    return name
-      .split(' ')
-      .filter(Boolean)
-      .map(word => word[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
-  };
-
-  if (hookLoading && !propLogoUrl) {
+  if (hookLoading && !propLogoUrl && !resolvedUrl) {
     return (
       <div
         className="rounded-full bg-muted animate-pulse flex-shrink-0 flex items-center justify-center"
@@ -69,9 +90,9 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl, teamId, sport }: 
     );
   }
 
-  if (!finalLogoUrl || error) {
+  if (!resolvedUrl || error) {
     return (
-      <div 
+      <div
         className="rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold flex-shrink-0 overflow-hidden"
         style={{ width: size, height: size, fontSize: size * 0.4 }}
       >
@@ -82,7 +103,7 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl, teamId, sport }: 
 
   return (
     <img
-      src={finalLogoUrl}
+      src={resolvedUrl}
       alt={`${teamName} logo`}
       className="object-contain flex-shrink-0"
       style={{ width: size, height: size }}

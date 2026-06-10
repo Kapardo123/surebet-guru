@@ -1,33 +1,49 @@
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { fetchTeamLogoUrl } from "@/lib/logoFetcher";
 
-const normalize = (value: string) =>
-  value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s]/g, "") 
-    .replace(/\s+/g, " ")
-    .trim();
+const LOGO_CACHE_KEY = "team_logos_cache";
+const MAX_CACHE_ENTRIES = 200;
 
-// Helper to validate if image URL works
-const checkImageUrl = async (url: string): Promise<boolean> => {
+const readCache = (): Record<string, { url: string; timestamp: number }> => {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch(url, { 
-      method: 'HEAD', 
-      signal: controller.signal 
-    });
-    clearTimeout(timeoutId);
-    return res.ok && res.headers.get('content-type')?.startsWith('image/') === true;
+    const raw = localStorage.getItem(LOGO_CACHE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
   } catch {
-    return false;
+    return {};
   }
 };
 
-export const useTeamLogo = (teamName: string, teamId?: number) => {
+const writeCache = (
+  cache: Record<string, { url: string; timestamp: number }>,
+) => {
+  try {
+    const entries = Object.entries(cache)
+      .sort((a, b) => b[1].timestamp - a[1].timestamp)
+      .slice(0, MAX_CACHE_ENTRIES);
+    const trimmed: Record<string, { url: string; timestamp: number }> = {};
+    for (const [k, v] of entries) trimmed[k] = v;
+    localStorage.setItem(LOGO_CACHE_KEY, JSON.stringify(trimmed));
+  } catch {
+  }
+};
+
+export const getCachedTeamLogo = (teamName: string): string | null => {
+  if (!teamName) return null;
+  const cache = readCache();
+  const key = teamName.trim().toLowerCase();
+  return cache[key]?.url || null;
+};
+
+export const setCachedTeamLogo = (teamName: string, url: string) => {
+  if (!teamName || !url) return;
+  const cache = readCache();
+  const key = teamName.trim().toLowerCase();
+  cache[key] = { url, timestamp: Date.now() };
+  writeCache(cache);
+};
+
+export const useTeamLogo = (teamName: string) => {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -38,54 +54,33 @@ export const useTeamLogo = (teamName: string, teamId?: number) => {
       return;
     }
 
+    const key = teamName.trim().toLowerCase();
+    const cached = getCachedTeamLogo(teamName);
+    if (cached) {
+      setLogoUrl(cached);
+      return;
+    }
+
     const fetchLogo = async () => {
-      console.log(`[useTeamLogo] 🚀 Start search for: "${teamName}"${teamId ? ` (ID: ${teamId})` : ''}`);
       setLoading(true);
-
       try {
-        const { data: cacheData } = await supabase
-          .from('team_logos_cache')
-          .select('logo_url')
-          .eq('team_name', teamName)
-          .maybeSingle();
-
-        if (cacheData?.logo_url) {
-          const isValid = await checkImageUrl(cacheData.logo_url);
-          if (isValid) {
-            console.log(`[useTeamLogo] ✅ Found and validated in Cache: ${teamName}`);
-            setLogoUrl(cacheData.logo_url);
-            setLoading(false);
-            return;
-          } else {
-            console.log(`[useTeamLogo] ❌ Cached URL invalid, re-fetching: ${teamName}`);
-            await supabase.from('team_logos_cache').delete().eq('team_name', teamName);
-          }
-        }
-
-        console.log(`[useTeamLogo] 🔍 Trying logoFetcher for: ${teamName}${teamId ? ` (ID: ${teamId})` : ''}`);
-        const foundLogo = await fetchTeamLogoUrl(teamName, teamId);
-
+        const foundLogo = await fetchTeamLogoUrl(teamName);
         if (foundLogo) {
-          await supabase.from('team_logos_cache').upsert({
-            team_name: teamName,
-            logo_url: foundLogo,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'team_name' });
+          setCachedTeamLogo(key, foundLogo);
         }
-
         setLogoUrl(foundLogo);
-      } catch (err) {
-        console.error("[useTeamLogo] ‼️ Error:", err);
+      } catch {
+        setLogoUrl(null);
       } finally {
         setLoading(false);
       }
     };
 
     clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(fetchLogo, 600);
+    timerRef.current = setTimeout(fetchLogo, 500);
 
     return () => clearTimeout(timerRef.current);
-  }, [teamName, teamId]);
+  }, [teamName]);
 
   return { logoUrl, loading };
 };
