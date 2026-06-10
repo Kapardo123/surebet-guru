@@ -56,7 +56,7 @@ const Admin = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [featured, setFeatured] = useState<FeaturedPick>({
-    league: "", kickoff: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", confidence: "High", status: "upcoming"
+    league: "", kickoff: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", confidence: "High", status: "upcoming", homeTeamLogo: null, awayTeamLogo: null
   });
 
   useEffect(() => {
@@ -303,6 +303,58 @@ const Admin = () => {
       setAwayLogoCandidates([]);
     } finally {
       setLoadingAwayLogos(false);
+    }
+  };
+
+  const fetchFeaturedHomeCandidates = async () => {
+    if (!featured.homeTeam || featured.homeTeam.length < 3) return;
+    setLoadingFeaturedHome(true);
+    try {
+      const candidates = await fetchTeamLogoCandidates(featured.homeTeam);
+      setFeaturedHomeCandidates(candidates);
+    } catch {
+      setFeaturedHomeCandidates([]);
+    } finally {
+      setLoadingFeaturedHome(false);
+    }
+  };
+
+  const fetchFeaturedAwayCandidates = async () => {
+    if (!featured.awayTeam || featured.awayTeam.length < 3) return;
+    setLoadingFeaturedAway(true);
+    try {
+      const candidates = await fetchTeamLogoCandidates(featured.awayTeam);
+      setFeaturedAwayCandidates(candidates);
+    } catch {
+      setFeaturedAwayCandidates([]);
+    } finally {
+      setLoadingFeaturedAway(false);
+    }
+  };
+
+  const fetchCouponHomeCandidates = async () => {
+    if (!couponMatchForm.homeTeam || couponMatchForm.homeTeam.length < 3) return;
+    setLoadingCouponHome(true);
+    try {
+      const candidates = await fetchTeamLogoCandidates(couponMatchForm.homeTeam);
+      setCouponHomeCandidates(candidates);
+    } catch {
+      setCouponHomeCandidates([]);
+    } finally {
+      setLoadingCouponHome(false);
+    }
+  };
+
+  const fetchCouponAwayCandidates = async () => {
+    if (!couponMatchForm.awayTeam || couponMatchForm.awayTeam.length < 3) return;
+    setLoadingCouponAway(true);
+    try {
+      const candidates = await fetchTeamLogoCandidates(couponMatchForm.awayTeam);
+      setCouponAwayCandidates(candidates);
+    } catch {
+      setCouponAwayCandidates([]);
+    } finally {
+      setLoadingCouponAway(false);
     }
   };
 
@@ -678,6 +730,16 @@ const Admin = () => {
   const [awayLogoCandidates, setAwayLogoCandidates] = useState<LogoCandidate[]>([]);
   const [loadingHomeLogos, setLoadingHomeLogos] = useState(false);
   const [loadingAwayLogos, setLoadingAwayLogos] = useState(false);
+
+  const [featuredHomeCandidates, setFeaturedHomeCandidates] = useState<LogoCandidate[]>([]);
+  const [featuredAwayCandidates, setFeaturedAwayCandidates] = useState<LogoCandidate[]>([]);
+  const [loadingFeaturedHome, setLoadingFeaturedHome] = useState(false);
+  const [loadingFeaturedAway, setLoadingFeaturedAway] = useState(false);
+
+  const [couponHomeCandidates, setCouponHomeCandidates] = useState<LogoCandidate[]>([]);
+  const [couponAwayCandidates, setCouponAwayCandidates] = useState<LogoCandidate[]>([]);
+  const [loadingCouponHome, setLoadingCouponHome] = useState(false);
+  const [loadingCouponAway, setLoadingCouponAway] = useState(false);
 
   const [couponMatchForm, setCouponMatchForm] = useState({
     homeTeam: "",
@@ -1081,15 +1143,123 @@ const Admin = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1 relative">
                       <Label className="text-[9px] uppercase text-muted-foreground">Home Team</Label>
-                      <Input className="h-9 text-xs bg-muted/20 pr-8" placeholder="Home team" value={featured.homeTeam} onChange={(e) => setFeatured({ ...featured, homeTeam: e.target.value })} />
-                      {featured.homeTeamLogo && <div className="absolute right-1.5 top-[22px]"><TeamLogo teamName={featured.homeTeam} logoUrl={featured.homeTeamLogo} size={18} /></div>}
+                      <div className="relative">
+                        <Input className="h-9 text-xs bg-muted/20 pr-20" placeholder="Home team" value={featured.homeTeam} onChange={(e) => setFeatured({ ...featured, homeTeam: e.target.value })} />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          {featured.homeTeamLogo && <TeamLogo teamName={featured.homeTeam} logoUrl={featured.homeTeamLogo} size={18} />}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-1.5 text-[9px] text-muted-foreground hover:text-primary"
+                            onClick={fetchFeaturedHomeCandidates}
+                            disabled={loadingFeaturedHome}
+                          >
+                            {loadingFeaturedHome ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Search className="w-3 h-3" />
+                            )}
+                          </Button>
+                          {featured.homeTeamLogo && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1.5 text-[9px] text-loss/70 hover:text-loss"
+                              onClick={() => setFeatured({ ...featured, homeTeamLogo: null })}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <div className="space-y-1 relative">
                       <Label className="text-[9px] uppercase text-muted-foreground">Away Team</Label>
-                      <Input className="h-9 text-xs bg-muted/20 pr-8" placeholder="Away team" value={featured.awayTeam} onChange={(e) => setFeatured({ ...featured, awayTeam: e.target.value })} />
-                      {featured.awayTeamLogo && <div className="absolute right-1.5 top-[22px]"><TeamLogo teamName={featured.awayTeam} logoUrl={featured.awayTeamLogo} size={18} /></div>}
+                      <div className="relative">
+                        <Input className="h-9 text-xs bg-muted/20 pr-20" placeholder="Away team" value={featured.awayTeam} onChange={(e) => setFeatured({ ...featured, awayTeam: e.target.value })} />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          {featured.awayTeamLogo && <TeamLogo teamName={featured.awayTeam} logoUrl={featured.awayTeamLogo} size={18} />}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-1.5 text-[9px] text-muted-foreground hover:text-primary"
+                            onClick={fetchFeaturedAwayCandidates}
+                            disabled={loadingFeaturedAway}
+                          >
+                            {loadingFeaturedAway ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Search className="w-3 h-3" />
+                            )}
+                          </Button>
+                          {featured.awayTeamLogo && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1.5 text-[9px] text-loss/70 hover:text-loss"
+                              onClick={() => setFeatured({ ...featured, awayTeamLogo: null })}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
+                  {featuredHomeCandidates.length > 0 && (
+                    <div className="p-2 bg-muted/20 border border-border/30 rounded-lg">
+                      <Label className="text-[8px] uppercase text-muted-foreground mb-1 block">Home Team Logos</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {featuredHomeCandidates.map((candidate, i) => (
+                          <button
+                            type="button"
+                            key={`fh-${i}`}
+                            onClick={() => {
+                              setFeatured({ ...featured, homeTeamLogo: candidate.url });
+                              setFeaturedHomeCandidates([]);
+                            }}
+                            className={`w-10 h-10 rounded-md border flex items-center justify-center overflow-hidden transition-all ${
+                              featured.homeTeamLogo === candidate.url
+                                ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                                : "border-border/50 bg-muted/50 hover:border-primary/50 hover:bg-primary/5"
+                            }`}
+                            title={`${candidate.teamName} (${candidate.source})`}
+                          >
+                            <img src={candidate.url} alt="" className="w-7 h-7 object-contain" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {featuredAwayCandidates.length > 0 && (
+                    <div className="p-2 bg-muted/20 border border-border/30 rounded-lg">
+                      <Label className="text-[8px] uppercase text-muted-foreground mb-1 block">Away Team Logos</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {featuredAwayCandidates.map((candidate, i) => (
+                          <button
+                            type="button"
+                            key={`fa-${i}`}
+                            onClick={() => {
+                              setFeatured({ ...featured, awayTeamLogo: candidate.url });
+                              setFeaturedAwayCandidates([]);
+                            }}
+                            className={`w-10 h-10 rounded-md border flex items-center justify-center overflow-hidden transition-all ${
+                              featured.awayTeamLogo === candidate.url
+                                ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                                : "border-border/50 bg-muted/50 hover:border-primary/50 hover:bg-primary/5"
+                            }`}
+                            title={`${candidate.teamName} (${candidate.source})`}
+                          >
+                            <img src={candidate.url} alt="" className="w-7 h-7 object-contain" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-[9px] uppercase text-muted-foreground">Confidence</Label>
@@ -1426,15 +1596,69 @@ const Admin = () => {
                       <div className="space-y-1">
                         <Label className="text-[9px] uppercase text-muted-foreground">Home Team</Label>
                         <div className="relative">
-                          <Input className="h-9 text-xs bg-muted/20 pr-7" value={couponMatchForm.homeTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, homeTeam: e.target.value })} />
-                          {couponMatchForm.homeTeamLogo && <div className="absolute right-1.5 top-1/2 -translate-y-1/2"><TeamLogo teamName={couponMatchForm.homeTeam} logoUrl={couponMatchForm.homeTeamLogo} size={18} /></div>}
+                          <Input className="h-9 text-xs bg-muted/20 pr-16" value={couponMatchForm.homeTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, homeTeam: e.target.value })} />
+                          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                            {couponMatchForm.homeTeamLogo && <TeamLogo teamName={couponMatchForm.homeTeam} logoUrl={couponMatchForm.homeTeamLogo} size={14} />}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1 text-[8px] text-muted-foreground hover:text-primary"
+                              onClick={fetchCouponHomeCandidates}
+                              disabled={loadingCouponHome}
+                            >
+                              {loadingCouponHome ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Search className="w-3 h-3" />
+                              )}
+                            </Button>
+                            {couponMatchForm.homeTeamLogo && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-1 text-[8px] text-loss/70 hover:text-loss"
+                                onClick={() => setCouponMatchForm({ ...couponMatchForm, homeTeamLogo: null })}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-[9px] uppercase text-muted-foreground">Away Team</Label>
                         <div className="relative">
-                          <Input className="h-9 text-xs bg-muted/20 pr-7" value={couponMatchForm.awayTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, awayTeam: e.target.value })} />
-                          {couponMatchForm.awayTeamLogo && <div className="absolute right-1.5 top-1/2 -translate-y-1/2"><TeamLogo teamName={couponMatchForm.awayTeam} logoUrl={couponMatchForm.awayTeamLogo} size={18} /></div>}
+                          <Input className="h-9 text-xs bg-muted/20 pr-16" value={couponMatchForm.awayTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, awayTeam: e.target.value })} />
+                          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                            {couponMatchForm.awayTeamLogo && <TeamLogo teamName={couponMatchForm.awayTeam} logoUrl={couponMatchForm.awayTeamLogo} size={14} />}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1 text-[8px] text-muted-foreground hover:text-primary"
+                              onClick={fetchCouponAwayCandidates}
+                              disabled={loadingCouponAway}
+                            >
+                              {loadingCouponAway ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Search className="w-3 h-3" />
+                              )}
+                            </Button>
+                            {couponMatchForm.awayTeamLogo && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-1 text-[8px] text-loss/70 hover:text-loss"
+                                onClick={() => setCouponMatchForm({ ...couponMatchForm, awayTeamLogo: null })}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="space-y-1">
@@ -1446,6 +1670,56 @@ const Admin = () => {
                         <Input type="number" step="0.01" className="h-9 text-xs bg-muted/20" value={couponMatchForm.odds} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, odds: e.target.value })} />
                       </div>
                     </div>
+                    {couponHomeCandidates.length > 0 && (
+                      <div className="p-2 bg-muted/20 border border-border/30 rounded-lg">
+                        <Label className="text-[8px] uppercase text-muted-foreground mb-1 block">Home Team Logos</Label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {couponHomeCandidates.map((candidate, i) => (
+                            <button
+                              type="button"
+                              key={`ch-${i}`}
+                              onClick={() => {
+                                setCouponMatchForm({ ...couponMatchForm, homeTeamLogo: candidate.url });
+                                setCouponHomeCandidates([]);
+                              }}
+                              className={`w-9 h-9 rounded-md border flex items-center justify-center overflow-hidden transition-all ${
+                                couponMatchForm.homeTeamLogo === candidate.url
+                                  ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                                  : "border-border/50 bg-muted/50 hover:border-primary/50 hover:bg-primary/5"
+                              }`}
+                              title={`${candidate.teamName} (${candidate.source})`}
+                            >
+                              <img src={candidate.url} alt="" className="w-6 h-6 object-contain" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {couponAwayCandidates.length > 0 && (
+                      <div className="p-2 bg-muted/20 border border-border/30 rounded-lg">
+                        <Label className="text-[8px] uppercase text-muted-foreground mb-1 block">Away Team Logos</Label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {couponAwayCandidates.map((candidate, i) => (
+                            <button
+                              type="button"
+                              key={`ca-${i}`}
+                              onClick={() => {
+                                setCouponMatchForm({ ...couponMatchForm, awayTeamLogo: candidate.url });
+                                setCouponAwayCandidates([]);
+                              }}
+                              className={`w-9 h-9 rounded-md border flex items-center justify-center overflow-hidden transition-all ${
+                                couponMatchForm.awayTeamLogo === candidate.url
+                                  ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                                  : "border-border/50 bg-muted/50 hover:border-primary/50 hover:bg-primary/5"
+                              }`}
+                              title={`${candidate.teamName} (${candidate.source})`}
+                            >
+                              <img src={candidate.url} alt="" className="w-6 h-6 object-contain" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <Button type="button" variant="outline" size="sm" className="w-full gap-1.5 h-9 text-[10px] uppercase tracking-wider" onClick={editingCouponMatchIndex !== null ? handleCancelCouponMatchEdit : handleAddCouponMatch}>
                         <X className="w-3.5 h-3.5" /> {editingCouponMatchIndex !== null ? "Cancel Edit" : "Add Match to Coupon"}
