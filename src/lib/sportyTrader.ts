@@ -101,23 +101,45 @@ const parseOddsFromCard = (card: string): number | null => {
 export const fetchClientOdds = async (): Promise<ClientOddsMap> => {
   const listingUrl = "https://www.sportytrader.com/en/betting-tips/";
   const proxies = [
-    listingUrl,                                          // direct (works in Capacitor WebView)
+    listingUrl,                                                    // direct (Capacitor)
+    "/api/sportytrader-odds",                                      // Vercel edge (different IP)
     `https://corsproxy.io/?${encodeURIComponent(listingUrl)}`,
     `https://api.allorigins.win/raw?url=${encodeURIComponent(listingUrl)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(listingUrl)}`,
   ];
 
   let html = "";
+  let jsonResult: ClientOddsMap | null = null;
   for (const proxyUrl of proxies) {
     try {
       const res = await fetch(proxyUrl);
-      if (res.ok) {
-        html = await res.text();
+      if (!res.ok) continue;
+      const ct = res.headers.get("content-type") || "";
+      
+      // Check if this is our Vercel proxy returning JSON
+      if (ct.includes("application/json") || proxyUrl.startsWith("/api/")) {
+        const data = await res.json();
+        if (data?.odds && Object.keys(data.odds).length > 0) {
+          jsonResult = data.odds as ClientOddsMap;
+          break;
+        }
+        continue;
+      }
+      
+      const text = await res.text();
+      // Validate: real HTML must contain actual odds values > 0
+      const hasRealOdds = /<bet-now-light[\s\S]*?\bodd="([1-9][\d.]*)"/.test(text);
+      if (hasRealOdds || text.length > 50000) {
+        html = text;
         break;
       }
     } catch {
       continue;
     }
   }
+
+  // If Vercel proxy returned parsed odds, use them directly
+  if (jsonResult) return jsonResult;
   if (!html) throw new Error("All fetch strategies failed");
 
   // Find each match card by its data-navigation-url-value marker
