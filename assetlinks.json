@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.surebet.guru",
+    "sha256_cert_fingerprints": [
+      "9A:F6:3C:05:AE:1F:10:C8:8C:12:2B:0D:06:8F:66:D7:CA:F5:91:4A:15:6F:EE:D0:DA:81:9A:9D:AD:2B:5A:38"
+    ]
+  }
+}]

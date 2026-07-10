@@ -1,0 +1,7 @@
+# project_id = "gxhmxupwkmdkojctezlu"
+
+[functions.referral]
+verify_jwt = false
+
+[functions.send-premium-push]
+verify_jwt = false

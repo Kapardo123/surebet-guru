@@ -1,0 +1,236 @@
+import { Badge } from "@/components/ui/badge";
+import { Clock, Lock, Crown, ChevronDown, ChevronUp, TrendingUp, Sparkles } from "lucide-react";
+import TeamLogo, { SportIcon } from "@/components/TeamLogo";
+import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useCallback, memo } from "react";
+
+export interface Tip {
+  id: number;
+  sport: string;
+  league: string;
+  homeTeam: string;
+  awayTeam: string;
+  prediction: string;
+  odds: number;
+  kickoff: string;
+  status: "upcoming" | "won" | "lost" | "draw";
+  isPremium?: boolean;
+  isPublished?: boolean;
+  homeTeamLogo?: string | null;
+  awayTeamLogo?: string | null;
+  description?: string | null;
+  wonAt?: string | null;
+}
+
+const statusVariant = {
+  upcoming: "outline" as const,
+  won: "win" as const,
+  lost: "loss" as const,
+  draw: "draw" as const,
+};
+
+const statusLabel = {
+  upcoming: "Upcoming",
+  won: "Won ✓",
+  lost: "Lost ✗",
+  draw: "Draw",
+};
+
+
+const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boolean }) => {
+  const [showAnalysis, setShowAnalysis] = useState(false);
+
+  const isSettled = tip.status !== "upcoming";
+  const locked = tip.isPremium && !userIsPremium && !isSettled;
+
+  const formatKickoff = useCallback((kickoffStr: string) => {
+    try {
+      if (!kickoffStr) return "TBD";
+      
+      const cleanKickoff = String(kickoffStr).replace(/\[object Object\]/g, "").trim();
+      const date = new Date(cleanKickoff.replace(' ', 'T'));
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleString(undefined, {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+      return cleanKickoff || "TBD";
+    } catch (e) {}
+    return String(kickoffStr);
+  }, []);
+
+  return (
+    <motion.div
+      className={`relative overflow-hidden rounded-2xl group ${locked ? "select-none" : ""}`}
+    >
+      {/* Synthwave glow effect */}
+      <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${
+        tip.isPremium 
+          ? 'bg-gradient-to-br from-pink-500/20 via-purple-500/10 to-transparent' 
+          : 'bg-gradient-to-br from-purple-500/20 via-pink-500/10 to-transparent'
+      }`} />
+
+      <div
+        className={`relative rounded-2xl backdrop-blur-sm overflow-hidden transition-all duration-300 ${
+          tip.isPremium 
+            ? 'bg-gradient-to-br from-card via-pink-950/5 to-purple-950/10 border border-pink-500/30 shadow-xl shadow-pink-500/10 group-hover:shadow-pink-500/20 group-hover:-translate-y-1'
+            : 'bg-gradient-to-br from-card via-purple-950/5 to-background border border-border/40 shadow-lg shadow-black/5 group-hover:border-purple-500/30 group-hover:-translate-y-1'
+        }`}
+      >
+        {/* Top gradient line */}
+        <div className={`h-[3px] w-full ${
+          tip.isPremium 
+            ? 'bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500' 
+            : 'bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500'
+        }`} />
+
+        <div className="p-3 sm:p-4 md:p-5 space-y-2.5 sm:space-y-3 md:space-y-4">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-2 flex-wrap">
+            <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+              {tip.isPremium && !isSettled && (
+                <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 text-white px-2.5 md:px-3 py-1 md:py-1.5 text-[9px] md:text-[10px] font-display font-bold uppercase tracking-wider rounded-full flex items-center gap-1.5 shadow-lg shadow-pink-500/50 animate-pulse">
+                  <Crown className="w-3 h-3 md:w-3.5 md:h-3.5 fill-white" />
+                  <span>Premium</span>
+                </div>
+              )}
+              <Badge variant="sport" className="text-[9px] md:text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/30 gap-1 inline-flex">
+                <SportIcon sport={tip.sport} size={8} />
+                {tip.sport}
+              </Badge>
+              <span className="text-[10px] md:text-[11px] text-muted-foreground font-medium truncate max-w-[90px] sm:max-w-[130px] md:max-w-none">{tip.league}</span>
+            </div>
+            <Badge variant={statusVariant[tip.status]} className="gap-1 shrink-0 text-[10px] px-2 py-0.5">
+              {tip.isPremium && isSettled && <Crown className="w-2.5 h-2.5" />}
+              <span className="whitespace-nowrap text-[10px]">{statusLabel[tip.status]}</span>
+            </Badge>
+          </div>
+
+          {/* Teams - Vertical Layout */}
+          <div className="flex flex-col items-center gap-2.5 py-2 md:py-3 px-0.5">
+            {/* Home Team */}
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4 w-full justify-center">
+              <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-13 md:h-13 rounded-full flex items-center justify-center flex-shrink-0 ${
+                tip.isPremium ? 'ring-2 ring-pink-500/30 bg-pink-500/5' : 'ring-2 ring-purple-500/30 bg-purple-500/5'
+              }`}>
+                <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={26} sport={tip.sport} />
+              </div>
+              <span className="font-display font-bold text-foreground text-sm sm:text-base md:text-lg leading-tight text-center">{tip.homeTeam}</span>
+            </div>
+
+            {/* VS Badge - Centered */}
+            <div className="px-3 py-1 sm:py-1.5 bg-muted/60 border border-border/40 rounded-lg">
+              <span className="text-[11px] sm:text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider">VS</span>
+            </div>
+
+            {/* Away Team */}
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4 w-full justify-center">
+              <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-13 md:h-13 rounded-full flex items-center justify-center flex-shrink-0 ${
+                tip.isPremium ? 'ring-2 ring-pink-500/30 bg-pink-500/5' : 'ring-2 ring-purple-500/30 bg-purple-500/5'
+              }`}>
+                <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={26} sport={tip.sport} />
+              </div>
+              <span className="font-display font-bold text-foreground text-sm sm:text-base md:text-lg leading-tight text-center">{tip.awayTeam}</span>
+            </div>
+          </div>
+
+          {locked ? (
+            <Link to="/premium">
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex flex-col items-center justify-center py-8 md:py-10 gap-2.5 md:gap-3 rounded-xl bg-gradient-to-b from-pink-500/10 to-purple-900/10 border border-pink-500/20 cursor-pointer hover:border-pink-500/40 transition-all"
+              >
+                <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-pink-500/20 to-purple-600/20 flex items-center justify-center ring-2 ring-pink-500/30">
+                  <Lock className="w-6 h-6 md:w-7 md:h-7 text-pink-400" />
+                </div>
+                <p className="font-display text-xs md:text-sm font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">Unlock with Premium</p>
+                <p className="text-[10px] md:text-[11px] text-muted-foreground">Click to view plans</p>
+              </motion.div>
+            </Link>
+          ) : (
+            <>
+              {/* Prediction & Odds */}
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-2 md:gap-3">
+                <div className={`rounded-xl p-2.5 sm:p-3 md:p-4 border transition-all hover:scale-[1.02] ${
+                  tip.isPremium 
+                    ? 'bg-pink-500/5 border-pink-500/20' 
+                    : 'bg-purple-500/5 border-purple-500/20'
+                }`}>
+                  <p className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-1 sm:mb-1.5 md:mb-2 font-medium">Prediction</p>
+                  <p className="font-display font-bold text-foreground text-[11px] sm:text-xs md:text-sm">{tip.prediction}</p>
+                </div>
+                <div className={`rounded-xl p-2.5 sm:p-3 md:p-4 border transition-all hover:scale-[1.02] ${
+                  tip.isPremium 
+                    ? 'bg-pink-500/5 border-pink-500/20' 
+                    : 'bg-purple-500/5 border-purple-500/20'
+                }`}>
+                  <p className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-1 sm:mb-1.5 md:mb-2 font-medium">Odds</p>
+                  <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
+                    <TrendingUp className={`w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 ${tip.isPremium ? 'text-pink-400' : 'text-purple-400'}`} />
+                    <p className={`font-display font-bold text-base sm:text-lg md:text-xl leading-none ${tip.isPremium ? 'text-pink-400' : 'text-purple-400'}`}>{tip.odds.toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-1.5 sm:gap-2 md:gap-4 py-1">
+                <div />
+                {tip.description && (
+                  <button 
+                    onClick={() => setShowAnalysis(!showAnalysis)}
+                    className={`flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] md:text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                      tip.isPremium ? 'text-pink-400 hover:text-pink-300' : 'text-purple-400 hover:text-purple-300'
+                    }`}
+                  >
+                    {showAnalysis ? <ChevronUp className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5" /> : <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5" />}
+                    {showAnalysis ? "Hide" : "Analysis"}
+                  </button>
+                )}
+              </div>
+
+              {/* Analysis / Description Toggle */}
+              {tip.description && (
+                <AnimatePresence>
+                  {showAnalysis && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className={`mt-1.5 sm:mt-2 p-2.5 sm:p-3 md:p-4 rounded-xl border ${
+                        tip.isPremium 
+                          ? 'bg-pink-500/5 border-pink-500/20' 
+                          : 'bg-purple-500/5 border-purple-500/20'
+                      }`}>
+                        <p className="text-[10px] sm:text-[11px] md:text-xs text-muted-foreground leading-relaxed italic whitespace-pre-wrap">
+                          "{tip.description}"
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              )}
+
+            </>
+          )}
+
+          {/* Footer - always visible, even when locked */}
+          <div className="flex items-center pt-1.5 sm:pt-2 md:pt-3 border-t border-border/20">
+                <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
+                  <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 text-muted-foreground" />
+                  <span className="text-[9px] sm:text-[10px] md:text-[11px] text-muted-foreground font-medium">{formatKickoff(tip.kickoff)}</span>
+                </div>
+              </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+export default memo(TipCard);
