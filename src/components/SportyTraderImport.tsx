@@ -161,7 +161,8 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
 
       // Merge: odds from client-side parsing (real browser IP, not blocked),
       // fallback to edge function listing, then match detail page.
-      // Skip matches that have no odds on the site.
+      // Only skip no-odds matches when client fetch succeeded (real odds available).
+      const hasClientOdds = Object.keys(clientOddsMap).length > 0;
       const cards: MatchCard[] = fresh
         .map((item, i) => {
           const d = details[i];
@@ -185,7 +186,7 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
             awayTeamLogo: item.awayTeamLogo,
           };
         })
-        .filter((c) => c.odds > 0)
+        .filter((c) => !hasClientOdds || c.odds > 0)
         .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 
       // AI rewrite: rewrite all analyses via OpenRouter, fallback to algorithmic
