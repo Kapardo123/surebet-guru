@@ -3,11 +3,11 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 
 const APP_VERSION = {
-  version: "16.0.0",
-  build: 1600,
+  version: "19.0.0",
+  build: 1900,
   forceUpdate: true,
-  releaseDate: "2026-05-30",
-  updateMessage: "New version available! v16.0.0 — ad unlock fix, improved UX.",
+  releaseDate: "2026-07-11",
+  updateMessage: "New version available! v19.0.0 — Daily Spin wheel, AI analysis, SportyTrader import with odds.",
   downloadUrl: "https://play.google.com/store/apps/details?id=com.surebet.guru",
   minSupportedVersion: "10.0.0"
 };

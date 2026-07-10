@@ -262,43 +262,12 @@ const parseMatch = (html: string, id: string, url: string) => {
   );
   if (predM) prediction = clean(predM[1]).replace(/\.$/, "");
 
-  // odds: try multiple strategies
+  // odds: bet-now-light only (bot HTML has hideodd, so null is correct)
   let odds: number | null = null;
-  // 1. bet-now-light (multi-line) or bet-now-large
   const bnl = html.match(/<bet-now-(?:light|large)[\s\S]*?\bodd="([\d.]+)"/);
   if (bnl) {
     const v = parseFloat(bnl[1]);
     if (v > 0) odds = v;
-  }
-  // 2. font-bold span (same as listing cards)
-  if (odds === null) {
-    const fb = html.match(/<span[^>]*\bfont-bold\b[^>]*>([\d.]+)<\/span>/);
-    if (fb) {
-      const v = parseFloat(fb[1]);
-      if (v > 0) odds = v;
-    }
-  }
-  // 3. Bookmaker odds table: <span class="...pastille--cotes...">ODDS</span>
-  // The first row's three odds are 1X2 (home/draw/away). Pick the lowest
-  // (most likely favourite) as a sensible default for the recommended bet.
-  if (odds === null) {
-    const pastille = [...html.matchAll(/<span[^>]*\bpastille--cotes\b[^>]*>([\d.]+)<\/span>/g)];
-    if (pastille.length > 0) {
-      const vals = pastille.map((x) => parseFloat(x[1])).filter((v) => v > 0);
-      if (vals.length > 0) {
-        // Use lowest odds from first bookmaker row (favourite)
-        const firstRow = vals.slice(0, 3);
-        odds = Math.min(...firstRow);
-      }
-    }
-  }
-  // 4. Prose: "odds of X.XX at Bookmaker"
-  if (odds === null) {
-    const prose = html.match(/\bodds of ([\d.]+)\b/i);
-    if (prose) {
-      const v = parseFloat(prose[1]);
-      if (v > 0) odds = v;
-    }
   }
 
   // analysis: prose <p> paragraphs, minus promo/meta/probability lines
