@@ -1,5 +1,5 @@
 import { TrendingUp, Receipt, Crown, LogIn, LogOut } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
@@ -8,10 +8,16 @@ const navItems = [
   { label: "Premium", icon: Crown, path: "/premium" },
 ];
 
-const buttonClass = "flex-1 flex flex-col items-center gap-1 px-1 py-2 rounded-xl transition-all duration-300 relative group text-purple-300/60 hover:text-pink-300 hover:bg-white/5";
-
-const BottomNav = ({ onTabChange }: { onTabChange?: (tab: string) => void }) => {
+const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange?: (tab: string) => void }) => {
   const { user, signOut } = useAuth();
+  const location = useLocation();
+
+  const isActive = (item: typeof navItems[0]) => {
+    if (item.path === "/premium") return location.pathname === "/premium";
+    if (item.path === "/#coupons") return activeTab === "coupons" && location.pathname === "/";
+    if (item.path === "/") return activeTab === "tips" && location.pathname === "/";
+    return false;
+  };
 
   const handleClick = (item: typeof navItems[0]) => {
     if (item.path === "/#coupons" && onTabChange) {
@@ -28,13 +34,23 @@ const BottomNav = ({ onTabChange }: { onTabChange?: (tab: string) => void }) => 
         <div className="flex items-stretch py-2.5 px-2 gap-1">
           {navItems.map((item) => {
             const isLink = item.path !== "/" && item.path !== "/#coupons";
+            const active = isActive(item);
 
             const content = (
               <>
-                <item.icon className="w-5 h-5 group-hover:scale-105 transition-transform duration-300" />
-                <span className="text-[10px] font-display font-bold tracking-wider uppercase">{item.label}</span>
+                <item.icon className={`w-5 h-5 transition-all duration-300 ${active ? "text-pink-400 scale-110" : "group-hover:scale-105"}`} />
+                <span className={`text-[10px] font-display font-bold tracking-wider uppercase transition-colors duration-300 ${active ? "text-pink-400" : ""}`}>{item.label}</span>
+                {active && (
+                  <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-500" />
+                )}
               </>
             );
+
+            const buttonClass = `flex-1 flex flex-col items-center gap-1 px-1 py-2 rounded-xl transition-all duration-300 relative ${
+              active
+                ? "text-pink-400 bg-pink-500/10"
+                : "text-purple-300/60 hover:text-pink-300 hover:bg-white/5 group"
+            }`;
 
             if (isLink) {
               return (
@@ -54,13 +70,13 @@ const BottomNav = ({ onTabChange }: { onTabChange?: (tab: string) => void }) => 
           })}
 
           {user ? (
-            <button onClick={signOut} className={buttonClass}>
+            <button onClick={signOut} className="flex-1 flex flex-col items-center gap-1 px-1 py-2 rounded-xl transition-all duration-300 relative text-purple-300/60 hover:text-pink-300 hover:bg-white/5 group">
               <LogOut className="w-5 h-5 group-hover:scale-105 transition-transform duration-300" />
               <span className="text-[10px] font-display font-bold tracking-wider uppercase">Logout</span>
             </button>
           ) : (
             <Link to="/auth" className="no-underline flex-1">
-              <button className={`${buttonClass} w-full`}>
+              <button className="flex-1 flex flex-col items-center gap-1 px-1 py-2 rounded-xl transition-all duration-300 relative text-purple-300/60 hover:text-pink-300 hover:bg-white/5 group w-full">
                 <LogIn className="w-5 h-5 group-hover:scale-105 transition-transform duration-300" />
                 <span className="text-[10px] font-display font-bold tracking-wider uppercase">Sign In</span>
               </button>

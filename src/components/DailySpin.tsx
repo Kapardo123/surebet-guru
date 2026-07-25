@@ -92,8 +92,8 @@ const DailySpin = ({ isLoggedIn = false, userId, onFreeTip }: { isLoggedIn?: boo
     }, SPIN_DURATION);
   }, [spinning, blocked, rotation, isLoggedIn, userId, onFreeTip]);
 
-  const radius = 140;
-  const center = 150;
+  const radius = 120;
+  const center = 140;
   const segmentAngle = (2 * Math.PI) / SEGMENTS.length;
 
   // Precompute segment paths
@@ -123,7 +123,7 @@ const DailySpin = ({ isLoggedIn = false, userId, onFreeTip }: { isLoggedIn?: boo
       <div className="flex flex-col items-center gap-4">
         {/* Wheel */}
         <div className="relative">
-          <svg width="300" height="300" viewBox="0 0 300 300">
+          <svg width="280" height="280" viewBox="0 0 280 280">
             <defs>
               {/* Glow filter */}
               <filter id="wheelGlow" x="-20%" y="-20%" width="140%" height="140%">

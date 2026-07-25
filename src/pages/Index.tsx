@@ -31,6 +31,7 @@ const Index = () => {
   const [heroPick, setHeroPick] = useState<FeaturedPick | null>(null);
   const [freeTip, setFreeTip] = useState<Tip | null>(null);
   const [allLoadedTips, setAllLoadedTips] = useState<Tip[]>([]);
+  const [loading, setLoading] = useState(true);
   const { active: isPremium, daysLeft: premiumDaysLeft, loading: premiumLoading } = usePremiumStatus();
   const { user, signOut, loading: authLoading } = useAuth();
 
@@ -70,6 +71,7 @@ const Index = () => {
       setAllLoadedTips(loadedTips);
       setCoupons(visibleCoupons);
       setHeroPick(loadedHeroPick);
+      setLoading(false);
     };
 
     fetchData();
@@ -198,7 +200,31 @@ const Index = () => {
             )}
 
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2">
-              {filteredTips.map((tip, i) => (
+              {loading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={`skel-${i}`} className="rounded-2xl border border-purple-500/10 bg-white/[0.03] p-4 space-y-4 animate-pulse">
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 w-16 rounded-full bg-white/5" />
+                      <div className="h-5 w-20 rounded-full bg-white/5" />
+                    </div>
+                    <div className="flex items-center justify-center gap-4 py-3">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-10 w-10 rounded-full bg-white/5" />
+                        <div className="h-4 w-20 rounded bg-white/5" />
+                      </div>
+                      <div className="h-5 w-8 rounded bg-white/5" />
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-10 w-10 rounded-full bg-white/5" />
+                        <div className="h-4 w-20 rounded bg-white/5" />
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="flex-1 h-12 rounded-lg bg-white/5" />
+                      <div className="flex-1 h-12 rounded-lg bg-white/5" />
+                    </div>
+                  </div>
+                ))
+              ) : filteredTips.map((tip, i) => (
                 <ScrollReveal key={tip.id} delay={i * 0.08}>
                   <TipCard tip={tip} userIsPremium={isPremium} />
                 </ScrollReveal>
@@ -247,7 +273,25 @@ const Index = () => {
             )}
 
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2">
-              {filteredCoupons.map((coupon, i) => (
+              {loading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={`skel-c-${i}`} className="rounded-2xl border border-blue-500/10 bg-white/[0.03] p-4 space-y-3 animate-pulse">
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 w-16 rounded-full bg-white/5" />
+                      <div className="h-5 w-24 rounded-full bg-white/5" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-4 w-full rounded bg-white/5" />
+                      <div className="h-4 w-3/4 rounded bg-white/5" />
+                      <div className="h-4 w-5/6 rounded bg-white/5" />
+                    </div>
+                    <div className="flex justify-between">
+                      <div className="h-6 w-20 rounded-full bg-white/5" />
+                      <div className="h-6 w-16 rounded bg-white/5" />
+                    </div>
+                  </div>
+                ))
+              ) : filteredCoupons.map((coupon, i) => (
                 <ScrollReveal key={coupon.id} delay={i * 0.08}>
                   <CouponCard coupon={coupon} userIsPremium={isPremium} />
                 </ScrollReveal>
@@ -361,7 +405,7 @@ const Index = () => {
         </div>
       )}
 
-      <BottomNav onTabChange={setActiveTab} />
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Free Tip Modal */}
       {freeTip && (

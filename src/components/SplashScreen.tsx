@@ -53,176 +53,67 @@ const SplashScreen = () => {
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         />
 
-        <div className="relative z-10 flex flex-col items-center px-6 text-center">
-          {/* Spinning ring behind the text */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-          >
-            <motion.svg
-              width="280"
-              height="280"
-              viewBox="0 0 280 280"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-            >
-              <defs>
-                <linearGradient id="ringGrad1" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#ec4899" stopOpacity="0" />
-                  <stop offset="30%" stopColor="#ec4899" stopOpacity="0.8" />
-                  <stop offset="50%" stopColor="#a855f7" stopOpacity="1" />
-                  <stop offset="70%" stopColor="#06b6d4" stopOpacity="0.8" />
-                  <stop offset="100%" stopColor="#06b6d4" stopOpacity="0" />
-                </linearGradient>
-                <filter id="splashGlow">
-                  <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-              </defs>
-              <circle
-                cx="140"
-                cy="140"
-                r="130"
-                fill="none"
-                stroke="url(#ringGrad1)"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeDasharray="200 616"
-                filter="url(#splashGlow)"
-              />
-            </motion.svg>
-          </motion.div>
-
-          {/* Counter-rotating inner ring */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-          >
-            <motion.svg
-              width="220"
-              height="220"
-              viewBox="0 0 220 220"
-              animate={{ rotate: -360 }}
-              transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-            >
-              <circle
-                cx="110"
-                cy="110"
-                r="100"
-                fill="none"
-                stroke="url(#ringGrad1)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeDasharray="100 528"
-                opacity="0.5"
-              />
-            </motion.svg>
-          </motion.div>
-
+        <div className="relative z-10 flex flex-col items-center gap-6 px-6 text-center">
           {/* Title: GREAT */}
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="relative"
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+            className="font-splash text-7xl tracking-[0.15em] text-white sm:text-8xl md:text-9xl"
+            style={{ textShadow: "0 0 40px rgba(255,255,255,0.08)" }}
           >
-            <h1
-              className="font-splash text-7xl tracking-[0.15em] text-white sm:text-8xl md:text-9xl"
-              style={{
-                textShadow: "0 0 60px rgba(255,255,255,0.08), 0 0 120px rgba(168,85,247,0.12)",
-              }}
-            >
-              GREAT
-            </h1>
-          </motion.div>
+            GREAT
+          </motion.h1>
 
-          {/* Title: SPORT BETS with gradient */}
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="relative"
-          >
-            <h2
-              className="font-splash text-6xl leading-[0.9] tracking-[0.12em] sm:text-7xl md:text-8xl"
-              style={{
-                background: "linear-gradient(135deg, #ec4899 0%, #a855f7 40%, #06b6d4 100%)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                filter: "drop-shadow(0 0 40px rgba(236,72,153,0.3)) drop-shadow(0 0 80px rgba(168,85,247,0.15))",
-              }}
-            >
-              SPORT BETS
-            </h2>
-          </motion.div>
-
-          {/* Decorative line */}
-          <motion.div
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 0.8, delay: 0.55, ease: [0.16, 1, 0.3, 1] }}
-            className="my-5 h-[1px] w-40 origin-center"
+          {/* Title: SPORT BETS */}
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="font-splash text-6xl leading-[0.9] tracking-[0.12em] sm:text-7xl md:text-8xl"
             style={{
-              background: "linear-gradient(90deg, transparent, rgba(168,85,247,0.6), rgba(236,72,153,0.6), transparent)",
+              background: "linear-gradient(135deg, #ec4899 0%, #a855f7 40%, #06b6d4 100%)",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              filter: "drop-shadow(0 0 30px rgba(236,72,153,0.25))",
             }}
-          />
-
-          {/* Tagline */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="font-display text-[11px] font-medium uppercase tracking-[0.5em] text-white/30 sm:text-xs"
           >
-            Premium Betting Tips
-          </motion.p>
+            SPORT BETS
+          </motion.h2>
 
-          {/* Spinning loader wheel */}
+          {/* Spinning loader */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.8 }}
-            className="relative mt-14"
+            transition={{ duration: 0.5, delay: 0.6 }}
+            className="relative mt-4"
           >
             <motion.svg
-              width="52"
-              height="52"
-              viewBox="0 0 52 52"
+              width="48"
+              height="48"
+              viewBox="0 0 48 48"
               animate={{ rotate: 360 }}
               transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
             >
-              <defs>
-                <linearGradient id="spinGrad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#ec4899" />
-                  <stop offset="50%" stopColor="#a855f7" />
-                  <stop offset="100%" stopColor="#06b6d4" />
-                </linearGradient>
-              </defs>
-              {/* Track */}
-              <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="3" />
-              {/* Animated arc */}
+              <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
               <circle
-                cx="26"
-                cy="26"
-                r="22"
+                cx="24"
+                cy="24"
+                r="20"
                 fill="none"
                 stroke="url(#spinGrad)"
                 strokeWidth="3"
                 strokeLinecap="round"
-                strokeDasharray="100 38"
+                strokeDasharray="90 36"
               />
+              <defs>
+                <linearGradient id="spinGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#ec4899" />
+                  <stop offset="100%" stopColor="#06b6d4" />
+                </linearGradient>
+              </defs>
             </motion.svg>
-            {/* Center dot */}
-            <motion.div
-              className="absolute top-1/2 left-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-400"
-              animate={{ scale: [1, 1.4, 1], opacity: [0.6, 1, 0.6] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-            />
           </motion.div>
         </div>
       </motion.div>
