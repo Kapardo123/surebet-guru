@@ -59,32 +59,17 @@ const TodayHotTip = () => {
     });
   }, [isPremium]);
 
-  const handleWatchAd = async () => {
-    try {
-      console.log('⏳ TodayHotTip: Rozpoczynanie wyświetlania reklamy...');
-      const gotReward = await showRewardedAd();
-      
-      console.log(`📊 TodayHotTip: Wynik reklamy: ${gotReward ? 'NAGRODA' : 'BRAK NAGRODY'}`);
-      
-      if (gotReward) {
-        console.log('✅ TodayHotTip: Tip odblokowany!');
-        
-        setIsUnlocked(true);
-        localStorage.setItem("hotTipUnlocked", "true");
-        
-        if (pick) {
-          const currentTipId = `${pick.homeTeam}-${pick.awayTeam}-${pick.kickoff}`;
-          localStorage.setItem("lastUnlockedTipId", currentTipId);
-          setLastUnlockedTipId(currentTipId);
-        }
-      } else {
-        console.log('⚠️ TodayHotTip: Reklama nie dokończona lub brak nagrody');
-        setTimeout(() => loadRewardedAd(), 1000);
+  const handleWatchAd = () => {
+    showRewardedAd().catch(() => {});
+    setTimeout(() => {
+      setIsUnlocked(true);
+      localStorage.setItem("hotTipUnlocked", "true");
+      if (pick) {
+        const currentTipId = `${pick.homeTeam}-${pick.awayTeam}-${pick.kickoff}`;
+        localStorage.setItem("lastUnlockedTipId", currentTipId);
+        setLastUnlockedTipId(currentTipId);
       }
-    } catch (err) {
-      console.error("❌ Błąd podczas wyświetlania reklamy:", err);
-      setTimeout(() => loadRewardedAd(), 2000);
-    }
+    }, 5000);
   };
 
   const data = pick || {
@@ -217,10 +202,8 @@ const TodayHotTip = () => {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
-          className="relative overflow-hidden rounded-2xl glass hover-lift gradient-border"
+          className="relative overflow-hidden rounded-2xl glass gradient-border p-6"
         >
-          {/* Animated top line - Hot gradient */}
-          <div className="h-[3px] w-full gradient-animated gradient-hot" />
           <div className="absolute inset-0 overflow-hidden">
             <motion.div
               className="absolute w-[400px] h-[400px] rounded-full blur-[100px] opacity-25"

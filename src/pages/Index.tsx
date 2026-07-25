@@ -2,15 +2,18 @@ import { useState, useEffect } from "react";
 import PageTransition from "@/components/PageTransition";
 import TipCard from "@/components/TipCard";
 import CouponCard from "@/components/CouponCard";
-import RecentWins from "@/components/RecentWins";
+import DailySpin from "@/components/DailySpin";
 import TodayHotTip from "@/components/TodayHotTip";
 import BottomNav from "@/components/BottomNav";
 import { loadTips } from "@/lib/tipsStorage";
 import { loadCoupons, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
 import { Tip } from "@/components/TipCard";
-import { Crown, TrendingUp, Receipt, LogIn, LogOut, Sparkles } from "lucide-react";
+import { Crown, TrendingUp, Receipt, LogIn, LogOut, Sparkles, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
 import PremiumBadge from "@/components/PremiumBadge";
+import FilterBar, { PremiumFilter } from "@/components/FilterBar";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -24,10 +27,14 @@ const Index = () => {
   const [tips, setTips] = useState<Tip[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [activeTab, setActiveTab] = useState("tips");
-  const [recentWins, setRecentWins] = useState<Tip[]>([]);
+  const [tipSport, setTipSport] = useState("All");
+  const [tipPremium, setTipPremium] = useState<PremiumFilter>("all");
+  const [couponPremium, setCouponPremium] = useState<PremiumFilter>("all");
   const [heroPick, setHeroPick] = useState<FeaturedPick | null>(null);
+  const [freeTip, setFreeTip] = useState<Tip | null>(null);
+  const [allLoadedTips, setAllLoadedTips] = useState<Tip[]>([]);
   const { active: isPremium, daysLeft: premiumDaysLeft, loading: premiumLoading } = usePremiumStatus();
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,36 +42,32 @@ const Index = () => {
       const loadedCoupons = await loadCoupons();
       const loadedHeroPick = await loadFeaturedPick();
 
-      const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
+      const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
       const now = Date.now();
 
       const visibleTips = loadedTips.filter(tip => {
-        if (tip.status === 'upcoming') return true;
+        if (tip.status === 'upcoming') {
+          const kickoffTime = new Date(tip.kickoff).getTime();
+          if (!isNaN(kickoffTime) && now - kickoffTime > TWELVE_HOURS_MS) return false;
+          return true;
+        }
         if (tip.status === 'won' && tip.wonAt) {
           const wonTime = new Date(tip.wonAt).getTime();
-          const hoursSinceWin = now - wonTime;
-          return hoursSinceWin < EIGHT_HOURS_MS;
+          return (now - wonTime) < TWELVE_HOURS_MS;
         }
         return false;
-      });
+      }).sort((a, b) => (a.kickoff || "").localeCompare(b.kickoff || ""));
 
       const visibleCoupons = loadedCoupons.filter(coupon => {
-        // 🎯 ZAWSZE POKAZUJ KUPONY - BEZ BLOKADY PREMIUM!
-        if (coupon.status === 'active' || coupon.status === 'pending') {
-          return true; // ← ZAWSZE POKAZUJ!
-        }
+        if (coupon.status === 'active' || coupon.status === 'pending') return true;
         if (coupon.status === 'won' && coupon.wonAt) {
-          const wonTime = new Date(coupon.wonAt).getTime();
-          const hoursSinceWin = now - wonTime;
-          return hoursSinceWin < EIGHT_HOURS_MS;
+          return (now - new Date(coupon.wonAt).getTime()) < TWELVE_HOURS_MS;
         }
         return false;
       });
 
-      const allWonTips = loadedTips.filter(tip => tip.status === 'won');
-
       setTips(visibleTips);
-      setRecentWins(allWonTips);
+      setAllLoadedTips(loadedTips);
       setCoupons(visibleCoupons);
       setHeroPick(loadedHeroPick);
     };
@@ -72,43 +75,65 @@ const Index = () => {
     fetchData();
   }, [isPremium]);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-purple-950/5 to-pink-950/5 pb-20 md:pb-0 relative overflow-hidden">
-      {/* Synthwave glow effects */}
-      <div className="fixed top-0 left-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-10 pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)', transform: 'translate(-30%, -30%)' }} />
-      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-10 pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(30%, 30%)' }} />
+  const tipSports = Array.from(
+    new Set(tips.map((t) => t.sport).filter(Boolean) as string[])
+  ).sort();
 
-      {/* Modern Glass Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border/30 shadow-lg shadow-black/5">
-        <div className="container max-w-6xl mx-auto px-3 md:px-4 py-3 md:py-4 flex items-center justify-between">
+  const filteredTips = tips.filter((tip) => {
+    if (tipSport !== "All" && tip.sport !== tipSport) return false;
+    if (tipPremium === "premium" && !tip.isPremium) return false;
+    if (tipPremium === "free" && tip.isPremium) return false;
+    return true;
+  });
+
+  const filteredCoupons = coupons.filter((coupon) => {
+    if (couponPremium === "premium" && !coupon.isPremium) return false;
+    if (couponPremium === "free" && coupon.isPremium) return false;
+    return true;
+  });
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-hidden">
+      {/* Synthwave glow effects */}
+      <div className="fixed top-0 left-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(-30%, -30%)' }} />
+      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', transform: 'translate(30%, 30%)' }} />
+      <div className="fixed top-1/2 left-1/2 w-[400px] h-[400px] rounded-full blur-[100px] opacity-10 pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)', transform: 'translate(-50%, -50%)' }} />
+
+      {/* Modern Glass Header - Synthwave Style */}
+      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-[#0a0015]/80 via-[#150025]/80 to-[#0a0020]/80 border-b border-purple-500/20 shadow-xl shadow-black/30">
+        <div className="container max-w-6xl mx-auto px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2.5 md:gap-3">
             <Logo />
           </div>
           
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-2 md:gap-2.5">
             <PremiumBadge active={isPremium} daysLeft={premiumDaysLeft} loading={premiumLoading} />
             
-            <div className="hidden md:flex items-center gap-2.5">
+            <div className="hidden md:flex items-center gap-2">
               {!isPremium && (
                 <Link to="/premium">
                   <Button size="sm" 
-                          className="gap-1.5 md:gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold uppercase tracking-wider text-xs shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105 rounded-full px-4 md:px-5 py-2 md:py-2.5 border border-purple-400/20">
-                    <Crown className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    Go Premium
+                          className="gap-1.5 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 hover:from-pink-400 hover:via-purple-400 hover:to-cyan-400 text-white font-bold uppercase tracking-wider text-[11px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-all duration-300 hover:scale-105 rounded-full px-4 py-2 border border-white/10 relative overflow-hidden group">
+                    <span className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <span className="relative flex items-center gap-1.5">
+                      <Crown className="w-3.5 h-3.5" />
+                      Go Premium
+                    </span>
                   </Button>
                 </Link>
               )}
               
               {user ? (
-                <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200 rounded-full px-3 md:px-4" onClick={signOut}>
+                <Button variant="ghost" size="sm" className="gap-2 text-purple-300/70 hover:text-pink-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-pink-500/30" onClick={signOut}>
                   <LogOut className="w-4 h-4" />
                   <span className="text-xs font-medium hidden lg:inline">{user.email?.split("@")[0]}</span>
                 </Button>
               ) : (
                 <Link to="/auth">
-                  <Button variant="outline" size="sm" className="gap-2 text-xs font-medium border-border/50 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all duration-200 rounded-full px-3 md:px-4">
+                  <Button variant="outline" size="sm" className="gap-2 text-xs font-medium border-purple-500/30 text-purple-300 hover:border-cyan-500/50 hover:text-cyan-400 hover:bg-cyan-500/5 transition-all duration-200 rounded-full px-3 md:px-3.5 shadow-sm">
                     <LogIn className="w-4 h-4" />
                     Sign In
                   </Button>
@@ -124,26 +149,20 @@ const Index = () => {
         {/* Hero Section with Today's Hot Tip */}
         <ScrollReveal>
           <div className="space-y-3 mb-8">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10 px-4 py-2 rounded-full border border-purple-500/20">
-                <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
-                <span className="text-xs font-bold uppercase tracking-widest text-purple-400">Featured</span>
-              </div>
-            </div>
             <TodayHotTip />
           </div>
         </ScrollReveal>
 
         {/* Modern Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="bg-muted/40 backdrop-blur-sm border border-border/30 p-1.5 w-full md:w-auto rounded-2xl shadow-lg shadow-black/5">
+          <TabsList className="bg-white/5 backdrop-blur-xl border border-purple-500/20 p-1.5 w-full md:w-auto rounded-2xl shadow-xl shadow-black/20">
             <TabsTrigger value="tips" 
-                        className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 rounded-xl py-3 transition-all duration-300">
+                        className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:via-purple-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-pink-500/30 rounded-xl py-3 transition-all duration-300 text-purple-300/70 hover:text-purple-200">
               <TrendingUp className="w-4 h-4" />
               Single Tips
             </TabsTrigger>
             <TabsTrigger value="coupons" 
-                        className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 rounded-xl py-3 transition-all duration-300">
+                        className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:via-purple-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-pink-500/30 rounded-xl py-3 transition-all duration-300 text-purple-300/70 hover:text-purple-200">
               <Receipt className="w-4 h-4" />
               Coupons
             </TabsTrigger>
@@ -159,19 +178,34 @@ const Index = () => {
                 </h2>
               </div>
               <span className="text-xs text-muted-foreground font-display uppercase tracking-wider bg-gradient-to-r from-purple-500/10 to-pink-500/10 px-4 py-2 rounded-full border border-purple-500/20 font-medium">
-                {tips.length} picks
+                {filteredTips.length} picks
               </span>
             </div>
 
+            {tipSports.length > 0 && (
+              <div className="bg-white/3 backdrop-blur-xl border border-purple-500/15 rounded-2xl p-3 md:p-4 shadow-lg shadow-black/10">
+                <FilterBar
+                  sports={tipSports}
+                  activeSport={tipSport}
+                  onSportChange={setTipSport}
+                  activePremium={tipPremium}
+                  onPremiumChange={setTipPremium}
+                  totalItems={tips.length}
+                  filteredItems={filteredTips.length}
+                  accent="purple"
+                />
+              </div>
+            )}
+
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2">
-              {tips.map((tip, i) => (
+              {filteredTips.map((tip, i) => (
                 <ScrollReveal key={tip.id} delay={i * 0.08}>
                   <TipCard tip={tip} userIsPremium={isPremium} />
                 </ScrollReveal>
               ))}
             </div>
 
-            {tips.length === 0 && (
+            {filteredTips.length === 0 && (
               <div className="text-center py-20 md:py-28 space-y-4">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 mx-auto flex items-center justify-center border border-purple-500/20">
                   <TrendingUp className="w-9 h-9 text-purple-400" />
@@ -196,19 +230,31 @@ const Index = () => {
                 </h2>
               </div>
               <span className="text-xs text-muted-foreground font-display uppercase tracking-wider bg-gradient-to-r from-blue-500/10 to-cyan-500/10 px-4 py-2 rounded-full border border-blue-500/20 font-medium">
-                {coupons.length} coupons
+                {filteredCoupons.length} coupons
               </span>
             </div>
 
+            {coupons.length > 0 && (
+              <div className="bg-white/3 backdrop-blur-xl border border-blue-500/15 rounded-2xl p-3 md:p-4 shadow-lg shadow-black/10">
+                <FilterBar
+                  activePremium={couponPremium}
+                  onPremiumChange={setCouponPremium}
+                  totalItems={coupons.length}
+                  filteredItems={filteredCoupons.length}
+                  accent="blue"
+                />
+              </div>
+            )}
+
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2">
-              {coupons.map((coupon, i) => (
+              {filteredCoupons.map((coupon, i) => (
                 <ScrollReveal key={coupon.id} delay={i * 0.08}>
                   <CouponCard coupon={coupon} userIsPremium={isPremium} />
                 </ScrollReveal>
               ))}
             </div>
 
-            {coupons.length === 0 && (
+            {filteredCoupons.length === 0 && (
               <div className="text-center py-20 md:py-28 space-y-4">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 mx-auto flex items-center justify-center border border-blue-500/20">
                   <Receipt className="w-9 h-9 text-blue-400" />
@@ -224,12 +270,27 @@ const Index = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Recent Wins Section */}
-        {(recentWins.length > 0 || coupons.some(c => c.status === 'won') || heroPick?.status === 'won') && (
-          <ScrollReveal>
-            <RecentWins tips={recentWins} coupons={coupons} heroPick={heroPick} />
-          </ScrollReveal>
-        )}
+        {/* Daily Spin - spin requires login */}
+        <ScrollReveal>
+          <DailySpin
+            isLoggedIn={!!user}
+            userId={user?.id}
+            onFreeTip={() => {
+              const premiumTips = allLoadedTips.filter((t) => t.isPremium && t.status === "upcoming");
+              if (premiumTips.length > 0) {
+                const random = premiumTips[Math.floor(Math.random() * premiumTips.length)];
+                setFreeTip(random);
+              } else {
+                // Fallback: show any upcoming tip
+                const anyTips = allLoadedTips.filter((t) => t.status === "upcoming");
+                if (anyTips.length > 0) {
+                  const random = anyTips[Math.floor(Math.random() * anyTips.length)];
+                  setFreeTip(random);
+                }
+              }
+            }}
+          />
+        </ScrollReveal>
       </main>
 
       {/* Modern Footer */}
@@ -255,13 +316,107 @@ const Index = () => {
           
           <div className="pt-3 border-t border-border/20">
             <p className="text-xs text-muted-foreground/60 font-medium">
-              © 2026 SureBet Guru. Built with 💜 for winners.
+              © 2026 Great Sport Bets. Built with 💜 for winners.
             </p>
           </div>
         </div>
       </footer>
 
+      {/* First-visit login prompt - shown once */}
+      {!user && !authLoading && !localStorage.getItem("gsb_spin_prompt_dismissed") && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-gradient-to-br from-purple-950 via-pink-950 to-background border border-pink-500/30 rounded-2xl p-6 max-w-xs w-full shadow-2xl shadow-pink-500/10 text-center space-y-4"
+          >
+            <span className="text-5xl">🎰</span>
+            <div>
+              <h3 className="font-display text-lg font-bold text-white">Win Free Tips!</h3>
+              <p className="text-xs text-muted-foreground mt-1">Log in or create an account to spin the wheel and win premium tips every day.</p>
+            </div>
+            <div className="space-y-2">
+              <Link to="/auth">
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full py-3 rounded-full font-bold text-sm bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-purple-500/30"
+                >
+                  <LogIn className="w-4 h-4 inline mr-2" />
+                  Log in &amp; Spin
+                </motion.button>
+              </Link>
+              <button
+                onClick={() => {
+                  try { localStorage.setItem("gsb_spin_prompt_dismissed", "1"); } catch {}
+                  // Force re-render
+                  window.location.reload();
+                }}
+                className="text-[10px] text-muted-foreground hover:text-white transition-colors"
+              >
+                Maybe later
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       <BottomNav onTabChange={setActiveTab} />
+
+      {/* Free Tip Modal */}
+      {freeTip && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={() => setFreeTip(null)}>
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-gradient-to-br from-purple-950 via-pink-950 to-background border border-pink-500/40 rounded-2xl p-5 max-w-sm w-full shadow-2xl shadow-pink-500/20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center mb-4">
+              <span className="text-4xl">🎁</span>
+              <h3 className="font-display text-lg font-bold text-pink-400 mt-2">Free Premium Tip!</h3>
+              <p className="text-xs text-muted-foreground">You won a premium tip from the wheel!</p>
+            </div>
+            <div className="bg-pink-500/5 border border-pink-500/20 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-[9px] text-pink-400 border-pink-500/30">{freeTip.sport}</Badge>
+                <span className="text-[10px] text-muted-foreground">{freeTip.league}</span>
+              </div>
+              <div className="flex items-center justify-center gap-4">
+                <span className="font-bold text-sm">{freeTip.homeTeam}</span>
+                <span className="text-xs text-muted-foreground">vs</span>
+                <span className="font-bold text-sm">{freeTip.awayTeam}</span>
+              </div>
+              <div className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2">
+                <span className="text-xs font-semibold">{freeTip.prediction}</span>
+                <span className="text-sm font-black text-pink-400">@ {freeTip.odds.toFixed(2)}</span>
+              </div>
+              {freeTip.description && (
+                <p className="text-[11px] text-muted-foreground leading-relaxed italic border-t border-border/20 pt-2 mt-1">
+                  "{freeTip.description}"
+                </p>
+              )}
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Clock className="w-3 h-3" />
+                {(() => {
+                  try {
+                    const d = new Date(freeTip.kickoff);
+                    return !isNaN(d.getTime())
+                      ? d.toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                      : String(freeTip.kickoff);
+                  } catch { return String(freeTip.kickoff); }
+                })()}
+              </div>
+            </div>
+            <button
+              onClick={() => setFreeTip(null)}
+              className="w-full mt-4 py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:scale-105 transition-all"
+            >
+              Nice, thanks! 🎉
+            </button>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

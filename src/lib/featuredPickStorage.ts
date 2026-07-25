@@ -13,8 +13,8 @@ export interface FeaturedPick {
   homeTeamLogo?: string | null;
   awayTeamLogo?: string | null;
   description?: string | null;
-  likesCount?: number;
-  wonAt?: string | null; // ISO timestamp kiedy typ wygrał
+  wonAt?: string | null;
+  sport?: string | null;
 }
 export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
   const { data, error } = await supabase
@@ -43,18 +43,14 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
     homeTeamLogo: data.home_team_logo,
     awayTeamLogo: data.away_team_logo,
     description: data.description,
-    likesCount: data.likes_count || 0,
-    wonAt: data.won_at || null
+    wonAt: data.won_at || null,
+    sport: data.sport || null
   };
 };
 
 export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
-  // Automatycznie ustawiaj won_at gdy status = "won"
   const wonAt = pick.status === 'won' ? new Date().toISOString() : null;
 
-  // We always INSERT a new record.
-  // This ensures the latest "Save" is always the one with the newest 'created_at'.
-  // loadFeaturedPick always fetches the newest record, so this guarantees the UI updates correctly.
   const dataToSave: any = {
     league: pick.league,
     kickoff: pick.kickoff,
@@ -67,9 +63,13 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
     home_team_logo: pick.homeTeamLogo,
     away_team_logo: pick.awayTeamLogo,
     description: pick.description,
-    likes_count: pick.likesCount || 0,
-    won_at: wonAt
+    won_at: wonAt,
   };
+
+  // Tylko dodaj sport jezeli pole zostalo juz dodane do bazy (unika bledu PGRST204)
+  if (pick.sport) {
+    dataToSave.sport = pick.sport;
+  }
 
   const { error } = await supabase
     .from('featured_picks')
@@ -77,28 +77,18 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
 
   if (error) {
     console.error("Supabase error saving featured pick:", error);
+    // Jesli kolumna sport nie istnieje, sprobuj zapisac bez niej
+    if (error.code === 'PGRST204' || error.message?.includes('sport')) {
+      console.warn("Kolumna 'sport' nie istnieje w bazie - probuje zapisac bez niej...");
+      const retryData = { ...dataToSave };
+      delete retryData.sport;
+      const { error: retryError } = await supabase.from('featured_picks').insert([retryData]);
+      if (retryError) throw new Error(retryError.message || "Unknown Supabase error");
+      return;
+    }
     if (error.code === '42703' || error.message?.includes('column "status"')) {
       throw new Error("SQL_COLUMN_MISSING: status");
     }
     throw new Error(error.message || "Unknown Supabase error");
-  }
-};
-
-export const incrementFeaturedReaction = async (pickId: number, type: 'like') => {
-  const column = 'likes_count';
-  
-  // Use RPC for atomic increment
-  const { error } = await supabase.rpc('increment_featured_reaction', { 
-    pick_id: pickId, 
-    reaction_type: column 
-  });
-
-  if (error) {
-    // Fallback if RPC doesn't exist yet
-    console.warn("RPC increment_featured_reaction failed, trying manual update:", error);
-    const { data } = await supabase.from('featured_picks').select(column).eq('id', pickId).single();
-    if (data) {
-      await supabase.from('featured_picks').update({ [column]: (data as any)[column] + 1 }).eq('id', pickId);
-    }
   }
 };

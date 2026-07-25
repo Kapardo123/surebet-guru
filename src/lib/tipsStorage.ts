@@ -295,20 +295,3 @@ export const updateTip = async (updatedTip: Tip & { isPublished?: boolean }) => 
   console.log('✅ Tip updated successfully:', updatedTip.id);
   return true;
 };
-
-export const incrementReaction = async (tipId: number, type: 'like') => {
-  const column = 'likes_count';
-  
-  const { error } = await supabase.rpc('increment_tip_reaction', {
-    tip_id: tipId,
-    reaction_type: column
-  });
-
-  if (error) {
-    console.warn("RPC increment_tip_reaction failed, trying manual update:", error);
-    const { data } = await supabase.from('tips').select(column).eq('id', tipId).single();
-    if (data) {
-      await supabase.from('tips').update({ [column]: (data as any)[column] + 1 }).eq('id', tipId);
-    }
-  }
-};

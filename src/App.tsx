@@ -1,24 +1,24 @@
 import { Toaster } from "@/components/ui/toaster";
-// Deployment trigger: fix likes synchronization
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
-import Admin from "./pages/Admin";
-import Premium from "./pages/Premium";
-import Coupons from "./pages/Coupons";
-import Auth from "./pages/Auth";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
-import DataDeletion from "./pages/DataDeletion";
 import NotFound from "./pages/NotFound";
 import SplashScreen from "./components/SplashScreen";
 import UpdateRequiredModal from "./components/UpdateRequiredModal";
 import { useAppUpdate } from "@/hooks/useAppUpdate";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { initRevenueCat } from "@/integrations/revenuecat";
+
+const Admin = lazy(() => import("./pages/Admin"));
+const Premium = lazy(() => import("./pages/Premium"));
+const Coupons = lazy(() => import("./pages/Coupons"));
+const Auth = lazy(() => import("./pages/Auth"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const DataDeletion = lazy(() => import("./pages/DataDeletion"));
 
 const queryClient = new QueryClient();
 
@@ -33,19 +33,27 @@ window.onerror = (msg, url, line, col, err) => {
   return false;
 };
 
+const PageLoader = () => (
+  <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] flex items-center justify-center">
+    <div className="w-10 h-10 border-4 border-purple-500/30 border-t-pink-500 rounded-full animate-spin" />
+  </div>
+);
+
 const AnimatedRoutes = () => {
   return (
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/admin" element={<Admin />} />
-      <Route path="/premium" element={<Premium />} />
-      <Route path="/coupons" element={<Coupons />} />
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/privacy" element={<PrivacyPolicy />} />
-      <Route path="/terms" element={<TermsOfService />} />
-      <Route path="/deletion" element={<DataDeletion />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/premium" element={<Premium />} />
+        <Route path="/coupons" element={<Coupons />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/deletion" element={<DataDeletion />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 };
 

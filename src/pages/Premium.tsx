@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
-  Crown, ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, 
+  ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, 
   LogIn, LogOut, Bell, Smartphone, Check, Clock, Globe, X, Home
 } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
@@ -137,23 +137,34 @@ export default function Premium() {
 
   return (
     <PageTransition>
-    <div className="min-h-screen bg-background text-foreground pb-12">
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
-        <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div onClick={handleBack} className="cursor-pointer">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-hidden">
+      {/* Synthwave glow effects */}
+      <div className="fixed top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)', transform: 'translate(-30%, -30%)' }} />
+      <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(30%, 30%)' }} />
+
+      {/* Modern Glass Header - Synthwave Style */}
+      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-[#0a0015]/80 via-[#150025]/80 to-[#0a0020]/80 border-b border-purple-500/20 shadow-xl shadow-black/30">
+        <div className="container max-w-6xl mx-auto px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between">
+          <div onClick={handleBack} className="cursor-pointer flex items-center gap-2.5 md:gap-3">
             <Logo />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 md:gap-2.5">
             {user ? (
-              <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground">
+              <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 text-purple-300/70 hover:text-pink-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-pink-500/30">
                 <LogOut className="w-4 h-4" />
+                <span className="text-xs font-medium hidden lg:inline">Logout</span>
               </Button>
             ) : (
               <Link to="/auth?redirect=/premium">
-                <Button variant="ghost" size="sm" className="font-display uppercase tracking-wider text-[10px]">Sign In</Button>
+                <Button variant="outline" size="sm" className="gap-2 text-xs font-medium border-purple-500/30 text-purple-300 hover:border-cyan-500/50 hover:text-cyan-400 hover:bg-cyan-500/5 transition-all duration-200 rounded-full px-3 md:px-3.5 shadow-sm">
+                  <LogIn className="w-4 h-4" />
+                  Sign In
+                </Button>
               </Link>
             )}
-            <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1.5 text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1.5 text-purple-300/70 hover:text-cyan-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-cyan-500/30">
               <Home className="w-4 h-4" />
               Home
             </Button>
@@ -161,20 +172,27 @@ export default function Premium() {
         </div>
       </header>
 
-      <main className="container max-w-4xl mx-auto px-4 py-8 space-y-12">
-        {/* Hero Section */}
-        <section className="text-center space-y-6 py-4">
-          <div className="relative inline-block">
-            <div className="absolute inset-0 bg-accent/20 blur-3xl rounded-full" />
-            <Crown className="w-16 h-16 text-accent mx-auto relative drop-shadow-[0_0_15px_rgba(255,215,0,0.5)]" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase">
-              GSB <span className="text-accent">Premium</span>
+      <main className="container max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-12 relative z-10">
+        {/* Hero Section - Synthwave Style */}
+        <section className="text-center space-y-6 py-8">
+          <div className="space-y-3">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter uppercase">
+              GSB <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400">Premium</span>
             </h1>
-            <p className="text-muted-foreground text-sm md:text-base max-w-md mx-auto">
+            <p className="text-purple-300/70 text-sm md:text-base max-w-lg mx-auto">
               Unlock the full potential of your betting with expert analysis and real-time picks.
             </p>
+          </div>
+          {/* Decorative line */}
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <div className="h-[1px] w-16 bg-gradient-to-r from-transparent to-pink-500/40" />
+            <div className="flex gap-1.5">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" 
+                     style={{ animationDelay: `${i * 0.2}s` }} />
+              ))}
+            </div>
+            <div className="h-[1px] w-16 bg-gradient-to-l from-transparent to-cyan-500/40" />
           </div>
         </section>
 

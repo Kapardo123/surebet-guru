@@ -1,0 +1,275 @@
+[
+ {
+  "home": "Red Bull New York II",
+  "away": "Crown Legacy FC",
+  "dateUtc": "2026-07-24T23:00:00Z",
+  "league": "USA - MLS Next Pro",
+  "status": "settled"
+ },
+ {
+  "home": "Dandenong Thunder FC U23",
+  "away": "Altona Magic SC U23",
+  "dateUtc": "2026-07-25T04:30:00Z",
+  "league": "Australia - U23 Victoria NPL",
+  "status": "settled"
+ },
+ {
+  "home": "Northern Tigers",
+  "away": "Blacktown Spartans",
+  "dateUtc": "2026-07-25T06:30:00Z",
+  "league": "Australia - NSW League One",
+  "status": "settled"
+ },
+ {
+  "home": "Dandenong Thunder",
+  "away": "Altona Magic SC",
+  "dateUtc": "2026-07-25T07:00:00Z",
+  "league": "Australia - Victoria NPL",
+  "status": "settled"
+ },
+ {
+  "home": "SWQ Thunder FC",
+  "away": "Caloundra FC",
+  "dateUtc": "2026-07-25T08:00:00Z",
+  "league": "Australia - Queensland Premier League 2",
+  "status": "settled"
+ },
+ {
+  "home": "Northern Tigers FC U20",
+  "away": "Blacktown Spartans FC U20",
+  "dateUtc": "2026-07-25T08:30:00Z",
+  "league": "Australia - U20 NSW League One",
+  "status": "settled"
+ },
+ {
+  "home": "FC Sparta Brno",
+  "away": "SFK Vrchovina",
+  "dateUtc": "2026-07-25T08:30:00Z",
+  "league": "Czechia - Czech Cup",
+  "status": "settled"
+ },
+ {
+  "home": "Nyiregyhaza Spartacus FC II",
+  "away": "Diosgyori Vtk II",
+  "dateUtc": "2026-07-25T09:00:00Z",
+  "league": "Hungary - NB III, Group North East",
+  "status": "settled"
+ },
+ {
+  "home": "Podhale Nowy Targ",
+  "away": "Slask II Wroclaw",
+  "dateUtc": "2026-07-25T09:15:00Z",
+  "league": "Poland - II Liga",
+  "status": "settled"
+ },
+ {
+  "home": "RB Leipzig",
+  "away": "FC Ingolstadt 04",
+  "dateUtc": "2026-07-25T09:30:00Z",
+  "league": "International Clubs - Club Friendly Games",
+  "status": "settled"
+ },
+ {
+  "home": "FC Dinamo Moscow",
+  "away": "Spartak Moscow",
+  "dateUtc": "2026-07-25T10:00:00Z",
+  "league": "Russia - Russian Cup, Women",
+  "status": "settled"
+ },
+ {
+  "home": "FC Lokomotiv Kyiv",
+  "away": "FC Chernigiv",
+  "dateUtc": "2026-07-25T11:00:00Z",
+  "league": "Ukraine - Persha Liga",
+  "status": "settled"
+ },
+ {
+  "home": "FC Midtjylland",
+  "away": "Broendby IF",
+  "dateUtc": "2026-07-25T11:00:00Z",
+  "league": "Denmark - A Liga, Women",
+  "status": "settled"
+ },
+ {
+  "home": "Asa Aarhus",
+  "away": "AGF Aarhus",
+  "dateUtc": "2026-07-25T11:00:00Z",
+  "league": "Denmark - A Liga, Women",
+  "status": "settled"
+ },
+ {
+  "home": "SCR Altach",
+  "away": "FC Luzern",
+  "dateUtc": "2026-07-25T12:00:00Z",
+  "league": "International Clubs - Club Friendly Games, Women",
+  "status": "settled"
+ },
+ {
+  "home": "SV Zulte Waregem",
+  "away": "Sparta Rotterdam",
+  "dateUtc": "2026-07-25T12:30:00Z",
+  "league": "International Clubs - Club Friendly Games",
+  "status": "settled"
+ },
+ {
+  "home": "Jagiellonia Bialystok",
+  "away": "Korona Kielce",
+  "dateUtc": "2026-07-25T12:45:00Z",
+  "league": "Poland - Ekstraklasa",
+  "status": "settled"
+ },
+ {
+  "home": "KS Lechia Gdansk",
+  "away": "Pogon Grodzisk Mazowiecki",
+  "dateUtc": "2026-07-25T13:30:00Z",
+  "league": "Poland - 1. Liga",
+  "status": "settled"
+ },
+ {
+  "home": "Pogon Siedlce",
+  "away": "LKS Lodz",
+  "dateUtc": "2026-07-25T13:30:00Z",
+  "league": "Poland - 1. Liga",
+  "status": "settled"
+ },
+ {
+  "home": "Blyth Spartans AFC",
+  "away": "Stockton Town",
+  "dateUtc": "2026-07-25T14:00:00Z",
+  "league": "International Clubs - Club Friendly Games",
+  "status": "pending"
+ },
+ {
+  "home": "Shumbrat Saransk",
+  "away": "Spartak Tambov",
+  "dateUtc": "2026-07-25T14:00:00Z",
+  "league": "Russia - 2. Liga, Division B, Group 3",
+  "status": "settled"
+ },
+ {
+  "home": "FC Spartak Nalchik",
+  "away": "FC Rubin Yalta",
+  "dateUtc": "2026-07-25T14:00:00Z",
+  "league": "Russia - 2. Liga, Division B, Group 1",
+  "status": "settled"
+ },
+ {
+  "home": "Montrose FC",
+  "away": "Spartans FC",
+  "dateUtc": "2026-07-25T14:00:00Z",
+  "league": "Scotland - League Cup, Group B",
+  "status": "settled"
+ },
+ {
+  "home": "ZFK Krasnodar",
+  "away": "Lokomotiv Moscow",
+  "dateUtc": "2026-07-25T15:00:00Z",
+  "league": "Russia - Russian Cup, Women",
+  "status": "settled"
+ },
+ {
+  "home": "Gornik Zabrze",
+  "away": "WKS Slask Wroclaw",
+  "dateUtc": "2026-07-25T15:30:00Z",
+  "league": "Poland - Ekstraklasa",
+  "status": "settled"
+ },
+ {
+  "home": "FC Solothurn",
+  "away": "FC Luzern",
+  "dateUtc": "2026-07-25T16:00:00Z",
+  "league": "International Clubs - Club Friendly Games",
+  "status": "settled"
+ },
+ {
+  "home": "OKS Swit Szczecin",
+  "away": "Gornik Leczna",
+  "dateUtc": "2026-07-25T16:00:00Z",
+  "league": "Poland - II Liga",
+  "status": "settled"
+ },
+ {
+  "home": "FK Spartak Subotica",
+  "away": "OFK Vrsac",
+  "dateUtc": "2026-07-25T16:00:00Z",
+  "league": "International Clubs - Club Friendly Games",
+  "status": "settled"
+ },
+ {
+  "home": "FC Tekstilshchik Ivanovo",
+  "away": "Spartak Kostroma",
+  "dateUtc": "2026-07-25T16:00:00Z",
+  "league": "Russia - 1. Liga",
+  "status": "settled"
+ },
+ {
+  "home": "FC Spartak Trnava",
+  "away": "MFK Skalica",
+  "dateUtc": "2026-07-25T16:00:00Z",
+  "league": "Slovakia - Superliga",
+  "status": "settled"
+ },
+ {
+  "home": "AGF Aarhus",
+  "away": "Broendby IF",
+  "dateUtc": "2026-07-25T16:00:00Z",
+  "league": "Denmark - Superligaen",
+  "status": "settled"
+ },
+ {
+  "home": "NK Lokomotiva Zagreb",
+  "away": "SK Sturm Graz II",
+  "dateUtc": "2026-07-25T16:00:00Z",
+  "league": "International Clubs - Club Friendly Games",
+  "status": "settled"
+ },
+ {
+  "home": "FC Yantra Gabrovo",
+  "away": "PFC Spartak Pleven",
+  "dateUtc": "2026-07-25T17:00:00Z",
+  "league": "Bulgaria - Vtora Liga",
+  "status": "settled"
+ },
+ {
+  "home": "Spartak Myjava",
+  "away": "Mgarr United",
+  "dateUtc": "2026-07-25T17:00:00Z",
+  "league": "International Clubs - UEFA Champions League, Women, Qualification",
+  "status": "settled"
+ },
+ {
+  "home": "FK Spartak Moscow",
+  "away": "Rodina Moscow",
+  "dateUtc": "2026-07-25T17:45:00Z",
+  "league": "Russia - Premier League",
+  "status": "live"
+ },
+ {
+  "home": "FC Zbrojovka Brno",
+  "away": "Sparta Prague",
+  "dateUtc": "2026-07-25T18:00:00Z",
+  "league": "Czechia - 1. Liga",
+  "status": "live"
+ },
+ {
+  "home": "KKS Lech Poznan",
+  "away": "KS Cracovia Krakow",
+  "dateUtc": "2026-07-25T18:15:00Z",
+  "league": "Poland - Ekstraklasa",
+  "status": "live"
+ },
+ {
+  "home": "FC Lokomotiv 1929 Sofia",
+  "away": "PFC Levski Sofia",
+  "dateUtc": "2026-07-25T18:15:00Z",
+  "league": "Bulgaria - Parva Liga",
+  "status": "live"
+ },
+ {
+  "home": "FC Luzern",
+  "away": "FC Thun",
+  "dateUtc": "2026-07-25T18:30:00Z",
+  "league": "Switzerland - Super League",
+  "status": "live"
+ }
+]

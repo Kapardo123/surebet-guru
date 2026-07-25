@@ -1,64 +1,83 @@
 import { useState, useEffect } from "react";
-import { useTeamLogo } from "@/hooks/useTeamLogo";
-import { Shield, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useTeamLogo, getCachedTeamLogo, setCachedTeamLogo } from "@/hooks/useTeamLogo";
+import { Shield, Loader2, Circle } from "lucide-react";
+import { MdSportsTennis } from "react-icons/md";
 
 interface TeamLogoProps {
   teamName: string;
   size?: number;
   logoUrl?: string | null;
-  teamId?: number;
   sport?: string;
 }
 
-const TennisRacket = ({ size }: { size: number }) => (
-  <svg
-    width={size * 0.6}
-    height={size * 0.6}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="text-foreground/70"
-  >
-    <path d="M17.5 6.5a4.95 4.95 0 1 0-7 7" />
-    <path d="M20 9c0-3.87-3.13-7-7-7s-7 3.13-7 7c0 1.94.79 3.7 2.06 4.97L4 18l3 3 4.03-4.03A6.97 6.97 0 0 0 16 17c3.87 0 7-3.13 7-7h-3z" />
-    <circle cx="14" cy="8" r="2.5" />
-  </svg>
-);
+export const SportIcon = ({ sport, size = 12 }: { sport: string; size?: number }) => {
+  const isTennis = sport?.toLowerCase().includes("tennis");
+  if (isTennis)
+    return (
+      <MdSportsTennis
+        size={size * 1.5}
+        className="text-yellow-500"
+      />
+    );
+  return null;
+};
 
-const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl, teamId, sport }: TeamLogoProps) => {
+const getInitials = (name: string) => {
+  if (!name) return "??";
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+};
+
+const TeamLogo = ({
+  teamName,
+  size = 28,
+  logoUrl: propLogoUrl,
+  sport,
+}: TeamLogoProps) => {
   const [error, setError] = useState(false);
-  const { logoUrl: hookLogoUrl, loading: hookLoading } = useTeamLogo(propLogoUrl ? "" : teamName, teamId);
-  const finalLogoUrl = propLogoUrl || hookLogoUrl;
-  
-  const isTennis = sport?.toLowerCase().includes('tennis');
+  const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
+
+  const { logoUrl: hookLogoUrl, loading: hookLoading } = useTeamLogo(
+    propLogoUrl ? "" : teamName,
+  );
+
+  useEffect(() => {
+    if (propLogoUrl) {
+      setResolvedUrl(propLogoUrl);
+      setCachedTeamLogo(teamName, propLogoUrl);
+    } else {
+      const cached = getCachedTeamLogo(teamName);
+      if (cached) {
+        setResolvedUrl(cached);
+      } else if (hookLogoUrl) {
+        setResolvedUrl(hookLogoUrl);
+      }
+    }
+    setError(false);
+  }, [propLogoUrl, hookLogoUrl, teamName]);
+
+  const isTennis = sport?.toLowerCase().includes("tennis");
 
   if (isTennis) {
     return (
-      <div 
-        className="rounded-full bg-gradient-to-br from-emerald-500/15 to-green-600/10 border border-emerald-500/25 flex items-center justify-center flex-shrink-0"
+      <div
+        className="rounded-full bg-gradient-to-br from-yellow-400/20 to-amber-500/10 border border-yellow-400/30 flex items-center justify-center flex-shrink-0"
         style={{ width: size, height: size }}
       >
-        <TennisRacket size={size} />
+        <MdSportsTennis
+          size={size * 0.6}
+          className="text-yellow-500"
+        />
       </div>
     );
   }
 
-  const getInitials = (name: string) => {
-    if (!name) return "??";
-    return name
-      .split(' ')
-      .filter(Boolean)
-      .map(word => word[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
-  };
-
-  if (hookLoading && !propLogoUrl) {
+  if (hookLoading && !propLogoUrl && !resolvedUrl) {
     return (
       <div
         className="rounded-full bg-muted animate-pulse flex-shrink-0 flex items-center justify-center"
@@ -69,9 +88,9 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl, teamId, sport }: 
     );
   }
 
-  if (!finalLogoUrl || error) {
+  if (!resolvedUrl || error) {
     return (
-      <div 
+      <div
         className="rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold flex-shrink-0 overflow-hidden"
         style={{ width: size, height: size, fontSize: size * 0.4 }}
       >
@@ -82,7 +101,7 @@ const TeamLogo = ({ teamName, size = 28, logoUrl: propLogoUrl, teamId, sport }: 
 
   return (
     <img
-      src={finalLogoUrl}
+      src={resolvedUrl}
       alt={`${teamName} logo`}
       className="object-contain flex-shrink-0"
       style={{ width: size, height: size }}

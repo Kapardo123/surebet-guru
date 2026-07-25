@@ -74,10 +74,10 @@ export const useAdMob = () => {
       let didReceiveReward = false;
 
       console.log('⏳ AdMob: Rejestrowanie listenera nagrody...');
-      
+
       const rewardPromise = new Promise<boolean>((resolve) => {
         let resolved = false;
-        
+
         const cleanup = async () => {
           try {
             await handler.remove();
@@ -87,52 +87,46 @@ export const useAdMob = () => {
         const handler = AdMob.addListener('onUserEarnedReward', (info: any) => {
           console.log('🎁 AdMob: EVENT - Nagroda odebrana!', info);
           didReceiveReward = true;
-          if (!resolved) {
-            resolved = true;
-            cleanup();
-            resolve(true);
-          }
         });
 
-        setTimeout(async () => {
-          if (!resolved) {
-            resolved = true;
-            console.log('⏰ AdMob: Timeout - sprawdzam result');
-            await cleanup();
-            resolve(didReceiveReward);
-          }
-        }, 3000);
+        const finalize = async () => {
+          if (resolved) return;
+          resolved = true;
+          await cleanup();
+          await new Promise(r => setTimeout(r, 600));
+          resolve(didReceiveReward);
+        };
+
+        // Safety timeout - 120 sekund na wypadek gdyby reklama się zawiesiła
+        const safetyTimeout = setTimeout(async () => {
+          console.log('⏰ AdMob: Safety timeout (120s) - wymuszam zamknięcie');
+          await finalize();
+        }, 120000);
 
         (async () => {
           try {
             console.log('📺 AdMob: Wyświetlanie reklamy...');
             const result = await AdMob.showRewardVideoAd();
             console.log('📊 AdMob: Reklama zamknięta, result:', JSON.stringify(result));
-            
+
+            clearTimeout(safetyTimeout);
+
             if (result && (result as any).reward) {
               didReceiveReward = true;
-              console.log('✅ AdMOB: Nagroda w result!');
+              console.log('✅ AdMob: Nagroda w result!');
             }
-            
-            if (!resolved) {
-              resolved = true;
-              await cleanup();
-              setTimeout(() => resolve(didReceiveReward), 500);
-            }
+
+            await finalize();
           } catch (err: any) {
             console.error('❌ AdMob: Błąd reklamy:', err?.message || err);
-            
-            if (!resolved) {
-              resolved = true;
-              await cleanup();
-              resolve(false);
-            }
+            clearTimeout(safetyTimeout);
+            await finalize();
           }
         })();
       });
 
       const gotReward = await rewardPromise;
-      
+
       setIsRewardedAdReady(false);
 
       if (gotReward) {

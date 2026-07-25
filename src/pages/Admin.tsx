@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { addTip, loadTips, deleteTip, updateTip, loadDraftTips, publishAllDrafts, publishTipById, unpublishTipById } from "@/lib/tipsStorage";
 import { addCoupon, loadCoupons, deleteCoupon, updateCoupon, calculateTotalOdds, CouponMatch, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, saveFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
-import { fetchTeamLogoUrl } from "@/lib/logoFetcher";
+import { fetchTeamLogoUrl, fetchTeamLogoCandidates, LogoCandidate, saveCustomTeamLogo } from "@/lib/logoFetcher";
 import { Tip } from "@/components/TipCard";
 import { 
   Plus, 
@@ -39,12 +39,17 @@ import {
   List,
   Send,
   Clock,
-  EyeOff
+  EyeOff,
+  Upload,
+  Download
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
 import UpcomingMatchesList from "@/components/UpcomingMatchesList";
+import SportyTraderImport from "@/components/SportyTraderImport";
+import ZawodTyperImport from "@/components/ZawodTyperImport";
+import { ScrapedMatch, ImportTarget } from "@/lib/sportyTrader";
 import Logo from "@/components/Logo";
 import { fetchMatchesByDate, fetchTeamForm } from "@/lib/sportApi";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,7 +61,7 @@ const Admin = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [featured, setFeatured] = useState<FeaturedPick>({
-    league: "", kickoff: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", confidence: "High", status: "upcoming"
+    league: "", kickoff: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", confidence: "High", status: "upcoming", homeTeamLogo: null, awayTeamLogo: null, sport: "Football"
   });
 
   useEffect(() => {
@@ -112,9 +117,85 @@ const Admin = () => {
       league: match.league,
       kickoff: `${match.date} ${match.time}`,
       homeTeamLogo: match.homeLogo,
-      awayTeamLogo: match.awayLogo
+      awayTeamLogo: match.awayLogo,
+      sport: match.sport || "Football"
     }));
     toast({ title: `Featured match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
+  };
+
+  // Route a scraped SportyTrader match into the Tip / Hero / Coupon form.
+  const handleSportyImport = async (match: ScrapedMatch, analysis: string, target: ImportTarget) => {
+    const oddsStr = match.odds ? match.odds.toString() : "";
+    let kickoffISO = match.kickoff;
+    try {
+      if (match.kickoff.includes('-') && match.kickoff.includes(':')) {
+        const d = new Date(match.kickoff.replace(' ', 'T'));
+        if (!isNaN(d.getTime())) kickoffISO = d.toISOString();
+      }
+    } catch { /* ignore */ }
+
+    if (target === "tip") {
+      await addTip({
+        sport: match.sport || "Football",
+        league: match.league,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        prediction: match.prediction,
+        odds: parseFloat(oddsStr) || 1.01,
+        kickoff: kickoffISO,
+        status: "upcoming",
+        isPremium: true,
+        isPublished: true,
+        homeTeamLogo: match.homeTeamLogo,
+        awayTeamLogo: match.awayTeamLogo,
+        description: analysis,
+      });
+      try {
+        await supabase.functions.invoke("send-premium-push", {
+          body: { title: "New Premium Tip! 🔥", message: `${match.homeTeam} vs ${match.awayTeam} - ${match.prediction}` }
+        });
+      } catch { /* ignore */ }
+      await refreshData(true);
+      toast({ title: "Tip published as premium! ✅", description: `${match.homeTeam} vs ${match.awayTeam}` });
+    } else if (target === "hero") {
+      const { id, ...pick } = featured;
+      await saveFeaturedPick({
+        ...pick,
+        sport: match.sport || "Football",
+        league: match.league,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        prediction: match.prediction,
+        odds: oddsStr,
+        kickoff: match.kickoff,
+        description: analysis,
+        confidence: "High",
+        status: "upcoming",
+        homeTeamLogo: match.homeTeamLogo,
+        awayTeamLogo: match.awayTeamLogo,
+      });
+      // Refresh the featured pick
+      const updated = await loadFeaturedPick();
+      if (updated) setFeatured(updated);
+      toast({ title: "Hero pick updated! ✅", description: `${match.homeTeam} vs ${match.awayTeam}` });
+    } else {
+      // Coupon: append to the coupon builder so several matches form one coupon.
+      // Stay on the Import tab so the user can keep adding matches.
+      setCouponMatches((prev) => [
+        ...prev,
+        {
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          prediction: match.prediction,
+          odds: match.odds,
+          league: match.league,
+          sport: match.sport || "Football",
+          kickoff: match.kickoff,
+          homeTeamLogo: match.homeTeamLogo,
+          awayTeamLogo: match.awayTeamLogo,
+        },
+      ]);
+    }
   };
 
   // User Premium Management State
@@ -128,10 +209,18 @@ const Admin = () => {
   const [isSendingPush, setIsSendingPush] = useState(false);
 
   // Admin Navigation State
-  const [activeTab, setActiveTab] = useState("tips");
+  const [activeTab, setActiveTab] = useState("import");
   const [filterStatus, setFilterStatus] = useState("all");
 
+  // Which scraper the Import tab shows. Both route through handleSportyImport.
+  const [importSource, setImportSource] = useState<"sportytrader" | "zawodtyper">("sportytrader");
+  const importSources = [
+    { id: "sportytrader" as const, label: "SportyTrader" },
+    { id: "zawodtyper" as const, label: "ZawodTyper" },
+  ];
+
   const adminTabs = [
+    { id: "import", label: "Import", icon: Download },
     { id: "tips", label: "Tips", icon: PlusCircle },
     { id: "coupons", label: "Coupons", icon: Receipt },
     { id: "hero", label: "Hero Pick", icon: Zap },
@@ -275,7 +364,122 @@ const Admin = () => {
 
   const resetTipForm = () => {
     setEditingTipId(null);
-    setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, isPublished: true, description: "", homeTeamLogo: null, awayTeamLogo: null, likesCount: 0 });
+    setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, isPublished: true, description: "", homeTeamLogo: null, awayTeamLogo: null });
+    setHomeLogoCandidates([]);
+    setAwayLogoCandidates([]);
+  };
+
+  const fetchHomeCandidates = async () => {
+    if (!form.homeTeam || form.homeTeam.length < 3) return;
+    setLoadingHomeLogos(true);
+    try {
+      const candidates = await fetchTeamLogoCandidates(form.homeTeam);
+      setHomeLogoCandidates(candidates);
+    } catch {
+      setHomeLogoCandidates([]);
+    } finally {
+      setLoadingHomeLogos(false);
+    }
+  };
+
+  const fetchAwayCandidates = async () => {
+    if (!form.awayTeam || form.awayTeam.length < 3) return;
+    setLoadingAwayLogos(true);
+    try {
+      const candidates = await fetchTeamLogoCandidates(form.awayTeam);
+      setAwayLogoCandidates(candidates);
+    } catch {
+      setAwayLogoCandidates([]);
+    } finally {
+      setLoadingAwayLogos(false);
+    }
+  };
+
+  const handleLogoUpload = (
+    teamName: string,
+    onSuccess: (url: string) => void,
+    onRefresh?: () => void,
+  ) => {
+    if (!teamName || teamName.trim().length < 2) {
+      toast({ title: "Najpierw wpisz nazwę drużyny", variant: "destructive" });
+      return;
+    }
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        toast({ title: "Plik jest za duży (max 2MB)", variant: "destructive" });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        saveCustomTeamLogo(teamName.trim(), dataUrl);
+        onSuccess(dataUrl);
+        if (onRefresh) onRefresh();
+        toast({ title: `Logo "${teamName.trim()}" zapisane z dysku` });
+      };
+      reader.onerror = () => {
+        toast({ title: "Błąd odczytu pliku", variant: "destructive" });
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
+  const fetchFeaturedHomeCandidates = async () => {
+    if (!featured.homeTeam || featured.homeTeam.length < 3) return;
+    setLoadingFeaturedHome(true);
+    try {
+      const candidates = await fetchTeamLogoCandidates(featured.homeTeam);
+      setFeaturedHomeCandidates(candidates);
+    } catch {
+      setFeaturedHomeCandidates([]);
+    } finally {
+      setLoadingFeaturedHome(false);
+    }
+  };
+
+  const fetchFeaturedAwayCandidates = async () => {
+    if (!featured.awayTeam || featured.awayTeam.length < 3) return;
+    setLoadingFeaturedAway(true);
+    try {
+      const candidates = await fetchTeamLogoCandidates(featured.awayTeam);
+      setFeaturedAwayCandidates(candidates);
+    } catch {
+      setFeaturedAwayCandidates([]);
+    } finally {
+      setLoadingFeaturedAway(false);
+    }
+  };
+
+  const fetchCouponHomeCandidates = async () => {
+    if (!couponMatchForm.homeTeam || couponMatchForm.homeTeam.length < 3) return;
+    setLoadingCouponHome(true);
+    try {
+      const candidates = await fetchTeamLogoCandidates(couponMatchForm.homeTeam);
+      setCouponHomeCandidates(candidates);
+    } catch {
+      setCouponHomeCandidates([]);
+    } finally {
+      setLoadingCouponHome(false);
+    }
+  };
+
+  const fetchCouponAwayCandidates = async () => {
+    if (!couponMatchForm.awayTeam || couponMatchForm.awayTeam.length < 3) return;
+    setLoadingCouponAway(true);
+    try {
+      const candidates = await fetchTeamLogoCandidates(couponMatchForm.awayTeam);
+      setCouponAwayCandidates(candidates);
+    } catch {
+      setCouponAwayCandidates([]);
+    } finally {
+      setLoadingCouponAway(false);
+    }
   };
 
   const resetCouponForm = () => {
@@ -325,7 +529,6 @@ const Admin = () => {
         homeTeamLogo: form.homeTeamLogo,
         awayTeamLogo: form.awayTeamLogo,
         description: form.description,
-        likesCount: form.likesCount,
       });
       await refreshData(true); // Force refresh after update
       resetTipForm();
@@ -345,7 +548,6 @@ const Admin = () => {
         homeTeamLogo: form.homeTeamLogo,
         awayTeamLogo: form.awayTeamLogo,
         description: form.description,
-        likesCount: form.likesCount,
       });
       
       if (created && form.isPremium) {
@@ -381,7 +583,6 @@ const Admin = () => {
       description: tip.description || "",
       homeTeamLogo: tip.homeTeamLogo || null,
       awayTeamLogo: tip.awayTeamLogo || null,
-      likesCount: tip.likesCount || 0,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -647,8 +848,22 @@ const Admin = () => {
     description: "",
     homeTeamLogo: null as string | null,
     awayTeamLogo: null as string | null,
-    likesCount: 0,
   });
+
+  const [homeLogoCandidates, setHomeLogoCandidates] = useState<LogoCandidate[]>([]);
+  const [awayLogoCandidates, setAwayLogoCandidates] = useState<LogoCandidate[]>([]);
+  const [loadingHomeLogos, setLoadingHomeLogos] = useState(false);
+  const [loadingAwayLogos, setLoadingAwayLogos] = useState(false);
+
+  const [featuredHomeCandidates, setFeaturedHomeCandidates] = useState<LogoCandidate[]>([]);
+  const [featuredAwayCandidates, setFeaturedAwayCandidates] = useState<LogoCandidate[]>([]);
+  const [loadingFeaturedHome, setLoadingFeaturedHome] = useState(false);
+  const [loadingFeaturedAway, setLoadingFeaturedAway] = useState(false);
+
+  const [couponHomeCandidates, setCouponHomeCandidates] = useState<LogoCandidate[]>([]);
+  const [couponAwayCandidates, setCouponAwayCandidates] = useState<LogoCandidate[]>([]);
+  const [loadingCouponHome, setLoadingCouponHome] = useState(false);
+  const [loadingCouponAway, setLoadingCouponAway] = useState(false);
 
   const [couponMatchForm, setCouponMatchForm] = useState({
     homeTeam: "",
@@ -686,17 +901,21 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="sticky top-0 z-50 glass border-b border-border/50">
-        <div className="container max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 relative overflow-hidden">
+      {/* Synthwave glow effects */}
+      <div className="fixed top-0 left-1/3 w-[400px] h-[400px] rounded-full blur-[100px] opacity-10 pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)' }} />
+      
+      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-[#0a0015]/80 via-[#150025]/80 to-[#0a0020]/80 border-b border-purple-500/20 shadow-xl shadow-black/30">
+        <div className="container max-w-6xl mx-auto px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 md:gap-3">
             <Link to="/" className="flex items-center gap-2.5">
               <Logo />
             </Link>
-            <Badge variant="confidence" className="font-display text-[10px] uppercase tracking-wider">Admin</Badge>
+            <Badge variant="confidence" className="font-display text-[10px] uppercase tracking-wider bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 border-purple-500/30">Admin</Badge>
           </div>
           <Link to="/">
-            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
+            <Button variant="ghost" size="sm" className="gap-1.5 text-purple-300/70 hover:text-pink-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-pink-500/30">
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Back</span>
             </Button>
@@ -706,16 +925,16 @@ const Admin = () => {
 
       <main className="container max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* ADMIN NAVIGATION TABS */}
-        <div className="sticky top-[72px] z-40 bg-background/80 backdrop-blur-lg border border-border/50 rounded-xl p-1">
+        <div className="sticky top-[72px] z-40 bg-[#0a0015]/80 backdrop-blur-xl border border-purple-500/20 rounded-xl p-1 shadow-lg shadow-black/20">
           <div className="flex gap-1 overflow-x-auto pb-1">
             {adminTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
                   activeTab === tab.id
-                    ? "bg-accent text-white shadow-lg shadow-accent/30"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    ? "bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 text-white shadow-lg shadow-pink-500/30"
+                    : "text-purple-300/70 hover:text-pink-300 hover:bg-white/5"
                 }`}
               >
                 <tab.icon className="w-4 h-4" />
@@ -724,6 +943,44 @@ const Admin = () => {
             ))}
           </div>
         </div>
+
+        {/* IMPORT TAB - fetch matches from a source, route to Tip / Hero / Coupon */}
+        {activeTab === 'import' && (
+          <Card className="bg-card border-accent/20 shadow-md overflow-hidden border">
+            <CardContent className="p-3 sm:p-4 space-y-4">
+              {/* Source switcher: both scrapers feed the same import pipeline */}
+              <div className="flex items-center gap-1.5 bg-muted/30 border border-border/50 rounded-xl p-1 w-fit">
+                {importSources.map((src) => (
+                  <button
+                    key={src.id}
+                    onClick={() => setImportSource(src.id)}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
+                      importSource === src.id
+                        ? "bg-accent text-accent-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {src.label}
+                  </button>
+                ))}
+              </div>
+
+              {importSource === "sportytrader" ? (
+                <SportyTraderImport
+                  onImport={handleSportyImport}
+                  couponCount={couponMatches.length}
+                  onGoToCoupon={() => setActiveTab("coupons")}
+                />
+              ) : (
+                <ZawodTyperImport
+                  onImport={handleSportyImport}
+                  couponCount={couponMatches.length}
+                  onGoToCoupon={() => setActiveTab("coupons")}
+                />
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* QUICK FIND & TIP FORM */}
         {activeTab === 'tips' && (
@@ -789,7 +1046,7 @@ const Admin = () => {
                   <Select value={form.sport} onValueChange={(v) => setForm({ ...form, sport: v })}>
                     <SelectTrigger className="h-10 bg-muted/20"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {["Football", "Basketball", "Tennis", "MMA", "Baseball", "Hockey", "Esports"].map((s) => (
+                      {["Football", "Basketball", "Tennis", "MMA", "Baseball", "Hockey", "Esports", "Rugby"].map((s) => (
                         <SelectItem key={s} value={s}>{s}</SelectItem>
                       ))}
                     </SelectContent>
@@ -801,28 +1058,164 @@ const Admin = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Likes Count 👍</Label>
-                  <Input type="number" className="h-10 bg-muted/20" value={form.likesCount} onChange={(e) => setForm({ ...form, likesCount: parseInt(e.target.value) || 0 })} />
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Home Team</Label>
+                    <div className="relative">
+                      <Input className="h-10 bg-muted/20 pr-28" value={form.homeTeam} onChange={(e) => setForm({ ...form, homeTeam: e.target.value })} />
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                        {form.homeTeamLogo && <TeamLogo teamName={form.homeTeam} logoUrl={form.homeTeamLogo} size={20} />}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-[10px] text-muted-foreground hover:text-primary"
+                          onClick={fetchHomeCandidates}
+                          disabled={loadingHomeLogos}
+                          title="Wyszukaj logo w internecie"
+                        >
+                          {loadingHomeLogos ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Search className="w-3 h-3" />
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-[10px] text-muted-foreground hover:text-primary"
+                          onClick={() => handleLogoUpload(form.homeTeam, (url) => setForm({ ...form, homeTeamLogo: url }), fetchHomeCandidates)}
+                          title="Wgraj logo z dysku"
+                        >
+                          <Upload className="w-3 h-3" />
+                        </Button>
+                        {form.homeTeamLogo && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-[10px] text-loss/70 hover:text-loss"
+                            onClick={() => setForm({ ...form, homeTeamLogo: null })}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Away Team</Label>
+                    <div className="relative">
+                      <Input className="h-10 bg-muted/20 pr-28" value={form.awayTeam} onChange={(e) => setForm({ ...form, awayTeam: e.target.value })} />
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                        {form.awayTeamLogo && <TeamLogo teamName={form.awayTeam} logoUrl={form.awayTeamLogo} size={20} />}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-[10px] text-muted-foreground hover:text-primary"
+                          onClick={fetchAwayCandidates}
+                          disabled={loadingAwayLogos}
+                          title="Wyszukaj logo w internecie"
+                        >
+                          {loadingAwayLogos ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Search className="w-3 h-3" />
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-[10px] text-muted-foreground hover:text-primary"
+                          onClick={() => handleLogoUpload(form.awayTeam, (url) => setForm({ ...form, awayTeamLogo: url }), fetchAwayCandidates)}
+                          title="Wgraj logo z dysku"
+                        >
+                          <Upload className="w-3 h-3" />
+                        </Button>
+                        {form.awayTeamLogo && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-[10px] text-loss/70 hover:text-loss"
+                            onClick={() => setForm({ ...form, awayTeamLogo: null })}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
+                {homeLogoCandidates.length > 0 && (
+                  <div className="p-3 bg-muted/30 border border-border/30 rounded-xl">
+                    <Label className="text-[9px] uppercase tracking-wider text-muted-foreground mb-2 block">
+                      Home Team Logos — click to select
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {homeLogoCandidates.map((candidate, i) => (
+                        <button
+                          type="button"
+                          key={`home-${i}`}
+                          onClick={() => {
+                            setForm({ ...form, homeTeamLogo: candidate.url });
+                            setHomeLogoCandidates([]);
+                          }}
+                          className={`w-14 h-14 rounded-lg border-2 flex items-center justify-center overflow-hidden transition-all ${
+                            form.homeTeamLogo === candidate.url
+                              ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                              : "border-border/50 bg-muted/50 hover:border-primary/50 hover:bg-primary/5"
+                          }`}
+                          title={`${candidate.teamName} (${candidate.source})`}
+                        >
+                          <img src={candidate.url} alt="" className="w-10 h-10 object-contain" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {awayLogoCandidates.length > 0 && (
+                  <div className="p-3 bg-muted/30 border border-border/30 rounded-xl">
+                    <Label className="text-[9px] uppercase tracking-wider text-muted-foreground mb-2 block">
+                      Away Team Logos — click to select
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {awayLogoCandidates.map((candidate, i) => (
+                        <button
+                          type="button"
+                          key={`away-${i}`}
+                          onClick={() => {
+                            setForm({ ...form, awayTeamLogo: candidate.url });
+                            setAwayLogoCandidates([]);
+                          }}
+                          className={`w-14 h-14 rounded-lg border-2 flex items-center justify-center overflow-hidden transition-all ${
+                            form.awayTeamLogo === candidate.url
+                              ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                              : "border-border/50 bg-muted/50 hover:border-primary/50 hover:bg-primary/5"
+                          }`}
+                          title={`${candidate.teamName} (${candidate.source})`}
+                        >
+                          <img src={candidate.url} alt="" className="w-10 h-10 object-contain" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {(homeLogoCandidates.length > 0 || awayLogoCandidates.length > 0) && (
+                  <p className="text-[9px] text-muted-foreground text-center">
+                    Kliknij logo aby je zaakceptować i zapisać do bazy danych
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Home Team</Label>
-                  <div className="relative">
-                    <Input className="h-10 bg-muted/20" value={form.homeTeam} onChange={(e) => setForm({ ...form, homeTeam: e.target.value })} />
-                    {form.homeTeamLogo && <div className="absolute right-2 top-1/2 -translate-y-1/2"><TeamLogo teamName={form.homeTeam} logoUrl={form.homeTeamLogo} size={20} /></div>}
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Away Team</Label>
-                  <div className="relative">
-                    <Input className="h-10 bg-muted/20" value={form.awayTeam} onChange={(e) => setForm({ ...form, awayTeam: e.target.value })} />
-                    {form.awayTeamLogo && <div className="absolute right-2 top-1/2 -translate-y-1/2"><TeamLogo teamName={form.awayTeam} logoUrl={form.awayTeamLogo} size={20} /></div>}
-                  </div>
-                </div>
                 <div className="space-y-1.5">
                   <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Prediction</Label>
                   <Input className="h-10 bg-muted/20" placeholder="e.g. Home Win" value={form.prediction} onChange={(e) => setForm({ ...form, prediction: e.target.value })} />
@@ -928,21 +1321,164 @@ const Admin = () => {
                     <Input className="h-9 text-xs" placeholder="e.g. UEFA Champions League" value={featured.league} onChange={(e) => setFeatured({ ...featured, league: e.target.value })} />
                   </div>
                   <div className="space-y-1">
+                    <Label className="text-[9px] uppercase text-muted-foreground">Sport</Label>
+                    <Select value={featured.sport || "Football"} onValueChange={(v) => setFeatured({ ...featured, sport: v })}>
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue placeholder="Sport" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["Football", "Basketball", "Tennis", "MMA", "Baseball", "Hockey", "Esports", "Rugby"].map((s) => (
+                          <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
                     <Label className="text-[9px] uppercase text-muted-foreground">Kickoff Time</Label>
                     <Input className="h-9 text-xs" placeholder="e.g. 21:00" value={featured.kickoff} onChange={(e) => setFeatured({ ...featured, kickoff: e.target.value })} />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1 relative">
                       <Label className="text-[9px] uppercase text-muted-foreground">Home Team</Label>
-                      <Input className="h-9 text-xs bg-muted/20 pr-8" placeholder="Home team" value={featured.homeTeam} onChange={(e) => setFeatured({ ...featured, homeTeam: e.target.value })} />
-                      {featured.homeTeamLogo && <div className="absolute right-1.5 top-[22px]"><TeamLogo teamName={featured.homeTeam} logoUrl={featured.homeTeamLogo} size={18} /></div>}
+                      <div className="relative">
+                        <Input className="h-9 text-xs bg-muted/20 pr-28" placeholder="Home team" value={featured.homeTeam} onChange={(e) => setFeatured({ ...featured, homeTeam: e.target.value })} />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          {featured.homeTeamLogo && <TeamLogo teamName={featured.homeTeam} logoUrl={featured.homeTeamLogo} size={18} />}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-1.5 text-[9px] text-muted-foreground hover:text-primary"
+                            onClick={fetchFeaturedHomeCandidates}
+                            disabled={loadingFeaturedHome}
+                            title="Wyszukaj logo w internecie"
+                          >
+                            {loadingFeaturedHome ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Search className="w-3 h-3" />
+                            )}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-1.5 text-[9px] text-muted-foreground hover:text-primary"
+                            onClick={() => handleLogoUpload(featured.homeTeam, (url) => setFeatured({ ...featured, homeTeamLogo: url }), fetchFeaturedHomeCandidates)}
+                            title="Wgraj logo z dysku"
+                          >
+                            <Upload className="w-3 h-3" />
+                          </Button>
+                          {featured.homeTeamLogo && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1.5 text-[9px] text-loss/70 hover:text-loss"
+                              onClick={() => setFeatured({ ...featured, homeTeamLogo: null })}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <div className="space-y-1 relative">
                       <Label className="text-[9px] uppercase text-muted-foreground">Away Team</Label>
-                      <Input className="h-9 text-xs bg-muted/20 pr-8" placeholder="Away team" value={featured.awayTeam} onChange={(e) => setFeatured({ ...featured, awayTeam: e.target.value })} />
-                      {featured.awayTeamLogo && <div className="absolute right-1.5 top-[22px]"><TeamLogo teamName={featured.awayTeam} logoUrl={featured.awayTeamLogo} size={18} /></div>}
+                      <div className="relative">
+                        <Input className="h-9 text-xs bg-muted/20 pr-28" placeholder="Away team" value={featured.awayTeam} onChange={(e) => setFeatured({ ...featured, awayTeam: e.target.value })} />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          {featured.awayTeamLogo && <TeamLogo teamName={featured.awayTeam} logoUrl={featured.awayTeamLogo} size={18} />}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-1.5 text-[9px] text-muted-foreground hover:text-primary"
+                            onClick={fetchFeaturedAwayCandidates}
+                            disabled={loadingFeaturedAway}
+                            title="Wyszukaj logo w internecie"
+                          >
+                            {loadingFeaturedAway ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Search className="w-3 h-3" />
+                            )}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-1.5 text-[9px] text-muted-foreground hover:text-primary"
+                            onClick={() => handleLogoUpload(featured.awayTeam, (url) => setFeatured({ ...featured, awayTeamLogo: url }), fetchFeaturedAwayCandidates)}
+                            title="Wgraj logo z dysku"
+                          >
+                            <Upload className="w-3 h-3" />
+                          </Button>
+                          {featured.awayTeamLogo && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1.5 text-[9px] text-loss/70 hover:text-loss"
+                              onClick={() => setFeatured({ ...featured, awayTeamLogo: null })}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
+                  {featuredHomeCandidates.length > 0 && (
+                    <div className="p-2 bg-muted/20 border border-border/30 rounded-lg">
+                      <Label className="text-[8px] uppercase text-muted-foreground mb-1 block">Home Team Logos</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {featuredHomeCandidates.map((candidate, i) => (
+                          <button
+                            type="button"
+                            key={`fh-${i}`}
+                            onClick={() => {
+                              setFeatured({ ...featured, homeTeamLogo: candidate.url });
+                              setFeaturedHomeCandidates([]);
+                            }}
+                            className={`w-10 h-10 rounded-md border flex items-center justify-center overflow-hidden transition-all ${
+                              featured.homeTeamLogo === candidate.url
+                                ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                                : "border-border/50 bg-muted/50 hover:border-primary/50 hover:bg-primary/5"
+                            }`}
+                            title={`${candidate.teamName} (${candidate.source})`}
+                          >
+                            <img src={candidate.url} alt="" className="w-7 h-7 object-contain" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {featuredAwayCandidates.length > 0 && (
+                    <div className="p-2 bg-muted/20 border border-border/30 rounded-lg">
+                      <Label className="text-[8px] uppercase text-muted-foreground mb-1 block">Away Team Logos</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {featuredAwayCandidates.map((candidate, i) => (
+                          <button
+                            type="button"
+                            key={`fa-${i}`}
+                            onClick={() => {
+                              setFeatured({ ...featured, awayTeamLogo: candidate.url });
+                              setFeaturedAwayCandidates([]);
+                            }}
+                            className={`w-10 h-10 rounded-md border flex items-center justify-center overflow-hidden transition-all ${
+                              featured.awayTeamLogo === candidate.url
+                                ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                                : "border-border/50 bg-muted/50 hover:border-primary/50 hover:bg-primary/5"
+                            }`}
+                            title={`${candidate.teamName} (${candidate.source})`}
+                          >
+                            <img src={candidate.url} alt="" className="w-7 h-7 object-contain" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-[9px] uppercase text-muted-foreground">Confidence</Label>
@@ -972,13 +1508,6 @@ const Admin = () => {
                     <div className="flex gap-2">
                       <Input className="h-9 text-xs flex-1" placeholder="Prediction" value={featured.prediction} onChange={(e) => setFeatured({ ...featured, prediction: e.target.value })} />
                       <Input className="h-9 text-xs w-20" placeholder="Odds" value={featured.odds} onChange={(e) => setFeatured({ ...featured, odds: e.target.value })} />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-[9px] uppercase text-muted-foreground">Likes 👍</Label>
-                      <Input type="number" className="h-9 text-xs" value={featured.likesCount || 0} onChange={(e) => setFeatured({ ...featured, likesCount: parseInt(e.target.value) || 0 })} />
                     </div>
                   </div>
 
@@ -1216,7 +1745,7 @@ const Admin = () => {
                       <Select value={couponSport} onValueChange={(v) => setCouponSport(v)}>
                         <SelectTrigger className="h-10 bg-muted/20"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          {["Football", "Basketball", "Tennis", "MMA", "Baseball", "Hockey", "Esports"].map((s) => (
+                          {["Football", "Basketball", "Tennis", "MMA", "Baseball", "Hockey", "Esports", "Rugby"].map((s) => (
                             <SelectItem key={s} value={s}>{s}</SelectItem>
                           ))}
                         </SelectContent>
@@ -1250,21 +1779,28 @@ const Admin = () => {
                         <p className="text-xs text-muted-foreground text-center py-4 italic">No matches added yet. Add matches below.</p>
                       )}
                       {couponMatches.map((m, i) => (
-                        <div key={i} className="flex items-center justify-between bg-background border border-border/50 rounded-lg p-2.5 group">
-                          <div className="flex items-center gap-2 overflow-hidden">
-                            <TeamLogo teamName={m.homeTeam} logoUrl={m.homeTeamLogo || undefined} size={16} />
-                            <div className="truncate">
-                              <p className="text-[10px] font-bold truncate">{m.homeTeam} vs {m.awayTeam}</p>
-                              <p className="text-[9px] text-muted-foreground">{m.prediction} @ {m.odds.toFixed(2)}</p>
+                        <div key={i} className="flex flex-col gap-1 bg-background border border-border/50 rounded-lg p-2.5 group">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 overflow-hidden min-w-0 flex-1">
+                              <TeamLogo teamName={m.homeTeam} logoUrl={m.homeTeamLogo || undefined} size={16} />
+                              <div className="min-w-0 truncate">
+                                <p className="text-[10px] font-bold truncate">{m.homeTeam} vs {m.awayTeam}</p>
+                                <p className="text-[9px] text-muted-foreground truncate">{m.prediction} @ {m.odds.toFixed(2)}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEditCouponMatch(i)}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="w-7 h-7 text-loss hover:text-loss opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveCouponMatch(i)}>
+                                <X className="w-3.5 h-3.5" />
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEditCouponMatch(i)}>
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="w-7 h-7 text-loss hover:text-loss opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveCouponMatch(i)}>
-                              <X className="w-3.5 h-3.5" />
-                            </Button>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {m.sport && <span className="text-[8px] font-bold text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded">{m.sport}</span>}
+                            {m.league && <span className="text-[8px] text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded">{m.league}</span>}
+                            {m.kickoff && <span className="text-[8px] text-muted-foreground">{new Date(m.kickoff).toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>}
                           </div>
                         </div>
                       ))}
@@ -1286,15 +1822,91 @@ const Admin = () => {
                       <div className="space-y-1">
                         <Label className="text-[9px] uppercase text-muted-foreground">Home Team</Label>
                         <div className="relative">
-                          <Input className="h-9 text-xs bg-muted/20 pr-7" value={couponMatchForm.homeTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, homeTeam: e.target.value })} />
-                          {couponMatchForm.homeTeamLogo && <div className="absolute right-1.5 top-1/2 -translate-y-1/2"><TeamLogo teamName={couponMatchForm.homeTeam} logoUrl={couponMatchForm.homeTeamLogo} size={18} /></div>}
+                          <Input className="h-9 text-xs bg-muted/20 pr-24" value={couponMatchForm.homeTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, homeTeam: e.target.value })} />
+                          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                            {couponMatchForm.homeTeamLogo && <TeamLogo teamName={couponMatchForm.homeTeam} logoUrl={couponMatchForm.homeTeamLogo} size={14} />}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1 text-[8px] text-muted-foreground hover:text-primary"
+                              onClick={fetchCouponHomeCandidates}
+                              disabled={loadingCouponHome}
+                              title="Wyszukaj logo w internecie"
+                            >
+                              {loadingCouponHome ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Search className="w-3 h-3" />
+                              )}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1 text-[8px] text-muted-foreground hover:text-primary"
+                              onClick={() => handleLogoUpload(couponMatchForm.homeTeam, (url) => setCouponMatchForm({ ...couponMatchForm, homeTeamLogo: url }), fetchCouponHomeCandidates)}
+                              title="Wgraj logo z dysku"
+                            >
+                              <Upload className="w-3 h-3" />
+                            </Button>
+                            {couponMatchForm.homeTeamLogo && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-1 text-[8px] text-loss/70 hover:text-loss"
+                                onClick={() => setCouponMatchForm({ ...couponMatchForm, homeTeamLogo: null })}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-[9px] uppercase text-muted-foreground">Away Team</Label>
                         <div className="relative">
-                          <Input className="h-9 text-xs bg-muted/20 pr-7" value={couponMatchForm.awayTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, awayTeam: e.target.value })} />
-                          {couponMatchForm.awayTeamLogo && <div className="absolute right-1.5 top-1/2 -translate-y-1/2"><TeamLogo teamName={couponMatchForm.awayTeam} logoUrl={couponMatchForm.awayTeamLogo} size={18} /></div>}
+                          <Input className="h-9 text-xs bg-muted/20 pr-24" value={couponMatchForm.awayTeam} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, awayTeam: e.target.value })} />
+                          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                            {couponMatchForm.awayTeamLogo && <TeamLogo teamName={couponMatchForm.awayTeam} logoUrl={couponMatchForm.awayTeamLogo} size={14} />}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1 text-[8px] text-muted-foreground hover:text-primary"
+                              onClick={fetchCouponAwayCandidates}
+                              disabled={loadingCouponAway}
+                              title="Wyszukaj logo w internecie"
+                            >
+                              {loadingCouponAway ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Search className="w-3 h-3" />
+                              )}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1 text-[8px] text-muted-foreground hover:text-primary"
+                              onClick={() => handleLogoUpload(couponMatchForm.awayTeam, (url) => setCouponMatchForm({ ...couponMatchForm, awayTeamLogo: url }), fetchCouponAwayCandidates)}
+                              title="Wgraj logo z dysku"
+                            >
+                              <Upload className="w-3 h-3" />
+                            </Button>
+                            {couponMatchForm.awayTeamLogo && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-1 text-[8px] text-loss/70 hover:text-loss"
+                                onClick={() => setCouponMatchForm({ ...couponMatchForm, awayTeamLogo: null })}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="space-y-1">
@@ -1306,6 +1918,82 @@ const Admin = () => {
                         <Input type="number" step="0.01" className="h-9 text-xs bg-muted/20" value={couponMatchForm.odds} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, odds: e.target.value })} />
                       </div>
                     </div>
+
+                    {/* Sport, League, Kickoff row */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className="space-y-1">
+                        <Label className="text-[9px] uppercase text-muted-foreground">Sport</Label>
+                        <Select value={couponMatchForm.sport || "Football"} onValueChange={(v) => setCouponMatchForm({ ...couponMatchForm, sport: v })}>
+                          <SelectTrigger className="h-9 text-xs bg-muted/20">
+                            <SelectValue placeholder="Select sport" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {["Football", "Basketball", "Tennis", "Baseball", "Hockey", "MMA", "Esports", "Volleyball", "Handball", "Rugby"].map((s) => (
+                              <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] uppercase text-muted-foreground">League</Label>
+                        <Input className="h-9 text-xs bg-muted/20" placeholder="e.g. Premier League" value={couponMatchForm.league} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, league: e.target.value })} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] uppercase text-muted-foreground">Kickoff</Label>
+                        <Input type="datetime-local" className="h-9 text-xs bg-muted/20" value={couponMatchForm.kickoff} onChange={(e) => setCouponMatchForm({ ...couponMatchForm, kickoff: e.target.value })} />
+                      </div>
+                    </div>
+
+                    {couponHomeCandidates.length > 0 && (
+                      <div className="p-2 bg-muted/20 border border-border/30 rounded-lg">
+                        <Label className="text-[8px] uppercase text-muted-foreground mb-1 block">Home Team Logos</Label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {couponHomeCandidates.map((candidate, i) => (
+                            <button
+                              type="button"
+                              key={`ch-${i}`}
+                              onClick={() => {
+                                setCouponMatchForm({ ...couponMatchForm, homeTeamLogo: candidate.url });
+                                setCouponHomeCandidates([]);
+                              }}
+                              className={`w-9 h-9 rounded-md border flex items-center justify-center overflow-hidden transition-all ${
+                                couponMatchForm.homeTeamLogo === candidate.url
+                                  ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                                  : "border-border/50 bg-muted/50 hover:border-primary/50 hover:bg-primary/5"
+                              }`}
+                              title={`${candidate.teamName} (${candidate.source})`}
+                            >
+                              <img src={candidate.url} alt="" className="w-6 h-6 object-contain" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {couponAwayCandidates.length > 0 && (
+                      <div className="p-2 bg-muted/20 border border-border/30 rounded-lg">
+                        <Label className="text-[8px] uppercase text-muted-foreground mb-1 block">Away Team Logos</Label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {couponAwayCandidates.map((candidate, i) => (
+                            <button
+                              type="button"
+                              key={`ca-${i}`}
+                              onClick={() => {
+                                setCouponMatchForm({ ...couponMatchForm, awayTeamLogo: candidate.url });
+                                setCouponAwayCandidates([]);
+                              }}
+                              className={`w-9 h-9 rounded-md border flex items-center justify-center overflow-hidden transition-all ${
+                                couponMatchForm.awayTeamLogo === candidate.url
+                                  ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                                  : "border-border/50 bg-muted/50 hover:border-primary/50 hover:bg-primary/5"
+                              }`}
+                              title={`${candidate.teamName} (${candidate.source})`}
+                            >
+                              <img src={candidate.url} alt="" className="w-6 h-6 object-contain" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <Button type="button" variant="outline" size="sm" className="w-full gap-1.5 h-9 text-[10px] uppercase tracking-wider" onClick={editingCouponMatchIndex !== null ? handleCancelCouponMatchEdit : handleAddCouponMatch}>
                         <X className="w-3.5 h-3.5" /> {editingCouponMatchIndex !== null ? "Cancel Edit" : "Add Match to Coupon"}

@@ -1,10 +1,9 @@
 import { Badge } from "@/components/ui/badge";
-import { Clock, Lock, Crown, ChevronDown, ChevronUp, ThumbsUp, TrendingUp, Sparkles } from "lucide-react";
-import TeamLogo from "@/components/TeamLogo";
+import { Clock, Lock, Crown, ChevronDown, ChevronUp, TrendingUp, Sparkles } from "lucide-react";
+import TeamLogo, { SportIcon } from "@/components/TeamLogo";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
-import { incrementReaction } from "@/lib/tipsStorage";
+import { useState, useCallback, memo } from "react";
 
 export interface Tip {
   id: number;
@@ -21,7 +20,6 @@ export interface Tip {
   homeTeamLogo?: string | null;
   awayTeamLogo?: string | null;
   description?: string | null;
-  likesCount?: number;
   wonAt?: string | null;
 }
 
@@ -42,42 +40,11 @@ const statusLabel = {
 
 const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boolean }) => {
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const [localLikes, setLocalLikes] = useState(tip.likesCount || 0);
-  const [reacted, setReacted] = useState(false);
-
-  useEffect(() => {
-    if (!tip?.id) return;
-
-    const saved = localStorage.getItem(`reaction_${tip.id}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setReacted(typeof parsed === 'object' ? !!parsed.like : !!parsed);
-      } catch (e) {
-        setReacted(!!saved);
-      }
-    } else {
-      setReacted(false);
-    }
-    
-    const serverLikes = tip.likesCount || 0;
-    setLocalLikes(prev => (serverLikes > prev ? serverLikes : prev));
-  }, [tip.id, tip.likesCount]);
-
-  const handleReaction = async () => {
-    if (reacted) return;
-
-    setReacted(true);
-    localStorage.setItem(`reaction_${tip.id}`, JSON.stringify(true));
-    setLocalLikes(prev => prev + 1);
-
-    await incrementReaction(tip.id, 'like');
-  };
 
   const isSettled = tip.status !== "upcoming";
   const locked = tip.isPremium && !userIsPremium && !isSettled;
 
-  const formatKickoff = (kickoffStr: string) => {
+  const formatKickoff = useCallback((kickoffStr: string) => {
     try {
       if (!kickoffStr) return "TBD";
       
@@ -94,34 +61,31 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
       return cleanKickoff || "TBD";
     } catch (e) {}
     return String(kickoffStr);
-  };
+  }, []);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={`relative overflow-hidden rounded-2xl group hover-lift ${locked ? "select-none" : ""}`}
+      className={`relative overflow-hidden rounded-2xl group ${locked ? "select-none" : ""}`}
     >
-      {/* Dynamic gradient glow based on type */}
+      {/* Synthwave glow effect */}
       <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${
         tip.isPremium 
           ? 'bg-gradient-to-br from-pink-500/20 via-purple-500/10 to-transparent' 
-          : 'bg-gradient-to-br from-blue-500/20 via-cyan-500/10 to-transparent'
+          : 'bg-gradient-to-br from-purple-500/20 via-pink-500/10 to-transparent'
       }`} />
 
       <div
-        className={`relative rounded-2xl backdrop-blur-sm overflow-hidden transition-all duration-300 card-modern ${
+        className={`relative rounded-2xl backdrop-blur-sm overflow-hidden transition-all duration-300 ${
           tip.isPremium 
-            ? 'border-pink-500/30 shadow-xl shadow-pink-500/10 hover:shadow-pink-500/20'
-            : 'border-blue-500/20 shadow-lg shadow-black/5 hover:border-blue-500/30 hover:shadow-blue-500/10'
+            ? 'bg-gradient-to-br from-card via-pink-950/5 to-purple-950/10 border border-pink-500/30 shadow-xl shadow-pink-500/10 group-hover:shadow-pink-500/20 group-hover:-translate-y-1'
+            : 'bg-gradient-to-br from-card via-purple-950/5 to-background border border-border/40 shadow-lg shadow-black/5 group-hover:border-purple-500/30 group-hover:-translate-y-1'
         }`}
       >
-        {/* Top gradient line - dynamic per type */}
-        <div className={`h-[3px] w-full gradient-animated ${
+        {/* Top gradient line */}
+        <div className={`h-[3px] w-full ${
           tip.isPremium 
-            ? 'gradient-premium' 
-            : 'gradient-tips'
+            ? 'bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500' 
+            : 'bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500'
         }`} />
 
         <div className="p-3 sm:p-4 md:p-5 space-y-2.5 sm:space-y-3 md:space-y-4">
@@ -134,7 +98,10 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
                   <span>Premium</span>
                 </div>
               )}
-              <Badge variant="sport" className="text-[9px] md:text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/30">{tip.sport}</Badge>
+              <Badge variant="sport" className="text-[9px] md:text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/30 gap-1 inline-flex">
+                <SportIcon sport={tip.sport} size={8} />
+                {tip.sport}
+              </Badge>
               <span className="text-[10px] md:text-[11px] text-muted-foreground font-medium truncate max-w-[90px] sm:max-w-[130px] md:max-w-none">{tip.league}</span>
             </div>
             <Badge variant={statusVariant[tip.status]} className="gap-1 shrink-0 text-[10px] px-2 py-0.5">
@@ -211,35 +178,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
               </div>
 
               <div className="flex items-center justify-between gap-1.5 sm:gap-2 md:gap-4 py-1">
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={(e) => { e.preventDefault(); handleReaction(); }}
-                    className={`group relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-full transition-all duration-300 ${
-                      reacted 
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25' 
-                        : 'bg-muted/50 text-muted-foreground hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-pink-500/10 hover:text-purple-400 hover:scale-105 active:scale-95 border border-border/30'
-                    }`}
-                  >
-                    <motion.div
-                      animate={reacted ? { scale: [1, 1.4, 1], rotate: [0, -20, 0] } : {}}
-                      transition={{ duration: 0.45, ease: "backOut" }}
-                    >
-                      <ThumbsUp className={`w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 ${reacted ? 'fill-white' : 'group-hover:fill-purple-400'}`} />
-                    </motion.div>
-                    <span className="text-[10px] sm:text-[11px] md:text-[12px] font-black tracking-tight">{localLikes}</span>
-                    
-                    {reacted && (
-                      <motion.span
-                        initial={{ opacity: 1, y: 0 }}
-                        animate={{ opacity: 0, y: -20 }}
-                        className="absolute top-0 left-1/2 -translate-x-1/2 text-white font-bold text-xs pointer-events-none"
-                      >
-                        +1
-                      </motion.span>
-                    )}
-                  </button>
-                </div>
-
+                <div />
                 {tip.description && (
                   <button 
                     onClick={() => setShowAnalysis(!showAnalysis)}
@@ -278,19 +217,20 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
                 </AnimatePresence>
               )}
 
-              {/* Footer */}
-              <div className="flex items-center pt-1.5 sm:pt-2 md:pt-3 border-t border-border/20">
+            </>
+          )}
+
+          {/* Footer - always visible, even when locked */}
+          <div className="flex items-center pt-1.5 sm:pt-2 md:pt-3 border-t border-border/20">
                 <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
                   <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 text-muted-foreground" />
                   <span className="text-[9px] sm:text-[10px] md:text-[11px] text-muted-foreground font-medium">{formatKickoff(tip.kickoff)}</span>
                 </div>
               </div>
-            </>
-          )}
         </div>
       </div>
     </motion.div>
   );
 };
 
-export default TipCard;
+export default memo(TipCard);
