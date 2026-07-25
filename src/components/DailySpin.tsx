@@ -8,12 +8,21 @@ const SPIN_KEY = "gsb_last_spin";
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 const SEGMENTS = [
-  { label: "Free Tip", prize: "1 free premium tip", color: "#ec4899", icon: Gift },
-  { label: "Premium 1d", prize: "1 day premium free", color: "#a855f7", icon: Crown },
-  { label: "Premium 7d", prize: "7 days premium free", color: "#f59e0b", icon: Crown },
-  { label: "Try Again", prize: "Try again", color: "#6b7280", icon: Clock },
-  { label: "Free Tip", prize: "1 free premium tip", color: "#06b6d4", icon: Gift },
-  { label: "Try Again", prize: "Try again", color: "#4b5563", icon: Clock },
+  { label: "Free Tip", prize: "1 free premium tip", icon: Gift },
+  { label: "Premium\n1 Day", prize: "1 day premium free", icon: Crown },
+  { label: "Premium\n7 Days", prize: "7 days premium free", icon: Crown },
+  { label: "Try\nAgain", prize: "Try again", icon: Clock },
+  { label: "Free Tip", prize: "1 free premium tip", icon: Gift },
+  { label: "Try\nAgain", prize: "Try again", icon: Clock },
+];
+
+const SEGMENT_COLORS = [
+  { fill: "#ec4899", glow: "#f472b6" },
+  { fill: "#a855f7", glow: "#c084fc" },
+  { fill: "#f59e0b", glow: "#fbbf24" },
+  { fill: "#6366f1", glow: "#818cf8" },
+  { fill: "#06b6d4", glow: "#22d3ee" },
+  { fill: "#8b5cf6", glow: "#a78bfa" },
 ];
 
 const SPIN_DURATION = 4000;
@@ -83,9 +92,25 @@ const DailySpin = ({ isLoggedIn = false, userId, onFreeTip }: { isLoggedIn?: boo
     }, SPIN_DURATION);
   }, [spinning, blocked, rotation, isLoggedIn, userId, onFreeTip]);
 
-  const radius = 145;
+  const radius = 140;
   const center = 150;
   const segmentAngle = (2 * Math.PI) / SEGMENTS.length;
+
+  // Precompute segment paths
+  const segmentPaths = SEGMENTS.map((seg, i) => {
+    const startAngle = segmentAngle * i - Math.PI / 2;
+    const endAngle = startAngle + segmentAngle;
+    const x1 = center + radius * Math.cos(startAngle);
+    const y1 = center + radius * Math.sin(startAngle);
+    const x2 = center + radius * Math.cos(endAngle);
+    const y2 = center + radius * Math.sin(endAngle);
+    const largeArc = segmentAngle > Math.PI ? 1 : 0;
+    const midAngle = startAngle + segmentAngle / 2;
+    const textR = radius * 0.55;
+    const textX = center + textR * Math.cos(midAngle);
+    const textY = center + textR * Math.sin(midAngle);
+    return { i, seg, startAngle, endAngle, x1, y1, x2, y2, largeArc, midAngle, textX, textY };
+  });
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-950/40 via-pink-950/30 to-background border border-purple-500/20 p-4 sm:p-5">
@@ -99,6 +124,56 @@ const DailySpin = ({ isLoggedIn = false, userId, onFreeTip }: { isLoggedIn?: boo
         {/* Wheel */}
         <div className="relative">
           <svg width="300" height="300" viewBox="0 0 300 300">
+            <defs>
+              {/* Glow filter */}
+              <filter id="wheelGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+              {/* Shine gradient for center */}
+              <radialGradient id="centerShine" cx="40%" cy="35%" r="60%">
+                <stop offset="0%" stopColor="#2a1540" />
+                <stop offset="100%" stopColor="#0d0015" />
+              </radialGradient>
+              {/* Outer ring gradient */}
+              <linearGradient id="outerRing" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#a855f7" />
+                <stop offset="25%" stopColor="#ec4899" />
+                <stop offset="50%" stopColor="#f59e0b" />
+                <stop offset="75%" stopColor="#06b6d4" />
+                <stop offset="100%" stopColor="#a855f7" />
+              </linearGradient>
+              {/* Segment radial gradients */}
+              {SEGMENT_COLORS.map((c, i) => (
+                <radialGradient key={`seg${i}`} id={`segGrad${i}`} cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor={c.fill} />
+                  <stop offset="90%" stopColor={c.fill} stopOpacity="0.85" />
+                </radialGradient>
+              ))}
+            </defs>
+
+            {/* Outer decorative ring with bumps */}
+            <circle cx={center} cy={center} r={radius + 12} fill="none" stroke="url(#outerRing)" strokeWidth="3" opacity="0.6" />
+            {/* Outer ring dots */}
+            {Array.from({ length: 24 }, (_, i) => {
+              const a = (2 * Math.PI * i) / 24 - Math.PI / 2;
+              const dotR = radius + 12;
+              const cx = center + dotR * Math.cos(a);
+              const cy = center + dotR * Math.sin(a);
+              return (
+                <circle
+                  key={`dot${i}`}
+                  cx={cx}
+                  cy={cy}
+                  r="3.5"
+                  fill={i % 2 === 0 ? "#fbbf24" : "#ffffff"}
+                  filter="url(#wheelGlow)"
+                  opacity="0.9"
+                />
+              );
+            })}
+
+            {/* Main spinning group */}
             <g
               style={{
                 transform: `rotate(${rotation}deg)`,
@@ -108,47 +183,70 @@ const DailySpin = ({ isLoggedIn = false, userId, onFreeTip }: { isLoggedIn?: boo
                   : "none",
               }}
             >
-              {SEGMENTS.map((seg, i) => {
-                const startAngle = segmentAngle * i - Math.PI / 2;
-                const endAngle = startAngle + segmentAngle;
-                const x1 = center + radius * Math.cos(startAngle);
-                const y1 = center + radius * Math.sin(startAngle);
-                const x2 = center + radius * Math.cos(endAngle);
-                const y2 = center + radius * Math.sin(endAngle);
-                const largeArc = segmentAngle > Math.PI ? 1 : 0;
-                const midAngle = startAngle + segmentAngle / 2;
-                const textX = center + (radius * 0.65) * Math.cos(midAngle);
-                const textY = center + (radius * 0.65) * Math.sin(midAngle);
+              {/* Segment fills */}
+              {segmentPaths.map(({ i, seg, x1, y1, x2, y2, largeArc }) => (
+                <g key={i}>
+                  <path
+                    d={`M${center},${center} L${x1},${y1} A${radius},${radius} 0 ${largeArc},1 ${x2},${y2} Z`}
+                    fill={`url(#segGrad${i})`}
+                    stroke="#1a0030"
+                    strokeWidth="1.5"
+                    filter="url(#wheelGlow)"
+                  />
+                </g>
+              ))}
 
-                return (
-                  <g key={i}>
-                    <path
-                      d={`M${center},${center} L${x1},${y1} A${radius},${radius} 0 ${largeArc},1 ${x2},${y2} Z`}
-                      fill={seg.color}
-                      stroke="#1a0030"
-                      strokeWidth="1.5"
-                    />
-                    <text
+              {/* Segment text */}
+              {segmentPaths.map(({ i, textX, textY, midAngle, seg }) => (
+                <text
+                  key={`txt${i}`}
+                  x={textX}
+                  y={textY}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="white"
+                  fontSize="10"
+                  fontWeight="700"
+                  fontFamily="'DM Sans', sans-serif"
+                  transform={`rotate(${(midAngle * 180) / Math.PI + 90}, ${textX}, ${textY})`}
+                  style={{ pointerEvents: "none", textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}
+                >
+                  {seg.label.split("\n").map((line, li, arr) => (
+                    <tspan
+                      key={li}
                       x={textX}
-                      y={textY}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fill="white"
-                      fontSize="10"
-                      fontWeight="bold"
-                      transform={`rotate(${(midAngle * 180) / Math.PI + 90}, ${textX}, ${textY})`}
-                      style={{ pointerEvents: "none" }}
+                      dy={li === 0 ? `${-(arr.length - 1) * 5.5}px` : "11px"}
                     >
-                      {seg.label}
-                    </text>
-                  </g>
-                );
-              })}
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              ))}
             </g>
-            <circle cx={center} cy={center} r="22" fill="#1a0030" stroke="#a855f7" strokeWidth="2" />
+
+            {/* Center hub - layered */}
+            <circle cx={center} cy={center} r="28" fill="#0d0015" stroke="#a855f7" strokeWidth="2.5" />
+            <circle cx={center} cy={center} r="22" fill="url(#centerShine)" stroke="#ec4899" strokeWidth="1.5" opacity="0.8" />
+            <circle cx={center} cy={center} r="15" fill="none" stroke="#fbbf24" strokeWidth="1" opacity="0.4" />
+            {/* Center star/diamond */}
+            <polygon
+              points={`${center},${center - 8} ${center + 6.5},${center} ${center},${center + 8} ${center - 6.5},${center}`}
+              fill="#fbbf24"
+              opacity="0.9"
+            />
           </svg>
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1">
-            <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-t-[20px] border-l-transparent border-r-transparent border-t-pink-500 drop-shadow-lg" />
+
+          {/* Pointer / arrow at top */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 z-10">
+            <svg width="28" height="24" viewBox="0 0 28 24" className="drop-shadow-lg">
+              <defs>
+                <linearGradient id="arrowGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#fbbf24" />
+                  <stop offset="100%" stopColor="#f59e0b" />
+                </linearGradient>
+              </defs>
+              <polygon points="14,24 0,0 28,0" fill="url(#arrowGrad)" stroke="#b45309" strokeWidth="1.5" strokeLinejoin="round" />
+            </svg>
           </div>
         </div>
 

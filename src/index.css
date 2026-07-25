@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -52,8 +52,8 @@
     --confidence-medium: 45 90% 55%;
     --confidence-low: 0 65% 52%;
 
-    --font-display: 'Space Grotesk', sans-serif;
-    --font-body: 'Inter', sans-serif;
+    --font-display: 'Plus Jakarta Sans', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
 
     --glow-primary: 0 0 30px hsl(330 90% 60% / 0.25), 0 0 60px hsl(330 90% 60% / 0.1);
     --glow-accent: 0 0 30px hsl(200 100% 60% / 0.25), 0 0 60px hsl(200 100% 60% / 0.1);
