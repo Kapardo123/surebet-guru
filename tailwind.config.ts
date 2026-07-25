@@ -21,6 +21,7 @@ export default {
       fontFamily: {
         display: ["'Space Grotesk'", "sans-serif"],
         body: ["'Inter'", "sans-serif"],
+        splash: ["'Bebas Neue'", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
