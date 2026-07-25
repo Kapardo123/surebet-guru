@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import LottieLogo from "./LottieLogo";
 
 const ADMIN_LOGIN = "123";
 const ADMIN_PASSWORD = "321";

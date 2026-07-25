@@ -1,15 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  ArrowLeft, Zap, Shield, TrendingUp, Star, Loader2, 
-  LogIn, LogOut, Bell, Smartphone, Check, Clock, Globe, X, Home
-} from "lucide-react";
+import { Shield, TrendingUp, Star, Loader2, LogIn, LogOut, Bell, Smartphone, Home } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
 import PageTransition from "@/components/PageTransition";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Switch } from "@/components/ui/switch";

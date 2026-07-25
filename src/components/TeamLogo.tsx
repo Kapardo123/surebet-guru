@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTeamLogo, getCachedTeamLogo, setCachedTeamLogo } from "@/hooks/useTeamLogo";
-import { Shield, Loader2, Circle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { MdSportsTennis } from "react-icons/md";
 
 interface TeamLogoProps {

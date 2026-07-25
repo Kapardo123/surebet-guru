@@ -30,7 +30,75 @@ const clearTipsCache = () => {
   }
 };
 
+// ---- Trwale usuwanie wygaslych meczow (okno 8h) ----
+export const EXPIRY_HOURS = 8;
+const EXPIRY_MS = EXPIRY_HOURS * 60 * 60 * 1000;
+
+/** Czas referencyjny meczu: dla "won" jest to wonAt, dla pozostalych kickoff. */
+const tipReferenceTime = (tip: Pick<Tip, "status" | "kickoff" | "wonAt">): number => {
+  if (tip.status === "won" && tip.wonAt) {
+    const t = new Date(tip.wonAt).getTime();
+    if (!isNaN(t)) return t;
+  }
+  const k = new Date(tip.kickoff).getTime();
+  return isNaN(k) ? NaN : k;
+};
+
+/** Czy mecz jest starszy niz 8h (od kickoff, a dla wygranych od momentu wygranej). */
+export const isTipExpired = (
+  tip: Pick<Tip, "status" | "kickoff" | "wonAt">,
+  now: number = Date.now()
+): boolean => {
+  const ref = tipReferenceTime(tip);
+  if (isNaN(ref)) return false; // brak wiarygodnego czasu - nie usuwamy
+  return now - ref > EXPIRY_MS;
+};
+
+/**
+ * Trwale usuwa wygasle mecze (>8h): z bazy Supabase (RPC `purge_old_tips`,
+ * SECURITY DEFINER - dziala niezaleznie od RLS dla klucza anon) oraz z
+ * lokalnego cache. Zwraca liczbe usunietych wierszy z bazy (-1 = RPC niedostepne).
+ */
+export const purgeExpiredTips = async (): Promise<number> => {
+  // 1) Usun z bazy (wymaga wdrozonej migracji purge_old_tips.sql)
+  let dbDeleted = -1;
+  try {
+    const { data, error } = await (supabase as any).rpc("purge_old_tips", {
+      expiry_hours: EXPIRY_HOURS,
+    });
+    if (error) {
+      console.warn("purge_old_tips RPC niedostepne (wdroz migracje):", error.message);
+    } else {
+      dbDeleted = typeof data === "number" ? data : -1;
+      if (dbDeleted > 0) console.log("[purge] Purged " + dbDeleted + " expired tips from DB");
+    }
+  } catch (e) {
+    console.warn("purgeExpiredTips RPC error:", e);
+  }
+
+  // 2) Wyczysc lokalny cache z wygaslych (zawsze dziala, rowniez offline)
+  try {
+    const cached = getCachedTips();
+    if (cached.length) {
+      const now = Date.now();
+      const fresh = cached.filter((t) => !isTipExpired(t, now));
+      if (fresh.length !== cached.length) {
+        setCachedTips(fresh);
+        console.log("[purge] Removed " + (cached.length - fresh.length) + " expired tips from local cache");
+      }
+    }
+  } catch (e) {
+    console.warn("cache purge error:", e);
+  }
+
+  return dbDeleted;
+};
+
+
 export const loadTips = async (publishedOnly: boolean = true, forceRefresh: boolean = false): Promise<Tip[]> => {
+  // Najpierw trwale usun wygasle mecze (>8h) z bazy i lokalnego cache
+  await purgeExpiredTips();
+
   // Jeśli forceRefresh - pomijamy cache całkowicie
   const cached = forceRefresh ? [] : getCachedTips();
 
@@ -110,10 +178,6 @@ export const loadTips = async (publishedOnly: boolean = true, forceRefresh: bool
     setCachedTips(tips);
   }
   return tips;
-};
-
-export const loadAllTips = async (): Promise<Tip[]> => {
-  return loadTips(false);
 };
 
 export const loadDraftTips = async (): Promise<Tip[]> => {

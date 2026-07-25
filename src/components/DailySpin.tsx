@@ -4,22 +4,8 @@ import { Gift, Crown, Clock, Sparkles, LogIn } from "lucide-react";
 import { Link } from "react-router-dom";
 import { addPremiumDay, addPremiumDays } from "@/lib/premiumStorage";
 
-const DEVICE_KEY = "gsb_device_id";
 const SPIN_KEY = "gsb_last_spin";
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
-
-const getDeviceId = (): string => {
-  try {
-    let id = localStorage.getItem(DEVICE_KEY);
-    if (!id) {
-      id = crypto.randomUUID();
-      localStorage.setItem(DEVICE_KEY, id);
-    }
-    return id;
-  } catch {
-    return crypto.randomUUID();
-  }
-};
 
 const SEGMENTS = [
   { label: "Free Tip", prize: "1 free premium tip", color: "#ec4899", icon: Gift },

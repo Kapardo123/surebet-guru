@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import PageTransition from "@/components/PageTransition";
 import TipCard from "@/components/TipCard";
 import CouponCard from "@/components/CouponCard";
 import DailySpin from "@/components/DailySpin";
@@ -20,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ScrollReveal from "@/components/ScrollReveal";
-import ParticleBackground from "@/components/ParticleBackground";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
@@ -42,18 +40,20 @@ const Index = () => {
       const loadedCoupons = await loadCoupons();
       const loadedHeroPick = await loadFeaturedPick();
 
-      const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+      const TIP_EXPIRY_MS = 8 * 60 * 60 * 1000;   // mecze: po 8h znikaja i sa TRWALE usuwane
+      const COUPON_WINDOW_MS = 12 * 60 * 60 * 1000; // kupony: bez zmian (okno 12h)
       const now = Date.now();
 
+      // Bezpiecznik widoku - wlasciwe usuwanie (baza + cache) robi purgeExpiredTips w loadTips().
       const visibleTips = loadedTips.filter(tip => {
         if (tip.status === 'upcoming') {
           const kickoffTime = new Date(tip.kickoff).getTime();
-          if (!isNaN(kickoffTime) && now - kickoffTime > TWELVE_HOURS_MS) return false;
+          if (!isNaN(kickoffTime) && now - kickoffTime > TIP_EXPIRY_MS) return false;
           return true;
         }
         if (tip.status === 'won' && tip.wonAt) {
           const wonTime = new Date(tip.wonAt).getTime();
-          return (now - wonTime) < TWELVE_HOURS_MS;
+          return (now - wonTime) < TIP_EXPIRY_MS;
         }
         return false;
       }).sort((a, b) => (a.kickoff || "").localeCompare(b.kickoff || ""));
@@ -61,7 +61,7 @@ const Index = () => {
       const visibleCoupons = loadedCoupons.filter(coupon => {
         if (coupon.status === 'active' || coupon.status === 'pending') return true;
         if (coupon.status === 'won' && coupon.wonAt) {
-          return (now - new Date(coupon.wonAt).getTime()) < TWELVE_HOURS_MS;
+          return (now - new Date(coupon.wonAt).getTime()) < COUPON_WINDOW_MS;
         }
         return false;
       });

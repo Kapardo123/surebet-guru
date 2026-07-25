@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AdMob, AdRewardItem, RewardAdOptions, AdLoadOptions, AdShowOptions } from '@capacitor-community/admob';
+import { AdMob, AdLoadOptions } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
 
 export const isNativePlatform = Capacitor.isNativePlatform();

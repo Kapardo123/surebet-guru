@@ -44,20 +44,6 @@ export const getCustomTeamLogo = (teamName: string): LogoCandidate | null => {
   }
 };
 
-export const deleteCustomTeamLogo = (teamName: string) => {
-  const key = teamName.trim().toLowerCase();
-  if (!key || key.length < 2) return;
-  try {
-    const raw = localStorage.getItem(CUSTOM_TEAM_LOGOS_KEY);
-    if (!raw) return;
-    const store: Record<string, string> = JSON.parse(raw);
-    delete store[key];
-    localStorage.setItem(CUSTOM_TEAM_LOGOS_KEY, JSON.stringify(store));
-  } catch {
-    return;
-  }
-};
-
 const makeQueries = (teamName: string): string[] => {
   const clean = teamName.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
   const queries: string[] = [];

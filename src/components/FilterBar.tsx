@@ -1,5 +1,4 @@
 import { Crown, Filter, Trophy } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
 export type PremiumFilter = "all" | "premium" | "free";
 

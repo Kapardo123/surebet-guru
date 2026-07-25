@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Coupon } from "@/lib/couponStorage";
-import { Receipt, Clock, Crown, Lock, Layers, Sparkles } from "lucide-react";
+import { Receipt, Clock, Crown, Lock, Layers } from "lucide-react";
 import TeamLogo, { SportIcon } from "@/components/TeamLogo";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";

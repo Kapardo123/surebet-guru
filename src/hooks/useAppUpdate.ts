@@ -22,7 +22,6 @@ interface UpdateStatus {
 }
 
 const CURRENT_VERSION = "16.0.0";
-const CURRENT_BUILD = 1600;
 
 export const useAppUpdate = (): UpdateStatus => {
   const [status, setStatus] = useState<UpdateStatus>({

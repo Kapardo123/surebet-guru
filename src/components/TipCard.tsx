@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Clock, Lock, Crown, ChevronDown, ChevronUp, TrendingUp, Sparkles } from "lucide-react";
+import { Clock, Lock, Crown, ChevronDown, ChevronUp, TrendingUp } from "lucide-react";
 import TeamLogo, { SportIcon } from "@/components/TeamLogo";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";

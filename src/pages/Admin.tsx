@@ -9,49 +9,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { addTip, loadTips, deleteTip, updateTip, loadDraftTips, publishAllDrafts, publishTipById, unpublishTipById } from "@/lib/tipsStorage";
 import { addCoupon, loadCoupons, deleteCoupon, updateCoupon, calculateTotalOdds, CouponMatch, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, saveFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
-import { fetchTeamLogoUrl, fetchTeamLogoCandidates, LogoCandidate, saveCustomTeamLogo } from "@/lib/logoFetcher";
+import { fetchTeamLogoCandidates, LogoCandidate, saveCustomTeamLogo } from "@/lib/logoFetcher";
 import { Tip } from "@/components/TipCard";
-import { 
-  Plus, 
-  Trash2, 
-  ArrowLeft, 
-  Crown, 
-  Receipt, 
-  X, 
-  Zap, 
-  Pencil, 
-  Save, 
-  XCircle, 
-  Users, 
-  Bell,
-  Search,
-  Check,
-  RefreshCw,
-  LogOut,
-  ChevronRight,
-  Trophy,
-  PlusCircle,
-  LayoutDashboard,
-  TrendingUp,
-  Loader2,
-  Sparkles,
-  ClipboardPaste,
-  List,
-  Send,
-  Clock,
-  EyeOff,
-  Upload,
-  Download
-} from "lucide-react";
+import { Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, Users, Bell, Search, RefreshCw, PlusCircle, Loader2, Sparkles, ClipboardPaste, List, Send, Clock, EyeOff, Upload, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
-import UpcomingMatchesList from "@/components/UpcomingMatchesList";
 import SportyTraderImport from "@/components/SportyTraderImport";
 import ZawodTyperImport from "@/components/ZawodTyperImport";
 import { ScrapedMatch, ImportTarget } from "@/lib/sportyTrader";
 import Logo from "@/components/Logo";
-import { fetchMatchesByDate, fetchTeamForm } from "@/lib/sportApi";
 import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
@@ -83,19 +50,6 @@ const Admin = () => {
     }
   };
 
-  const handleSelectMatch = async (match: any) => {
-    setForm((prev) => ({
-      ...prev,
-      homeTeam: match.homeTeam,
-      awayTeam: match.awayTeam,
-      league: match.league,
-      kickoff: `${match.date} ${match.time}`,
-      homeTeamLogo: match.homeLogo,
-      awayTeamLogo: match.awayLogo
-    }));
-    toast({ title: `Match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
-  };
-
   const handleSelectCouponMatch = (match: any) => {
     setCouponMatchForm((prev) => ({
       ...prev,
@@ -107,20 +61,6 @@ const Admin = () => {
       awayTeamLogo: match.awayLogo
     }));
     toast({ title: `Coupon match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
-  };
-
-  const handleSelectFeaturedMatch = async (match: any) => {
-    setFeatured((prev) => ({
-      ...prev,
-      homeTeam: match.homeTeam,
-      awayTeam: match.awayTeam,
-      league: match.league,
-      kickoff: `${match.date} ${match.time}`,
-      homeTeamLogo: match.homeLogo,
-      awayTeamLogo: match.awayLogo,
-      sport: match.sport || "Football"
-    }));
-    toast({ title: `Featured match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
 
   // Route a scraped SportyTrader match into the Tip / Hero / Coupon form.
@@ -145,18 +85,13 @@ const Admin = () => {
         kickoff: kickoffISO,
         status: "upcoming",
         isPremium: true,
-        isPublished: true,
+        isPublished: false, // import -> szkic (nie trafia na strone glowna)
         homeTeamLogo: match.homeTeamLogo,
         awayTeamLogo: match.awayTeamLogo,
         description: analysis,
       });
-      try {
-        await supabase.functions.invoke("send-premium-push", {
-          body: { title: "New Premium Tip! 🔥", message: `${match.homeTeam} vs ${match.awayTeam} - ${match.prediction}` }
-        });
-      } catch { /* ignore */ }
       await refreshData(true);
-      toast({ title: "Tip published as premium! ✅", description: `${match.homeTeam} vs ${match.awayTeam}` });
+      toast({ title: "Tip imported as draft", description: `${match.homeTeam} vs ${match.awayTeam} - edit & publish in the Tips tab` });
     } else if (target === "hero") {
       const { id, ...pick } = featured;
       await saveFeaturedPick({
@@ -609,6 +544,15 @@ const Admin = () => {
   const handlePublishTip = async (id: number) => {
     try {
       await publishTipById(id);
+      // Powiadomienie premium dopiero przy publikacji (typ z importu jest najpierw szkicem).
+      const publishedTip = draftTips.find((t) => t.id === id);
+      if (publishedTip?.isPremium) {
+        try {
+          await supabase.functions.invoke("send-premium-push", {
+            body: { title: "New Premium Tip!", message: `${publishedTip.homeTeam} vs ${publishedTip.awayTeam} - ${publishedTip.prediction}` },
+          });
+        } catch { /* ignore */ }
+      }
       toast({ title: "Tip published! ✅" });
       await refreshData(true); // Force refresh after publish
     } catch (error: any) {
@@ -1011,18 +955,6 @@ const Admin = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-primary/20 shadow-lg overflow-hidden border-2">
-              <CardContent className="p-4 sm:p-6">
-                <h2 className="font-display text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Search className="w-5 h-5 text-primary" />
-                  Quick Match Finder
-                </h2>
-                <UpcomingMatchesList onSelectMatch={handleSelectMatch} />
-                <p className="text-[10px] text-muted-foreground mt-3 italic">
-                  * Select a match above to automatically fill the "Add New Tip" form below.
-                </p>
-              </CardContent>
-            </Card>
 
             {/* ADD / EDIT TIP - RE-LAYOUT FOR MOBILE */}
             <Card className={`bg-card border-border/50 ${editingTipId !== null ? 'ring-2 ring-primary' : ''}`}>
@@ -1314,7 +1246,6 @@ const Admin = () => {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-4">
-                <UpcomingMatchesList onSelectMatch={handleSelectFeaturedMatch} />
                 <div className="space-y-3 p-4 bg-muted/10 rounded-xl border border-border/50">
                   <div className="space-y-1">
                     <Label className="text-[9px] uppercase text-muted-foreground">League</Label>
@@ -2060,28 +1991,6 @@ const Admin = () => {
 
         {/* UTILITY BUTTONS */}
         <div className="flex items-center justify-end gap-2 flex-wrap">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-8 text-[10px] border-accent/30 text-accent"
-            onClick={async () => {
-              try {
-                const date = new Date().toISOString().split('T')[0];
-                toast({ title: "Testing SofaScore API..." });
-                const results = await fetchMatchesByDate(date);
-                console.log("Test results:", results);
-                if (results.length > 0) {
-                  toast({ title: "API OK! ✅", description: `Found ${results.length} fixtures.` });
-                } else {
-                  toast({ variant: "destructive", title: "API Error ❌", description: "No events found." });
-                }
-              } catch (e) {
-                toast({ variant: "destructive", title: "Test Failed", description: String(e) });
-              }
-            }}
-          >
-            <Zap className="w-3 h-3 mr-1" /> Test API
-          </Button>
           <Button 
             variant="outline" 
             size="sm" 
