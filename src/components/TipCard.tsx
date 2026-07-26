@@ -60,11 +60,12 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
       const cleanKickoff = String(kickoffStr).replace(/\[object Object\]/g, "").trim();
       const date = new Date(cleanKickoff.replace(' ', 'T'));
       if (!isNaN(date.getTime())) {
-        return date.toLocaleString(undefined, {
+        return date.toLocaleString("pl-PL", {
           day: '2-digit',
           month: '2-digit',
           hour: '2-digit',
-          minute: '2-digit'
+          minute: '2-digit',
+          hour12: false
         });
       }
       return cleanKickoff || "TBD";
@@ -109,7 +110,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
                 <SportIcon sport={tip.sport} size={8} />
                 {tip.sport}
               </Badge>
-              <span className="text-[10px] text-muted-foreground/70 font-medium truncate max-w-[120px]">{tip.league}</span>
+              <span className="text-[10px] text-purple-400/70 font-medium truncate max-w-[120px]">{tip.league}</span>
             </div>
             <Badge variant={statusVariant[tip.status]} className="gap-1 shrink-0 text-[9px] px-2 py-0.5">
               <StatusIcon status={tip.status} />
@@ -222,8 +223,8 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
 
           {/* Footer */}
           <div className="flex items-center gap-1.5 pt-1.5 border-t border-white/[0.04]">
-            <Timer className="w-3 h-3 text-muted-foreground/50" />
-            <span className="text-[10px] text-muted-foreground/60 font-medium">{formatKickoff(tip.kickoff)}</span>
+            <Timer className="w-3 h-3 text-purple-400/50" />
+            <span className="text-[10px] text-purple-400/70 font-medium">{formatKickoff(tip.kickoff)}</span>
           </div>
         </div>
       </div>

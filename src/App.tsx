@@ -80,6 +80,7 @@ const AnimatedRoutes = () => {
 
 const AppContent = () => {
   const [error, setError] = useState<string | null>(globalError);
+  const [splashDone, setSplashDone] = useState(sessionStorage.getItem("splash_shown") === "true");
   const {
     needsUpdate,
     forceUpdate,
@@ -127,20 +128,24 @@ const AppContent = () => {
 
   return (
     <AuthProvider>
-      <SplashScreen />
-      <Toaster />
-      <Sonner />
-      <AnimatedRoutes />
-      
-      {/* Update Modal - shows over everything */}
-      {!updateLoading && needsUpdate && (
-        <UpdateRequiredModal
-          isOpen={needsUpdate}
-          currentVersion={currentVersion}
-          latestVersion={latestVersion}
-          message={message}
-          downloadUrl={downloadUrl}
-        />
+      <SplashScreen onFinish={() => setSplashDone(true)} />
+      {splashDone && (
+        <>
+          <Toaster />
+          <Sonner />
+          <AnimatedRoutes />
+
+          {/* Update Modal - shows over everything */}
+          {!updateLoading && needsUpdate && (
+            <UpdateRequiredModal
+              isOpen={needsUpdate}
+              currentVersion={currentVersion}
+              latestVersion={latestVersion}
+              message={message}
+              downloadUrl={downloadUrl}
+            />
+          )}
+        </>
       )}
     </AuthProvider>
   );

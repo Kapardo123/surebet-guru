@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 
 const APP_VERSION = {
-  version: "20.0.0",
-  build: 2000,
+  version: "21.0.0",
+  build: 2100,
   forceUpdate: true,
   releaseDate: "2026-07-26",
   updateMessage: "New version available! v20.0.0 — Daily Spin wheel, AI analysis, SportyTrader import with odds.",

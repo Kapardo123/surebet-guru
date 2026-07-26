@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import TipCard from "@/components/TipCard";
 import CouponCard from "@/components/CouponCard";
 import DailySpin from "@/components/DailySpin";
@@ -41,22 +41,15 @@ const Index = () => {
       const loadedCoupons = await loadCoupons();
       const loadedHeroPick = await loadFeaturedPick();
 
-      const TIP_EXPIRY_MS = 8 * 60 * 60 * 1000;   // mecze: po 8h znikaja i sa TRWALE usuwane
-      const COUPON_WINDOW_MS = 12 * 60 * 60 * 1000; // kupony: bez zmian (okno 12h)
+      const TIP_EXPIRY_MS = 8 * 60 * 60 * 1000;   // mecze: po 8h od kickoff znikaja
+      const COUPON_WINDOW_MS = 12 * 60 * 60 * 1000; // kupony: okno 12h
       const now = Date.now();
 
       // Bezpiecznik widoku - wlasciwe usuwanie (baza + cache) robi purgeExpiredTips w loadTips().
       const visibleTips = loadedTips.filter(tip => {
-        if (tip.status === 'upcoming') {
-          const kickoffTime = new Date(tip.kickoff).getTime();
-          if (!isNaN(kickoffTime) && now - kickoffTime > TIP_EXPIRY_MS) return false;
-          return true;
-        }
-        if (tip.status === 'won' && tip.wonAt) {
-          const wonTime = new Date(tip.wonAt).getTime();
-          return (now - wonTime) < TIP_EXPIRY_MS;
-        }
-        return false;
+        const kickoffTime = new Date(tip.kickoff).getTime();
+        if (isNaN(kickoffTime)) return true; // brak daty — nie ukrywamy
+        return now - kickoffTime < TIP_EXPIRY_MS;
       }).sort((a, b) => (a.kickoff || "").localeCompare(b.kickoff || ""));
 
       const visibleCoupons = loadedCoupons.filter(coupon => {
@@ -77,32 +70,51 @@ const Index = () => {
     fetchData();
   }, [isPremium]);
 
-  const tipSports = Array.from(
-    new Set(tips.map((t) => t.sport).filter(Boolean) as string[])
-  ).sort();
+  const tipSports = useMemo(() =>
+    Array.from(new Set(tips.map((t) => t.sport).filter(Boolean) as string[])).sort(),
+    [tips]
+  );
 
-  const filteredTips = tips.filter((tip) => {
-    if (tipSport !== "All" && tip.sport !== tipSport) return false;
-    if (tipPremium === "premium" && !tip.isPremium) return false;
-    if (tipPremium === "free" && tip.isPremium) return false;
-    return true;
-  });
+  const filteredTips = useMemo(() =>
+    tips.filter((tip) => {
+      if (tipSport !== "All" && tip.sport !== tipSport) return false;
+      if (tipPremium === "premium" && !tip.isPremium) return false;
+      if (tipPremium === "free" && tip.isPremium) return false;
+      return true;
+    }),
+    [tips, tipSport, tipPremium]
+  );
 
-  const filteredCoupons = coupons.filter((coupon) => {
-    if (couponPremium === "premium" && !coupon.isPremium) return false;
-    if (couponPremium === "free" && coupon.isPremium) return false;
-    return true;
-  });
+  const filteredCoupons = useMemo(() =>
+    coupons.filter((coupon) => {
+      if (couponPremium === "premium" && !coupon.isPremium) return false;
+      if (couponPremium === "free" && coupon.isPremium) return false;
+      return true;
+    }),
+    [coupons, couponPremium]
+  );
+
+  const handleFreeTip = useCallback(() => {
+    const premiumTips = allLoadedTips.filter((t) => t.isPremium && t.status === "upcoming");
+    if (premiumTips.length > 0) {
+      setFreeTip(premiumTips[Math.floor(Math.random() * premiumTips.length)]);
+    } else {
+      const anyTips = allLoadedTips.filter((t) => t.status === "upcoming");
+      if (anyTips.length > 0) {
+        setFreeTip(anyTips[Math.floor(Math.random() * anyTips.length)]);
+      }
+    }
+  }, [allLoadedTips]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-hidden">
-      {/* Synthwave glow effects */}
-      <div className="fixed top-0 left-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(-30%, -30%)' }} />
-      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', transform: 'translate(30%, 30%)' }} />
-      <div className="fixed top-1/2 left-1/2 w-[400px] h-[400px] rounded-full blur-[100px] opacity-10 pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)', transform: 'translate(-50%, -50%)' }} />
+      {/* Synthwave glow effects - GPU composited */}
+      <div className="fixed top-0 left-0 w-[500px] h-[500px] rounded-full pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(-30%, -30%)', filter: 'blur(120px)', opacity: 0.15, willChange: 'transform' }} />
+      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] rounded-full pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', transform: 'translate(30%, 30%)', filter: 'blur(120px)', opacity: 0.15, willChange: 'transform' }} />
+      <div className="fixed top-1/2 left-1/2 w-[400px] h-[400px] rounded-full pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)', transform: 'translate(-50%, -50%)', filter: 'blur(100px)', opacity: 0.1, willChange: 'transform' }} />
 
       {/* Glass Header */}
       <header className="sticky top-0 z-50 backdrop-blur-2xl border-b border-white/[0.06] shadow-2xl shadow-black/40"
@@ -342,20 +354,7 @@ const Index = () => {
           <DailySpin
             isLoggedIn={!!user}
             userId={user?.id}
-            onFreeTip={() => {
-              const premiumTips = allLoadedTips.filter((t) => t.isPremium && t.status === "upcoming");
-              if (premiumTips.length > 0) {
-                const random = premiumTips[Math.floor(Math.random() * premiumTips.length)];
-                setFreeTip(random);
-              } else {
-                // Fallback: show any upcoming tip
-                const anyTips = allLoadedTips.filter((t) => t.status === "upcoming");
-                if (anyTips.length > 0) {
-                  const random = anyTips[Math.floor(Math.random() * anyTips.length)];
-                  setFreeTip(random);
-                }
-              }
-            }}
+            onFreeTip={handleFreeTip}
           />
         </ScrollReveal>
       </main>

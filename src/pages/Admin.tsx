@@ -1499,6 +1499,17 @@ const Admin = () => {
                       </Select>
                     </div>
                   </div>
+                  <div className="flex items-center gap-3 p-3 bg-muted/10 border border-border/30 rounded-xl">
+                    <Checkbox
+                      id="heroUnlockFree"
+                      checked={featured.unlockFree ?? false}
+                      onCheckedChange={(c) => setFeatured({ ...featured, unlockFree: c === true })}
+                    />
+                    <Label htmlFor="heroUnlockFree" className="text-xs cursor-pointer">
+                      <span className="font-bold">Unlock without ad</span>
+                      <span className="text-muted-foreground ml-1">— users see prediction immediately</span>
+                    </Label>
+                  </div>
                   <div className="space-y-1">
                     <Label className="text-[9px] uppercase text-muted-foreground">Prediction & Odds</Label>
                     <div className="flex gap-2">

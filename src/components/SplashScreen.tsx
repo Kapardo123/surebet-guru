@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const SplashScreen = () => {
+const SplashScreen = ({ onFinish }: { onFinish?: () => void }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem("splash_shown")) return;
+    if (sessionStorage.getItem("splash_shown")) {
+      onFinish?.();
+      return;
+    }
 
     setIsVisible(true);
 
@@ -14,6 +17,7 @@ const SplashScreen = () => {
     const hideTimer = setTimeout(() => {
       setIsVisible(false);
       sessionStorage.setItem("splash_shown", "true");
+      onFinish?.();
     }, 3400);
 
     return () => {

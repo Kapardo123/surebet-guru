@@ -34,19 +34,15 @@ const clearTipsCache = () => {
 export const EXPIRY_HOURS = 8;
 const EXPIRY_MS = EXPIRY_HOURS * 60 * 60 * 1000;
 
-/** Czas referencyjny meczu: dla "won" jest to wonAt, dla pozostalych kickoff. */
-const tipReferenceTime = (tip: Pick<Tip, "status" | "kickoff" | "wonAt">): number => {
-  if (tip.status === "won" && tip.wonAt) {
-    const t = new Date(tip.wonAt).getTime();
-    if (!isNaN(t)) return t;
-  }
+/** Czas referencyjny meczu — zawsze kickoff (odliczanie od godziny rozpoczęcia meczu). */
+const tipReferenceTime = (tip: Pick<Tip, "kickoff">): number => {
   const k = new Date(tip.kickoff).getTime();
   return isNaN(k) ? NaN : k;
 };
 
-/** Czy mecz jest starszy niz 8h (od kickoff, a dla wygranych od momentu wygranej). */
+/** Czy mecz jest starszy niz 8h od kickoff. */
 export const isTipExpired = (
-  tip: Pick<Tip, "status" | "kickoff" | "wonAt">,
+  tip: Pick<Tip, "kickoff">,
   now: number = Date.now()
 ): boolean => {
   const ref = tipReferenceTime(tip);

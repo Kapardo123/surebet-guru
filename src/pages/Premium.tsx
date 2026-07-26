@@ -330,8 +330,8 @@ export default function Premium() {
             By subscribing, you agree to our <Link to="/terms" className="underline">Terms of Service</Link>.
           </p>
           <div className="flex flex-col items-center gap-1 opacity-30">
-            <p className="text-[9px] font-black tracking-widest uppercase">App Version 20.0.0</p>
-            <p className="text-[8px] font-bold">Build 2000</p>
+            <p className="text-[9px] font-black tracking-widest uppercase">App Version 21.0.0</p>
+            <p className="text-[8px] font-bold">Build 2100</p>
           </div>
         </section>
       </main>

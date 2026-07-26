@@ -15,6 +15,7 @@ export interface FeaturedPick {
   description?: string | null;
   wonAt?: string | null;
   sport?: string | null;
+  unlockFree?: boolean;
 }
 export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
   const { data, error } = await supabase
@@ -44,7 +45,8 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
     awayTeamLogo: data.away_team_logo,
     description: data.description,
     wonAt: data.won_at || null,
-    sport: data.sport || null
+    sport: data.sport || null,
+    unlockFree: data.unlock_free ?? false,
   };
 };
 
@@ -64,6 +66,7 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
     away_team_logo: pick.awayTeamLogo,
     description: pick.description,
     won_at: wonAt,
+    unlock_free: pick.unlockFree ?? false,
   };
 
   // Tylko dodaj sport jezeli pole zostalo juz dodane do bazy (unika bledu PGRST204)
@@ -78,10 +81,11 @@ export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {
   if (error) {
     console.error("Supabase error saving featured pick:", error);
     // Jesli kolumna sport nie istnieje, sprobuj zapisac bez niej
-    if (error.code === 'PGRST204' || error.message?.includes('sport')) {
-      console.warn("Kolumna 'sport' nie istnieje w bazie - probuje zapisac bez niej...");
+    if (error.code === 'PGRST204' || error.message?.includes('sport') || error.message?.includes('unlock_free')) {
+      console.warn("Kolumna nie istnieje w bazie - probuje zapisac bez niej...");
       const retryData = { ...dataToSave };
       delete retryData.sport;
+      delete retryData.unlock_free;
       const { error: retryError } = await supabase.from('featured_picks').insert([retryData]);
       if (retryError) throw new Error(retryError.message || "Unknown Supabase error");
       return;

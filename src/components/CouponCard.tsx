@@ -60,7 +60,7 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
               <div className="min-w-0">
                 <h3 className="font-display font-bold text-sm text-foreground truncate">{coupon.name}</h3>
                 {coupon.sport && (
-                  <span className="text-[9px] text-muted-foreground/60 font-medium tracking-wider uppercase inline-flex items-center gap-1">
+                  <span className="text-[9px] text-muted-foreground font-medium tracking-wider uppercase inline-flex items-center gap-1">
                     <SportIcon sport={coupon.sport} size={7} />
                     {coupon.sport}
                   </span>
@@ -98,16 +98,16 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
                       </span>
                     )}
                     {match.league && (
-                      <span className="text-[8px] text-muted-foreground/50 bg-white/[0.03] px-1.5 py-0.5 rounded">{match.league}</span>
+                      <span className="text-[8px] text-purple-400/70 bg-purple-500/10 px-1.5 py-0.5 rounded font-medium">{match.league}</span>
                     )}
                     {match.kickoff && (
-                      <span className="text-[8px] text-muted-foreground/50 flex items-center gap-0.5 ml-auto">
-                        <Timer className="w-2.5 h-2.5 text-blue-400/40" />
+                      <span className="text-[8px] text-purple-400/70 flex items-center gap-0.5 ml-auto font-medium">
+                        <Timer className="w-2.5 h-2.5 text-purple-400/50" />
                         {(() => {
                           try {
                             const d = new Date(match.kickoff);
                             return !isNaN(d.getTime())
-                              ? d.toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                              ? d.toLocaleString("pl-PL", { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
                               : String(match.kickoff);
                           } catch { return String(match.kickoff); }
                         })()}
@@ -185,9 +185,9 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
           {/* Footer */}
           <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-white/[0.04]">
             <div className="flex items-center gap-1.5">
-              <Timer className="w-3 h-3 text-muted-foreground/40" />
-              <span className="text-[10px] text-muted-foreground/50 font-medium">
-                {new Date(coupon.createdAt).toLocaleDateString()}
+              <Timer className="w-3 h-3 text-purple-400/50" />
+              <span className="text-[10px] text-purple-400/70 font-medium">
+                {new Date(coupon.createdAt).toLocaleDateString("pl-PL")}
               </span>
             </div>
             {coupon.stake && (
