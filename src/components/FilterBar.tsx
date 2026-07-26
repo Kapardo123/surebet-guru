@@ -1,4 +1,4 @@
-import { Crown, Filter, Trophy } from "lucide-react";
+import { Gem, SlidersHorizontal, Award } from "lucide-react";
 
 export type PremiumFilter = "all" | "premium" | "free";
 
@@ -26,19 +26,19 @@ const FilterBar = ({
   const accentGradients = {
     purple: {
       active: "from-pink-500 via-purple-500 to-fuchsia-500",
-      borderActive: "border-pink-500/50",
-      border: "border-purple-500/20",
-      bg: "bg-purple-500/10",
-      text: "text-purple-300",
-      borderActive2: "border-purple-500/50",
+      borderActive: "border-white/20",
+      border: "border-white/[0.08]",
+      bg: "bg-white/[0.04]",
+      text: "text-white/50",
+      borderActive2: "border-white/20",
     },
     blue: {
       active: "from-blue-500 via-cyan-500 to-teal-500",
-      borderActive: "border-blue-500/50",
-      border: "border-blue-500/20",
-      bg: "bg-blue-500/10",
-      text: "text-blue-300",
-      borderActive2: "border-blue-500/50",
+      borderActive: "border-white/20",
+      border: "border-white/[0.08]",
+      bg: "bg-white/[0.04]",
+      text: "text-white/50",
+      borderActive2: "border-white/20",
     },
   };
   const c = accentGradients[accent];
@@ -47,7 +47,7 @@ const FilterBar = ({
     <div className="space-y-3">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Filter className="w-4 h-4" />
+          <SlidersHorizontal className="w-4 h-4" />
           <span className="text-xs font-medium uppercase tracking-wider">
             Filter
           </span>
@@ -73,7 +73,7 @@ const FilterBar = ({
                 }`}
               >
                 <span className="flex items-center gap-1.5">
-                  <Trophy className="w-3 h-3" />
+                  <Award className="w-3 h-3" />
                   All
                 </span>
               </button>
@@ -111,7 +111,7 @@ const FilterBar = ({
               {type === "all" && <span>All</span>}
               {type === "premium" && (
                 <span className="flex items-center gap-1">
-                  <Crown className="w-2.5 h-2.5" />
+                  <Gem className="w-2.5 h-2.5" />
                   Premium
                 </span>
               )}

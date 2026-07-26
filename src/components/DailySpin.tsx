@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Gift, Crown, Clock, Sparkles, LogIn } from "lucide-react";
+import { Gift, Gem, Timer, Sparkles, ArrowRightToLine } from "lucide-react";
 import { Link } from "react-router-dom";
 import { addPremiumDay, addPremiumDays } from "@/lib/premiumStorage";
 
@@ -9,11 +9,11 @@ const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 const SEGMENTS = [
   { label: "Free Tip", prize: "1 free premium tip", icon: Gift },
-  { label: "Premium\n1 Day", prize: "1 day premium free", icon: Crown },
-  { label: "Premium\n7 Days", prize: "7 days premium free", icon: Crown },
-  { label: "Try\nAgain", prize: "Try again", icon: Clock },
+  { label: "Premium\n1 Day", prize: "1 day premium free", icon: Gem },
+  { label: "Premium\n7 Days", prize: "7 days premium free", icon: Gem },
+  { label: "Try\nAgain", prize: "Try again", icon: Timer },
   { label: "Free Tip", prize: "1 free premium tip", icon: Gift },
-  { label: "Try\nAgain", prize: "Try again", icon: Clock },
+  { label: "Try\nAgain", prize: "Try again", icon: Timer },
 ];
 
 const SEGMENT_COLORS = [
@@ -113,12 +113,12 @@ const DailySpin = ({ isLoggedIn = false, userId, onFreeTip }: { isLoggedIn?: boo
   });
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-950/40 via-pink-950/30 to-background border border-purple-500/20 p-4 sm:p-5">
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-card via-purple-950/10 to-pink-950/5 border border-white/[0.06] p-4 sm:p-5">
       <div className="flex items-center gap-2 mb-3">
         <Sparkles className="w-5 h-5 text-amber-400" />
         <h3 className="font-display text-sm font-bold text-amber-400">Daily Reward</h3>
       </div>
-      <p className="text-[11px] text-muted-foreground mb-4">Spin the wheel and win a prize!</p>
+      <p className="text-[11px] text-white/30 mb-4">Spin the wheel and win a prize!</p>
 
       <div className="flex flex-col items-center gap-4">
         {/* Wheel */}
@@ -253,21 +253,23 @@ const DailySpin = ({ isLoggedIn = false, userId, onFreeTip }: { isLoggedIn?: boo
         {!isLoggedIn ? (
           <Link to="/auth">
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-8 py-3 rounded-full font-display font-bold text-sm bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:scale-105 shadow-lg shadow-purple-500/30 transition-all flex items-center gap-2"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="px-8 py-3 rounded-full font-display font-bold text-sm text-white flex items-center gap-2"
+              style={{ background: "linear-gradient(135deg, #ec4899 0%, #a855f7 100%)" }}
             >
-              <LogIn className="w-4 h-4" /> Log in to spin
+              <ArrowRightToLine className="w-4 h-4" /> Log in to spin
             </motion.button>
           </Link>
         ) : showLogin ? (
           <Link to="/auth">
             <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="px-8 py-3 rounded-full font-display font-bold text-sm bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:scale-105 shadow-lg shadow-purple-500/30 transition-all flex items-center gap-2"
+              className="px-8 py-3 rounded-full font-display font-bold text-sm text-white flex items-center gap-2"
+              style={{ background: "linear-gradient(135deg, #ec4899 0%, #a855f7 100%)" }}
             >
-              <LogIn className="w-4 h-4" /> Log in to spin
+              <ArrowRightToLine className="w-4 h-4" /> Log in to spin
             </motion.button>
           </Link>
         ) : (
@@ -276,9 +278,10 @@ const DailySpin = ({ isLoggedIn = false, userId, onFreeTip }: { isLoggedIn?: boo
           disabled={!isLoggedIn || spinning || blocked}
           className={`px-8 py-3 rounded-full font-display font-bold text-sm transition-all ${
             isLoggedIn && !spinning && !blocked
-              ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:scale-105 shadow-lg shadow-purple-500/30"
-              : "bg-muted/50 text-muted-foreground cursor-not-allowed"
+              ? "text-white hover:scale-105"
+              : "bg-white/[0.04] text-white/25 cursor-not-allowed border border-white/[0.06]"
           }`}
+          style={isLoggedIn && !spinning && !blocked ? { background: "linear-gradient(135deg, #ec4899 0%, #a855f7 100%)" } : undefined}
         >
           {spinning ? (
             <span className="flex items-center gap-2">
@@ -286,14 +289,14 @@ const DailySpin = ({ isLoggedIn = false, userId, onFreeTip }: { isLoggedIn?: boo
             </span>
           ) : result ? (
             <span className="flex items-center gap-2">
-              <Crown className="w-4 h-4 text-amber-400" /> {result}
+              <Gem className="w-4 h-4 text-amber-400" /> {result}
             </span>
           ) : blocked ? (
             <span className="flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Come back in 24h
+              <Timer className="w-4 h-4" /> Come back in 24h
             </span>
           ) : (
-            "SPIN THE WHEEL 🎰"
+            "SPIN THE WHEEL"
           )}
         </button>
         )}
@@ -302,7 +305,7 @@ const DailySpin = ({ isLoggedIn = false, userId, onFreeTip }: { isLoggedIn?: boo
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-xs text-amber-400 font-semibold text-center"
+            className="text-xs text-amber-400/80 font-semibold text-center"
           >
             🎉 You won: {result}!
           </motion.p>

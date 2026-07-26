@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Zap, Play, Gift, Loader2, Crown, Lock } from "lucide-react";
+import { Flame, Play, Loader2, Gem, Shield, Crosshair } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { motion, AnimatePresence } from "framer-motion";
 import { FeaturedPick, loadFeaturedPick } from "@/lib/featuredPickStorage";
@@ -17,8 +17,8 @@ const statusVariant = {
 
 const statusLabel = {
   upcoming: "Upcoming",
-  won: "Won ✓",
-  lost: "Lost ✗",
+  won: "Won",
+  lost: "Lost",
   draw: "Draw",
 };
 
@@ -43,7 +43,6 @@ const TodayHotTip = () => {
         const savedTipId = localStorage.getItem("lastUnlockedTipId");
         
         if (!isPremium && savedTipId && savedTipId !== currentTipId) {
-          console.log('🔄 New tip detected - resetting unlock status');
           setIsUnlocked(false);
           localStorage.setItem("hotTipUnlocked", "false");
         }
@@ -90,95 +89,76 @@ const TodayHotTip = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="relative overflow-hidden rounded-2xl glass gradient-border p-6"
+          className="relative overflow-hidden rounded-2xl backdrop-blur-sm border border-purple-500/15 bg-gradient-to-br from-card via-purple-950/10 to-pink-950/5 shadow-xl shadow-black/10"
         >
-          <div className="absolute inset-0 overflow-hidden">
-            <motion.div
-              className="absolute w-[400px] h-[400px] rounded-full blur-[100px] opacity-20"
-              style={{ background: "radial-gradient(circle, hsl(280 100% 60%), transparent 70%)" }}
-              animate={{
-                x: ["-10%", "10%", "-5%"],
-                y: ["-10%", "10%", "-5%"],
-              }}
-              transition={{ duration: 6, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            />
-          </div>
+          <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-purple-500/40 to-transparent" />
 
-          <div className="relative z-10 space-y-5">
+          <div className="p-5 space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 bg-purple-500/20 text-purple-400 px-3 py-1.5 rounded-full">
-                  <Zap className="w-4 h-4 animate-pulse" />
-                  <span className="text-xs font-semibold uppercase tracking-wider">Today's Hot Tip</span>
-                </div>
+              <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-400 px-2.5 py-1 rounded-full border border-purple-500/15">
+                <Flame className="w-3.5 h-3.5 animate-pulse" />
+                <span className="text-[10px] font-display font-bold uppercase tracking-wider">Today's Hot Tip</span>
               </div>
               {(data.status && data.status !== "upcoming") && (
-                <Badge variant={statusVariant[data.status]} className="gap-1 py-1 px-2.5">
-                  <span className="font-display font-bold uppercase tracking-wider text-[9px]">
-                    {statusLabel[data.status]}
-                  </span>
+                <Badge variant={statusVariant[data.status]} className="gap-1 text-[9px] px-2 py-0.5">
+                  <span className="whitespace-nowrap">{statusLabel[data.status]}</span>
                 </Badge>
               )}
             </div>
 
-            {/* Match Info */}
-            <p className="text-muted-foreground text-xs uppercase tracking-[0.2em] text-center font-medium">
-              {data.league} • {data.kickoff}
+            {/* League */}
+            <p className="text-muted-foreground/50 text-[10px] uppercase tracking-[0.2em] text-center font-medium">
+              {data.league} &bull; {data.kickoff}
             </p>
 
-            {/* Teams Preview */}
-            <div className="flex flex-col items-center gap-3 py-3">
-              {/* Home Team */}
-              <div className="flex items-center gap-3 w-full justify-center">
-                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center ring-2 ring-purple-500/30">
-                  <TeamLogo teamName={data.homeTeam} logoUrl={data.homeTeamLogo} size={32} />
+            {/* Teams - Horizontal */}
+            <div className="flex items-center justify-between gap-3 py-2">
+              <div className="flex flex-col items-center gap-1.5 flex-1">
+                <div className="w-12 h-12 rounded-full bg-purple-500/5 flex items-center justify-center ring-1 ring-purple-500/15">
+                  <TeamLogo teamName={data.homeTeam} logoUrl={data.homeTeamLogo} size={28} />
                 </div>
-                <span className="font-display text-lg font-bold text-foreground">{data.homeTeam}</span>
+                <span className="font-display text-sm font-bold text-foreground text-center truncate w-full">{data.homeTeam}</span>
               </div>
-
-              {/* VS Badge */}
-              <div className="px-3 py-1.5 bg-muted/60 border border-border/40 rounded-lg">
-                <span className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider">VS</span>
+              <div className="flex flex-col items-center gap-1 flex-shrink-0 px-2">
+                <span className="text-xs font-display font-semibold text-muted-foreground/30 uppercase tracking-widest">VS</span>
               </div>
-
-              {/* Away Team */}
-              <div className="flex items-center gap-3 w-full justify-center">
-                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center ring-2 ring-purple-500/30">
-                  <TeamLogo teamName={data.awayTeam} logoUrl={data.awayTeamLogo} size={32} />
+              <div className="flex flex-col items-center gap-1.5 flex-1">
+                <div className="w-12 h-12 rounded-full bg-purple-500/5 flex items-center justify-center ring-1 ring-purple-500/15">
+                  <TeamLogo teamName={data.awayTeam} logoUrl={data.awayTeamLogo} size={28} />
                 </div>
-                <span className="font-display text-lg font-bold text-foreground">{data.awayTeam}</span>
+                <span className="font-display text-sm font-bold text-foreground text-center truncate w-full">{data.awayTeam}</span>
               </div>
             </div>
 
-            {/* Locked Content Overlay */}
-            <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/25 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-center gap-2 text-purple-400">
-                <Lock className="w-4 h-4" />
-                <span className="font-display text-sm font-bold uppercase tracking-wider">Premium Content Locked</span>
+            {/* Locked preview */}
+            <div className="rounded-xl px-3 py-3 border border-purple-500/15 bg-purple-500/5">
+              <div className="flex items-center justify-center gap-2 text-purple-400/70 mb-2">
+                <Shield className="w-3.5 h-3.5" />
+                <span className="font-display text-[10px] font-bold uppercase tracking-wider">Premium Content Locked</span>
               </div>
-              
-              <div className="grid grid-cols-3 gap-2 opacity-30">
-                <div className="bg-background/40 rounded-lg p-2 text-center">
-                  <p className="text-[8px] text-muted-foreground uppercase">Prediction</p>
-                  <p className="text-xs font-bold text-foreground">???</p>
+              <div className="grid grid-cols-3 gap-2 opacity-25">
+                <div className="bg-white/[0.03] rounded-lg p-2 text-center">
+                  <p className="text-[7px] text-muted-foreground uppercase">Prediction</p>
+                  <p className="text-[10px] font-bold text-foreground">???</p>
                 </div>
-                <div className="bg-background/40 rounded-lg p-2 text-center">
-                  <p className="text-[8px] text-muted-foreground uppercase">Odds</p>
-                  <p className="text-xs font-bold text-foreground">?.??</p>
+                <div className="bg-white/[0.03] rounded-lg p-2 text-center">
+                  <p className="text-[7px] text-muted-foreground uppercase">Odds</p>
+                  <p className="text-[10px] font-bold text-foreground">?.??</p>
                 </div>
-                <div className="bg-background/40 rounded-lg p-2 text-center">
-                  <p className="text-[8px] text-muted-foreground uppercase">Confidence</p>
-                  <p className="text-xs font-bold text-foreground">???</p>
+                <div className="bg-white/[0.03] rounded-lg p-2 text-center">
+                  <p className="text-[7px] text-muted-foreground uppercase">Confidence</p>
+                  <p className="text-[10px] font-bold text-foreground">???</p>
                 </div>
               </div>
             </div>
 
-            {/* CTA Button */}
+            {/* CTA */}
             <Button
               onClick={handleWatchAd}
               disabled={isLoading || !isRewardedAdReady}
-              className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold uppercase tracking-wider text-sm shadow-lg shadow-purple-500/30 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-10 font-bold uppercase tracking-wider text-xs text-white rounded-xl transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -188,135 +168,114 @@ const TodayHotTip = () => {
               {!isRewardedAdReady ? "Preparing Ad..." : "Watch Ad - Free"}
             </Button>
 
-            {error && (
-              <p className="text-red-500 text-xs text-center">{error}</p>
-            )}
-
-            <p className="text-[10px] text-muted-foreground text-center">
-              ~30 seconds • No purchase necessary
-            </p>
+            {error && <p className="text-red-400/70 text-[10px] text-center">{error}</p>}
+            <p className="text-[9px] text-muted-foreground/40 text-center">~30 seconds &bull; No purchase necessary</p>
           </div>
         </motion.div>
       ) : (
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
-          className="relative overflow-hidden rounded-2xl glass gradient-border p-6"
+          className="relative overflow-hidden rounded-2xl backdrop-blur-sm border border-purple-500/15 bg-gradient-to-br from-card via-purple-950/10 to-pink-950/5 shadow-xl shadow-black/10"
         >
-          <div className="absolute inset-0 overflow-hidden">
-            <motion.div
-              className="absolute w-[400px] h-[400px] rounded-full blur-[100px] opacity-25"
-              style={{ background: "radial-gradient(circle, hsl(280 100% 60%), transparent 70%)" }}
-              animate={{
-                x: ["-10%", "10%", "-5%"],
-                y: ["-10%", "10%", "-5%"],
-              }}
-              transition={{ duration: 6, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            />
-          </div>
+          <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-purple-500/40 to-transparent" />
 
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="flex items-center gap-1.5 bg-purple-500/20 text-purple-400 px-3 py-1.5 rounded-full">
-                  <Zap className="w-4 h-4 animate-pulse" />
-                  <span className="text-xs font-semibold uppercase tracking-wider">Today's Hot Tip</span>
+          <div className="p-5 space-y-4">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-400 px-2.5 py-1 rounded-full border border-purple-500/15">
+                  <Flame className="w-3.5 h-3.5 animate-pulse" />
+                  <span className="text-[10px] font-display font-bold uppercase tracking-wider">Today's Hot Tip</span>
                 </div>
                 {isPremium && (
-                  <div className="flex items-center gap-1 bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-400 px-2 py-1 rounded-full border border-pink-500/30">
-                    <Crown className="w-3 h-3" />
-                    <span className="text-[9px] font-bold uppercase tracking-wider">Premium</span>
-                  </div>
+                  <span className="flex items-center gap-0.5 bg-pink-500/10 text-pink-400 px-2 py-0.5 rounded-full border border-pink-500/15 text-[9px] font-bold uppercase tracking-wider">
+                    <Gem className="w-2.5 h-2.5" />
+                    Premium
+                  </span>
                 )}
               </div>
               {(data.status && data.status !== "upcoming") && (
-                <Badge variant={statusVariant[data.status]} className="gap-1.5 py-1.5 px-3">
-                  <span className="font-display font-bold uppercase tracking-wider text-[10px]">
-                    {statusLabel[data.status]}
-                  </span>
+                <Badge variant={statusVariant[data.status]} className="gap-1 text-[9px] px-2 py-0.5">
+                  <span className="whitespace-nowrap">{statusLabel[data.status]}</span>
                 </Badge>
               )}
             </div>
 
-            <div className="space-y-4">
-              <p className="text-muted-foreground text-xs uppercase tracking-[0.2em]">
-                {data.league} • {data.kickoff}
-              </p>
+            {/* League */}
+            <p className="text-muted-foreground/50 text-[10px] uppercase tracking-[0.2em] font-medium">
+              {data.league} &bull; {data.kickoff}
+            </p>
 
-              <div className="flex items-center justify-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center ring-2 ring-purple-500/30">
-                  <TeamLogo teamName={data.homeTeam} logoUrl={data.homeTeamLogo} size={32} />
+            {/* Teams - Horizontal */}
+            <div className="flex items-center justify-between gap-3 py-2">
+              <div className="flex flex-col items-center gap-1.5 flex-1">
+                <div className="w-12 h-12 rounded-full bg-purple-500/5 flex items-center justify-center ring-1 ring-purple-500/15">
+                  <TeamLogo teamName={data.homeTeam} logoUrl={data.homeTeamLogo} size={28} />
                 </div>
-                <div className="text-center">
-                  <p className="font-display text-xl font-bold text-foreground">
-                    {data.homeTeam}
-                  </p>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">vs</p>
-                  <p className="font-display text-xl font-bold text-foreground mt-1">
-                    {data.awayTeam}
-                  </p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center ring-2 ring-purple-500/30">
-                  <TeamLogo teamName={data.awayTeam} logoUrl={data.awayTeamLogo} size={32} />
-                </div>
+                <span className="font-display text-sm font-bold text-foreground text-center truncate w-full">{data.homeTeam}</span>
               </div>
-
-              <div className="grid grid-cols-3 gap-4 mt-6">
-                <div className="bg-muted/30 rounded-xl p-4 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-1">Prediction</p>
-                  <p className="font-display font-bold text-primary text-sm">{data.prediction}</p>
-                </div>
-                <div className="bg-muted/30 rounded-xl p-4 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-1">Odds</p>
-                  <p className="font-display font-bold text-purple-400 text-sm">{data.odds}</p>
-                </div>
-                <div className="bg-muted/30 rounded-xl p-4 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-1">Confidence</p>
-                  <p className="font-display font-bold text-success text-sm">{data.confidence}</p>
-                </div>
+              <div className="flex flex-col items-center gap-1 flex-shrink-0 px-3">
+                <span className="text-xs font-display font-semibold text-muted-foreground/30 uppercase tracking-widest">VS</span>
               </div>
-
-              {data.description && (
-                <div className="mt-5">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAnalysis(!showAnalysis)}
-                    className="w-full gap-2 h-9 text-xs font-display uppercase tracking-wider text-accent hover:bg-accent/10 hover:text-accent border border-accent/20 rounded-lg transition-all"
-                  >
-                    <Gift className={`w-4 h-4 transition-transform ${showAnalysis ? 'rotate-180' : ''}`} />
-                    {showAnalysis ? 'Hide Analysis' : 'Show Analysis'}
-                    {showAnalysis ? (
-                      <svg className="w-3 h-3 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                      </svg>
-                    ) : (
-                      <svg className="w-3 h-3 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    )}
-                  </Button>
-
-                  <AnimatePresence>
-                    {showAnalysis && (
-                      <motion.div 
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="mt-2 p-4 bg-gradient-to-br from-accent/5 to-transparent rounded-xl border border-accent/20 overflow-hidden"
-                      >
-                        <div className="flex items-start gap-2">
-                          <Gift className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                          <p className="text-xs text-muted-foreground leading-relaxed italic">{data.description}</p>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+              <div className="flex flex-col items-center gap-1.5 flex-1">
+                <div className="w-12 h-12 rounded-full bg-purple-500/5 flex items-center justify-center ring-1 ring-purple-500/15">
+                  <TeamLogo teamName={data.awayTeam} logoUrl={data.awayTeamLogo} size={28} />
                 </div>
-              )}
+                <span className="font-display text-sm font-bold text-foreground text-center truncate w-full">{data.awayTeam}</span>
+              </div>
             </div>
+
+            {/* Stats grid */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-xl px-3 py-2.5 border border-white/[0.04] bg-white/[0.02] text-center">
+                <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.15em] mb-1">Prediction</p>
+                <p className="font-display font-bold text-foreground text-xs">{data.prediction}</p>
+              </div>
+              <div className="rounded-xl px-3 py-2.5 border border-purple-500/10 bg-purple-500/5 text-center">
+                <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.15em] mb-1">Odds</p>
+                <div className="flex items-center justify-center gap-1">
+                  <Crosshair className="w-3 h-3 text-purple-400/60" />
+                  <p className="font-display font-bold text-purple-400 text-xs">{data.odds}</p>
+                </div>
+              </div>
+              <div className="rounded-xl px-3 py-2.5 border border-emerald-500/10 bg-emerald-500/5 text-center">
+                <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.15em] mb-1">Confidence</p>
+                <p className="font-display font-bold text-emerald-400 text-xs">{data.confidence}</p>
+              </div>
+            </div>
+
+            {/* Analysis toggle */}
+            {data.description && (
+              <div>
+                <button
+                  onClick={() => setShowAnalysis(!showAnalysis)}
+                  className="flex items-center gap-1.5 text-[10px] font-display font-bold uppercase tracking-wider text-purple-400/60 hover:text-purple-400 transition-colors"
+                >
+                  <svg className={`w-3 h-3 transition-transform ${showAnalysis ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  {showAnalysis ? "Hide Analysis" : "Show Analysis"}
+                </button>
+
+                <AnimatePresence>
+                  {showAnalysis && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="overflow-hidden"
+                    >
+                      <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed italic border-l-2 border-purple-500/20 pl-3 py-1">
+                        {data.description}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
         </motion.div>
       )}

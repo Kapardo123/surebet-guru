@@ -8,7 +8,7 @@ import { loadTips } from "@/lib/tipsStorage";
 import { loadCoupons, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
 import { Tip } from "@/components/TipCard";
-import { Crown, TrendingUp, Receipt, LogIn, LogOut, Sparkles, Clock } from "lucide-react";
+import { Gem, Crosshair, Ticket, ArrowRightToLine, ArrowLeftFromLine, Sparkles, Timer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import PremiumBadge from "@/components/PremiumBadge";
@@ -104,39 +104,62 @@ const Index = () => {
       <div className="fixed top-1/2 left-1/2 w-[400px] h-[400px] rounded-full blur-[100px] opacity-10 pointer-events-none" 
            style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)', transform: 'translate(-50%, -50%)' }} />
 
-      {/* Modern Glass Header - Synthwave Style */}
-      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-[#0a0015]/80 via-[#150025]/80 to-[#0a0020]/80 border-b border-purple-500/20 shadow-xl shadow-black/30">
-        <div className="container max-w-6xl mx-auto px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 md:gap-3">
-            <Logo />
-          </div>
+      {/* Glass Header */}
+      <header className="sticky top-0 z-50 backdrop-blur-2xl border-b border-white/[0.06] shadow-2xl shadow-black/40"
+        style={{ background: "linear-gradient(135deg, rgba(10,0,21,0.85) 0%, rgba(21,0,37,0.9) 50%, rgba(10,0,32,0.85) 100%)" }}>
+        {/* Top accent line */}
+        <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-pink-500/50 to-transparent" />
+        
+        <div className="container max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Logo />
           
-          <div className="flex items-center gap-2 md:gap-2.5">
+          <div className="flex items-center gap-2">
             <PremiumBadge active={isPremium} daysLeft={premiumDaysLeft} loading={premiumLoading} />
             
+            {/* Mobile: small icon buttons */}
+            <div className="flex md:hidden items-center gap-1.5">
+              {!isPremium && (
+                <Link to="/premium">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/20 flex items-center justify-center">
+                    <Gem className="w-4 h-4 text-pink-400" />
+                  </div>
+                </Link>
+              )}
+              {user ? (
+                <button onClick={signOut} className="w-8 h-8 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center">
+                  <ArrowLeftFromLine className="w-4 h-4 text-white/60" />
+                </button>
+              ) : (
+                <Link to="/auth">
+                  <div className="w-8 h-8 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center">
+                    <ArrowRightToLine className="w-4 h-4 text-white/60" />
+                  </div>
+                </Link>
+              )}
+            </div>
+            
+            {/* Desktop: full buttons */}
             <div className="hidden md:flex items-center gap-2">
               {!isPremium && (
                 <Link to="/premium">
                   <Button size="sm" 
-                          className="gap-1.5 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 hover:from-pink-400 hover:via-purple-400 hover:to-cyan-400 text-white font-bold uppercase tracking-wider text-[11px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-all duration-300 hover:scale-105 rounded-full px-4 py-2 border border-white/10 relative overflow-hidden group">
-                    <span className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <span className="relative flex items-center gap-1.5">
-                      <Crown className="w-3.5 h-3.5" />
-                      Go Premium
-                    </span>
+                          className="gap-1.5 font-bold uppercase tracking-wider text-[11px] text-white rounded-full px-5 py-2 border border-white/10 relative overflow-hidden group transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-pink-500/20"
+                          style={{ background: "linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #06b6d4 100%)" }}>
+                    <Gem className="w-3.5 h-3.5" />
+                    Go Premium
                   </Button>
                 </Link>
               )}
               
               {user ? (
-                <Button variant="ghost" size="sm" className="gap-2 text-purple-300/70 hover:text-pink-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-pink-500/30" onClick={signOut}>
-                  <LogOut className="w-4 h-4" />
+                <Button variant="ghost" size="sm" className="gap-2 text-white/50 hover:text-white hover:bg-white/[0.06] transition-all duration-200 rounded-full px-3 border border-transparent hover:border-white/10" onClick={signOut}>
+                  <ArrowLeftFromLine className="w-4 h-4" />
                   <span className="text-xs font-medium hidden lg:inline">{user.email?.split("@")[0]}</span>
                 </Button>
               ) : (
                 <Link to="/auth">
-                  <Button variant="outline" size="sm" className="gap-2 text-xs font-medium border-purple-500/30 text-purple-300 hover:border-cyan-500/50 hover:text-cyan-400 hover:bg-cyan-500/5 transition-all duration-200 rounded-full px-3 md:px-3.5 shadow-sm">
-                    <LogIn className="w-4 h-4" />
+                  <Button size="sm" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/[0.1] border border-white/10 hover:border-white/20 transition-all duration-200">
+                    <ArrowRightToLine className="w-4 h-4" />
                     Sign In
                   </Button>
                 </Link>
@@ -155,17 +178,17 @@ const Index = () => {
           </div>
         </ScrollReveal>
 
-        {/* Modern Tabs */}
+        {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="bg-white/5 backdrop-blur-xl border border-purple-500/20 p-1.5 w-full md:w-auto rounded-2xl shadow-xl shadow-black/20">
+          <TabsList className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.06] p-1.5 w-full md:w-auto rounded-2xl shadow-lg shadow-black/10">
             <TabsTrigger value="tips" 
-                        className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:via-purple-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-pink-500/30 rounded-xl py-3 transition-all duration-300 text-purple-300/70 hover:text-purple-200">
-              <TrendingUp className="w-4 h-4" />
+                        className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:via-purple-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-pink-500/20 rounded-xl py-3 transition-all duration-300 text-white/40 hover:text-white/70">
+              <Crosshair className="w-4 h-4" />
               Single Tips
             </TabsTrigger>
             <TabsTrigger value="coupons" 
-                        className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:via-purple-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-pink-500/30 rounded-xl py-3 transition-all duration-300 text-purple-300/70 hover:text-purple-200">
-              <Receipt className="w-4 h-4" />
+                        className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:via-purple-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-pink-500/20 rounded-xl py-3 transition-all duration-300 text-white/40 hover:text-white/70">
+              <Ticket className="w-4 h-4" />
               Coupons
             </TabsTrigger>
           </TabsList>
@@ -179,13 +202,13 @@ const Index = () => {
                   All Tips
                 </h2>
               </div>
-              <span className="text-xs text-muted-foreground font-display uppercase tracking-wider bg-gradient-to-r from-purple-500/10 to-pink-500/10 px-4 py-2 rounded-full border border-purple-500/20 font-medium">
+              <span className="text-xs text-white/40 font-display uppercase tracking-wider bg-white/[0.04] px-4 py-2 rounded-full border border-white/[0.06] font-medium">
                 {filteredTips.length} picks
               </span>
             </div>
 
             {tipSports.length > 0 && (
-              <div className="bg-white/3 backdrop-blur-xl border border-purple-500/15 rounded-2xl p-3 md:p-4 shadow-lg shadow-black/10">
+              <div className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] rounded-2xl p-3 md:p-4 shadow-lg shadow-black/5">
                 <FilterBar
                   sports={tipSports}
                   activeSport={tipSport}
@@ -233,13 +256,13 @@ const Index = () => {
 
             {filteredTips.length === 0 && (
               <div className="text-center py-20 md:py-28 space-y-4">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 mx-auto flex items-center justify-center border border-purple-500/20">
-                  <TrendingUp className="w-9 h-9 text-purple-400" />
+                <div className="w-16 h-16 rounded-2xl bg-white/[0.03] mx-auto flex items-center justify-center border border-white/[0.06]">
+                  <Crosshair className="w-7 h-7 text-white/20" />
                 </div>
-                <p className="text-muted-foreground font-display text-base font-medium">
+                <p className="text-white/40 font-display text-base font-medium">
                   No tips yet
                 </p>
-                <p className="text-muted-foreground/60 text-sm">
+                <p className="text-white/20 text-sm">
                   Check back soon for new predictions
                 </p>
               </div>
@@ -255,13 +278,13 @@ const Index = () => {
                   All Coupons
                 </h2>
               </div>
-              <span className="text-xs text-muted-foreground font-display uppercase tracking-wider bg-gradient-to-r from-blue-500/10 to-cyan-500/10 px-4 py-2 rounded-full border border-blue-500/20 font-medium">
+              <span className="text-xs text-white/40 font-display uppercase tracking-wider bg-white/[0.04] px-4 py-2 rounded-full border border-white/[0.06] font-medium">
                 {filteredCoupons.length} coupons
               </span>
             </div>
 
             {coupons.length > 0 && (
-              <div className="bg-white/3 backdrop-blur-xl border border-blue-500/15 rounded-2xl p-3 md:p-4 shadow-lg shadow-black/10">
+              <div className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] rounded-2xl p-3 md:p-4 shadow-lg shadow-black/5">
                 <FilterBar
                   activePremium={couponPremium}
                   onPremiumChange={setCouponPremium}
@@ -300,13 +323,13 @@ const Index = () => {
 
             {filteredCoupons.length === 0 && (
               <div className="text-center py-20 md:py-28 space-y-4">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 mx-auto flex items-center justify-center border border-blue-500/20">
-                  <Receipt className="w-9 h-9 text-blue-400" />
+                <div className="w-16 h-16 rounded-2xl bg-white/[0.03] mx-auto flex items-center justify-center border border-white/[0.06]">
+                  <Ticket className="w-7 h-7 text-white/20" />
                 </div>
-                <p className="text-muted-foreground font-display text-base font-medium">
+                <p className="text-white/40 font-display text-base font-medium">
                   No coupons yet
                 </p>
-                <p className="text-muted-foreground/60 text-sm">
+                <p className="text-white/20 text-sm">
                   Check back soon for new accumulators
                 </p>
               </div>
@@ -337,30 +360,30 @@ const Index = () => {
         </ScrollReveal>
       </main>
 
-      {/* Modern Footer */}
-      <footer className="border-t border-border/30 mt-20 pb-24 md:pb-0 bg-background/30 backdrop-blur-sm">
+      {/* Footer */}
+      <footer className="border-t border-white/[0.05] mt-20 pb-24 md:pb-0 bg-white/[0.01] backdrop-blur-sm">
         <div className="container max-w-6xl mx-auto px-4 py-10 flex flex-col items-center justify-center gap-5 text-center">
           <div className="flex flex-wrap items-center justify-center gap-6">
-            <Link to="/privacy" className="text-xs text-muted-foreground hover:text-purple-400 transition-colors underline underline-offset-4 decoration-purple-500/30 hover:decoration-purple-500/80 font-medium">
+            <Link to="/privacy" className="text-xs text-white/30 hover:text-white/60 transition-colors underline underline-offset-4 decoration-white/10 hover:decoration-white/30 font-medium">
               Privacy Policy
             </Link>
-            <Link to="/terms" className="text-xs text-muted-foreground hover:text-purple-400 transition-colors underline underline-offset-4 decoration-purple-500/30 hover:decoration-purple-500/80 font-medium">
+            <Link to="/terms" className="text-xs text-white/30 hover:text-white/60 transition-colors underline underline-offset-4 decoration-white/10 hover:decoration-white/30 font-medium">
               Terms of Service
             </Link>
-            <Link to="/deletion" className="text-xs text-muted-foreground hover:text-purple-400 transition-colors underline underline-offset-4 decoration-purple-500/30 hover:decoration-purple-500/80 font-medium">
+            <Link to="/deletion" className="text-xs text-white/30 hover:text-white/60 transition-colors underline underline-offset-4 decoration-white/10 hover:decoration-white/30 font-medium">
               Delete Account
             </Link>
           </div>
           
           <a href="mailto:greatsportbets@gmail.com" 
-             className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-pink-400 transition-colors group">
+             className="inline-flex items-center gap-2 text-xs text-white/25 hover:text-white/50 transition-colors group">
             <Sparkles className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" />
             Help & Collaboration
           </a>
           
-          <div className="pt-3 border-t border-border/20">
-            <p className="text-xs text-muted-foreground/60 font-medium">
-              © 2026 Great Sport Bets. Built with 💜 for winners.
+          <div className="pt-3 border-t border-white/[0.04]">
+            <p className="text-xs text-white/20 font-medium">
+              © 2026 Great Sport Bets
             </p>
           </div>
         </div>
@@ -372,31 +395,31 @@ const Index = () => {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-gradient-to-br from-purple-950 via-pink-950 to-background border border-pink-500/30 rounded-2xl p-6 max-w-xs w-full shadow-2xl shadow-pink-500/10 text-center space-y-4"
+            className="bg-gradient-to-br from-[#0d001a] via-[#12001f] to-[#0a0015] border border-white/10 rounded-2xl p-6 max-w-xs w-full shadow-2xl shadow-black/50 text-center space-y-4"
           >
             <span className="text-5xl">🎰</span>
             <div>
               <h3 className="font-display text-lg font-bold text-white">Win Free Tips!</h3>
-              <p className="text-xs text-muted-foreground mt-1">Log in or create an account to spin the wheel and win premium tips every day.</p>
+              <p className="text-xs text-white/40 mt-1">Log in or create an account to spin the wheel and win premium tips every day.</p>
             </div>
             <div className="space-y-2">
               <Link to="/auth">
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  className="w-full py-3 rounded-full font-bold text-sm bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-purple-500/30"
+                  className="w-full py-3 rounded-full font-bold text-sm text-white"
+                  style={{ background: "linear-gradient(135deg, #ec4899 0%, #a855f7 100%)" }}
                 >
-                  <LogIn className="w-4 h-4 inline mr-2" />
+                  <ArrowRightToLine className="w-4 h-4 inline mr-2" />
                   Log in &amp; Spin
                 </motion.button>
               </Link>
               <button
                 onClick={() => {
                   try { localStorage.setItem("gsb_spin_prompt_dismissed", "1"); } catch {}
-                  // Force re-render
                   window.location.reload();
                 }}
-                className="text-[10px] text-muted-foreground hover:text-white transition-colors"
+                className="text-[10px] text-white/30 hover:text-white/60 transition-colors"
               >
                 Maybe later
               </button>
@@ -413,35 +436,35 @@ const Index = () => {
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-gradient-to-br from-purple-950 via-pink-950 to-background border border-pink-500/40 rounded-2xl p-5 max-w-sm w-full shadow-2xl shadow-pink-500/20"
+            className="bg-gradient-to-br from-[#0d001a] via-[#12001f] to-[#0a0015] border border-white/10 rounded-2xl p-5 max-w-sm w-full shadow-2xl shadow-black/50"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center mb-4">
               <span className="text-4xl">🎁</span>
               <h3 className="font-display text-lg font-bold text-pink-400 mt-2">Free Premium Tip!</h3>
-              <p className="text-xs text-muted-foreground">You won a premium tip from the wheel!</p>
+              <p className="text-xs text-white/40">You won a premium tip from the wheel!</p>
             </div>
-            <div className="bg-pink-500/5 border border-pink-500/20 rounded-xl p-4 space-y-3">
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[9px] text-pink-400 border-pink-500/30">{freeTip.sport}</Badge>
-                <span className="text-[10px] text-muted-foreground">{freeTip.league}</span>
+                <span className="text-[10px] text-white/40">{freeTip.league}</span>
               </div>
               <div className="flex items-center justify-center gap-4">
                 <span className="font-bold text-sm">{freeTip.homeTeam}</span>
-                <span className="text-xs text-muted-foreground">vs</span>
+                <span className="text-xs text-white/30">vs</span>
                 <span className="font-bold text-sm">{freeTip.awayTeam}</span>
               </div>
-              <div className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2">
+              <div className="flex items-center justify-between bg-white/[0.03] rounded-lg px-3 py-2">
                 <span className="text-xs font-semibold">{freeTip.prediction}</span>
                 <span className="text-sm font-black text-pink-400">@ {freeTip.odds.toFixed(2)}</span>
               </div>
               {freeTip.description && (
-                <p className="text-[11px] text-muted-foreground leading-relaxed italic border-t border-border/20 pt-2 mt-1">
+                <p className="text-[11px] text-white/30 leading-relaxed italic border-t border-white/[0.05] pt-2 mt-1">
                   "{freeTip.description}"
                 </p>
               )}
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <Clock className="w-3 h-3" />
+              <div className="flex items-center gap-1 text-[10px] text-white/30">
+                <Timer className="w-3 h-3" />
                 {(() => {
                   try {
                     const d = new Date(freeTip.kickoff);
@@ -454,7 +477,8 @@ const Index = () => {
             </div>
             <button
               onClick={() => setFreeTip(null)}
-              className="w-full mt-4 py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:scale-105 transition-all"
+              className="w-full mt-4 py-2.5 rounded-full font-bold text-sm text-white"
+              style={{ background: "linear-gradient(135deg, #ec4899 0%, #a855f7 100%)" }}
             >
               Nice, thanks! 🎉
             </button>

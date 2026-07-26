@@ -75,44 +75,46 @@ const Admin = () => {
     } catch { /* ignore */ }
 
     if (target === "tip") {
-      await addTip({
-        sport: match.sport || "Football",
-        league: match.league,
-        homeTeam: match.homeTeam,
-        awayTeam: match.awayTeam,
-        prediction: match.prediction,
-        odds: parseFloat(oddsStr) || 1.01,
-        kickoff: kickoffISO,
-        status: "upcoming",
-        isPremium: true,
-        isPublished: false, // import -> szkic (nie trafia na strone glowna)
-        homeTeamLogo: match.homeTeamLogo,
-        awayTeamLogo: match.awayTeamLogo,
-        description: analysis,
-      });
-      await refreshData(true);
-      toast({ title: "Tip imported as draft", description: `${match.homeTeam} vs ${match.awayTeam} - edit & publish in the Tips tab` });
-    } else if (target === "hero") {
-      const { id, ...pick } = featured;
-      await saveFeaturedPick({
-        ...pick,
+      // Wypełnij formularz tip i przejdź na zakładkę Tips
+      setForm({
         sport: match.sport || "Football",
         league: match.league,
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
         prediction: match.prediction,
         odds: oddsStr,
-        kickoff: match.kickoff,
+        kickoff: kickoffISO,
+        status: "upcoming",
+        isPremium: true,
+        isPublished: false,
+        description: analysis,
+        homeTeamLogo: match.homeTeamLogo,
+        awayTeamLogo: match.awayTeamLogo,
+      });
+      setEditingTipId(null);
+      setActiveTab("tips");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      toast({ title: "Tip form filled! ✨", description: `${match.homeTeam} vs ${match.awayTeam} — review and save` });
+    } else if (target === "hero") {
+      // Wypełnij formularz hero i przejdź na zakładkę Hero
+      setFeatured(prev => ({
+        ...prev,
+        sport: match.sport || "Football",
+        league: match.league,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        prediction: match.prediction,
+        odds: oddsStr,
+        kickoff: kickoffISO,
         description: analysis,
         confidence: "High",
         status: "upcoming",
         homeTeamLogo: match.homeTeamLogo,
         awayTeamLogo: match.awayTeamLogo,
-      });
-      // Refresh the featured pick
-      const updated = await loadFeaturedPick();
-      if (updated) setFeatured(updated);
-      toast({ title: "Hero pick updated! ✅", description: `${match.homeTeam} vs ${match.awayTeam}` });
+      }));
+      setActiveTab("hero");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      toast({ title: "Hero form filled! 🔥", description: `${match.homeTeam} vs ${match.awayTeam} — review and save` });
     } else {
       // Coupon: append to the coupon builder so several matches form one coupon.
       // Stay on the Import tab so the user can keep adding matches.
@@ -922,6 +924,69 @@ const Admin = () => {
                   onGoToCoupon={() => setActiveTab("coupons")}
                 />
               )}
+
+              {/* Compact Coupon Preview — visible when building a coupon */}
+              {couponMatches.length > 0 && (
+                <div className="border border-blue-500/20 rounded-xl p-3 space-y-3 bg-blue-500/5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Receipt className="w-4 h-4 text-blue-400" />
+                      <span className="font-display text-sm font-bold">Coupon Preview</span>
+                      <Badge variant="outline" className="text-[9px]">{couponMatches.length} matches</Badge>
+                    </div>
+                    <span className="text-xs font-bold text-blue-400">
+                      @ {calculateTotalOdds(couponMatches).toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-[180px] overflow-y-auto">
+                    {couponMatches.map((m, i) => (
+                      <div key={i} className="flex items-center justify-between gap-2 bg-muted/20 rounded-lg px-2.5 py-1.5 text-xs">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <TeamLogo teamName={m.homeTeam} logoUrl={m.homeTeamLogo || undefined} size={14} />
+                          <span className="font-semibold truncate">{m.homeTeam}</span>
+                          <span className="text-muted-foreground">vs</span>
+                          <span className="font-semibold truncate">{m.awayTeam}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="font-black text-blue-400">{m.odds.toFixed(2)}</span>
+                          <button
+                            onClick={() => setCouponMatches((prev) => prev.filter((_, j) => j !== i))}
+                            className="text-muted-foreground/40 hover:text-red-400 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Quick save coupon */}
+                  <div className="flex items-center gap-2 pt-1 border-t border-border/20">
+                    <Input
+                      placeholder="Coupon name..."
+                      value={couponName}
+                      onChange={(e) => setCouponName(e.target.value)}
+                      className="h-8 text-xs flex-1 bg-muted/20"
+                    />
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1 px-2 py-1 bg-accent/5 border border-accent/20 rounded-md">
+                        <Checkbox id="couponPremiumImport" checked={couponIsPremium} onCheckedChange={(c) => setCouponIsPremium(c === true)} className="h-3.5 w-3.5" />
+                        <Label htmlFor="couponPremiumImport" className="text-[9px] font-bold cursor-pointer">PRO</Label>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="h-8 gap-1 text-[10px] bg-blue-600 hover:bg-blue-500"
+                        onClick={handleSaveCoupon}
+                        disabled={!couponName || couponMatches.length < 2}
+                      >
+                        <Save className="w-3 h-3" />
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -1662,25 +1727,10 @@ const Admin = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Coupon Name</Label>
                       <Input className="h-10 bg-muted/20" placeholder="e.g. Weekend Acca" value={couponName} onChange={(e) => setCouponName(e.target.value)} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Stake ($)</Label>
-                      <Input type="number" step="0.01" className="h-10 bg-muted/20" placeholder="0.00" value={couponStake} onChange={(e) => setCouponStake(e.target.value)} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Sport</Label>
-                      <Select value={couponSport} onValueChange={(v) => setCouponSport(v)}>
-                        <SelectTrigger className="h-10 bg-muted/20"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {["Football", "Basketball", "Tennis", "MMA", "Baseball", "Hockey", "Esports", "Rugby"].map((s) => (
-                            <SelectItem key={s} value={s}>{s}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Status</Label>

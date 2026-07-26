@@ -1,11 +1,11 @@
-import { TrendingUp, Receipt, Crown, LogIn, LogOut } from "lucide-react";
+import { Crosshair, Ticket, Gem, ArrowRightToLine, ArrowLeftFromLine } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
-  { label: "Tips", icon: TrendingUp, path: "/" },
-  { label: "Coupons", icon: Receipt, path: "/#coupons" },
-  { label: "Premium", icon: Crown, path: "/premium" },
+  { label: "Tips", icon: Crosshair, path: "/" },
+  { label: "Coupons", icon: Ticket, path: "/#coupons" },
+  { label: "Premium", icon: Gem, path: "/premium" },
 ];
 
 const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange?: (tab: string) => void }) => {
@@ -71,13 +71,13 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange
 
           {user ? (
             <button onClick={signOut} className="flex-1 flex flex-col items-center gap-1 px-1 py-2 rounded-xl transition-all duration-300 relative text-purple-300/60 hover:text-pink-300 hover:bg-white/5 group">
-              <LogOut className="w-5 h-5 group-hover:scale-105 transition-transform duration-300" />
+              <ArrowLeftFromLine className="w-5 h-5 group-hover:scale-105 transition-transform duration-300" />
               <span className="text-[10px] font-display font-bold tracking-wider uppercase">Logout</span>
             </button>
           ) : (
             <Link to="/auth" className="no-underline flex-1">
               <button className="flex-1 flex flex-col items-center gap-1 px-1 py-2 rounded-xl transition-all duration-300 relative text-purple-300/60 hover:text-pink-300 hover:bg-white/5 group w-full">
-                <LogIn className="w-5 h-5 group-hover:scale-105 transition-transform duration-300" />
+                <ArrowRightToLine className="w-5 h-5 group-hover:scale-105 transition-transform duration-300" />
                 <span className="text-[10px] font-display font-bold tracking-wider uppercase">Sign In</span>
               </button>
             </Link>
