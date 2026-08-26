@@ -20,6 +20,7 @@ export interface Tip {
   homeTeamLogo?: string | null;
   awayTeamLogo?: string | null;
   description?: string | null;
+  likesCount?: number;
   wonAt?: string | null;
 }
 

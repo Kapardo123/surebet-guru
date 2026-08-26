@@ -33,6 +33,10 @@ const Admin = () => {
 
   useEffect(() => {
     refreshData();
+    // Wygasłe tipy (8h po kickoff/won_at) mają znikać same także w otwartej
+    // zakładce Published Tips — purge+reload co 60 s.
+    const interval = setInterval(() => refreshData(false), 60_000);
+    return () => clearInterval(interval);
   }, []);
 
   const refreshData = async (forceRefresh: boolean = false) => {

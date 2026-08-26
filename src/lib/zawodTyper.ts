@@ -59,6 +59,13 @@ export interface ZawodTyperAnalysis {
   prediction: string; // English market label
   league: string; // inferred competition
   analysis: string; // English copy for the tip description
+  // Canonical international team names (English Wikipedia / sports-data style),
+  // returned alongside the analysis. Empty string = keep the raw source name —
+  // the model only overrides names it could confidently identify. Applying
+  // them right after generation fixes logo lookups (logoFetcher sources use
+  // exactly these spellings).
+  homeTeam?: string;
+  awayTeam?: string;
   // false when ai-analyze could not reach the model and fell back to the raw
   // Polish source text. Such rows must not be published as-is.
   ok: boolean;
@@ -110,6 +117,30 @@ export const analyzeMatches = async (
   }));
 };
 
+// --- canonical team names ----------------------------------------------------
+
+// Returns the list with raw Polish names replaced by the AI-provided canonical
+// ones, for every match whose analysis succeeded. Only non-empty names are
+// applied; a failed analysis (ok:false) leaves names untouched. Called right
+// after "Generuj analizy AI" so cards display — and TeamLogo searches — the
+// same spelling Wikipedia and the logo sources use.
+export const applyAnalysisNames = (
+  matches: ZawodTyperMatch[],
+  analyses: Record<string, ZawodTyperAnalysis>,
+): ZawodTyperMatch[] =>
+  matches.map((m) => {
+    const a = analyses[m.id];
+    if (!a?.ok) return m;
+    const homeTeam = (a.homeTeam || "").trim();
+    const awayTeam = (a.awayTeam || "").trim();
+    if (!homeTeam && !awayTeam) return m;
+    return {
+      ...m,
+      ...(homeTeam ? { homeTeam } : {}),
+      ...(awayTeam ? { awayTeam } : {}),
+    };
+  });
+
 // --- bridging to the existing import pipeline -------------------------------
 
 // The Admin panel routes SportyTrader matches through a ScrapedMatch shape;
@@ -129,8 +160,10 @@ export const toScrapedMatch = (
   return {
     id: m.id,
     url: m.url,
-    homeTeam: m.homeTeam,
-    awayTeam: m.awayTeam,
+    // Canonical names win over the raw Polish ones: the app and every logo
+    // source (Wikipedia/Wikidata/TheSportsDB/SofaScore) speak them fluently.
+    homeTeam: analysis?.homeTeam || m.homeTeam,
+    awayTeam: analysis?.awayTeam || m.awayTeam,
     sport: m.sport,
     // Verified competition beats the model's guess, which beats nothing.
     league: m.check?.officialLeague || analysis?.league || m.league,

@@ -55,6 +55,38 @@ export const isTipExpired = (
  * SECURITY DEFINER - dziala niezaleznie od RLS dla klucza anon) oraz z
  * lokalnego cache. Zwraca liczbe usunietych wierszy z bazy (-1 = RPC niedostepne).
  */
+/**
+ * Wiek tipa liczony jak w migracji purge_old_tips.sql:
+ * dla status = "won" od won_at, dla pozostałych od kickoff.
+ */
+export const isTipExpiredByRule = (
+  tip: Pick<Tip, "kickoff" | "status" | "wonAt">,
+  now: number = Date.now()
+): boolean => {
+  // Wygrane liczą swoje 8h od momentu oznaczenia jako won...
+  if (tip.status === "won" && tip.wonAt) {
+    const w = new Date(tip.wonAt).getTime();
+    if (!isNaN(w)) return now - w > EXPIRY_MS;
+  }
+  // ...reszta od rozpoczęcia meczu.
+  return isTipExpired(tip, now);
+};
+
+/** Identyfikatory opublikowanych, już wygasłych tipów w danej paczce. */
+const expiredIdsOf = (rows: any[]): number[] =>
+  rows
+    .filter(
+      (t) =>
+        t.is_published !== false &&
+        isTipExpiredByRule({
+          kickoff: t.kickoff,
+          status: t.status,
+          wonAt: t.won_at || null,
+        }),
+    )
+    .map((t) => Number(t.id))
+    .filter(Number.isFinite);
+
 export const purgeExpiredTips = async (): Promise<number> => {
   // 1) Usun z bazy (wymaga wdrozonej migracji purge_old_tips.sql)
   let dbDeleted = -1;
@@ -72,12 +104,40 @@ export const purgeExpiredTips = async (): Promise<number> => {
     console.warn("purgeExpiredTips RPC error:", e);
   }
 
-  // 2) Wyczysc lokalny cache z wygaslych (zawsze dziala, rowniez offline)
+  // 2) Fallback gdy RPC nie istnieje: usuwamy wygasle wiersze klientem tym
+  //    samym uprawnieniem, ktorego uzywa przycisk Delete w panelu admina.
+  //    Published Tips znika wtedy tak samo, bez czekania na migracje.
+  if (dbDeleted < 0) {
+    try {
+      const { data: rows, error } = await supabase
+        .from("tips")
+        .select("id, kickoff, status, is_published, won_at");
+      if (!error && rows?.length) {
+        const ids = expiredIdsOf(rows);
+        if (ids.length) {
+          const { error: delError } = await supabase
+            .from("tips")
+            .delete()
+            .in("id", ids);
+          if (!delError) {
+            dbDeleted = ids.length;
+            console.log("[purge] Client-side deleted " + ids.length + " expired tips");
+          } else {
+            console.warn("[purge] Client-side delete blocked:", delError.message);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[purge] client-side fallback error:", e);
+    }
+  }
+
+  // 3) Wyczysc lokalny cache z wygaslych (zawsze dziala, rowniez offline)
   try {
     const cached = getCachedTips();
     if (cached.length) {
       const now = Date.now();
-      const fresh = cached.filter((t) => !isTipExpired(t, now));
+      const fresh = cached.filter((t) => !isTipExpiredByRule(t, now));
       if (fresh.length !== cached.length) {
         setCachedTips(fresh);
         console.log("[purge] Removed " + (cached.length - fresh.length) + " expired tips from local cache");
@@ -151,7 +211,20 @@ export const loadTips = async (publishedOnly: boolean = true, forceRefresh: bool
     return cached;
   }
 
-  const tips = (data || []).map((tip: any) => ({
+  // Tarcza bezpieczeństwa: nawet gdy usuwanie z bazy nie jest mozliwe
+  // (RLS/brak RPC), wygasle tipy nigdy nie trafiaja do stanu "Published Tips".
+  const now = Date.now();
+  const tips = (data || [])
+    .filter(
+      (tip: any) =>
+        tip.is_published !== false &&
+        !isTipExpiredByRule({
+          kickoff: tip.kickoff,
+          status: tip.status,
+          wonAt: tip.won_at || null,
+        }, now),
+    )
+    .map((tip: any) => ({
     id: tip.id,
     sport: tip.sport,
     league: tip.league,

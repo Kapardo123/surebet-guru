@@ -52,6 +52,11 @@ interface AnalysisOutput {
   prediction: string;
   league: string;
   analysis: string;
+  // Canonical English team names (English Wikipedia style), so the app displays
+  // and logo-searches the same spelling the logo sources recognise. Absent or
+  // empty = keep the raw Polish source name.
+  homeTeam?: string;
+  awayTeam?: string;
   // false when the model was unreachable and the caller is looking at the
   // untouched Polish source instead of a written analysis. The admin panel
   // flags these so raw source text cannot be published by accident.
@@ -89,6 +94,8 @@ const fallbackAnalysis = (m: MatchInput): AnalysisOutput => {
     prediction: String(m.predictionRaw || "").trim(),
     league: "",
     analysis: text.length > 700 ? `${text.slice(0, 697).trimEnd()}...` : text,
+    homeTeam: "",
+    awayTeam: "",
     ok: false,
   };
 };
@@ -120,8 +127,16 @@ Return ONLY a JSON object, no prose and no code fences, with exactly these keys:
 {
   "prediction": "the pick as a short English betting-market label, max 60 chars, e.g. 'Home win or draw + under 4.5 goals'",
   "league": "the competition these teams play in, in English, e.g. 'Ekstraklasa'. Empty string if you are not sure.",
-  "analysis": "the tidied-up English version of the note"
+  "analysis": "the tidied-up English version of the note",
+  "homeTeamEn": "the home team's standard international name — exactly the title used by its English Wikipedia article (e.g. 'Bayern Munich', 'Legia Warsaw', 'Crvena zvezda').",
+  "awayTeamEn": "the away team's standard international name, same rule. Empty string only if you truly cannot identify the team."
 }
+
+Rules for team names ("homeTeamEn" / "awayTeamEn"):
+- Use the internationally recognised English spelling: the one Wikipedia and sports data providers (TheSportsDB, SofaScore) use. "Malmö FF", not "Malmo FF"; "Lech Poznań", not "Lech Poznan"; "1. FC Köln", not "FC Cologne".
+- Resolve local abbreviations and nicknames to the full name ("Śląsk" -> "Śląsk Wrocław").
+- If the given name is already correct, repeat it unchanged.
+- Never invent a club that does not exist; if unsure, return empty string for that side.
 
 Rules for "analysis" — keep it close to the original:
 - Follow the tipster's reasoning in their order. Keep every concrete detail they give: player names, injuries, suspensions, transfers, recent form, head-to-head trends, table position.
@@ -181,6 +196,10 @@ const analyseSingle = async (m: MatchInput): Promise<AnalysisOutput> => {
         prediction: String(obj.prediction ?? "").trim() || fb.prediction,
         league: String(obj.league ?? "").trim(),
         analysis,
+        // A missing or empty canonical name keeps the raw source name — the
+        // client only overwrites what the model was confident about.
+        homeTeam: String(obj.homeTeamEn ?? "").trim(),
+        awayTeam: m.awayTeam ? String(obj.awayTeamEn ?? "").trim() : "",
         ok: true,
       };
     } catch {

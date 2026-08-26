@@ -10,6 +10,22 @@ const normalize = (value: string): string =>
     .replace(/[^a-z0-9]/g, "")
     .trim();
 
+// Hard cap per request so one slow or hung source never stalls rendering —
+// browsers queue silently otherwise and the spinner spins forever.
+const fetchT = async (url: string, ms = 8000): Promise<Response> => {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+// Broken/hotlink-protected junk must not enter the cache chain.
+export const isValidLogoUrl = (u?: string | null): u is string =>
+  !!u && /^https?:\/\//i.test(u.trim());
+
 export const saveCustomTeamLogo = (teamName: string, dataUrl: string) => {
   const key = teamName.trim().toLowerCase();
   if (!key || key.length < 2) return;
@@ -169,11 +185,8 @@ const FALLBACK_LOGOS: Record<string, string> = {
 
   "monaco": "https://upload.wikimedia.org/wikipedia/en/thumb/4/48/AS_Monaco_logo.svg/120px-AS_Monaco_logo.svg.png",
   "as monaco": "https://upload.wikimedia.org/wikipedia/en/thumb/4/48/AS_Monaco_logo.svg/120px-AS_Monaco_logo.svg.png",
-  "paris saint germain": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a7/Paris_Saint-Germain_F.C..svg/120px-Paris_Saint-Germain_F.C..svg.png",
   "rennes": "https://upload.wikimedia.org/wikipedia/en/thumb/2/25/Stade_Rennais_FC.svg/120px-Stade_Rennais_FC.svg.png",
-  "olympique lyonnais": "https://upload.wikimedia.org/wikipedia/en/thumb/e/e4/Olympique_Lyonnais.svg/120px-Olympique_Lyonnais.svg.png",
   "lille": "https://upload.wikimedia.org/wikipedia/en/thumb/b/bd/LOSC_Lille_logo.svg/120px-LOSC_Lille_logo.svg.png",
-  "marseille": "https://upload.wikimedia.org/wikipedia/en/thumb/1/14/Olympique_de_Marseille_logo.svg/120px-Olympique_de_Marseille_logo.svg.png",
   "leicester city": "https://upload.wikimedia.org/wikipedia/en/thumb/2/2d/Leicester_City_crest.svg/120px-Leicester_City_crest.svg.png",
   "leeds united": "https://upload.wikimedia.org/wikipedia/en/thumb/9/91/Leeds_United.svg/120px-Leeds_United.svg.png",
   "southampton": "https://upload.wikimedia.org/wikipedia/en/thumb/c/c9/Southampton_F.C.svg/120px-Southampton_F.C.svg.png",
@@ -205,8 +218,6 @@ const FALLBACK_LOGOS: Record<string, string> = {
   "borussia monchengladbach": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Borussia_M%C3%B6nchengladbach_2018_logo.svg/120px-Borussia_M%C3%B6nchengladbach_2018_logo.svg.png",
 
   "atalanta": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Atalanta_logo.svg/120px-Atalanta_logo.svg.png",
-  "lazio": "https://upload.wikimedia.org/wikipedia/en/thumb/7/78/SS_Lazio_logo.svg/120px-SS_Lazio_logo.svg.png",
-  "ss lazio": "https://upload.wikimedia.org/wikipedia/en/thumb/7/78/SS_Lazio_logo.svg/120px-SS_Lazio_logo.svg.png",
   "fiorentina": "https://upload.wikimedia.org/wikipedia/en/thumb/8/8c/ACF_Fiorentina_2022_logo.svg/120px-ACF_Fiorentina_2022_logo.svg.png",
   "bologna": "https://upload.wikimedia.org/wikipedia/en/thumb/c/c3/Bologna_FC_1909_logo.svg/120px-Bologna_FC_1909_logo.svg.png",
   "torino": "https://upload.wikimedia.org/wikipedia/en/thumb/e/ed/Torino_FC_2017_logo.svg/120px-Torino_FC_2017_logo.svg.png",
@@ -224,7 +235,6 @@ const FALLBACK_LOGOS: Record<string, string> = {
   "az alkmaar": "https://upload.wikimedia.org/wikipedia/en/thumb/4/4a/AZ_Alkmaar.svg/120px-AZ_Alkmaar.svg.png",
   "twente": "https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/FC_Twente_2024_logo.svg/120px-FC_Twente_2024_logo.svg.png",
 
-  "sl benfica": "https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/SL_Benfica_logo.svg/120px-SL_Benfica_logo.svg.png",
   "sporting cp": "https://upload.wikimedia.org/wikipedia/en/thumb/5/5c/Sporting_CP_logo.svg/120px-Sporting_CP_logo.svg.png",
   "sporting lisbon": "https://upload.wikimedia.org/wikipedia/en/thumb/5/5c/Sporting_CP_logo.svg/120px-Sporting_CP_logo.svg.png",
   "braga": "https://upload.wikimedia.org/wikipedia/en/thumb/2/2a/Sp_Braga.svg/120px-Sp_Braga.svg.png",
@@ -285,7 +295,6 @@ const FALLBACK_LOGOS: Record<string, string> = {
   "gornik zabrze": "https://upload.wikimedia.org/wikipedia/en/thumb/3/3a/Gornik_Zabrze.svg/120px-Gornik_Zabrze.svg.png",
   "lechia gdansk": "https://upload.wikimedia.org/wikipedia/en/thumb/f/fb/Lechia_Gdansk.svg/120px-Lechia_Gdansk.svg.png",
   "widzew lodz": "https://upload.wikimedia.org/wikipedia/en/thumb/5/58/Widzew_Lodz_2024.svg/120px-Widzew_Lodz_2024.svg.png",
-  "pogon szczecin": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a6/Pogon_Szczecin_logo.svg/120px-Pogon_Szczecin_logo.svg.png",
   "stomil olsztyn": "https://upload.wikimedia.org/wikipedia/en/thumb/7/7d/Stomil_Olsztyn_2021.svg/120px-Stomil_Olsztyn_2021.svg.png",
   "gornik leczna": "https://upload.wikimedia.org/wikipedia/en/thumb/2/23/Gornik_Leczna_2021.svg/120px-Gornik_Leczna_2021.svg.png",
   "radomiak radom": "https://upload.wikimedia.org/wikipedia/en/thumb/1/1c/Radomiak_Radom.svg/120px-Radomiak_Radom.svg.png",
@@ -337,7 +346,7 @@ const fetchWikimediaLogos = async (teamName: string): Promise<LogoCandidate[]> =
         term,
       )}&gsrlimit=5&prop=imageinfo&iiprop=url|mime&iiurlwidth=200&format=json&origin=*`;
 
-      const res = await fetch(apiUrl);
+      const res = await fetchT(apiUrl);
       if (!res.ok) continue;
       const data: any = await res.json();
       const pages: any = data?.query?.pages || {};
@@ -399,7 +408,7 @@ const fetchWikidataLogos = async (teamName: string): Promise<LogoCandidate[]> =>
     try {
       // Krok 1: Wyszukaj elementy Wikidacie pasujace do nazwy
       const searchUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(term)}&format=json&language=en&type=item&limit=8&origin=*`;
-      const searchRes = await fetch(searchUrl);
+      const searchRes = await fetchT(searchUrl);
       if (!searchRes.ok) continue;
       const searchData: any = await searchRes.json();
       const items = searchData?.search || [];
@@ -421,7 +430,7 @@ const fetchWikidataLogos = async (teamName: string): Promise<LogoCandidate[]> =>
 
       // Krok 2: Pobierz wlasciwosci P154 (logo) dla znalezionych elementow
       const entitiesUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${ids.join("|")}&props=claims&format=json&origin=*`;
-      const entitiesRes = await fetch(entitiesUrl);
+      const entitiesRes = await fetchT(entitiesUrl);
       if (!entitiesRes.ok) continue;
       const entitiesData: any = await entitiesRes.json();
       const entities = entitiesData?.entities || {};
@@ -482,7 +491,7 @@ const fetchMultiLangWikipediaLogos = async (teamName: string): Promise<LogoCandi
   for (const lang of langs) {
     try {
       const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(clean)}&limit=3&format=json&origin=*`;
-      const searchRes = await fetch(searchUrl);
+      const searchRes = await fetchT(searchUrl);
       if (!searchRes.ok) continue;
       const searchData: any = await searchRes.json();
       const titles: string[] = searchData?.[1] || [];
@@ -507,7 +516,7 @@ const fetchMultiLangWikipediaLogos = async (teamName: string): Promise<LogoCandi
           if (!isSports && score < 70) continue;
 
           const pageUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/\s+/g, "_"))}`;
-          const pageRes = await fetch(pageUrl);
+          const pageRes = await fetchT(pageUrl);
           if (!pageRes.ok) continue;
 
           const pageData: any = await pageRes.json();
@@ -542,7 +551,7 @@ const fetchSportsDBLogos = async (teamName: string): Promise<LogoCandidate[]> =>
   for (const query of queries) {
     try {
       const url = `https://www.thesportsdb.com/api/v1/json/1/searchteams.php?t=${encodeURIComponent(query)}`;
-      const res = await fetch(url);
+      const res = await fetchT(url);
       if (!res.ok) continue;
       const data: any = await res.json();
       if (!data?.teams || !Array.isArray(data.teams)) continue;
@@ -585,7 +594,7 @@ const fetchSofaScoreLogos = async (teamName: string): Promise<LogoCandidate[]> =
   for (const query of queries) {
     try {
       const url = `https://api.sofascore.com/api/v1/search/teams?q=${encodeURIComponent(query)}`;
-      const res = await fetch(url);
+      const res = await fetchT(url);
       if (!res.ok) continue;
       const data: any = await res.json();
       const items = data?.results || [];
@@ -622,7 +631,7 @@ const fetchWikipediaLogos = async (teamName: string): Promise<LogoCandidate[]> =
   for (const query of queries) {
     try {
       const searchUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=5&format=json&origin=*`;
-      const searchRes = await fetch(searchUrl);
+      const searchRes = await fetchT(searchUrl);
       if (!searchRes.ok) continue;
       const searchData = await searchRes.json();
       const titles: string[] = searchData?.[1] || [];
@@ -647,7 +656,7 @@ const fetchWikipediaLogos = async (teamName: string): Promise<LogoCandidate[]> =
           if (!isSports && score < 70) return null;
 
           const pageUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/\s+/g, "_"))}`;
-          const pageRes = await fetch(pageUrl);
+          const pageRes = await fetchT(pageUrl);
           if (!pageRes.ok) return null;
 
           const pageData = await pageRes.json();
@@ -703,32 +712,27 @@ const mergeAllResults = (
   return merged.sort((a, b) => (b.score || 0) - (a.score || 0));
 };
 
-export const fetchTeamLogoUrl = async (teamName: string): Promise<string | null> => {
-  if (!teamName || teamName.trim().length < 3) return null;
+// ---- Shared pipeline ---------------------------------------------------------
+// Several TeamLogo instances (tip + coupon + hero) often resolve the same team
+// at once. Everything goes through one deduped in-flight promise keyed by the
+// normalized name, so one team costs exactly one search round-trip.
 
-  // Najpierw sprawdz CUSTOM LOGO wgrany przez admina (NAJWYZSZY PRIORYTET)
-  const custom = getCustomTeamLogo(teamName);
-  if (custom) return custom.url;
+const inflight = new Map<string, Promise<LogoCandidate[]>>();
 
-  // Następnie sprawdz fallback (natychmiast, zero requestu)
-  const fallback = getFallbackLogo(teamName);
-  if (fallback) return fallback.url;
+const resolveCandidatesCore = async (
+  teamName: string,
+): Promise<LogoCandidate[]> => {
+  const [sportsDB, sofa, wiki, wikimedia, wikidata, multiLang] = await Promise.all([
+    fetchSportsDBLogos(teamName).catch(() => []),
+    fetchSofaScoreLogos(teamName).catch(() => []),
+    fetchWikipediaLogos(teamName).catch(() => []),
+    fetchWikimediaLogos(teamName).catch(() => []),
+    fetchWikidataLogos(teamName).catch(() => []),
+    fetchMultiLangWikipediaLogos(teamName).catch(() => []),
+  ]);
 
-  try {
-    const [sportsDB, sofa, wiki, wikimedia, wikidata, multiLang] = await Promise.all([
-      fetchSportsDBLogos(teamName).catch(() => []),
-      fetchSofaScoreLogos(teamName).catch(() => []),
-      fetchWikipediaLogos(teamName).catch(() => []),
-      fetchWikimediaLogos(teamName).catch(() => []),
-      fetchWikidataLogos(teamName).catch(() => []),
-      fetchMultiLangWikipediaLogos(teamName).catch(() => []),
-    ]);
-
-    const merged = mergeAllResults(null, sportsDB, sofa, wiki, wikimedia, wikidata, multiLang);
-    return merged.length > 0 ? merged[0].url : null;
-  } catch {
-    return null;
-  }
+  return mergeAllResults(null, sportsDB, sofa, wiki, wikimedia, wikidata, multiLang)
+    .filter((c) => isValidLogoUrl(c.url));
 };
 
 export const fetchTeamLogoCandidates = async (
@@ -738,30 +742,27 @@ export const fetchTeamLogoCandidates = async (
 
   // Custom logo wgrany z dysku - NAJWYZSZY PRIORYTET
   const custom = getCustomTeamLogo(teamName);
-  // Fallback - od razu dodaj jako pierwszy wynik jesli pasuje
+  // Fallback - natychmiastowy wynik bez requestu
   const fallback = getFallbackLogo(teamName);
+  const resultsStart: LogoCandidate[] = [];
+  if (custom) resultsStart.push(custom);
+  if (fallback) resultsStart.push(fallback);
 
   try {
-    const [sportsDB, sofa, wiki, wikimedia, wikidata, multiLang] = await Promise.all([
-      fetchSportsDBLogos(teamName).catch(() => []),
-      fetchSofaScoreLogos(teamName).catch(() => []),
-      fetchWikipediaLogos(teamName).catch(() => []),
-      fetchWikimediaLogos(teamName).catch(() => []),
-      fetchWikidataLogos(teamName).catch(() => []),
-      fetchMultiLangWikipediaLogos(teamName).catch(() => []),
-    ]);
+    const key = normalize(teamName);
+    let running = inflight.get(key);
+    if (!running) {
+      running = resolveCandidatesCore(teamName).finally(() =>
+        inflight.delete(key),
+      );
+      inflight.set(key, running);
+    }
+    const merged = await running;
 
-    // Custom logo jest najwazniejsze - zawsze na poczatku gdy istnieje
-    const resultsStart: LogoCandidate[] = [];
-    if (custom) resultsStart.push(custom);
-    if (fallback) resultsStart.push(fallback);
-
-    const merged = mergeAllResults(null, sportsDB, sofa, wiki, wikimedia, wikidata, multiLang);
-    const combined = [...resultsStart, ...merged];
     const seen = new Set<string>();
     const unique: LogoCandidate[] = [];
-    for (const r of combined) {
-      if (!seen.has(r.url)) {
+    for (const r of [...resultsStart, ...merged]) {
+      if (isValidLogoUrl(r.url) && !seen.has(r.url)) {
         seen.add(r.url);
         unique.push(r);
       }
@@ -772,8 +773,23 @@ export const fetchTeamLogoCandidates = async (
       teamName: r.teamName,
     }));
   } catch {
-    const fallbackRes = fallback ? [{ url: fallback.url, source: fallback.source, teamName: fallback.teamName }] : [];
-    const customRes = custom ? [{ url: custom.url, source: custom.source, teamName: custom.teamName }] : [];
-    return [...customRes, ...fallbackRes];
+    return resultsStart;
   }
+};
+
+export const fetchTeamLogoUrl = async (
+  teamName: string,
+): Promise<string | null> => {
+  if (!teamName || teamName.trim().length < 3) return null;
+
+  // Najpierw sprawdz CUSTOM LOGO wgrany przez admina (NAJWYZSZY PRIORYTET)
+  const custom = getCustomTeamLogo(teamName);
+  if (custom) return custom.url;
+
+  // Następnie sprawdz fallback (natychmiast, zero requestu)
+  const fallback = getFallbackLogo(teamName);
+  if (fallback) return fallback.url;
+
+  const candidates = await fetchTeamLogoCandidates(teamName);
+  return candidates[0]?.url ?? null;
 };

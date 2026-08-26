@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import TipCard from "@/components/TipCard";
 import CouponCard from "@/components/CouponCard";
 import DailySpin from "@/components/DailySpin";
 import TodayHotTip from "@/components/TodayHotTip";
 import BottomNav from "@/components/BottomNav";
+import AdminLoginDialog from "@/components/AdminLoginDialog";
 import { loadTips } from "@/lib/tipsStorage";
 import { loadCoupons, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
@@ -34,6 +35,24 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const { active: isPremium, daysLeft: premiumDaysLeft, loading: premiumLoading } = usePremiumStatus();
   const { user, signOut, loading: authLoading } = useAuth();
+
+  // 3 taps on the footer copyright opens the admin login dialog
+  const [footerTaps, setFooterTaps] = useState(0);
+  const [adminLoginOpen, setAdminLoginOpen] = useState(false);
+  const footerTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleFooterTap = useCallback(() => {
+    const next = footerTaps + 1;
+    setFooterTaps(next);
+
+    if (footerTapTimer.current) clearTimeout(footerTapTimer.current);
+    footerTapTimer.current = setTimeout(() => setFooterTaps(0), 2000);
+
+    if (next >= 3) {
+      setFooterTaps(0);
+      setAdminLoginOpen(true);
+    }
+  }, [footerTaps]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -381,7 +400,10 @@ const Index = () => {
           </a>
           
           <div className="pt-3 border-t border-white/[0.04]">
-            <p className="text-xs text-white/20 font-medium">
+            <p
+              className="text-xs text-white/20 font-medium select-none cursor-pointer"
+              onClick={handleFooterTap}
+            >
               © 2026 Great Sport Bets
             </p>
           </div>
@@ -428,6 +450,9 @@ const Index = () => {
       )}
 
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {/* Admin login dialog - opened by 3 taps on the footer copyright */}
+      <AdminLoginDialog open={adminLoginOpen} onOpenChange={setAdminLoginOpen} />
 
       {/* Free Tip Modal */}
       {freeTip && (

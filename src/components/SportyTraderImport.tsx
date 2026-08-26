@@ -31,6 +31,7 @@ import {
   ScrapedMatch,
   ImportTarget,
 } from "@/lib/sportyTrader";
+import { getSofaOdds } from "@/lib/sofaOdds";
 
 interface MatchCard extends ScrapedMatch {
   analysis: string; // rewritten
@@ -163,29 +164,49 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
       // fallback to edge function listing, then match detail page.
       // Only skip no-odds matches when client fetch succeeded (real odds available).
       const hasClientOdds = Object.keys(clientOddsMap).length > 0;
-      const cards: MatchCard[] = fresh
-        .map((item, i) => {
-          const d = details[i];
-          const clientOdds = clientOddsMap[item.id];
-          const odds = (clientOdds ?? (item.odds != null ? item.odds : d?.odds)) || 0;
-          return {
-            id: item.id,
-            url: item.url,
-            homeTeam: d?.homeTeam || item.homeTeam,
-            awayTeam: d?.awayTeam || item.awayTeam,
-            sport: d?.sport || "Football",
-            league: d?.league || "",
-            date: d?.date || item.date,
-            time: d?.time || item.time,
-            kickoff: d?.kickoff || item.kickoff,
-            prediction: item.prediction || d?.prediction || "",
-            odds,
-            analysisRaw: d?.analysisRaw || "",
-            analysis: rewriteAnalysis(d?.analysisRaw || ""),
-            homeTeamLogo: item.homeTeamLogo,
-            awayTeamLogo: item.awayTeamLogo,
-          };
-        })
+      const cards: MatchCard[] = fresh.map((item, i) => {
+        const d = details[i];
+        const clientOdds = clientOddsMap[item.id];
+        const odds = (clientOdds ?? (item.odds != null ? item.odds : d?.odds)) || 0;
+        return {
+          id: item.id,
+          url: item.url,
+          homeTeam: d?.homeTeam || item.homeTeam,
+          awayTeam: d?.awayTeam || item.awayTeam,
+          sport: d?.sport || "Football",
+          league: d?.league || "",
+          date: d?.date || item.date,
+          time: d?.time || item.time,
+          kickoff: d?.kickoff || item.kickoff,
+          prediction: item.prediction || d?.prediction || "",
+          odds,
+          analysisRaw: d?.analysisRaw || "",
+          analysis: rewriteAnalysis(d?.analysisRaw || ""),
+          homeTeamLogo: item.homeTeamLogo,
+          awayTeamLogo: item.awayTeamLogo,
+        };
+      });
+
+      // SofaScore enrichment: when SportyTrader serves the hideodd variant
+      // (no odds in SSR at all), fill missing values from a second source.
+      // Silent best-effort — any miss keeps the manual odds input.
+      let sofaFilled = 0;
+      const zeroOdds = cards.filter((c) => c.odds <= 0);
+      if (zeroOdds.length > 0) {
+        await pool(
+          zeroOdds,
+          4,
+          async (c) => {
+            const o = await getSofaOdds(c.homeTeam, c.awayTeam, c.kickoff, c.prediction);
+            if (o != null) {
+              c.odds = o;
+              sofaFilled++;
+            }
+          },
+        );
+      }
+
+      const usable = cards
         .filter((c) => !hasClientOdds || c.odds > 0)
         .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 
@@ -211,18 +232,23 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
 
       const now = Date.now();
       // Track which IDs are new (not in previous fetch)
-      const newCount = cards.filter((c) => !seenIds.has(c.id)).length;
+      const newCount = usable.filter((c) => !seenIds.has(c.id)).length;
       // Save current cards as seen for next comparison
-      const currentIds = new Set(cards.map((c) => c.id));
+      const currentIds = new Set(usable.map((c) => c.id));
       setSeenIds(currentIds);
       try { localStorage.setItem(SEEN_IDS_KEY, JSON.stringify([...currentIds])); } catch { /* ignore */ }
-      setMatches(cards);
+      setMatches(usable);
       setFetched(true);
       setFetchedAt(now);
-      writeMatchesCache(cards, now);
+      writeMatchesCache(usable, now);
       toast({
-        title: `Loaded ${cards.length} matches`,
-        description: newCount > 0 ? `${newCount} new since last visit` : undefined,
+        title: `Loaded ${usable.length} matches`,
+        description:
+          sofaFilled > 0
+            ? `${newCount > 0 ? `${newCount} new · ` : ""}${sofaFilled} odds auto-filled from SofaScore`
+            : newCount > 0
+              ? `${newCount} new since last visit`
+              : undefined,
       });
     } catch (e: any) {
       toast({

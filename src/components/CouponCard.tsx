@@ -132,7 +132,7 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
                   </div>
                   <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
                     <div className="w-9 h-9 rounded-full bg-cyan-500/5 flex items-center justify-center ring-1 ring-cyan-500/20 flex-shrink-0">
-                      <TeamLogo teamName={match.awayTeam} logoUrl={match.awayLogo} size={20} sport={match.sport} />
+                      <TeamLogo teamName={match.awayTeam} logoUrl={match.awayTeamLogo} size={20} sport={match.sport} />
                     </div>
                     <span className="text-[11px] font-bold text-foreground leading-tight text-center truncate w-full">{match.awayTeam}</span>
                   </div>

@@ -41,6 +41,8 @@ export interface Coupon {
   createdAt: string;
   isPremium?: boolean;
   wonAt?: string | null; // ISO timestamp kiedy kupon wygrał
+  // Display helper (derived from the first match) used by card headers.
+  sport?: string;
 }
 
 const isCouponStatus = (value: unknown): value is Coupon["status"] =>
@@ -63,7 +65,7 @@ const serializeMatches = (matches: CouponMatch[]): Json => {
 const deserializeMatches = (value: Json): CouponMatch[] => {
   if (!Array.isArray(value)) return [];
   return value
-    .map((raw) => {
+    .map((raw): CouponMatch | null => {
       if (raw && typeof raw === "object" && !Array.isArray(raw)) {
         const obj = raw as Record<string, unknown>;
         const homeTeam = typeof obj.homeTeam === "string" ? obj.homeTeam : "";
@@ -175,6 +177,7 @@ const processCouponData = (data: any[]): Coupon[] => {
       createdAt: coupon.created_at || new Date().toISOString(),
       isPremium: coupon.is_premium ?? false,
       wonAt: coupon.won_at || null,
+      sport: matches[0]?.sport,
     };
   }).filter(coupon => {
     const isValid = coupon.name && coupon.matches.length > 0;

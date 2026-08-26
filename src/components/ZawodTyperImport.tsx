@@ -26,6 +26,7 @@ import { markImported, ImportTarget, ScrapedMatch } from "@/lib/sportyTrader";
 import {
   fetchZawodTyperList,
   analyzeMatches,
+  applyAnalysisNames,
   toScrapedMatch,
   readZTCache,
   writeZTCache,
@@ -219,16 +220,30 @@ const ZawodTyperImport = ({ onImport, couponCount = 0, onGoToCoupon }: Props) =>
         if (r?.analysis) next[m.id] = r;
       });
       setAnalyses(next);
-      persist(matches, next, date);
+      // Same step also fixes the team names: successful analyses carry back
+      // canonical (English Wikipedia style) spellings, so cards show — and
+      // TeamLogo searches — names the logo sources actually recognise.
+      const renamed = applyAnalysisNames(matches, next);
+      const nameFixes = renamed.reduce(
+        (n, m, i) =>
+          n +
+          (m.homeTeam !== matches[i].homeTeam || m.awayTeam !== matches[i].awayTeam
+            ? 1
+            : 0),
+        0,
+      );
+      setMatches(renamed);
+      persist(renamed, next, date);
 
       const written = pendingAnalysis.filter((m) => next[m.id]?.ok).length;
       const failed = pendingAnalysis.length - written;
       toast({
         title: written > 0 ? `AI napisało ${written} analiz ✍️` : "AI nie napisało żadnej analizy",
         description:
-          failed > 0
-            ? `${failed} nie powiodło się — zostaje surowy polski tekst, nie da się ich zaimportować. Kliknij ponownie, żeby spróbować.`
-            : "Możesz teraz wysłać je do Tip / Hero / Coupon.",
+          (failed > 0
+            ? `${failed} nie powiodło się — zostaje surowy polski tekst, nie da się ich zaimportować. Kliknij ponownie, żeby spróbować. `
+            : "Możesz teraz wysłać je do Tip / Hero / Coupon. ") +
+          (nameFixes > 0 ? `Poprawiono ${nameFixes} nazw drużyn.` : ""),
         variant: written === 0 ? "destructive" : undefined,
       });
     } catch (e: any) {
