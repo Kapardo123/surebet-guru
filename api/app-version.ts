@@ -3,11 +3,11 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 
 const APP_VERSION = {
-  version: "21.0.0",
-  build: 2100,
+  version: "22.0.0",
+  build: 2200,
   forceUpdate: true,
-  releaseDate: "2026-07-26",
-  updateMessage: "New version available! v20.0.0 — Daily Spin wheel, AI analysis, SportyTrader import with odds.",
+  releaseDate: "2026-08-26",
+  updateMessage: "New version available! v22.0.0 — Better team logos, canonical team names, SofaScore odds fallback, faster cache.",
   downloadUrl: "https://play.google.com/store/apps/details?id=com.surebet.guru",
   minSupportedVersion: "10.0.0"
 };
