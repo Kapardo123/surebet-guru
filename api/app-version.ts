@@ -3,11 +3,11 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 
 const APP_VERSION = {
-  version: "24.0.0",
-  build: 2400,
+  version: "25.0.0",
+  build: 2500,
   forceUpdate: true,
   releaseDate: "2026-08-31",
-  updateMessage: "New version available! v24.0.0 ✨ Import cleanup: no auto logos, ZawodTyper filters pre-set (hide betbuilders, confirmed kickoffs only).",
+  updateMessage: "New version available! v25.0.0 ✨ Crash fix during SportyTrader import (native fetch timeouts).",
   downloadUrl: "https://play.google.com/store/apps/details?id=com.surebet.guru",
   minSupportedVersion: "10.0.0"
 };

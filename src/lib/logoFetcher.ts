@@ -1,5 +1,7 @@
 // ============ POMOCNICZE ============
 
+import { Capacitor } from "@capacitor/core";
+
 const CUSTOM_TEAM_LOGOS_KEY = "custom_team_logos_v1";
 
 const normalize = (value: string): string =>
@@ -12,7 +14,12 @@ const normalize = (value: string): string =>
 
 // Hard cap per request so one slow or hung source never stalls rendering —
 // browsers queue silently otherwise and the spinner spins forever.
+// NOTE: with CapacitorHttp (native) the fetch is routed through the Android
+// bridge and aborting it can hard-crash the app — no AbortController there.
+const IS_NATIVE = Capacitor.isNativePlatform();
+
 const fetchT = async (url: string, ms = 8000): Promise<Response> => {
+  if (IS_NATIVE) return fetch(url);
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
   try {

@@ -8,6 +8,8 @@
  * gracefully to null (admin can still type odds manually).
  */
 
+import { Capacitor } from "@capacitor/core";
+
 /** lowercase + diacritics stripped + only [a-z0-9] kept */
 export const normalizeTeamName = (raw: string): string =>
   (raw || "")
@@ -42,7 +44,24 @@ const DAY_CACHE_TTL = 10 * 60 * 1000;
 const dayCache = new Map<string, { events: SofaEvent[]; ts: number }>();
 const REQUEST_TIMEOUT_MS = 8000;
 
+// Native (CapacitorHttp) fetch runs through the Android bridge; calling
+// AbortController.abort() on it can hard-crash the app (kicks the user out).
+// So in the app requests simply resolve (or fail) on their own.
+const IS_NATIVE =
+  typeof Capacitor !== "undefined" && Capacitor.isNativePlatform();
+
 async function fetchJson(url: string): Promise<any | null> {
+  if (IS_NATIVE) {
+    try {
+      const res = await fetch(url, {
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
   try {
