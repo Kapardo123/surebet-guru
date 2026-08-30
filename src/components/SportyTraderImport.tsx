@@ -241,11 +241,13 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
       setFetched(true);
       setFetchedAt(now);
       writeMatchesCache(usable, now);
+      const noOdds = usable.length > 0 && usable.every((c) => c.odds <= 0);
       toast({
         title: `Loaded ${usable.length} matches`,
-        description:
-          sofaFilled > 0
-            ? `${newCount > 0 ? `${newCount} new · ` : ""}${sofaFilled} odds auto-filled from SofaScore`
+        description: sofaFilled > 0
+          ? `${newCount > 0 ? `${newCount} new · ` : ""}${sofaFilled} odds auto-filled from SofaScore`
+          : noOdds
+            ? "Brak kursów — wpisz ręcznie lub ustaw darmowy klucz corsproxy.io (localStorage: gsb_corsproxy_key)"
             : newCount > 0
               ? `${newCount} new since last visit`
               : undefined,
