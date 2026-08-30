@@ -267,8 +267,8 @@ export const defaultZTFilters: ZTFilters = {
   minRatio: 0,
   minBets: 0,
   hideSettled: true,
-  hideBetbuilder: false,
-  onlyVerified: false,
+  hideBetbuilder: true,
+  onlyVerified: true,
   search: "",
 };
 

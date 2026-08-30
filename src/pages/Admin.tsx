@@ -67,21 +67,6 @@ const Admin = () => {
     toast({ title: `Coupon match loaded: ${match.homeTeam} vs ${match.awayTeam}` });
   };
 
-  // Auto-pobierz loga dla meczu zaimportowanego ze scrapera (ZawodTyper /
-  // SportyTrader), gdy scraper ich nie zwrócił — bez klikania w lupkę.
-  // Kandydaci trafiają też do list pod lupką, więc zmiana loga to 1 klik.
-  const autoFetchImportLogos = async (homeTeam: string, awayTeam: string) => {
-    const [home, away] = await Promise.all([
-      homeTeam && homeTeam.length >= 3
-        ? fetchTeamLogoCandidates(homeTeam).catch(() => [])
-        : Promise.resolve([] as LogoCandidate[]),
-      awayTeam && awayTeam.length >= 3
-        ? fetchTeamLogoCandidates(awayTeam).catch(() => [])
-        : Promise.resolve([] as LogoCandidate[]),
-    ]);
-    return { home, away };
-  };
-
   // Route a scraped SportyTrader match into the Tip / Hero / Coupon form.
   const handleSportyImport = async (match: ScrapedMatch, analysis: string, target: ImportTarget) => {
     const oddsStr = match.odds ? match.odds.toString() : "";
@@ -114,19 +99,6 @@ const Admin = () => {
       setActiveTab("tips");
       window.scrollTo({ top: 0, behavior: "smooth" });
       toast({ title: "Tip form filled! ✨", description: `${match.homeTeam} vs ${match.awayTeam} — review and save` });
-      autoFetchImportLogos(match.homeTeam, match.awayTeam).then(({ home, away }) => {
-        setForm((prev) =>
-          prev.homeTeam === match.homeTeam && prev.awayTeam === match.awayTeam
-            ? {
-                ...prev,
-                homeTeamLogo: prev.homeTeamLogo || home[0]?.url || null,
-                awayTeamLogo: prev.awayTeamLogo || away[0]?.url || null,
-              }
-            : prev,
-        );
-        setHomeLogoCandidates((prev) => (prev.length ? prev : home));
-        setAwayLogoCandidates((prev) => (prev.length ? prev : away));
-      });
     } else if (target === "hero") {
       // Wypełnij formularz hero i przejdź na zakładkę Hero
       setFeatured(prev => ({
@@ -147,19 +119,6 @@ const Admin = () => {
       setActiveTab("hero");
       window.scrollTo({ top: 0, behavior: "smooth" });
       toast({ title: "Hero form filled! 🔥", description: `${match.homeTeam} vs ${match.awayTeam} — review and save` });
-      autoFetchImportLogos(match.homeTeam, match.awayTeam).then(({ home, away }) => {
-        setFeatured((prev) =>
-          prev.homeTeam === match.homeTeam && prev.awayTeam === match.awayTeam
-            ? {
-                ...prev,
-                homeTeamLogo: prev.homeTeamLogo || home[0]?.url || null,
-                awayTeamLogo: prev.awayTeamLogo || away[0]?.url || null,
-              }
-            : prev,
-        );
-        setFeaturedHomeCandidates((prev) => (prev.length ? prev : home));
-        setFeaturedAwayCandidates((prev) => (prev.length ? prev : away));
-      });
     } else {
       // Coupon: append to the coupon builder so several matches form one coupon.
       // Stay on the Import tab so the user can keep adding matches.
@@ -177,19 +136,6 @@ const Admin = () => {
           awayTeamLogo: match.awayTeamLogo,
         },
       ]);
-      autoFetchImportLogos(match.homeTeam, match.awayTeam).then(({ home, away }) => {
-        setCouponMatches((prev) =>
-          prev.map((m) =>
-            m.homeTeam === match.homeTeam && m.awayTeam === match.awayTeam
-              ? {
-                  ...m,
-                  homeTeamLogo: m.homeTeamLogo || home[0]?.url || null,
-                  awayTeamLogo: m.awayTeamLogo || away[0]?.url || null,
-                }
-              : m,
-          ),
-        );
-      });
     }
   };
 
