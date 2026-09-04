@@ -15,6 +15,7 @@ import { initRevenueCat } from "@/integrations/revenuecat";
 const Admin = lazy(() => import("./pages/Admin"));
 const Premium = lazy(() => import("./pages/Premium"));
 const Coupons = lazy(() => import("./pages/Coupons"));
+const Results = lazy(() => import("./pages/Results"));
 const Auth = lazy(() => import("./pages/Auth"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
@@ -34,8 +35,29 @@ window.onerror = (msg, url, line, col, err) => {
 };
 
 const PageLoader = () => (
-  <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] flex items-center justify-center">
-    <div className="w-10 h-10 border-4 border-purple-500/30 border-t-pink-500 rounded-full animate-spin" />
+  <div className="min-h-screen bg-[#05000a] flex flex-col items-center justify-center gap-6">
+    <div className="flex items-baseline gap-1">
+      <span className="text-3xl font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+        GREAT
+      </span>
+      <span className="text-3xl font-extralight tracking-[0.15em] text-white/80">
+        SPORT
+      </span>
+      <span className="text-sm font-semibold uppercase tracking-[0.35em] text-cyan-400/70 ml-1">
+        BETS
+      </span>
+    </div>
+    <div className="relative w-10 h-10">
+      <div className="absolute inset-0 rounded-full border-[3px] border-white/[0.06]" />
+      <div
+        className="absolute inset-0 rounded-full animate-spin"
+        style={{
+          background: "conic-gradient(from 0deg, transparent 0%, #ec4899 35%, #a855f7 65%, #06b6d4 100%)",
+          WebkitMask: "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px))",
+          mask: "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px))",
+        }}
+      />
+    </div>
   </div>
 );
 
@@ -47,6 +69,7 @@ const AnimatedRoutes = () => {
         <Route path="/admin" element={<Admin />} />
         <Route path="/premium" element={<Premium />} />
         <Route path="/coupons" element={<Coupons />} />
+        <Route path="/results" element={<Results />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
@@ -59,6 +82,7 @@ const AnimatedRoutes = () => {
 
 const AppContent = () => {
   const [error, setError] = useState<string | null>(globalError);
+  const [splashDone, setSplashDone] = useState(sessionStorage.getItem("splash_shown") === "true");
   const {
     needsUpdate,
     forceUpdate,
@@ -106,20 +130,24 @@ const AppContent = () => {
 
   return (
     <AuthProvider>
-      <SplashScreen />
-      <Toaster />
-      <Sonner />
-      <AnimatedRoutes />
-      
-      {/* Update Modal - shows over everything */}
-      {!updateLoading && needsUpdate && (
-        <UpdateRequiredModal
-          isOpen={needsUpdate}
-          currentVersion={currentVersion}
-          latestVersion={latestVersion}
-          message={message}
-          downloadUrl={downloadUrl}
-        />
+      <SplashScreen onFinish={() => setSplashDone(true)} />
+      {splashDone && (
+        <>
+          <Toaster />
+          <Sonner />
+          <AnimatedRoutes />
+
+          {/* Update Modal - shows over everything */}
+          {!updateLoading && needsUpdate && (
+            <UpdateRequiredModal
+              isOpen={needsUpdate}
+              currentVersion={currentVersion}
+              latestVersion={latestVersion}
+              message={message}
+              downloadUrl={downloadUrl}
+            />
+          )}
+        </>
       )}
     </AuthProvider>
   );

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Zap, Play, Gift, Loader2, Crown, Lock } from "lucide-react";
+import { useState, useEffect, useMemo, memo } from "react";
+import { Flame, Play, Loader2, Gem, Shield, Crosshair, ChevronDown, Clock, Target, TrendingUp, Zap } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { motion, AnimatePresence } from "framer-motion";
 import { FeaturedPick, loadFeaturedPick } from "@/lib/featuredPickStorage";
@@ -17,43 +17,83 @@ const statusVariant = {
 
 const statusLabel = {
   upcoming: "Upcoming",
-  won: "Won ✓",
-  lost: "Lost ✗",
+  won: "Won",
+  lost: "Lost",
   draw: "Draw",
+};
+
+const useCountdown = (kickoff: string) => {
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return useMemo(() => {
+    try {
+      const target = new Date(kickoff).getTime();
+      if (isNaN(target)) return null;
+      const diff = target - now;
+      if (diff <= 0) return { expired: true, text: "LIVE", hours: 0, minutes: 0, seconds: 0 };
+      const hours = Math.floor(diff / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      return { expired: false, text: `${hours}h ${minutes}m ${seconds}s`, hours, minutes, seconds };
+    } catch {
+      return null;
+    }
+  }, [kickoff, now]);
 };
 
 const TodayHotTip = () => {
   const [pick, setPick] = useState<FeaturedPick | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const [lastUnlockedTipId, setLastUnlockedTipId] = useState<string | null>(null);
-  const { isLoading, isRewardedAdReady, error, showRewardedAd, loadRewardedAd } = useAdMob();
+  const { isLoading, isRewardedAdReady, error, showRewardedAd } = useAdMob();
   const { active: isPremium } = usePremiumStatus();
+
+  const data = pick || {
+    league: "UEFA Champions League",
+    kickoff: new Date(Date.now() + 3600000 * 3).toISOString(),
+    homeTeam: "Real Madrid",
+    awayTeam: "Bayern Munich",
+    prediction: "Real Madrid Win",
+    odds: "2.15",
+    confidence: "High",
+    status: "upcoming" as const,
+  };
+
+  const countdown = useCountdown(data.kickoff);
 
   useEffect(() => {
     if (isPremium) {
       setIsUnlocked(true);
+      return;
     }
 
     loadFeaturedPick().then((featured) => {
       if (featured) {
         setPick(featured);
 
+        // Admin unlocked hero without ad — show immediately
+        if (featured.unlockFree) {
+          setIsUnlocked(true);
+          return;
+        }
+
         const currentTipId = `${featured.homeTeam}-${featured.awayTeam}-${featured.kickoff}`;
         const savedTipId = localStorage.getItem("lastUnlockedTipId");
         
         if (!isPremium && savedTipId && savedTipId !== currentTipId) {
-          console.log('🔄 New tip detected - resetting unlock status');
           setIsUnlocked(false);
           localStorage.setItem("hotTipUnlocked", "false");
+          return;
         }
 
-        if (!isPremium) {
-          const savedUnlocked = localStorage.getItem("hotTipUnlocked");
-          if (savedUnlocked === "true") {
-            setIsUnlocked(true);
-            setLastUnlockedTipId(currentTipId);
-          }
+        const savedUnlocked = localStorage.getItem("hotTipUnlocked");
+        if (savedUnlocked === "true") {
+          setIsUnlocked(true);
         }
       }
     });
@@ -67,261 +107,275 @@ const TodayHotTip = () => {
       if (pick) {
         const currentTipId = `${pick.homeTeam}-${pick.awayTeam}-${pick.kickoff}`;
         localStorage.setItem("lastUnlockedTipId", currentTipId);
-        setLastUnlockedTipId(currentTipId);
       }
     }, 5000);
   };
 
-  const data = pick || {
-    league: "UEFA Champions League",
-    kickoff: "21:00",
-    homeTeam: "Real Madrid",
-    awayTeam: "Bayern Munich",
-    prediction: "Real Madrid Win",
-    odds: "2.15",
-    confidence: "High",
-    status: "upcoming" as const,
-  };
-
   return (
-    <>
-      {!isUnlocked ? (
+    <motion.div
+      layout
+      className="relative overflow-hidden rounded-2xl"
+    >
+      {/* Animated background glow */}
+      <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="relative overflow-hidden rounded-2xl glass gradient-border p-6"
-        >
-          <div className="absolute inset-0 overflow-hidden">
-            <motion.div
-              className="absolute w-[400px] h-[400px] rounded-full blur-[100px] opacity-20"
-              style={{ background: "radial-gradient(circle, hsl(280 100% 60%), transparent 70%)" }}
-              animate={{
-                x: ["-10%", "10%", "-5%"],
-                y: ["-10%", "10%", "-5%"],
-              }}
-              transition={{ duration: 6, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            />
-          </div>
+          className="absolute -top-20 -left-20 w-60 h-60 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%)", filter: "blur(40px)" }}
+          animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute -bottom-20 -right-20 w-60 h-60 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(236,72,153,0.12) 0%, transparent 70%)", filter: "blur(40px)" }}
+          animate={{ x: [0, -30, 0], y: [0, 20, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        />
+      </div>
 
-          <div className="relative z-10 space-y-5">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 bg-purple-500/20 text-purple-400 px-3 py-1.5 rounded-full">
-                  <Zap className="w-4 h-4 animate-pulse" />
-                  <span className="text-xs font-semibold uppercase tracking-wider">Today's Hot Tip</span>
-                </div>
-              </div>
+      <div className="relative rounded-2xl backdrop-blur-sm border border-white/[0.08] bg-gradient-to-br from-card/80 via-purple-950/10 to-pink-950/5 shadow-2xl shadow-black/20 overflow-hidden">
+        {/* Animated top accent */}
+        <motion.div
+          className="h-[2px] w-full"
+          style={{ background: "linear-gradient(90deg, transparent, #a855f7, #ec4899, #a855f7, transparent)" }}
+          animate={{ backgroundPosition: ["0% 50%", "200% 50%"] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+        />
+
+        <div className="p-5 space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <motion.div
+              className="flex items-center gap-1.5 bg-purple-500/10 text-purple-400 px-3 py-1.5 rounded-full border border-purple-500/20"
+              animate={{ borderColor: ["rgba(168,85,247,0.2)", "rgba(236,72,153,0.3)", "rgba(168,85,247,0.2)"] }}
+              transition={{ duration: 3, repeat: Infinity }}
+            >
+              <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>
+                <Flame className="w-3.5 h-3.5" />
+              </motion.div>
+              <span className="text-[10px] font-display font-bold uppercase tracking-wider">Today's Hot Tip</span>
+            </motion.div>
+            <div className="flex items-center gap-2">
+              {isPremium && isUnlocked && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="flex items-center gap-0.5 bg-pink-500/10 text-pink-400 px-2 py-0.5 rounded-full border border-pink-500/15 text-[9px] font-bold uppercase tracking-wider"
+                >
+                  <Gem className="w-2.5 h-2.5" />
+                  Premium
+                </motion.span>
+              )}
               {(data.status && data.status !== "upcoming") && (
-                <Badge variant={statusVariant[data.status]} className="gap-1 py-1 px-2.5">
-                  <span className="font-display font-bold uppercase tracking-wider text-[9px]">
-                    {statusLabel[data.status]}
-                  </span>
+                <Badge variant={statusVariant[data.status]} className="gap-1 text-[9px] px-2 py-0.5">
+                  <span className="whitespace-nowrap">{statusLabel[data.status]}</span>
                 </Badge>
               )}
             </div>
+          </div>
 
-            {/* Match Info */}
-            <p className="text-muted-foreground text-xs uppercase tracking-[0.2em] text-center font-medium">
-              {data.league} • {data.kickoff}
+          {/* League + Countdown */}
+          <div className="flex items-center justify-between">
+            <p className="text-white/30 text-[10px] uppercase tracking-[0.2em] font-medium">
+              {data.league}
             </p>
+            {countdown && (
+              <motion.div
+                className="flex items-center gap-1.5 bg-white/[0.04] px-2.5 py-1 rounded-lg border border-white/[0.06]"
+                animate={countdown.expired ? { borderColor: ["rgba(239,68,68,0.3)", "rgba(239,68,68,0.6)", "rgba(239,68,68,0.3)"] } : {}}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                <Clock className="w-3 h-3 text-white/40" />
+                <span className={`text-[11px] font-mono font-bold tabular-nums ${countdown.expired ? "text-red-400" : "text-white/60"}`}>
+                  {countdown.expired ? (
+                    <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1, repeat: Infinity }}>
+                      LIVE
+                    </motion.span>
+                  ) : (
+                    countdown.text
+                  )}
+                </span>
+              </motion.div>
+            )}
+          </div>
 
-            {/* Teams Preview */}
-            <div className="flex flex-col items-center gap-3 py-3">
-              {/* Home Team */}
-              <div className="flex items-center gap-3 w-full justify-center">
-                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center ring-2 ring-purple-500/30">
+          {/* Teams */}
+          <div className="flex items-center justify-between gap-4 py-3">
+            <motion.div
+              className="flex flex-col items-center gap-2 flex-1"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-purple-500/10 blur-lg" />
+                <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-purple-500/10 to-transparent flex items-center justify-center ring-2 ring-purple-500/15">
                   <TeamLogo teamName={data.homeTeam} logoUrl={data.homeTeamLogo} size={32} />
                 </div>
-                <span className="font-display text-lg font-bold text-foreground">{data.homeTeam}</span>
               </div>
+              <span className="font-display text-sm font-bold text-foreground text-center truncate w-full">{data.homeTeam}</span>
+            </motion.div>
 
-              {/* VS Badge */}
-              <div className="px-3 py-1.5 bg-muted/60 border border-border/40 rounded-lg">
-                <span className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider">VS</span>
+            <motion.div
+              className="flex flex-col items-center gap-1 flex-shrink-0"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+            >
+              <div className="w-10 h-10 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                <span className="text-xs font-display font-bold text-white/30">VS</span>
               </div>
+            </motion.div>
 
-              {/* Away Team */}
-              <div className="flex items-center gap-3 w-full justify-center">
-                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center ring-2 ring-purple-500/30">
+            <motion.div
+              className="flex flex-col items-center gap-2 flex-1"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-pink-500/10 blur-lg" />
+                <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-pink-500/10 to-transparent flex items-center justify-center ring-2 ring-pink-500/15">
                   <TeamLogo teamName={data.awayTeam} logoUrl={data.awayTeamLogo} size={32} />
                 </div>
-                <span className="font-display text-lg font-bold text-foreground">{data.awayTeam}</span>
               </div>
-            </div>
-
-            {/* Locked Content Overlay */}
-            <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/25 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-center gap-2 text-purple-400">
-                <Lock className="w-4 h-4" />
-                <span className="font-display text-sm font-bold uppercase tracking-wider">Premium Content Locked</span>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-2 opacity-30">
-                <div className="bg-background/40 rounded-lg p-2 text-center">
-                  <p className="text-[8px] text-muted-foreground uppercase">Prediction</p>
-                  <p className="text-xs font-bold text-foreground">???</p>
-                </div>
-                <div className="bg-background/40 rounded-lg p-2 text-center">
-                  <p className="text-[8px] text-muted-foreground uppercase">Odds</p>
-                  <p className="text-xs font-bold text-foreground">?.??</p>
-                </div>
-                <div className="bg-background/40 rounded-lg p-2 text-center">
-                  <p className="text-[8px] text-muted-foreground uppercase">Confidence</p>
-                  <p className="text-xs font-bold text-foreground">???</p>
-                </div>
-              </div>
-            </div>
-
-            {/* CTA Button */}
-            <Button
-              onClick={handleWatchAd}
-              disabled={isLoading || !isRewardedAdReady}
-              className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold uppercase tracking-wider text-sm shadow-lg shadow-purple-500/30 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Play className="w-4 h-4 mr-2" />
-              )}
-              {!isRewardedAdReady ? "Preparing Ad..." : "Watch Ad - Free"}
-            </Button>
-
-            {error && (
-              <p className="text-red-500 text-xs text-center">{error}</p>
-            )}
-
-            <p className="text-[10px] text-muted-foreground text-center">
-              ~30 seconds • No purchase necessary
-            </p>
-          </div>
-        </motion.div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4 }}
-          className="relative overflow-hidden rounded-2xl glass gradient-border p-6"
-        >
-          <div className="absolute inset-0 overflow-hidden">
-            <motion.div
-              className="absolute w-[400px] h-[400px] rounded-full blur-[100px] opacity-25"
-              style={{ background: "radial-gradient(circle, hsl(280 100% 60%), transparent 70%)" }}
-              animate={{
-                x: ["-10%", "10%", "-5%"],
-                y: ["-10%", "10%", "-5%"],
-              }}
-              transition={{ duration: 6, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            />
+              <span className="font-display text-sm font-bold text-foreground text-center truncate w-full">{data.awayTeam}</span>
+            </motion.div>
           </div>
 
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="flex items-center gap-1.5 bg-purple-500/20 text-purple-400 px-3 py-1.5 rounded-full">
-                  <Zap className="w-4 h-4 animate-pulse" />
-                  <span className="text-xs font-semibold uppercase tracking-wider">Today's Hot Tip</span>
+          {/* Content */}
+          <AnimatePresence mode="wait">
+            {!isUnlocked ? (
+              <motion.div
+                key="locked"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="space-y-3"
+              >
+                {/* Locked preview */}
+                <div className="rounded-xl px-4 py-3 border border-white/[0.06] bg-white/[0.02]">
+                  <div className="flex items-center justify-center gap-2 text-white/40 mb-3">
+                    <Shield className="w-4 h-4" />
+                    <span className="font-display text-[10px] font-bold uppercase tracking-wider">Premium Content Locked</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 opacity-30">
+                    <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
+                      <Target className="w-3.5 h-3.5 text-white/40 mx-auto mb-1" />
+                      <p className="text-[9px] text-white/40 uppercase">Prediction</p>
+                      <p className="text-[10px] font-bold text-white">???</p>
+                    </div>
+                    <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
+                      <TrendingUp className="w-3.5 h-3.5 text-white/40 mx-auto mb-1" />
+                      <p className="text-[9px] text-white/40 uppercase">Odds</p>
+                      <p className="text-[10px] font-bold text-white">?.??</p>
+                    </div>
+                    <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
+                      <Zap className="w-3.5 h-3.5 text-white/40 mx-auto mb-1" />
+                      <p className="text-[9px] text-white/40 uppercase">Confidence</p>
+                      <p className="text-[10px] font-bold text-white">???</p>
+                    </div>
+                  </div>
                 </div>
-                {isPremium && (
-                  <div className="flex items-center gap-1 bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-400 px-2 py-1 rounded-full border border-pink-500/30">
-                    <Crown className="w-3 h-3" />
-                    <span className="text-[9px] font-bold uppercase tracking-wider">Premium</span>
+
+                {/* CTA */}
+                <Button
+                  onClick={handleWatchAd}
+                  disabled={isLoading || !isRewardedAdReady}
+                  className="w-full h-11 font-bold uppercase tracking-wider text-xs text-white rounded-xl relative overflow-hidden group transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                  style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-white/10 to-purple-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                  <span className="relative flex items-center gap-2">
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Play className="w-4 h-4" />
+                    )}
+                    {!isRewardedAdReady ? "Preparing Ad..." : "Watch Ad - Unlock Free"}
+                  </span>
+                </Button>
+
+                {error && <p className="text-red-400/70 text-[10px] text-center">{error}</p>}
+                <p className="text-[9px] text-white/25 text-center">~30 seconds · No purchase necessary</p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="unlocked"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="space-y-3"
+              >
+                {/* Stats grid - interactive */}
+                <div className="grid grid-cols-3 gap-2">
+                  <motion.div
+                    className="rounded-xl px-3 py-3 border border-white/[0.06] bg-white/[0.02] text-center cursor-default group/stat hover:border-purple-500/20 hover:bg-purple-500/5 transition-all"
+                    whileHover={{ scale: 1.03 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
+                    <Target className="w-4 h-4 text-purple-400/50 mx-auto mb-1.5 group-hover/stat:text-purple-400 transition-colors" />
+                    <p className="text-[8px] text-white/30 uppercase tracking-wider mb-1">Prediction</p>
+                    <p className="font-display font-bold text-foreground text-xs">{data.prediction}</p>
+                  </motion.div>
+                  <motion.div
+                    className="rounded-xl px-3 py-3 border border-purple-500/10 bg-purple-500/5 text-center cursor-default group/stat hover:border-purple-500/25 hover:bg-purple-500/10 transition-all"
+                    whileHover={{ scale: 1.03 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
+                    <Crosshair className="w-4 h-4 text-purple-400/50 mx-auto mb-1.5 group-hover/stat:text-purple-400 transition-colors" />
+                    <p className="text-[8px] text-white/30 uppercase tracking-wider mb-1">Odds</p>
+                    <p className="font-display font-bold text-purple-400 text-sm">{data.odds}</p>
+                  </motion.div>
+                  <motion.div
+                    className="rounded-xl px-3 py-3 border border-emerald-500/10 bg-emerald-500/5 text-center cursor-default group/stat hover:border-emerald-500/25 hover:bg-emerald-500/10 transition-all"
+                    whileHover={{ scale: 1.03 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
+                    <Zap className="w-4 h-4 text-emerald-400/50 mx-auto mb-1.5 group-hover/stat:text-emerald-400 transition-colors" />
+                    <p className="text-[8px] text-white/30 uppercase tracking-wider mb-1">Confidence</p>
+                    <p className="font-display font-bold text-emerald-400 text-xs">{data.confidence}</p>
+                  </motion.div>
+                </div>
+
+                {/* Analysis toggle */}
+                {data.description && (
+                  <div>
+                    <button
+                      onClick={() => setShowAnalysis(!showAnalysis)}
+                      className="flex items-center gap-1.5 text-[10px] font-display font-bold uppercase tracking-wider text-white/40 hover:text-purple-400 transition-colors w-full"
+                    >
+                      <motion.div animate={{ rotate: showAnalysis ? 180 : 0 }} transition={{ duration: 0.25 }}>
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </motion.div>
+                      {showAnalysis ? "Hide Analysis" : "Show Analysis"}
+                    </button>
+
+                    <AnimatePresence>
+                      {showAnalysis && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                            <p className="text-[11px] text-white/50 leading-relaxed italic">
+                              {data.description}
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )}
-              </div>
-              {(data.status && data.status !== "upcoming") && (
-                <Badge variant={statusVariant[data.status]} className="gap-1.5 py-1.5 px-3">
-                  <span className="font-display font-bold uppercase tracking-wider text-[10px]">
-                    {statusLabel[data.status]}
-                  </span>
-                </Badge>
-              )}
-            </div>
-
-            <div className="space-y-4">
-              <p className="text-muted-foreground text-xs uppercase tracking-[0.2em]">
-                {data.league} • {data.kickoff}
-              </p>
-
-              <div className="flex items-center justify-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center ring-2 ring-purple-500/30">
-                  <TeamLogo teamName={data.homeTeam} logoUrl={data.homeTeamLogo} size={32} />
-                </div>
-                <div className="text-center">
-                  <p className="font-display text-xl font-bold text-foreground">
-                    {data.homeTeam}
-                  </p>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">vs</p>
-                  <p className="font-display text-xl font-bold text-foreground mt-1">
-                    {data.awayTeam}
-                  </p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center ring-2 ring-purple-500/30">
-                  <TeamLogo teamName={data.awayTeam} logoUrl={data.awayTeamLogo} size={32} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4 mt-6">
-                <div className="bg-muted/30 rounded-xl p-4 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-1">Prediction</p>
-                  <p className="font-display font-bold text-primary text-sm">{data.prediction}</p>
-                </div>
-                <div className="bg-muted/30 rounded-xl p-4 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-1">Odds</p>
-                  <p className="font-display font-bold text-purple-400 text-sm">{data.odds}</p>
-                </div>
-                <div className="bg-muted/30 rounded-xl p-4 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-1">Confidence</p>
-                  <p className="font-display font-bold text-success text-sm">{data.confidence}</p>
-                </div>
-              </div>
-
-              {data.description && (
-                <div className="mt-5">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAnalysis(!showAnalysis)}
-                    className="w-full gap-2 h-9 text-xs font-display uppercase tracking-wider text-accent hover:bg-accent/10 hover:text-accent border border-accent/20 rounded-lg transition-all"
-                  >
-                    <Gift className={`w-4 h-4 transition-transform ${showAnalysis ? 'rotate-180' : ''}`} />
-                    {showAnalysis ? 'Hide Analysis' : 'Show Analysis'}
-                    {showAnalysis ? (
-                      <svg className="w-3 h-3 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                      </svg>
-                    ) : (
-                      <svg className="w-3 h-3 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    )}
-                  </Button>
-
-                  <AnimatePresence>
-                    {showAnalysis && (
-                      <motion.div 
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="mt-2 p-4 bg-gradient-to-br from-accent/5 to-transparent rounded-xl border border-accent/20 overflow-hidden"
-                      >
-                        <div className="flex items-start gap-2">
-                          <Gift className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                          <p className="text-xs text-muted-foreground leading-relaxed italic">{data.description}</p>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
-export default TodayHotTip;
+export default memo(TodayHotTip);

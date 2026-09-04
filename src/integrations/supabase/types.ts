@@ -105,6 +105,7 @@ export type Database = {
           kickoff: string
           status: string
           is_premium: boolean | null
+          is_published: boolean | null
         }
         Insert: {
           id?: number
@@ -118,6 +119,7 @@ export type Database = {
           kickoff: string
           status: string
           is_premium?: boolean | null
+          is_published?: boolean | null
         }
         Update: {
           id?: number
@@ -131,6 +133,7 @@ export type Database = {
           kickoff?: string
           status?: string
           is_premium?: boolean | null
+          is_published?: boolean | null
         }
         Relationships: []
       }
@@ -144,6 +147,7 @@ export type Database = {
           stake: number | null
           status: string
           is_premium: boolean | null
+          won_at: string | null
         }
         Insert: {
           id?: number
@@ -154,6 +158,7 @@ export type Database = {
           stake?: number | null
           status: string
           is_premium?: boolean | null
+          won_at?: string | null
         }
         Update: {
           id?: number
@@ -164,6 +169,7 @@ export type Database = {
           stake?: number | null
           status?: string
           is_premium?: boolean | null
+          won_at?: string | null
         }
         Relationships: []
       }
@@ -208,7 +214,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_public_coupons: {
+        Args: Record<string, never>
+        // SECURITY DEFINER fallback używany przez loadCoupons(), gdy RLS
+        // zablokuje bezpośredni select z tabeli coupons. Zwraca wiersze
+        // kuponów w identycznym kształcie jak tabela.
+        Returns: Array<{
+          id: number
+          created_at: string
+          name: string
+          matches: Json
+          total_odds: number
+          stake: number | null
+          status: string
+          is_premium: boolean | null
+          won_at: string | null
+        }>
+      }
     }
     Enums: {
       [_ in never]: never

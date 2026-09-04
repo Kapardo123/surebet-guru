@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.send-premium-push]
 verify_jwt = false
+
+[functions.zawodtyper-proxy]
+verify_jwt = false
+
+[functions.ai-analyze]
+verify_jwt = false
+
+[functions.settle-results]
+verify_jwt = false

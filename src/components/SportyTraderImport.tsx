@@ -13,6 +13,8 @@ import {
   RefreshCw,
   Trash2,
   ArrowRight,
+  Hourglass,
+  Send,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
@@ -31,6 +33,7 @@ import {
   ScrapedMatch,
   ImportTarget,
 } from "@/lib/sportyTrader";
+import { getSofaOdds } from "@/lib/sofaOdds";
 
 interface MatchCard extends ScrapedMatch {
   analysis: string; // rewritten
@@ -163,29 +166,49 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
       // fallback to edge function listing, then match detail page.
       // Only skip no-odds matches when client fetch succeeded (real odds available).
       const hasClientOdds = Object.keys(clientOddsMap).length > 0;
-      const cards: MatchCard[] = fresh
-        .map((item, i) => {
-          const d = details[i];
-          const clientOdds = clientOddsMap[item.id];
-          const odds = (clientOdds ?? (item.odds != null ? item.odds : d?.odds)) || 0;
-          return {
-            id: item.id,
-            url: item.url,
-            homeTeam: d?.homeTeam || item.homeTeam,
-            awayTeam: d?.awayTeam || item.awayTeam,
-            sport: d?.sport || "Football",
-            league: d?.league || "",
-            date: d?.date || item.date,
-            time: d?.time || item.time,
-            kickoff: d?.kickoff || item.kickoff,
-            prediction: item.prediction || d?.prediction || "",
-            odds,
-            analysisRaw: d?.analysisRaw || "",
-            analysis: rewriteAnalysis(d?.analysisRaw || ""),
-            homeTeamLogo: item.homeTeamLogo,
-            awayTeamLogo: item.awayTeamLogo,
-          };
-        })
+      const cards: MatchCard[] = fresh.map((item, i) => {
+        const d = details[i];
+        const clientOdds = clientOddsMap[item.id];
+        const odds = (clientOdds ?? (item.odds != null ? item.odds : d?.odds)) || 0;
+        return {
+          id: item.id,
+          url: item.url,
+          homeTeam: d?.homeTeam || item.homeTeam,
+          awayTeam: d?.awayTeam || item.awayTeam,
+          sport: d?.sport || "Football",
+          league: d?.league || "",
+          date: d?.date || item.date,
+          time: d?.time || item.time,
+          kickoff: d?.kickoff || item.kickoff,
+          prediction: item.prediction || d?.prediction || "",
+          odds,
+          analysisRaw: d?.analysisRaw || "",
+          analysis: rewriteAnalysis(d?.analysisRaw || ""),
+          homeTeamLogo: item.homeTeamLogo,
+          awayTeamLogo: item.awayTeamLogo,
+        };
+      });
+
+      // SofaScore enrichment: when SportyTrader serves the hideodd variant
+      // (no odds in SSR at all), fill missing values from a second source.
+      // Silent best-effort — any miss keeps the manual odds input.
+      let sofaFilled = 0;
+      const zeroOdds = cards.filter((c) => c.odds <= 0);
+      if (zeroOdds.length > 0) {
+        await pool(
+          zeroOdds,
+          4,
+          async (c) => {
+            const o = await getSofaOdds(c.homeTeam, c.awayTeam, c.kickoff, c.prediction);
+            if (o != null) {
+              c.odds = o;
+              sofaFilled++;
+            }
+          },
+        );
+      }
+
+      const usable = cards
         .filter((c) => !hasClientOdds || c.odds > 0)
         .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 
@@ -211,18 +234,25 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
 
       const now = Date.now();
       // Track which IDs are new (not in previous fetch)
-      const newCount = cards.filter((c) => !seenIds.has(c.id)).length;
+      const newCount = usable.filter((c) => !seenIds.has(c.id)).length;
       // Save current cards as seen for next comparison
-      const currentIds = new Set(cards.map((c) => c.id));
+      const currentIds = new Set(usable.map((c) => c.id));
       setSeenIds(currentIds);
       try { localStorage.setItem(SEEN_IDS_KEY, JSON.stringify([...currentIds])); } catch { /* ignore */ }
-      setMatches(cards);
+      setMatches(usable);
       setFetched(true);
       setFetchedAt(now);
-      writeMatchesCache(cards, now);
+      writeMatchesCache(usable, now);
+      const noOdds = usable.length > 0 && usable.every((c) => c.odds <= 0);
       toast({
-        title: `Loaded ${cards.length} matches`,
-        description: newCount > 0 ? `${newCount} new since last visit` : undefined,
+        title: `Loaded ${usable.length} matches`,
+        description: sofaFilled > 0
+          ? `${newCount > 0 ? `${newCount} new · ` : ""}${sofaFilled} odds auto-filled from SofaScore`
+          : noOdds
+            ? "Brak kursów — wpisz ręcznie lub ustaw darmowy klucz corsproxy.io (localStorage: gsb_corsproxy_key)"
+            : newCount > 0
+              ? `${newCount} new since last visit`
+              : undefined,
       });
     } catch (e: any) {
       toast({
@@ -273,12 +303,22 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
     markImported(card, target).catch(() => {});
     if (target === "coupon") {
       toast({
-        title: "Added to coupon 🧾",
-        description: `${card.homeTeam} vs ${card.awayTeam} — build more or open the Coupons tab to save.`,
+        title: `Coupon leg added 🧾 (${couponCount + 1})`,
+        description: `${card.homeTeam} vs ${card.awayTeam} — finish in the Queue tab.`,
+      });
+    } else if (target === "queue") {
+      toast({
+        title: "Queued ⏳",
+        description: `${card.homeTeam} vs ${card.awayTeam} — live at 3:00 (edycja w Queue).`,
+      });
+    } else if (target === "publish") {
+      toast({
+        title: "Published ✅",
+        description: `${card.homeTeam} vs ${card.awayTeam} — widoczny od razu.`,
       });
     } else {
-      const label = target === "tip" ? "Single Tip" : "Hero Pick";
-      toast({ title: `Sent to ${label} ✅`, description: `${card.homeTeam} vs ${card.awayTeam}` });
+      const label = target === "hero" ? "Hero queued ⏳" : "Queued ⏳";
+      toast({ title: label, description: `${card.homeTeam} vs ${card.awayTeam}` });
     }
   };
 
@@ -462,20 +502,30 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-2 pt-1">
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <Button
+                size="sm"
+                className="h-9 gap-1 text-[11px] font-bold bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white col-span-2"
+                onClick={() => handleRoute(m, "queue")}
+                title="Dodaj do kolejki — publikacja o 3:00"
+              >
+                <Hourglass className="w-3.5 h-3.5" /> Add to Queue (3:00)
+              </Button>
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 gap-1 text-[10px]"
-                onClick={() => handleRoute(m, "tip")}
+                className="h-8 gap-1 text-[10px] border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10"
+                onClick={() => handleRoute(m, "publish")}
+                title="Dodaj i opublikuj natychmiast"
               >
-                <TrendingUp className="w-3 h-3" /> Tip
+                <Send className="w-3 h-3" /> Publish
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 className="h-8 gap-1 text-[10px] border-accent/40 text-accent hover:bg-accent/10"
                 onClick={() => handleRoute(m, "hero")}
+                title="Dodaj do kolejki hero"
               >
                 <Zap className="w-3 h-3" /> Hero
               </Button>
@@ -484,6 +534,7 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
                 variant="outline"
                 className="h-8 gap-1 text-[10px] border-blue-500/40 text-blue-300 hover:bg-blue-500/10"
                 onClick={() => handleRoute(m, "coupon")}
+                title="Dodaj nogę do buildera kuponu"
               >
                 <Receipt className="w-3 h-3" /> Coupon
               </Button>

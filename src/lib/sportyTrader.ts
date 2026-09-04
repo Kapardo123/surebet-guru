@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 
 // ---------------------------------------------------------------------------
@@ -55,7 +56,7 @@ export interface ScrapedMatch {
   awayTeamLogo: string | null;
 }
 
-export type ImportTarget = "tip" | "hero" | "coupon";
+export type ImportTarget = "tip" | "hero" | "coupon" | "queue" | "publish";
 
 // --- edge function calls ----------------------------------------------------
 
@@ -69,8 +70,24 @@ export const fetchSportyList = async (): Promise<SportyListItem[]> => {
 };
 
 // --- client-side odds extraction (bypasses anti-bot IP blocking) ------------
-// The edge function runs from a datacenter IP that SportyTrader blocks.
-// Client browser has a real residential IP → gets full HTML with odds.
+// SportyTrader serves the odds-bearing SSR HTML only to clients with a good
+// reputation (residential IP + browser-like TLS). Datacenter IPs (Vercel,
+// Supabase, public CORS proxies) receive the same listing but with every
+// <bet-now-light odd="..."> value stripped ("hideodd" variant).
+//
+// Fetch strategy, best first:
+//  1. DIRECT fetch — in the Android/iOS app CapacitorHttp routes fetch through
+//     the native stack: no CORS, device IP, real browser TLS → full HTML.
+//     In a web browser it fails instantly (no ACAO headers upstream) and we
+//     fall through at no cost.
+//  2. corsproxy.io WITH an API key (free tier: ~4000 req/mo, sign up at
+//     corsproxy.io). Their ASN passes SportyTrader's bot checks and returns
+//     the raw SSR HTML. Key can be set via VITE_CORSPROXY_KEY at build time
+//     or localStorage "gsb_corsproxy_key" at runtime (no redeploy needed).
+//  3. /api/sportytrader-odds (our Vercel edge) — datacenter IP, usually
+//     hideodd, but costs nothing and occasionally works.
+//  4. Keyless passthrough proxies (codetabs / allorigins / cors.lol) — flaky,
+//     rate-limited, kept as last-resort backups.
 
 interface ClientOddsMap {
   [matchId: string]: number;
@@ -98,26 +115,73 @@ const parseOddsFromCard = (card: string): number | null => {
   return null;
 };
 
+const CLIENT_ODDS_TTL_MS = 3 * 60 * 1000;
+let oddsCache: { map: ClientOddsMap; ts: number } | null = null;
+
+const getCorsProxyKey = (): string => {
+  let key = "";
+  try {
+    key = localStorage.getItem("gsb_corsproxy_key") || "";
+  } catch {
+    /* ignore */
+  }
+  if (!key) key = (import.meta.env.VITE_CORSPROXY_KEY as string | undefined) || "";
+  return key.trim();
+};
+
+export const hasClientOddsSource = (): boolean => {
+  if (Capacitor.isNativePlatform()) return true; // direct native fetch
+  return getCorsProxyKey().length > 0;
+};
+
 export const fetchClientOdds = async (): Promise<ClientOddsMap> => {
+  // Every click re-importing a match would otherwise hammer the proxies;
+  // three minutes keeps values fresh enough for pre-match odds.
+  if (oddsCache && Date.now() - oddsCache.ts < CLIENT_ODDS_TTL_MS) {
+    return oddsCache.map;
+  }
+
   const listingUrl = "https://www.sportytrader.com/en/betting-tips/";
-  const proxies = [
-    listingUrl,                                                    // direct (Capacitor)
-    "/api/sportytrader-odds",                                      // Vercel edge (different IP)
-    `https://corsproxy.io/?${encodeURIComponent(listingUrl)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(listingUrl)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(listingUrl)}`,
+  const encoded = encodeURIComponent(listingUrl);
+  const corsKey = getCorsProxyKey();
+
+  const proxies: { url: string; init?: RequestInit }[] = [
+    // 1. Direct: device IP + native stack (Capacitor) or browser IP; the only
+    //    channel guaranteed to receive odds. Web browsers hit CORS → skipped.
+    {
+      url: listingUrl,
+      init: {
+        headers: {
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+      },
+    },
+    // 2. corsproxy.io with a (free) API key — proven to pass raw SSR with odds.
+    ...(corsKey
+      ? [{ url: `https://corsproxy.io/?url=${encoded}&key=${encodeURIComponent(corsKey)}` }]
+      : []),
+    // 3. Our Vercel edge (JSON, pre-parsed).
+    { url: "/api/sportytrader-odds" },
+    // 4-6. Keyless passthrough backups — frequently rate-limited or down.
+    { url: `https://api.codetabs.com/v1/proxy?quest=${encoded}` },
+    { url: `https://api.allorigins.win/raw?url=${encoded}` },
+    { url: `https://api.cors.lol/?url=${encoded}` },
   ];
 
   let html = "";
   let jsonResult: ClientOddsMap | null = null;
-  for (const proxyUrl of proxies) {
+  for (const proxy of proxies) {
     try {
-      const res = await fetch(proxyUrl);
+      const res = await fetch(proxy.url, proxy.init);
       if (!res.ok) continue;
       const ct = res.headers.get("content-type") || "";
-      
-      // Check if this is our Vercel proxy returning JSON
-      if (ct.includes("application/json") || proxyUrl.startsWith("/api/")) {
+
+      // Check if this is our own route returning JSON
+      if (
+        ct.includes("application/json") ||
+        proxy.url.startsWith("/api/")
+      ) {
         const data = await res.json();
         if (data?.odds && Object.keys(data.odds).length > 0) {
           jsonResult = data.odds as ClientOddsMap;
@@ -125,11 +189,12 @@ export const fetchClientOdds = async (): Promise<ClientOddsMap> => {
         }
         continue;
       }
-      
+
       const text = await res.text();
-      // Validate: real HTML must contain actual odds values > 0
-      const hasRealOdds = /<bet-now-light[\s\S]*?\bodd="([1-9][\d.]*)"/.test(text);
-      if (hasRealOdds || text.length > 50000) {
+      // Only accept HTML that actually carries odds values — a rate-limit or
+      // challenge page from the proxy itself must not end the proxy chain.
+      const hasRealOdds = /<bet-now-light[\s\S]*?\bodd="[1-9][\d.]*"/.test(text);
+      if (hasRealOdds && text.includes("data-navigation-url-value")) {
         html = text;
         break;
       }
@@ -139,8 +204,14 @@ export const fetchClientOdds = async (): Promise<ClientOddsMap> => {
   }
 
   // If Vercel proxy returned parsed odds, use them directly
-  if (jsonResult) return jsonResult;
-  if (!html) throw new Error("All fetch strategies failed");
+  if (jsonResult) {
+    oddsCache = { map: jsonResult, ts: Date.now() };
+    return jsonResult;
+  }
+  // A page without any odds values (SportyTrader's hideodd variant ships
+  // periodically) must NOT be cached nor throw — callers continue with
+  // SofaScore enrichment and manual odds inputs instead.
+  if (!html) return {};
 
   // Find each match card by its data-navigation-url-value marker
   const marker =
@@ -158,6 +229,9 @@ export const fetchClientOdds = async (): Promise<ClientOddsMap> => {
     const card = html.slice(s.idx, i + 1 < starts.length ? starts[i + 1].idx : html.length);
     const odds = parseOddsFromCard(card);
     if (odds !== null) result[s.id] = odds;
+  }
+  if (Object.keys(result).length > 0) {
+    oddsCache = { map: result, ts: Date.now() };
   }
   return result;
 };

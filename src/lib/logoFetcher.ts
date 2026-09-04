@@ -1,5 +1,7 @@
 // ============ POMOCNICZE ============
 
+import { Capacitor } from "@capacitor/core";
+
 const CUSTOM_TEAM_LOGOS_KEY = "custom_team_logos_v1";
 
 const normalize = (value: string): string =>
@@ -9,6 +11,53 @@ const normalize = (value: string): string =>
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]/g, "")
     .trim();
+
+// Hard cap per request so one slow or hung source never stalls rendering —
+// browsers queue silently otherwise and the spinner spins forever.
+// NOTE: with CapacitorHttp (native) the fetch is routed through the Android
+// bridge and aborting it can hard-crash the app — no AbortController there.
+const IS_NATIVE = Capacitor.isNativePlatform();
+
+const fetchT = async (url: string, ms = 8000): Promise<Response> => {
+  if (IS_NATIVE) {
+    // CapacitorHttp: aborting a native fetch via AbortController can hard-crash
+    // the app, so instead of a signal we race against a synthetic timeout
+    // response. The underlying request may still finish in the background —
+    // callers just stop waiting on it.
+    return Promise.race([
+      fetch(url),
+      new Promise<Response>((resolve) =>
+        setTimeout(() => resolve(new Response(null, { status: 599 })), ms),
+      ),
+    ]);
+  }
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+// Broken/hotlink-protected junk must not enter the cache chain.
+// data:image/ URLs (logo wgrany z dysku) są poprawne i muszą przejść.
+export const isValidLogoUrl = (u?: string | null): u is string =>
+  !!u && (/^https?:\/\//i.test(u.trim()) || /^data:image\//i.test(u.trim()));
+
+// ---- Rate-limit ochrona (rodzina Wikipedia/Wikidata/Commons) ----------------
+// upload.wikimedia.org i api.php zaczynają zwracać HTTP 429 po serii zapytań
+// (TeamLogo rozwiązują loga automatycznie na wielu kartach naraz). Dalsze
+// requesty podczas limitu tylko pogłębiają blokadę — po 429 pauzujemy całą
+// rodzinę wiki na 60 s i od razu zwalniamy spawny w pętlach źródeł.
+const WIKI_429_COOLDOWN_MS = 60_000;
+let wiki429Until = 0;
+
+const noteWiki429 = () => {
+  wiki429Until = Date.now() + WIKI_429_COOLDOWN_MS;
+};
+
+const wikiFamilyBlocked = (): boolean => Date.now() < wiki429Until;
 
 export const saveCustomTeamLogo = (teamName: string, dataUrl: string) => {
   const key = teamName.trim().toLowerCase();
@@ -44,21 +93,8 @@ export const getCustomTeamLogo = (teamName: string): LogoCandidate | null => {
   }
 };
 
-export const deleteCustomTeamLogo = (teamName: string) => {
-  const key = teamName.trim().toLowerCase();
-  if (!key || key.length < 2) return;
-  try {
-    const raw = localStorage.getItem(CUSTOM_TEAM_LOGOS_KEY);
-    if (!raw) return;
-    const store: Record<string, string> = JSON.parse(raw);
-    delete store[key];
-    localStorage.setItem(CUSTOM_TEAM_LOGOS_KEY, JSON.stringify(store));
-  } catch {
-    return;
-  }
-};
-
-const makeQueries = (teamName: string): string[] => {
+// Eksport do testów jednostkowych.
+export const makeQueries = (teamName: string): string[] => {
   const clean = teamName.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
   const queries: string[] = [];
   const set = new Set<string>();
@@ -70,6 +106,19 @@ const makeQueries = (teamName: string): string[] => {
     }
   };
 
+  // Druzyny młodzieżowe: "Lech U-19" / "Polska U19" / "under 21" — warianty
+  // zapisu wieku mają priorytet, a sam bazowy klub (herb seniorów) idzie na końcu.
+  const youth = clean.match(/\b(?:u|under)[\s-]?(\d{2})\b/i);
+  if (youth) {
+    const age = youth[1];
+    const base = clean.replace(/\b(?:u|under)[\s-]?\d{2}\b/i, "").replace(/\s+/g, " ").trim();
+    add(`${base} U${age}`);
+    add(`${base} under-${age}`);
+    add(teamName.trim());
+    add(base);
+    return queries;
+  }
+
   add(teamName.trim());
   add(clean);
   add(`${clean} FC`);
@@ -79,25 +128,72 @@ const makeQueries = (teamName: string): string[] => {
   return queries.slice(0, 4);
 };
 
-// Prostosc: dopasowanie substr + normalize
-const matches = (candidate: string, query: string): number => {
-  const c = normalize(candidate);
-  const q = normalize(query);
-  if (!c || !q) return 0;
-  if (c === q) return 200;
-  if (c.includes(q) || q.includes(c)) return 120;
+// ---------------------------------------------------------------------------
+// Dopasowanie nazw — tokeny + synonimy PL→EN + unifikacja zapisu młodzieżówek.
+// "Polska U-19" musi znaleźć "Poland national under-19 football team", a
+// "Lech Poznań" obie wersje "Lech Poznan"/"KKS Lech Poznan".
+// ---------------------------------------------------------------------------
 
-  // Token match
-  const ct = c.split(/\s+/).filter((t) => t.length > 2);
-  const qt = q.split(/\s+/).filter((t) => t.length > 2);
-  let matches = 0;
-  for (const token of qt) {
-    if (ct.some((t) => t === token || t.includes(token) || token.includes(t))) {
-      matches++;
+const NAME_SYNONYMS: Record<string, string> = {
+  polska: "poland", niemcy: "germany", anglia: "england", hiszpania: "spain",
+  wlochy: "italy", francja: "france", holandia: "netherlands", belgia: "belgium",
+  portugalia: "portugal", czechy: "czechia", szwajcaria: "switzerland",
+  chorwacja: "croatia", ukraina: "ukraine", rosja: "russia", dania: "denmark",
+  szwecja: "sweden", norwegia: "norway", szkocja: "scotland", walia: "wales",
+  brazylia: "brazil", argentyna: "argentina", grecja: "greece", turcja: "turkey",
+  rumunia: "romania", wegry: "hungary", bulgaria: "bulgaria", slowacja: "slovakia",
+  slowenia: "slovenia", serbia: "serbia", izrael: "israel", japonia: "japan",
+  "stany zjednoczone": "usa", "republika czeska": "czechia",
+  druzyna: "team", reprezentacja: "team", klub: "club", pilka: "football",
+  mlodziezowa: "youth",
+  // Polskie egzonimy miast (angielskie nazwy w źródłach)
+  warszawa: "warsaw", moskwa: "moscow", kijow: "kyiv", londyn: "london",
+  paryz: "paris", madryt: "madrid", mediolan: "milan", monachium: "munich",
+  kolonia: "cologne", turyn: "turin", neapol: "naples", sewilla: "seville",
+  lipsk: "leipzig", kopenhaga: "copenhagen", ateny: "athens", wieden: "vienna",
+};
+
+/** Tokeny nazwy: bez ogonków, "under 19"/"U-19"/"U19" → "u19", synonimy PL→EN. */
+const normTokens = (s: string): string[] =>
+  s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/under[\s-]?(\d{2})/gi, " u$1 ")
+    .replace(/\bu[\s-]?(\d{2})\b/gi, " u$1 ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((t) => NAME_SYNONYMS[t] || t);
+
+// Dopasowanie token + normalize (eksport do testów)
+export const matches = (candidate: string, query: string): number => {
+  const ct = normTokens(candidate);
+  const qt = normTokens(query);
+  if (!ct.length || !qt.length) return 0;
+
+  const cb = ct.join("");
+  const qb = qt.join("");
+  if (cb === qb) return 200;
+  if (cb.includes(qb) || qb.includes(cb)) return 150;
+
+  let matched = 0;
+  for (const t of qt) {
+    if (ct.some((x) => x === t || (t.length >= 3 && x.includes(t)) || (x.length >= 3 && t.includes(x)))) {
+      matched++;
     }
   }
-  if (qt.length > 0) return Math.round((matches / qt.length) * 100);
-  return 0;
+  let score = Math.round((matched / qt.length) * 100);
+
+  // Typy młodzieżowe: dokładne U-dopasowanie dostaje bonus, herb seniorów
+  // (kandydat bez "u19" przy zapytaniu z "u19") przechodzi, ale niżej.
+  const qYouth = qt.some((t) => /^u\d{2}$/.test(t));
+  const cYouth = ct.some((t) => /^u\d{2}$/.test(t));
+  if (qYouth && cYouth) score = Math.min(200, score + 40);
+  if (qYouth && !cYouth) score = Math.min(score, 90);
+
+  return score;
 };
 
 // ============ INTERFEJS ============
@@ -110,7 +206,7 @@ export interface LogoCandidate {
 }
 
 // ============ FALLBACK MAP (URL PATTERNS) ============
-// Znane, stabilne URL-e logo z Wikimedia Commons. Zero zapytań API = natychmiastowy wynik.
+// Znane, stabilne URL-e logo z Wikimedia. Zero zapytań API = natychmiastowy wynik.
 
 const FALLBACK_LOGOS: Record<string, string> = {
   // ----- TOP 20 KLUBÓW EUROPEJSKICH -----
@@ -183,11 +279,8 @@ const FALLBACK_LOGOS: Record<string, string> = {
 
   "monaco": "https://upload.wikimedia.org/wikipedia/en/thumb/4/48/AS_Monaco_logo.svg/120px-AS_Monaco_logo.svg.png",
   "as monaco": "https://upload.wikimedia.org/wikipedia/en/thumb/4/48/AS_Monaco_logo.svg/120px-AS_Monaco_logo.svg.png",
-  "paris saint germain": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a7/Paris_Saint-Germain_F.C..svg/120px-Paris_Saint-Germain_F.C..svg.png",
   "rennes": "https://upload.wikimedia.org/wikipedia/en/thumb/2/25/Stade_Rennais_FC.svg/120px-Stade_Rennais_FC.svg.png",
-  "olympique lyonnais": "https://upload.wikimedia.org/wikipedia/en/thumb/e/e4/Olympique_Lyonnais.svg/120px-Olympique_Lyonnais.svg.png",
   "lille": "https://upload.wikimedia.org/wikipedia/en/thumb/b/bd/LOSC_Lille_logo.svg/120px-LOSC_Lille_logo.svg.png",
-  "marseille": "https://upload.wikimedia.org/wikipedia/en/thumb/1/14/Olympique_de_Marseille_logo.svg/120px-Olympique_de_Marseille_logo.svg.png",
   "leicester city": "https://upload.wikimedia.org/wikipedia/en/thumb/2/2d/Leicester_City_crest.svg/120px-Leicester_City_crest.svg.png",
   "leeds united": "https://upload.wikimedia.org/wikipedia/en/thumb/9/91/Leeds_United.svg/120px-Leeds_United.svg.png",
   "southampton": "https://upload.wikimedia.org/wikipedia/en/thumb/c/c9/Southampton_F.C.svg/120px-Southampton_F.C.svg.png",
@@ -219,8 +312,6 @@ const FALLBACK_LOGOS: Record<string, string> = {
   "borussia monchengladbach": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Borussia_M%C3%B6nchengladbach_2018_logo.svg/120px-Borussia_M%C3%B6nchengladbach_2018_logo.svg.png",
 
   "atalanta": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Atalanta_logo.svg/120px-Atalanta_logo.svg.png",
-  "lazio": "https://upload.wikimedia.org/wikipedia/en/thumb/7/78/SS_Lazio_logo.svg/120px-SS_Lazio_logo.svg.png",
-  "ss lazio": "https://upload.wikimedia.org/wikipedia/en/thumb/7/78/SS_Lazio_logo.svg/120px-SS_Lazio_logo.svg.png",
   "fiorentina": "https://upload.wikimedia.org/wikipedia/en/thumb/8/8c/ACF_Fiorentina_2022_logo.svg/120px-ACF_Fiorentina_2022_logo.svg.png",
   "bologna": "https://upload.wikimedia.org/wikipedia/en/thumb/c/c3/Bologna_FC_1909_logo.svg/120px-Bologna_FC_1909_logo.svg.png",
   "torino": "https://upload.wikimedia.org/wikipedia/en/thumb/e/ed/Torino_FC_2017_logo.svg/120px-Torino_FC_2017_logo.svg.png",
@@ -238,7 +329,6 @@ const FALLBACK_LOGOS: Record<string, string> = {
   "az alkmaar": "https://upload.wikimedia.org/wikipedia/en/thumb/4/4a/AZ_Alkmaar.svg/120px-AZ_Alkmaar.svg.png",
   "twente": "https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/FC_Twente_2024_logo.svg/120px-FC_Twente_2024_logo.svg.png",
 
-  "sl benfica": "https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/SL_Benfica_logo.svg/120px-SL_Benfica_logo.svg.png",
   "sporting cp": "https://upload.wikimedia.org/wikipedia/en/thumb/5/5c/Sporting_CP_logo.svg/120px-Sporting_CP_logo.svg.png",
   "sporting lisbon": "https://upload.wikimedia.org/wikipedia/en/thumb/5/5c/Sporting_CP_logo.svg/120px-Sporting_CP_logo.svg.png",
   "braga": "https://upload.wikimedia.org/wikipedia/en/thumb/2/2a/Sp_Braga.svg/120px-Sp_Braga.svg.png",
@@ -299,7 +389,6 @@ const FALLBACK_LOGOS: Record<string, string> = {
   "gornik zabrze": "https://upload.wikimedia.org/wikipedia/en/thumb/3/3a/Gornik_Zabrze.svg/120px-Gornik_Zabrze.svg.png",
   "lechia gdansk": "https://upload.wikimedia.org/wikipedia/en/thumb/f/fb/Lechia_Gdansk.svg/120px-Lechia_Gdansk.svg.png",
   "widzew lodz": "https://upload.wikimedia.org/wikipedia/en/thumb/5/58/Widzew_Lodz_2024.svg/120px-Widzew_Lodz_2024.svg.png",
-  "pogon szczecin": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a6/Pogon_Szczecin_logo.svg/120px-Pogon_Szczecin_logo.svg.png",
   "stomil olsztyn": "https://upload.wikimedia.org/wikipedia/en/thumb/7/7d/Stomil_Olsztyn_2021.svg/120px-Stomil_Olsztyn_2021.svg.png",
   "gornik leczna": "https://upload.wikimedia.org/wikipedia/en/thumb/2/23/Gornik_Leczna_2021.svg/120px-Gornik_Leczna_2021.svg.png",
   "radomiak radom": "https://upload.wikimedia.org/wikipedia/en/thumb/1/1c/Radomiak_Radom.svg/120px-Radomiak_Radom.svg.png",
@@ -331,27 +420,27 @@ const getFallbackLogo = (teamName: string): LogoCandidate | null => {
 };
 
 // ============ WIKIMEDIA COMMONS API ============
-// Wyszukuje obrazki ("logo of X") na Wikimedia Commons - bardzo dobre logo
 
 const fetchWikimediaLogos = async (teamName: string): Promise<LogoCandidate[]> => {
   const results: LogoCandidate[] = [];
+  if (wikiFamilyBlocked()) return results;
   const clean = teamName.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
   if (!clean || clean.length < 3) return results;
 
   const searchTerms = [
     `${clean} logo`,
-    `${clean} football club logo`,
-    `${clean} fc logo`,
-    `${clean} club`,
+    `${clean} crest`,
+    clean, // goła nazwa — mało znane kluby mają pliki nazwane wprost (np. "FC Olympia Hradec.png")
   ];
 
-  for (const term of searchTerms.slice(0, 2)) {
+  for (const term of searchTerms.slice(0, 3)) {
     try {
       const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
         term,
-      )}&gsrlimit=5&prop=imageinfo&iiprop=url|mime&iiurlwidth=200&format=json&origin=*`;
+      )}&gsrlimit=15&prop=imageinfo&iiprop=url|mime&iiurlwidth=200&format=json&origin=*`;
 
-      const res = await fetch(apiUrl);
+      const res = await fetchT(apiUrl);
+      if (res.status === 429) { noteWiki429(); break; }
       if (!res.ok) continue;
       const data: any = await res.json();
       const pages: any = data?.query?.pages || {};
@@ -367,7 +456,7 @@ const fetchWikimediaLogos = async (teamName: string): Promise<LogoCandidate[]> =
         if (!mime.startsWith("image/")) continue;
 
         const score = matches(title, teamName);
-        if (score < 20) continue;
+        if (score < 15) continue;
 
         // Tytul zawiera "logo" lub "crest" lub "badge" - bonus
         const lowerTitle = title.toLowerCase();
@@ -386,8 +475,165 @@ const fetchWikimediaLogos = async (teamName: string): Promise<LogoCandidate[]> =
     } catch {
       continue;
     }
-    // Jesli pierwszy zapytal mial wynik, nie robimy kolejnego
-    if (results.length > 0) break;
+  }
+
+  return results;
+};
+
+// ============ WIKIPEDIA FULL-TEXT SEARCH (EN + PL) ============
+// opensearch potrafi nie znaleźć artykułów młodzieżowych reprezentacji
+// ("Poland national under-19 football team") — pełnotekstowy list=search
+// łapie je i zwraca herb jako miniaturę strony.
+
+const fetchWikiSearchLogos = async (teamName: string): Promise<LogoCandidate[]> => {
+  const results: LogoCandidate[] = [];
+  if (wikiFamilyBlocked()) return results;
+  const clean = teamName.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  if (!clean || clean.length < 3) return results;
+
+  for (const lang of ["en", "pl"]) {
+    if (wikiFamilyBlocked()) break;
+    try {
+      const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(clean)}&srlimit=10&format=json&origin=*`;
+      const searchRes = await fetchT(searchUrl);
+      if (searchRes.status === 429) { noteWiki429(); break; }
+      if (!searchRes.ok) continue;
+      const searchData: any = await searchRes.json();
+      const hits: any[] = searchData?.query?.search || [];
+
+      for (const hit of hits) {
+        const title: string = hit?.title || "";
+        if (!title) continue;
+        const score = matches(title, teamName);
+        if (score < 45) continue;
+
+        const lower = title.toLowerCase();
+        const looksSportsish =
+          lower.includes("football") || lower.includes("soccer") ||
+          lower.includes("club") || lower.includes("team") ||
+          lower.includes(" fc") || lower.includes("basketball") ||
+          lower.includes("volleyball") || lower.includes("handball") ||
+          lower.includes("hockey") || lower.includes("sport") ||
+          lower.includes("piłka") || lower.includes("klub");
+        if (!looksSportsish && score < 90) continue;
+
+        const pageUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/\s+/g, "_"))}`;
+        const pageRes = await fetchT(pageUrl);
+        if (pageRes.status === 429) { noteWiki429(); break; }
+        if (!pageRes.ok) continue;
+
+        const pageData: any = await pageRes.json();
+        const thumb = pageData?.thumbnail?.source || pageData?.originalimage?.source;
+        if (thumb && !results.some((r) => r.url === thumb)) {
+          results.push({
+            url: thumb,
+            source: `Wiki Search (${lang.toUpperCase()})`,
+            teamName: title,
+            score,
+          });
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return results;
+};
+
+// ============ WIKIPEDIA PAGEIMAGES BATCH (EN + PL) ============
+// Jeden request zwraca miniatury (herby) dla WIELU artykułów naraz — łapie
+// kluby z małych lig, których opensearch nie rankuje wysoko. Działa też dla
+// artykułów typu "KF Shkëndija" bez suffixów w tytule.
+
+const fetchWikiPageImagesLogos = async (teamName: string): Promise<LogoCandidate[]> => {
+  const results: LogoCandidate[] = [];
+  if (wikiFamilyBlocked()) return results;
+  const clean = teamName.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  if (!clean || clean.length < 3) return results;
+
+  for (const lang of ["en", "pl"]) {
+    if (wikiFamilyBlocked()) break;
+    try {
+      const apiUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(clean)}&gsrlimit=10&prop=pageimages&piprop=thumbnail&pithumbsize=200&format=json&origin=*`;
+      const res = await fetchT(apiUrl);
+      if (res.status === 429) { noteWiki429(); break; }
+      if (!res.ok) continue;
+      const data: any = await res.json();
+      const pages: any = data?.query?.pages || {};
+
+      for (const pageId of Object.keys(pages)) {
+        const page: any = pages[pageId];
+        const title: string = page?.title || "";
+        const thumb: string = page?.thumbnail?.source || "";
+        if (!title || !thumb) continue;
+        if (results.some((r) => r.url === thumb)) continue;
+
+        const score = matches(title, teamName);
+        if (score < 30) continue;
+
+        const lower = title.toLowerCase();
+        const looksSportsish =
+          lower.includes("football") || lower.includes("soccer") ||
+          lower.includes("club") || lower.includes("team") ||
+          lower.includes(" fc") || lower.includes("basketball") ||
+          lower.includes("volleyball") || lower.includes("handball") ||
+          lower.includes("hockey") || lower.includes("sport") ||
+          lower.includes("piłka") || lower.includes("klub");
+        if (!looksSportsish && score < 85) continue;
+
+        results.push({
+          url: thumb,
+          source: `Wiki PageImages (${lang.toUpperCase()})`,
+          teamName: title,
+          score,
+        });
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return results;
+};
+
+// ============ OPENVERSE ============
+// Otwarta wyszukiwarka obrazów CC (api.openverse.org, bez klucza, CORS).
+// Najlepsza szansa na herb dla egzotycznych lig, których nie ma w Wikidata.
+// Best-effort: brak odpowiedzi = po prostu brak wyników z tego źródła.
+
+const fetchOpenverseLogos = async (teamName: string): Promise<LogoCandidate[]> => {
+  const results: LogoCandidate[] = [];
+  const clean = teamName.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  if (!clean || clean.length < 3) return results;
+
+  const queries = [`${clean} logo`, `${clean} crest`];
+
+  for (const q of queries) {
+    try {
+      const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&page_size=10`;
+      const res = await fetchT(url);
+      if (!res.ok) continue;
+      const data: any = await res.json();
+      const items: any[] = Array.isArray(data?.results) ? data.results : [];
+
+      for (const item of items) {
+        const itemUrl: string = item?.url || "";
+        if (!itemUrl || !itemUrl.startsWith("http")) continue;
+        // tylko pliki graficzne sensowne jako logo
+        if (!/\.(png|jpe?g|svg|webp)(\?|$)/i.test(itemUrl)) continue;
+        const title: string = String(item?.title || "");
+        const desc: string = String(item?.description || "");
+        const score = Math.max(matches(title, teamName), matches(desc.slice(0, 80), teamName));
+        if (score < 40) continue;
+
+        if (!results.some((r) => r.url === itemUrl)) {
+          results.push({ url: itemUrl, source: "Openverse", teamName: title || clean, score });
+        }
+      }
+    } catch {
+      continue;
+    }
   }
 
   return results;
@@ -399,6 +645,7 @@ const fetchWikimediaLogos = async (teamName: string): Promise<LogoCandidate[]> =
 
 const fetchWikidataLogos = async (teamName: string): Promise<LogoCandidate[]> => {
   const results: LogoCandidate[] = [];
+  if (wikiFamilyBlocked()) return results;
   const clean = teamName.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
   if (!clean || clean.length < 3) return results;
 
@@ -412,8 +659,9 @@ const fetchWikidataLogos = async (teamName: string): Promise<LogoCandidate[]> =>
   for (const term of searchTerms.slice(0, 2)) {
     try {
       // Krok 1: Wyszukaj elementy Wikidacie pasujace do nazwy
-      const searchUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(term)}&format=json&language=en&type=item&limit=8&origin=*`;
-      const searchRes = await fetch(searchUrl);
+      const searchUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(term)}&format=json&language=en&type=item&limit=12&origin=*`;
+      const searchRes = await fetchT(searchUrl);
+      if (searchRes.status === 429) { noteWiki429(); break; }
       if (!searchRes.ok) continue;
       const searchData: any = await searchRes.json();
       const items = searchData?.search || [];
@@ -429,13 +677,14 @@ const fetchWikidataLogos = async (teamName: string): Promise<LogoCandidate[]> =>
         const descScore = matches(desc, teamName);
         if (labelScore < 15 && descScore < 15) continue;
         ids.push(id);
-        if (ids.length >= 5) break;
+        if (ids.length >= 10) break;
       }
       if (ids.length === 0) continue;
 
       // Krok 2: Pobierz wlasciwosci P154 (logo) dla znalezionych elementow
       const entitiesUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${ids.join("|")}&props=claims&format=json&origin=*`;
-      const entitiesRes = await fetch(entitiesUrl);
+      const entitiesRes = await fetchT(entitiesUrl);
+      if (entitiesRes.status === 429) { noteWiki429(); break; }
       if (!entitiesRes.ok) continue;
       const entitiesData: any = await entitiesRes.json();
       const entities = entitiesData?.entities || {};
@@ -454,9 +703,11 @@ const fetchWikidataLogos = async (teamName: string): Promise<LogoCandidate[]> =>
             try {
               const fileName = claim?.mainsnak?.datavalue?.value;
               if (!fileName || typeof fileName !== "string") continue;
-              // Konwertuj nazwe pliku Commons na URL obrazu
-              const encoded = encodeURIComponent(fileName.replace(/^File:/, ""));
-              const imageUrl = `https://upload.wikimedia.org/wikipedia/commons/thumb/${encoded}`;
+              // Special:FilePath robi redirect do prawidłowego URL na
+              // upload.wikimedia.org (ręczne budowanie /thumb/ wymaga MD5
+              // hash-prefixu ścieżki — stąd wcześniej każda wizytówka 404owała).
+              const cleanName = fileName.replace(/^File:/, "");
+              const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(cleanName)}?width=200`;
 
               if (!results.some((r) => r.url === imageUrl)) {
                 const score = matches(label, teamName);
@@ -475,7 +726,6 @@ const fetchWikidataLogos = async (teamName: string): Promise<LogoCandidate[]> =>
     } catch {
       continue;
     }
-    if (results.length > 0) break;
   }
 
   return results;
@@ -487,6 +737,7 @@ const fetchWikidataLogos = async (teamName: string): Promise<LogoCandidate[]> =>
 
 const fetchMultiLangWikipediaLogos = async (teamName: string): Promise<LogoCandidate[]> => {
   const results: LogoCandidate[] = [];
+  if (wikiFamilyBlocked()) return results;
   const clean = teamName.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
   if (!clean || clean.length < 3) return results;
 
@@ -495,8 +746,9 @@ const fetchMultiLangWikipediaLogos = async (teamName: string): Promise<LogoCandi
 
   for (const lang of langs) {
     try {
-      const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(clean)}&limit=3&format=json&origin=*`;
-      const searchRes = await fetch(searchUrl);
+      const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(clean)}&limit=6&format=json&origin=*`;
+      const searchRes = await fetchT(searchUrl);
+      if (searchRes.status === 429) { noteWiki429(); break; }
       if (!searchRes.ok) continue;
       const searchData: any = await searchRes.json();
       const titles: string[] = searchData?.[1] || [];
@@ -505,7 +757,7 @@ const fetchMultiLangWikipediaLogos = async (teamName: string): Promise<LogoCandi
       for (const title of titles) {
         try {
           const score = matches(title, teamName);
-          if (score < 25) continue;
+          if (score < 20) continue;
 
           const lower = title.toLowerCase();
           const isSports =
@@ -521,7 +773,8 @@ const fetchMultiLangWikipediaLogos = async (teamName: string): Promise<LogoCandi
           if (!isSports && score < 70) continue;
 
           const pageUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/\s+/g, "_"))}`;
-          const pageRes = await fetch(pageUrl);
+          const pageRes = await fetchT(pageUrl);
+          if (pageRes.status === 429) { noteWiki429(); break; }
           if (!pageRes.ok) continue;
 
           const pageData: any = await pageRes.json();
@@ -541,6 +794,7 @@ const fetchMultiLangWikipediaLogos = async (teamName: string): Promise<LogoCandi
     } catch {
       continue;
     }
+    if (wikiFamilyBlocked()) break;
   }
 
   return results;
@@ -555,8 +809,10 @@ const fetchSportsDBLogos = async (teamName: string): Promise<LogoCandidate[]> =>
 
   for (const query of queries) {
     try {
-      const url = `https://www.thesportsdb.com/api/v1/json/1/searchteams.php?t=${encodeURIComponent(query)}`;
-      const res = await fetch(url);
+      // Klucz "3" to obecny darmowy klucz testowy TheSportsDB (stary "1" został wycofany i zwraca 401).
+      const url = `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(query)}`;
+      const res = await fetchT(url, 5000);
+      if (res.status === 429) break; // limit — kolejne query tylko pogorszy
       if (!res.ok) continue;
       const data: any = await res.json();
       if (!data?.teams || !Array.isArray(data.teams)) continue;
@@ -565,7 +821,7 @@ const fetchSportsDBLogos = async (teamName: string): Promise<LogoCandidate[]> =>
         if (!team) continue;
         const name = team.strTeam || "";
         const score = matches(name, teamName);
-        if (score < 40) continue;
+        if (score < 35) continue;
 
         const candidateFields = [
           team.strBadge,
@@ -599,7 +855,8 @@ const fetchSofaScoreLogos = async (teamName: string): Promise<LogoCandidate[]> =
   for (const query of queries) {
     try {
       const url = `https://api.sofascore.com/api/v1/search/teams?q=${encodeURIComponent(query)}`;
-      const res = await fetch(url);
+      const res = await fetchT(url);
+      if (res.status === 429) break; // limit — kolejne query tylko pogorszy
       if (!res.ok) continue;
       const data: any = await res.json();
       const items = data?.results || [];
@@ -613,7 +870,7 @@ const fetchSofaScoreLogos = async (teamName: string): Promise<LogoCandidate[]> =
         seenTeams.add(teamId);
 
         const score = matches(name, teamName);
-        if (score < 30) continue;
+        if (score < 25) continue;
 
         const imgUrl = `https://api.sofascore.com/api/v1/team/${teamId}/image`;
         results.push({ url: imgUrl, source: "SofaScore", teamName: name, score });
@@ -626,17 +883,19 @@ const fetchSofaScoreLogos = async (teamName: string): Promise<LogoCandidate[]> =
   return results;
 };
 
-// ============ Wikipedia ============
+// ============ Wikipedia (EN opensearch) ============
 
 const fetchWikipediaLogos = async (teamName: string): Promise<LogoCandidate[]> => {
   const queries = makeQueries(teamName);
   const seen = new Set<string>();
   const results: LogoCandidate[] = [];
+  if (wikiFamilyBlocked()) return results;
 
   for (const query of queries) {
     try {
-      const searchUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=5&format=json&origin=*`;
-      const searchRes = await fetch(searchUrl);
+      const searchUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=10&format=json&origin=*`;
+      const searchRes = await fetchT(searchUrl);
+      if (searchRes.status === 429) { noteWiki429(); break; }
       if (!searchRes.ok) continue;
       const searchData = await searchRes.json();
       const titles: string[] = searchData?.[1] || [];
@@ -645,7 +904,7 @@ const fetchWikipediaLogos = async (teamName: string): Promise<LogoCandidate[]> =
       const pagePromises = titles.map(async (title: string) => {
         try {
           const score = matches(title, teamName);
-          if (score < 25) return null;
+          if (score < 20) return null;
 
           const lower = title.toLowerCase();
           const isSports =
@@ -661,7 +920,8 @@ const fetchWikipediaLogos = async (teamName: string): Promise<LogoCandidate[]> =
           if (!isSports && score < 70) return null;
 
           const pageUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/\s+/g, "_"))}`;
-          const pageRes = await fetch(pageUrl);
+          const pageRes = await fetchT(pageUrl);
+          if (pageRes.status === 429) { noteWiki429(); return null; }
           if (!pageRes.ok) return null;
 
           const pageData = await pageRes.json();
@@ -696,6 +956,9 @@ const mergeAllResults = (
   wikimedia: LogoCandidate[],
   wikidata: LogoCandidate[],
   multiLang: LogoCandidate[],
+  wikiSearch: LogoCandidate[] = [],
+  pageImages: LogoCandidate[] = [],
+  openverse: LogoCandidate[] = [],
 ): LogoCandidate[] => {
   const seen = new Set<string>();
   const merged: LogoCandidate[] = [];
@@ -707,7 +970,7 @@ const mergeAllResults = (
   }
 
   // Zbieramy z wszystkich zrodel - kolejność wpływa na priorytet przy takim samym score
-  for (const c of [...sportsDB, ...sofa, ...wiki, ...wikimedia, ...wikidata, ...multiLang]) {
+  for (const c of [...sportsDB, ...sofa, ...wiki, ...wikimedia, ...wikidata, ...multiLang, ...wikiSearch, ...pageImages, ...openverse]) {
     if (!seen.has(c.url)) {
       seen.add(c.url);
       merged.push(c);
@@ -717,7 +980,138 @@ const mergeAllResults = (
   return merged.sort((a, b) => (b.score || 0) - (a.score || 0));
 };
 
-export const fetchTeamLogoUrl = async (teamName: string): Promise<string | null> => {
+// ---- Shared pipeline ---------------------------------------------------------
+// Several TeamLogo instances (tip + coupon + hero) often resolve the same team
+// at once. Everything goes through one deduped in-flight promise keyed by the
+// normalized name, so one team costs exactly one search round-trip.
+
+const inflight = new Map<string, Promise<LogoCandidate[]>>();
+
+/** Twardy limit czasu na źródło — zamiast czekać w nieskończoność dostajemy []. */
+const withDeadline = <T,>(p: Promise<T>, ms: number): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve([] as unknown as T), ms);
+  });
+  return Promise.race([p.catch(() => [] as unknown as T), timeout]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+};
+
+// Szybkie źródła pokazują się po ~6s, wolne dopisują się do 12s. Wcześniej
+// Promise.all czekał na multiLang Wikipedia (7 języków sekwencyjnie) i panel
+// otwierał się nawet po minucie albo wcale.
+const FAST_MS = 6000;
+const SLOW_MS = 12000;
+
+const resolveCandidatesCore = async (
+  teamName: string,
+  onPartial?: (candidates: LogoCandidate[]) => void,
+): Promise<LogoCandidate[]> => {
+  const fastPromise = Promise.all([
+    fetchSportsDBLogos(teamName),
+    fetchSofaScoreLogos(teamName),
+    fetchWikipediaLogos(teamName),
+  ]);
+  const slowPromise = Promise.all([
+    fetchWikimediaLogos(teamName),
+    fetchWikidataLogos(teamName),
+    fetchMultiLangWikipediaLogos(teamName),
+    fetchWikiSearchLogos(teamName),
+    fetchWikiPageImagesLogos(teamName),
+    fetchOpenverseLogos(teamName),
+  ]);
+
+  const [sportsDB, sofa, wiki] = await withDeadline(fastPromise, FAST_MS);
+  const fastMerged = mergeAllResults(null, sportsDB, sofa, wiki, [], [], [], [])
+    .filter((c) => isValidLogoUrl(c.url));
+  // Pierwsza paczka wyników trafia do UI od razu, bez czekania na wolne źródła.
+  onPartial?.(fastMerged);
+
+  const [wikimedia, wikidata, multiLang, wikiSearch, pageImages, openverse] = await withDeadline(slowPromise, SLOW_MS);
+  const all = mergeAllResults(null, sportsDB, sofa, wiki, wikimedia, wikidata, multiLang, wikiSearch, pageImages, openverse);
+  return all.filter((c) => isValidLogoUrl(c.url));
+};
+
+// Pozytywny cache kandydatów — powtórne szukanie tej samej drużyny (klik, edycja
+// formularza) nie uderza ponownie w API, co także chroni przed limitem 429.
+const CANDIDATES_CACHE_TTL = 30 * 60 * 1000;
+const candidatesCache = new Map<string, { candidates: LogoCandidate[]; ts: number }>();
+
+export const fetchTeamLogoCandidates = async (
+  teamName: string,
+  onPartial?: (candidates: LogoCandidate[]) => void,
+): Promise<LogoCandidate[]> => {
+  if (!teamName || teamName.trim().length < 3) return [];
+
+  // Custom logo wgrany z dysku - NAJWYZSZY PRIORYTET
+  const custom = getCustomTeamLogo(teamName);
+  // Fallback - natychmiastowy wynik bez requestu
+  const fallback = getFallbackLogo(teamName);
+  const resultsStart: LogoCandidate[] = [];
+  if (custom) resultsStart.push(custom);
+  if (fallback) resultsStart.push(fallback);
+
+  // Instatnie wyniki (custom/fallback) pokazujemy od razu, zanim ruszą zapytania.
+  if (resultsStart.length) {
+    onPartial?.(resultsStart);
+  }
+
+  const key = normalize(teamName);
+
+  try {
+    const cached = candidatesCache.get(key);
+    if (cached && Date.now() - cached.ts < CANDIDATES_CACHE_TTL) {
+      const seen = new Set<string>();
+      const unique: LogoCandidate[] = [];
+      for (const r of [...resultsStart, ...cached.candidates]) {
+        if (isValidLogoUrl(r.url) && !seen.has(r.url)) {
+          seen.add(r.url);
+          unique.push(r);
+        }
+      }
+      return unique.slice(0, 40).map((r) => ({
+        url: r.url,
+        source: r.source,
+        teamName: r.teamName,
+      }));
+    }
+
+    let running = inflight.get(key);
+    if (!running) {
+      running = resolveCandidatesCore(teamName, onPartial).finally(() =>
+        inflight.delete(key),
+      );
+      inflight.set(key, running);
+    }
+    const merged = await running;
+    candidatesCache.set(key, { candidates: merged, ts: Date.now() });
+    if (candidatesCache.size > 200) {
+      const oldest = [...candidatesCache.entries()].sort((a, b) => a[1].ts - b[1].ts)[0];
+      if (oldest) candidatesCache.delete(oldest[0]);
+    }
+
+    const seen = new Set<string>();
+    const unique: LogoCandidate[] = [];
+    for (const r of [...resultsStart, ...merged]) {
+      if (isValidLogoUrl(r.url) && !seen.has(r.url)) {
+        seen.add(r.url);
+        unique.push(r);
+      }
+    }
+    return unique.slice(0, 40).map((r) => ({
+      url: r.url,
+      source: r.source,
+      teamName: r.teamName,
+    }));
+  } catch {
+    return resultsStart;
+  }
+};
+
+export const fetchTeamLogoUrl = async (
+  teamName: string,
+): Promise<string | null> => {
   if (!teamName || teamName.trim().length < 3) return null;
 
   // Najpierw sprawdz CUSTOM LOGO wgrany przez admina (NAJWYZSZY PRIORYTET)
@@ -728,66 +1122,10 @@ export const fetchTeamLogoUrl = async (teamName: string): Promise<string | null>
   const fallback = getFallbackLogo(teamName);
   if (fallback) return fallback.url;
 
-  try {
-    const [sportsDB, sofa, wiki, wikimedia, wikidata, multiLang] = await Promise.all([
-      fetchSportsDBLogos(teamName).catch(() => []),
-      fetchSofaScoreLogos(teamName).catch(() => []),
-      fetchWikipediaLogos(teamName).catch(() => []),
-      fetchWikimediaLogos(teamName).catch(() => []),
-      fetchWikidataLogos(teamName).catch(() => []),
-      fetchMultiLangWikipediaLogos(teamName).catch(() => []),
-    ]);
-
-    const merged = mergeAllResults(null, sportsDB, sofa, wiki, wikimedia, wikidata, multiLang);
-    return merged.length > 0 ? merged[0].url : null;
-  } catch {
-    return null;
-  }
+  const candidates = await fetchTeamLogoCandidates(teamName);
+  return candidates[0]?.url ?? null;
 };
 
-export const fetchTeamLogoCandidates = async (
-  teamName: string,
-): Promise<LogoCandidate[]> => {
-  if (!teamName || teamName.trim().length < 3) return [];
-
-  // Custom logo wgrany z dysku - NAJWYZSZY PRIORYTET
-  const custom = getCustomTeamLogo(teamName);
-  // Fallback - od razu dodaj jako pierwszy wynik jesli pasuje
-  const fallback = getFallbackLogo(teamName);
-
-  try {
-    const [sportsDB, sofa, wiki, wikimedia, wikidata, multiLang] = await Promise.all([
-      fetchSportsDBLogos(teamName).catch(() => []),
-      fetchSofaScoreLogos(teamName).catch(() => []),
-      fetchWikipediaLogos(teamName).catch(() => []),
-      fetchWikimediaLogos(teamName).catch(() => []),
-      fetchWikidataLogos(teamName).catch(() => []),
-      fetchMultiLangWikipediaLogos(teamName).catch(() => []),
-    ]);
-
-    // Custom logo jest najwazniejsze - zawsze na poczatku gdy istnieje
-    const resultsStart: LogoCandidate[] = [];
-    if (custom) resultsStart.push(custom);
-    if (fallback) resultsStart.push(fallback);
-
-    const merged = mergeAllResults(null, sportsDB, sofa, wiki, wikimedia, wikidata, multiLang);
-    const combined = [...resultsStart, ...merged];
-    const seen = new Set<string>();
-    const unique: LogoCandidate[] = [];
-    for (const r of combined) {
-      if (!seen.has(r.url)) {
-        seen.add(r.url);
-        unique.push(r);
-      }
-    }
-    return unique.slice(0, 15).map((r) => ({
-      url: r.url,
-      source: r.source,
-      teamName: r.teamName,
-    }));
-  } catch {
-    const fallbackRes = fallback ? [{ url: fallback.url, source: fallback.source, teamName: fallback.teamName }] : [];
-    const customRes = custom ? [{ url: custom.url, source: custom.source, teamName: custom.teamName }] : [];
-    return [...customRes, ...fallbackRes];
-  }
-};
+// Koniec limitów wyników: 40 na końcową listę, więcej per źródło (Commons 15,
+// Wikidata 10 encji, opensearch 10, multiLang 6, WikiSearch 10, 3 zapytania
+// Commons zamiast 2) — użytkownik dostaje szeroką listę do ręcznego wyboru.

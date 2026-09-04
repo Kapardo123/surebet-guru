@@ -12,6 +12,9 @@ export interface CouponMatch {
   kickoff: string;
   homeTeamLogo?: string | null;
   awayTeamLogo?: string | null;
+  // Rozstrzygnięcie pojedynczej nogi kuponu (settle per-noga / ręczne w Live)
+  legStatus?: "won" | "lost" | "void" | null;
+  finalScore?: string | null;
 }
 
 const COUPONS_CACHE_KEY = "gsb_coupons_cache";
@@ -37,14 +40,18 @@ export interface Coupon {
   matches: CouponMatch[];
   totalOdds: number;
   stake?: number;
-  status: "active" | "won" | "lost" | "pending";
+  status: "active" | "won" | "lost" | "pending" | "void";
   createdAt: string;
   isPremium?: boolean;
   wonAt?: string | null; // ISO timestamp kiedy kupon wygrał
+  // Poczekalnia: kupon ukryty do publikacji o 3:00
+  queued?: boolean;
+  // Display helper (derived from the first match) used by card headers.
+  sport?: string;
 }
 
 const isCouponStatus = (value: unknown): value is Coupon["status"] =>
-  value === "active" || value === "won" || value === "lost" || value === "pending";
+  value === "active" || value === "won" || value === "lost" || value === "pending" || value === "void";
 
 const serializeMatches = (matches: CouponMatch[]): Json => {
   return matches.map((m) => ({
@@ -63,7 +70,7 @@ const serializeMatches = (matches: CouponMatch[]): Json => {
 const deserializeMatches = (value: Json): CouponMatch[] => {
   if (!Array.isArray(value)) return [];
   return value
-    .map((raw) => {
+    .map((raw): CouponMatch | null => {
       if (raw && typeof raw === "object" && !Array.isArray(raw)) {
         const obj = raw as Record<string, unknown>;
         const homeTeam = typeof obj.homeTeam === "string" ? obj.homeTeam : "";
@@ -151,7 +158,7 @@ export const loadCoupons = async (): Promise<Coupon[]> => {
   }
 };
 
-const processCouponData = (data: any[]): Coupon[] => {
+const processCouponData = (data: any[], includeQueued: boolean = false): Coupon[] => {
   return (data || []).map((coupon, index) => {
     console.log(`🎫 Processing coupon ${index}:`, {
       id: coupon.id,
@@ -175,8 +182,12 @@ const processCouponData = (data: any[]): Coupon[] => {
       createdAt: coupon.created_at || new Date().toISOString(),
       isPremium: coupon.is_premium ?? false,
       wonAt: coupon.won_at || null,
+      queued: !!coupon.queued,
+      sport: matches[0]?.sport,
     };
   }).filter(coupon => {
+    // Poczekalnia: kupony w kolejce są niewidoczne wszędzie poza zakładką Queue.
+    if (coupon.queued && !includeQueued) return false;
     const isValid = coupon.name && coupon.matches.length > 0;
     if (!isValid) {
       console.warn('🎫 Invalid coupon filtered:', coupon.id, coupon.name, 'matches:', coupon.matches.length);
@@ -185,12 +196,14 @@ const processCouponData = (data: any[]): Coupon[] => {
   });
 };
 
-export const addCoupon = async (coupon: Omit<Coupon, "id" | "totalOdds" | "createdAt">): Promise<Coupon | null> => {
+export const addCoupon = async (coupon: Omit<Coupon, "id" | "totalOdds" | "createdAt"> & { queued?: boolean }): Promise<Coupon | null> => {
   const totalOdds = calculateTotalOdds(coupon.matches);
   // Automatycznie ustawiaj won_at gdy status = "won"
   const wonAt = coupon.status === 'won' ? new Date().toISOString() : null;
+  // Poczekalnia: kupon ukryty do 3:00
+  const isQueued = !!coupon.queued;
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('coupons')
     .insert([{
       name: coupon.name,
@@ -199,7 +212,8 @@ export const addCoupon = async (coupon: Omit<Coupon, "id" | "totalOdds" | "creat
       stake: coupon.stake,
       status: coupon.status,
       is_premium: coupon.isPremium,
-      won_at: wonAt
+      won_at: wonAt,
+      queued: isQueued,
     }])
     .select()
     .single();
@@ -219,7 +233,43 @@ export const addCoupon = async (coupon: Omit<Coupon, "id" | "totalOdds" | "creat
     createdAt: data.created_at,
     isPremium: data.is_premium ?? undefined,
     wonAt: data.won_at || null,
+    queued: !!data.queued,
   };
+};
+
+/** Kupony w poczekalni (widoczne tylko w zakładce Queue). */
+export const loadQueuedCoupons = async (): Promise<Coupon[]> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from('coupons')
+      .select('*')
+      .eq('queued', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Error loading queued coupons:", error);
+      return [];
+    }
+
+    return processCouponData(data || [], true);
+  } catch (e) {
+    console.error("Error loading queued coupons:", e);
+    return [];
+  }
+};
+
+/** Publikuje kupon z poczekalni natychmiast. */
+export const publishCouponById = async (id: number): Promise<boolean> => {
+  const { error } = await (supabase as any)
+    .from('coupons')
+    .update({ queued: false })
+    .eq('id', id);
+
+  if (error) {
+    console.error("Error publishing coupon:", error);
+    return false;
+  }
+  return true;
 };
 
 export const deleteCoupon = async (id: number) => {
@@ -238,7 +288,7 @@ export const updateCoupon = async (updatedCoupon: Coupon) => {
 
   console.log('📝 Updating coupon:', updatedCoupon.id, 'Status:', updatedCoupon.status, 'wonAt:', wonAt);
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('coupons')
     .update({
       name: updatedCoupon.name,
@@ -247,7 +297,8 @@ export const updateCoupon = async (updatedCoupon: Coupon) => {
       stake: updatedCoupon.stake,
       status: updatedCoupon.status,
       is_premium: updatedCoupon.isPremium,
-      won_at: wonAt
+      won_at: wonAt,
+      queued: !!updatedCoupon.queued,
     })
     .eq('id', updatedCoupon.id);
 
