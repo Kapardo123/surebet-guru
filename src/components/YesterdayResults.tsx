@@ -32,14 +32,11 @@ const YesterdayResults = ({ userIsPremium }: { userIsPremium: boolean }) => {
     fetchData();
   }, [fetchData]);
 
-  const tips = data?.tips ?? [];
-  const coupons = data?.coupons ?? [];
-  const won = tips.filter((t) => t.status === "won").length;
-  const lost = tips.filter((t) => t.status === "lost").length;
-  const voided = tips.filter((t) => t.status === "void").length;
-  const decided = won + lost;
-  const winRate = decided > 0 ? Math.round((won / decided) * 100) : null;
-
+  // Tylko wygrane —Lost/Void nie są pokazywane
+  const tips = (data?.tips ?? []).filter((t) => t.status === "won");
+  const coupons = (data?.coupons ?? []).filter((c) => c.status === "won");
+  const hero = data?.hero && data.hero.resultStatus === "won" ? data.hero : null;
+  const won = tips.length;
   const dateLabel = data?.date
     ? new Date(`${data.date}T12:00:00Z`).toLocaleDateString("en-GB", {
         weekday: "short",
@@ -85,11 +82,12 @@ const YesterdayResults = ({ userIsPremium }: { userIsPremium: boolean }) => {
             {dateLabel}
           </span>
         </div>
-        <StatChip icon={<BadgeCheck className="w-3.5 h-3.5" />} label="Won" value={won} tone="win" />
-        <StatChip icon={<BadgeX className="w-3.5 h-3.5" />} label="Lost" value={lost} tone="loss" />
-        <StatChip icon={<Minus className="w-3.5 h-3.5" />} label="Void" value={voided} tone="void" />
-        {winRate !== null && (
-          <StatChip icon={<Target className="w-3.5 h-3.5" />} label="Win rate" value={`${winRate}%`} tone="rate" />
+        <StatChip icon={<BadgeCheck className="w-3.5 h-3.5" />} label="Won tips" value={won} tone="win" />
+        {coupons.length > 0 && (
+          <StatChip icon={<BadgeCheck className="w-3.5 h-3.5" />} label="Won coupons" value={coupons.length} tone="win" />
+        )}
+        {hero && (
+          <StatChip icon={<Zap className="w-3.5 h-3.5" />} label="Hero won" value="✓" tone="win" />
         )}
         </div>
       </div>
@@ -112,30 +110,26 @@ const YesterdayResults = ({ userIsPremium }: { userIsPremium: boolean }) => {
             </div>
           ))}
         </div>
-      ) : tips.length > 0 || data?.hero ? (
-        <div className="space-y-5">
-          {tips.length > 0 && (
-            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2">
-              {tips.map((tip, i) => (
-                <ScrollReveal key={`tip-${tip.id}`} delay={i * 0.06}>
-                  <TipCard tip={tip} userIsPremium={userIsPremium} />
-                </ScrollReveal>
-              ))}
-            </div>
-          )}
+      ) : tips.length > 0 ? (
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2">
+          {tips.map((tip, i) => (
+            <ScrollReveal key={`tip-${tip.id}`} delay={i * 0.06}>
+              <TipCard tip={tip} userIsPremium={userIsPremium} />
+            </ScrollReveal>
+          ))}
         </div>
       ) : (
         <div className="text-center py-14 space-y-4">
           <div className="w-16 h-16 rounded-2xl bg-white/[0.03] mx-auto flex items-center justify-center border border-white/[0.06]">
             <History className="w-7 h-7 text-white/20" />
           </div>
-          <p className="text-white/40 font-display text-base font-medium">No settled tips for yesterday</p>
-          <p className="text-white/20 text-sm">Results appear here automatically the next morning</p>
+          <p className="text-white/40 font-display text-base font-medium">No winning tips yesterday</p>
+          <p className="text-white/20 text-sm">Only winning picks appear here</p>
         </div>
       )}
 
-      {/* Hero (rozstrzygnięty) */}
-      {!loading && data?.hero && (
+      {/* Hero (wygrany) */}
+      {!loading && hero && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/[0.07] to-transparent backdrop-blur-xl">
           <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
           <div className="p-4 flex items-center justify-between gap-3 flex-wrap">
@@ -144,30 +138,24 @@ const YesterdayResults = ({ userIsPremium }: { userIsPremium: boolean }) => {
                 <Zap className="w-5 h-5 text-amber-400" />
               </div>
               <div className="min-w-0">
-                <p className="font-display text-[10px] font-black uppercase tracking-[0.2em] text-amber-400">Hero Pick · Settled</p>
-                <p className="text-xs font-medium truncate text-white/80">{data.hero.homeTeam} vs {data.hero.awayTeam}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{data.hero.prediction} @ {data.hero.odds || "—"}{data.hero.finalScore ? ` · FT ${data.hero.finalScore}` : ""}</p>
+                <p className="font-display text-[10px] font-black uppercase tracking-[0.2em] text-amber-400">Hero Pick · Won</p>
+                <p className="text-xs font-medium truncate text-white/80">{hero.homeTeam} vs {hero.awayTeam}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{hero.prediction} @ {hero.odds || "—"}{hero.finalScore ? ` · FT ${hero.finalScore}` : ""}</p>
               </div>
             </div>
-            <span className={`text-[10px] font-display font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${
-              data.hero.resultStatus === "won"
-                ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
-                : data.hero.resultStatus === "lost"
-                  ? "text-red-400 border-red-500/30 bg-red-500/10"
-                  : "text-amber-400 border-amber-500/30 bg-amber-500/10"
-            }`}>
-              {data.hero.resultStatus === "won" ? "Won" : data.hero.resultStatus === "lost" ? "Lost" : "Void"}
+            <span className="text-[10px] font-display font-black uppercase tracking-widest px-3 py-1.5 rounded-full border text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
+              Won
             </span>
           </div>
         </motion.div>
       )}
 
-      {/* Coupons */}
+      {/* Coupons (wygrane) */}
       {!loading && coupons.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 pt-2">
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full" />
-            <h3 className="font-display text-lg font-bold text-foreground tracking-tight">Settled Coupons</h3>
+            <h3 className="font-display text-lg font-bold text-foreground tracking-tight">Winning Coupons</h3>
           </div>
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2">
             {coupons.map((coupon, i) => (

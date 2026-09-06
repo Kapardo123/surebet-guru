@@ -372,6 +372,25 @@ const QueueTab = ({ onSaved, builder, setBuilder }: QueueTabProps) => {
     setBuilder({ name: `${teams.join(" + ")}${tail} @${calculateTotalOdds(builder.matches).toFixed(2)}` });
   };
 
+  const [editingQueuedCouponId, setEditingQueuedCouponId] = useState<number | null>(null);
+
+  const editQueuedCoupon = (coupon: Coupon) => {
+    setBuilder({
+      name: coupon.name,
+      stake: coupon.stake ? String(coupon.stake) : "",
+      isPremium: !!coupon.isPremium,
+      matches: [...coupon.matches],
+    });
+    setEditingQueuedCouponId(coupon.id);
+    setSubTab("coupons");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelEditQueuedCoupon = () => {
+    setEditingQueuedCouponId(null);
+    setBuilder({ name: "", stake: "", isPremium: true, matches: [] });
+  };
+
   const handleSaveCoupon = async () => {
     if (!builder.name || builder.matches.length < 2) {
       toast({ title: "Podaj nazwę i dodaj min. 2 mecze", variant: "destructive" });
@@ -379,18 +398,36 @@ const QueueTab = ({ onSaved, builder, setBuilder }: QueueTabProps) => {
     }
     setSavingCoupon(true);
     try {
-      const { addCoupon } = await import("@/lib/couponStorage");
-      const created = await addCoupon({
-        name: builder.name,
-        matches: builder.matches,
-        stake: builder.stake ? parseFloat(builder.stake) : undefined,
-        status: "active",
-        isPremium: builder.isPremium,
-        queued: true,
-      });
-      if (!created) throw new Error("Nie udało się zapisać kuponu");
-      toast({ title: "Kupon dodany do kolejki ⏳", description: `Total odds @${calculateTotalOdds(builder.matches).toFixed(2)}` });
-      setBuilder({ name: "", stake: "", matches: [] });
+      if (editingQueuedCouponId !== null) {
+        const { updateCoupon } = await import("@/lib/couponStorage");
+        const original = queuedCoupons.find((c) => c.id === editingQueuedCouponId);
+        await updateCoupon({
+          id: editingQueuedCouponId,
+          name: builder.name,
+          matches: builder.matches,
+          totalOdds: calculateTotalOdds(builder.matches),
+          stake: builder.stake ? parseFloat(builder.stake) : undefined,
+          status: "active",
+          isPremium: builder.isPremium,
+          createdAt: original?.createdAt || new Date().toISOString(),
+          queued: true,
+        });
+        toast({ title: "Queued coupon updated ✅" });
+      } else {
+        const { addCoupon } = await import("@/lib/couponStorage");
+        const created = await addCoupon({
+          name: builder.name,
+          matches: builder.matches,
+          stake: builder.stake ? parseFloat(builder.stake) : undefined,
+          status: "active",
+          isPremium: builder.isPremium,
+          queued: true,
+        });
+        if (!created) throw new Error("Nie udało się zapisać kuponu");
+        toast({ title: "Kupon dodany do kolejki ⏳", description: `Total odds @${calculateTotalOdds(builder.matches).toFixed(2)}` });
+      }
+      setBuilder({ name: "", stake: "", isPremium: true, matches: [] });
+      setEditingQueuedCouponId(null);
       await reload();
     } catch (e: any) {
       toast({ title: "Save failed", description: e.message, variant: "destructive" });
@@ -706,8 +743,17 @@ const QueueTab = ({ onSaved, builder, setBuilder }: QueueTabProps) => {
               {subTab === "coupons" && (
                 <div className="space-y-4">
                   {/* Builder */}
-                  <div className="p-4 bg-muted/10 border border-border/40 rounded-xl space-y-3">
-                    <p className="text-xs font-bold font-display uppercase tracking-wider">Nowy kupon do kolejki</p>
+                  <div className={`p-4 bg-muted/10 border rounded-xl space-y-3 ${editingQueuedCouponId !== null ? "border-amber-500/50" : "border-border/40"}`}>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold font-display uppercase tracking-wider">
+                        {editingQueuedCouponId !== null ? "Edit queued coupon" : "Nowy kupon do kolejki"}
+                      </p>
+                      {editingQueuedCouponId !== null && (
+                        <Button size="sm" variant="ghost" className="h-6 text-[10px] gap-1" onClick={cancelEditQueuedCoupon}>
+                          <X className="w-3 h-3" /> Cancel
+                        </Button>
+                      )}
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                       <Input className="h-8 text-xs md:col-span-2" value={builder.name} onChange={(e) => setBuilder({ name: e.target.value })} placeholder="Nazwa kuponu *" />
                       <Input className="h-8 text-xs" value={builder.stake} onChange={(e) => setBuilder({ stake: e.target.value })} placeholder="Stake (opcjonalnie)" inputMode="decimal" />
@@ -800,7 +846,7 @@ const QueueTab = ({ onSaved, builder, setBuilder }: QueueTabProps) => {
 
                     <Button size="sm" className="h-8 gap-1.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white" onClick={handleSaveCoupon} disabled={savingCoupon}>
                       {savingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Hourglass className="w-3.5 h-3.5" />}
-                      Add coupon to Queue
+                      {editingQueuedCouponId !== null ? "Save changes" : "Add coupon to Queue"}
                     </Button>
                   </div>
 
@@ -818,6 +864,7 @@ const QueueTab = ({ onSaved, builder, setBuilder }: QueueTabProps) => {
                           {coupon.isPremium && <Crown className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />}
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Edit" onClick={() => editQueuedCoupon(coupon)}><Pencil className="w-3 h-3" /></Button>
                           <Button variant="ghost" size="icon" className="h-6 w-6 text-emerald-500" title="Publish now" onClick={() => withBusy(`cpn-${coupon.id}`, async () => {
                             if (!(await publishCouponById(coupon.id))) throw new Error("publish failed");
                             toast({ title: "Coupon published ✅" });
@@ -826,6 +873,7 @@ const QueueTab = ({ onSaved, builder, setBuilder }: QueueTabProps) => {
                           })}>{busyIcon(`cpn-${coupon.id}`) || <Send className="w-3 h-3" />}</Button>
                           <Button variant="ghost" size="icon" className="h-6 w-6 text-loss" title="Delete" onClick={() => { if (window.confirm("Usunąć kupon z kolejki?")) withBusy(`cdc-${coupon.id}`, async () => {
                             await deleteCoupon(coupon.id);
+                            if (editingQueuedCouponId === coupon.id) { setEditingQueuedCouponId(null); setBuilder({ name: "", stake: "", isPremium: true, matches: [] }); }
                             await reload();
                           }); }}><Trash2 className="w-3 h-3" /></Button>
                         </div>

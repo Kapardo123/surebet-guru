@@ -126,3 +126,46 @@
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
 }
+
+/* Złoty przycisk premium — błysk + glow */
+.btn-gold {
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 30%, #f59e0b 60%, #d97706 100%);
+  border: 1px solid rgba(251, 191, 36, 0.65);
+  color: #451a03;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.btn-gold::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-20deg);
+  animation: goldShine 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes goldShine {
+  0% { left: -75%; }
+  60%, 100% { left: 125%; }
+}
+.btn-gold:hover {
+  filter: brightness(1.08);
+}
+.btn-gold:active {
+  filter: brightness(0.95);
+}
+.btn-gold:disabled {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.25);
+  box-shadow: none;
+  filter: none;
+  cursor: not-allowed;
+}
+.btn-gold:disabled::after {
+  display: none;
+}

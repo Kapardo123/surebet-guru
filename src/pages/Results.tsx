@@ -38,7 +38,7 @@ const Results = () => {
         <div className="flex items-center gap-3 mb-6">
           <div className="w-1 h-8 bg-gradient-to-b from-amber-500 to-pink-500 rounded-full" />
           <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-            Yesterday's Results
+            Yesterday's Wins
           </h2>
         </div>
         <YesterdayResults userIsPremium={isPremium} />

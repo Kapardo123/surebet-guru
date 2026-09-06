@@ -206,7 +206,18 @@ const LiveTab = ({ onSaved }: { onSaved?: () => void }) => {
   const setTipStatus = async (tip: Tip, status: Tip["status"]) => {
     await withBusy(`st-${tip.id}`, async () => {
       await updateTip({ ...tip, status, isPublished: true, queued: false });
-      toast({ title: `Status: ${status}` });
+      // Archiwum Yesterday's Wins — natychmiast, bez czekania na 3:00
+      if (status === "won" || status === "lost" || status === "void") {
+        await (supabase as any).from("match_results").upsert({
+          source_type: "tip", source_id: tip.id, result_status: status,
+          final_score: null, settled_at: new Date().toISOString(), settled_method: "manual",
+          payload: { sport: tip.sport, league: tip.league, homeTeam: tip.homeTeam, awayTeam: tip.awayTeam, prediction: tip.prediction, odds: Number(tip.odds) || 0, kickoff: tip.kickoff, description: tip.description ?? null, homeTeamLogo: tip.homeTeamLogo ?? null, awayTeamLogo: tip.awayTeamLogo ?? null, isPremium: !!tip.isPremium },
+        }, { onConflict: "source_type,source_id" });
+      } else {
+        // Reset do upcoming — usuń z archiwum
+        await (supabase as any).from("match_results").delete().eq("source_type", "tip").eq("source_id", tip.id);
+      }
+      toast({ title: `Status: ${status}${status === "won" ? " — widoczny w Yesterday's Wins ✅" : ""}` });
       await reload();
       onSaved?.();
     });
@@ -320,6 +331,16 @@ const LiveTab = ({ onSaved }: { onSaved?: () => void }) => {
         createdAt: original?.createdAt || new Date().toISOString(),
         queued: false,
       });
+      // Archiwum Yesterday's Wins przy statusie końcowym
+      if (couponForm.status === "won" || couponForm.status === "lost" || couponForm.status === "void") {
+        await (supabase as any).from("match_results").upsert({
+          source_type: "coupon", source_id: editingCouponId, result_status: couponForm.status,
+          final_score: null, settled_at: new Date().toISOString(), settled_method: "manual",
+          payload: { name: couponForm.name, matches: couponForm.matches.map((m) => ({ homeTeam: m.homeTeam, awayTeam: m.awayTeam, prediction: m.prediction, odds: m.odds, league: m.league, sport: m.sport, kickoff: m.kickoff, legStatus: m.legStatus ?? null, finalScore: m.finalScore ?? null })), totalOdds: calculateTotalOdds(couponForm.matches), stake: couponForm.stake ? parseFloat(couponForm.stake) : null, isPremium: couponForm.isPremium, createdAt: original?.createdAt || null },
+        }, { onConflict: "source_type,source_id" });
+      } else {
+        await (supabase as any).from("match_results").delete().eq("source_type", "coupon").eq("source_id", editingCouponId);
+      }
       toast({ title: "Coupon updated ✅" });
       setCouponForm(null);
       setEditingCouponId(null);

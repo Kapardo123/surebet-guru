@@ -182,9 +182,9 @@ const Index = () => {
             <div className="hidden md:flex items-center gap-2">
               {!isPremium && (
                 <Link to="/premium">
-                  <Button size="sm" 
-                          className="gap-1.5 font-bold uppercase tracking-wider text-[11px] text-white rounded-full px-5 py-2 border border-white/10 relative overflow-hidden group transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-pink-500/20"
-                          style={{ background: "linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #06b6d4 100%)" }}>
+                    <Button size="sm"
+                            className="gap-1.5 font-bold uppercase tracking-wider text-[11px] text-white rounded-full px-5 py-2 border border-white/10 relative overflow-hidden group transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-pink-500/20"
+                            style={{ background: "linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #06b6d4 100%)" }}>
                     <Gem className="w-3.5 h-3.5" />
                     Go Premium
                   </Button>
@@ -238,11 +238,11 @@ const Index = () => {
             </TabsTrigger>
             <Link to="/results" className="flex-1 md:flex-none">
               <span
-                className="flex items-center justify-center gap-2 h-full w-full font-display text-xs uppercase tracking-wider rounded-xl py-3 px-4 border border-amber-500/30 bg-amber-500/[0.06] text-amber-300/90 hover:bg-amber-500/15 hover:text-amber-200 transition-all duration-300"
-                title="Yesterday's Results — rozstrzygnięte mecze"
+                className="btn-gold flex items-center justify-center gap-2 h-full w-full font-display text-xs font-black uppercase tracking-wider rounded-xl py-3 px-4 transition-all duration-300 hover:scale-[1.02]"
+                title="Yesterday's Wins — rozstrzygnięte wygrane"
               >
                 <History className="w-4 h-4" />
-                <span className="whitespace-nowrap">Yesterday</span>
+                <span className="whitespace-nowrap">Yesterday's Wins</span>
               </span>
             </Link>
           </TabsList>

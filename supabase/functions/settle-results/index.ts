@@ -1084,6 +1084,178 @@ serve(async (req) => {
       console.error("[settle-results] backfill failed:", e?.message || e);
     }
 
+    // ---------------- FAZA 3c: web AI fallback dla nierozstrzygniętych ------
+    // Gdy odds-api nie zna ligi/drużyny (mało znane ligi, youth, esports),
+    // AI z dostępem do sieci (OpenRouter :online) szuka finalnego wyniku.
+    // Werdykt liczymy deterministycznie z pełnym wyniku (settleMarket),
+    // AI służy tylko do ZNALEZIENIA wyniku — bez zgadywania typów.
+    let webCalls = 0;
+    try {
+      const cutoff = Date.now() - 2 * 3600 * 1000; // mecz musiał się skończyć
+      const WEB_BUDGET = 10;
+
+      interface WebJob {
+        key: string;
+        ctx: { homeTeam: string; awayTeam: string; kickoff: string; sport: string; league: string; prediction: string };
+        // AI z web searchem rozstrzyga KONKRETNY zakład (nie tylko wynik meczu):
+        // gole zawodników, kartki, BTTS, handicapy itd.
+        apply: (verdict: SettleOutcome, score: string | null) => Promise<void>;
+      }
+      const webJobs: WebJob[] = [];
+
+      const addWebJob = (key: string, ctx: WebJob["ctx"], apply: WebJob["apply"]) => {
+        if (webJobs.length < WEB_BUDGET) webJobs.push({ key, ctx, apply });
+      };
+
+      // Tip leftovers
+      for (const job of tipJobs) {
+        if (job.eval.status !== "unresolved") continue;
+        const ko = new Date(job.tip.kickoff || "").getTime();
+        if (isNaN(ko) || ko > cutoff) continue;
+        addWebJob(`web-tip-${job.tip.id}`, {
+          homeTeam: job.tip.home_team, awayTeam: job.tip.away_team,
+          kickoff: job.tip.kickoff, sport: job.tip.sport || "Football",
+          league: job.tip.league || "", prediction: job.tip.prediction || "",
+        }, async (verdict, fs) => {
+          if (verdict !== "won" && verdict !== "lost" && verdict !== "void") return;
+          const status = verdict as SettledStatus;
+          await db.from("tips").update({ status, won_at: status === "won" ? nowIso : job.tip.won_at || null }).eq("id", job.tip.id);
+          await db.from("match_results").upsert({
+            source_type: "tip", source_id: job.tip.id, result_status: status,
+            final_score: fs, settled_at: nowIso, settled_method: "ai",
+            payload: { sport: job.tip.sport, league: job.tip.league, homeTeam: job.tip.home_team, awayTeam: job.tip.away_team, prediction: job.tip.prediction, odds: Number(job.tip.odds) || 0, kickoff: job.tip.kickoff, description: job.tip.description ?? null, homeTeamLogo: job.tip.home_team_logo ?? null, awayTeamLogo: job.tip.away_team_logo ?? null, isPremium: !!job.tip.is_premium },
+          }, { onConflict: "source_type,source_id" });
+          tipStats.settled++;
+          tipStats[status]++;
+          for (let i = unresolved.length - 1; i >= 0; i--) {
+            if (unresolved[i].kind === "tip" && unresolved[i].id === job.tip.id) unresolved.splice(i, 1);
+          }
+        });
+      }
+
+      // Hero leftover
+      if (heroJob && heroJob.eval.status === "unresolved") {
+        const ko = new Date(heroJob.hero.kickoff || "").getTime();
+        if (!isNaN(ko) && ko <= cutoff) {
+          addWebJob("web-hero", {
+            homeTeam: heroJob.hero.home_team, awayTeam: heroJob.hero.away_team,
+            kickoff: heroJob.hero.kickoff, sport: heroJob.hero.sport || "Football",
+            league: heroJob.hero.league || "", prediction: heroJob.hero.prediction || "",
+          }, async (verdict, fs) => {
+            if (verdict !== "won" && verdict !== "lost" && verdict !== "void") return;
+            const status = verdict as SettledStatus;
+            await db.from("featured_picks").update({ status: status === "void" ? "draw" : status, won_at: status === "won" ? nowIso : null }).eq("id", heroJob!.hero.id);
+            await db.from("match_results").upsert({
+              source_type: "hero", source_id: heroJob!.hero.id, result_status: status,
+              final_score: fs, settled_at: nowIso, settled_method: "ai",
+              payload: { sport: heroJob!.hero.sport, league: heroJob!.hero.league, homeTeam: heroJob!.hero.home_team, awayTeam: heroJob!.hero.away_team, prediction: heroJob!.hero.prediction, odds: Number(heroJob!.hero.odds) || 0, kickoff: heroJob!.hero.kickoff, description: heroJob!.hero.description ?? null, homeTeamLogo: heroJob!.hero.home_team_logo ?? null, awayTeamLogo: heroJob!.hero.away_team_logo ?? null, confidence: heroJob!.hero.confidence ?? null, isPremium: false },
+            }, { onConflict: "source_type,source_id" });
+          });
+        }
+      }
+
+      // Coupon leg leftovers — AI rozstrzyga każdą pending nogę osobno
+      for (const job of couponJobs) {
+        if (aggregateCoupon(job.evals.map((ev) => (ev.status === "unresolved" ? null : (ev.status as SettledStatus))))) continue; // już rozstrzygnięty
+        job.evals.forEach((ev, i) => {
+          if (ev.status !== "unresolved") return;
+          const leg = job.legs[i];
+          const ko = new Date(leg.kickoff).getTime();
+          if (isNaN(ko) || ko > cutoff) return;
+          if (webJobs.length >= WEB_BUDGET) return;
+          addWebJob(`web-coupon-${job.coupon.id}-${i}`, {
+            homeTeam: leg.homeTeam, awayTeam: leg.awayTeam,
+            kickoff: leg.kickoff, sport: leg.sport || "Football",
+            league: leg.league || "", prediction: leg.prediction || "",
+          }, async (verdict, fs) => {
+            if (verdict !== "won" && verdict !== "lost" && verdict !== "void") return;
+            job.evals[i] = { status: verdict, finalScore: fs };
+            const statuses: (SettledStatus | null)[] = job.evals.map((ev) => (ev.status === "unresolved" ? null : (ev.status as SettledStatus)));
+            const aggregated = aggregateCoupon(statuses);
+            if (aggregated) {
+              const usedAi = job.aiKeys.some(Boolean);
+              await db.from("coupons").update({ status: aggregated, won_at: aggregated === "won" ? nowIso : job.coupon.won_at || null }).eq("id", job.coupon.id);
+              couponStats.settled++;
+              couponStats[aggregated]++;
+              await db.from("match_results").upsert({
+                source_type: "coupon", source_id: job.coupon.id, result_status: aggregated, final_score: null,
+                settled_at: nowIso, settled_method: usedAi ? "ai" : "auto",
+                payload: { name: job.coupon.name, matches: job.legs.map((m, j) => ({ homeTeam: m.homeTeam, awayTeam: m.awayTeam, prediction: m.prediction, odds: m.odds, league: m.league, sport: m.sport, kickoff: m.kickoff, legStatus: statuses[j], finalScore: job.evals[j]?.finalScore ?? null })), totalOdds: Number(job.coupon.total_odds) || 0, stake: job.coupon.stake ?? null, isPremium: !!job.coupon.is_premium, createdAt: job.coupon.created_at || null },
+              }, { onConflict: "source_type,source_id" });
+              for (let u = unresolved.length - 1; u >= 0; u--) {
+                if (unresolved[u].kind === "coupon" && String(unresolved[u].id).startsWith(`${job.coupon.id}:`)) unresolved.splice(u, 1);
+              }
+            }
+          });
+        });
+      }
+
+      // Wykonanie web lookups (równolegle, budżet)
+      if (webJobs.length) {
+        const WEB_MODELS = ["openai/gpt-4o-mini:online", "openai/gpt-4.1-mini:online"];
+        // AI z web searchem rozstrzyga KONKRETNY zakład — wyszukuje to, co
+        // potrzebne: finalny wynik, strzelców, kartki, statystyki zawodników.
+        const webLookup = async (ctx: WebJob["ctx"]): Promise<{ verdict: SettleOutcome; score: string | null } | null> => {
+          if (!OPENROUTER_API_KEY) return null;
+          const prompt = `You are a betting settlement engine with web search. Settle this specific bet:
+
+Bet: "${ctx.prediction}"
+Match: ${ctx.homeTeam} vs ${ctx.awayTeam} (${ctx.sport}${ctx.league ? `, ${ctx.league}` : ""})
+Kickoff date: ${ctx.kickoff.slice(0, 10)}
+
+Search the web for the official match data — final score, goalscorers, cards, player stats, whatever this specific bet requires (e.g. player goals need the scorer list, card bets need booking stats, half-time bets need HT score).
+
+Rules:
+- WON if the bet clearly succeeded based on real match data.
+- LOST if it clearly failed.
+- VOID only if the stake would be returned (match cancelled/postponed, or the bet cannot be evaluated at all).
+- If you cannot find RELIABLE evidence for this specific bet, respond {"verdict":null} — do NOT guess.
+
+Respond ONLY with JSON: {"verdict":"won"|"lost"|"void"|null, "score":"H:A"|null, "evidence":"max 15 words citing what you found"}.`;
+
+          for (const model of WEB_MODELS) {
+            try {
+              const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${OPENROUTER_API_KEY}`, "Content-Type": "application/json", "HTTP-Referer": "https://surebet.guru", "X-Title": "SureBet Guru" },
+                body: JSON.stringify({ model, messages: [{ role: "user", content: prompt }], max_tokens: 300, temperature: 0, plugins: [{ id: "web" }] }),
+              });
+              const data: OpenRouterResponse = await res.json();
+              if (data.error) continue;
+              const content = data.choices?.[0]?.message?.content?.trim();
+              if (!content) continue;
+              const obj = parseJsonObject(content);
+              if (!obj) continue;
+              const verdictRaw = String(obj.verdict ?? "").toLowerCase();
+              const score = obj.score ? String(obj.score) : null;
+              if (verdictRaw === "won" || verdictRaw === "lost" || verdictRaw === "void") {
+                return { verdict: verdictRaw as SettleOutcome, score };
+              }
+              if (verdictRaw === "unknown" || verdictRaw === "null") return null;
+            } catch { continue; }
+          }
+          return null;
+        };
+
+        const webCursor = { i: 0 };
+        const webWorkers = Array.from({ length: Math.min(4, webJobs.length) }, async () => {
+          while (webCursor.i < webJobs.length) {
+            const job = webJobs[webCursor.i++];
+            webCalls++;
+            try {
+              const out = await webLookup(job.ctx);
+              if (out && out.verdict !== "unresolved") await job.apply(out.verdict, out.score);
+            } catch (e: any) {
+              console.error(`[settle-results] web ${job.key}:`, e?.message || e);
+            }
+          }
+        });
+        await Promise.all(webWorkers);
+      }
+    } catch (e: any) {
+      console.error("[settle-results] web fallback failed:", e?.message || e);
+    }
+
     // ---------------- FAZA 4: poczekalnia (cron o 3:00) ---------------------
 
     let release: ReleaseResult | null = null;
@@ -1102,6 +1274,7 @@ serve(async (req) => {
       coupons: couponStats,
       hero: heroSettled ? { status: heroSettled.status, finalScore: heroSettled.finalScore } : (heroUnresolvedReason ? { unresolved: heroUnresolvedReason } : null),
       aiCalls,
+      webCalls,
       released: release?.released ?? null,
       push: release?.push ?? null,
     }), {

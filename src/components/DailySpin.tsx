@@ -318,7 +318,7 @@ const DailySpin = ({ isLoggedIn = false, userId, onFreeTip }: { isLoggedIn?: boo
               <motion.button
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="px-8 py-3 rounded-full font-display font-black text-[11px] uppercase tracking-widest text-white flex items-center gap-2 shadow-[0_0_24px_rgba(236,72,153,0.35)]"
+                className="px-8 py-3.5 rounded-full font-display font-black text-[11px] uppercase tracking-[0.2em] text-white flex items-center gap-2 shadow-[0_0_24px_rgba(236,72,153,0.35)]"
                 style={{ background: "linear-gradient(135deg, #ec4899 0%, #a855f7 100%)" }}
               >
                 <ArrowRightToLine className="w-4 h-4" /> Log in to spin
