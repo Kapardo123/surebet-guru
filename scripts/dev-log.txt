@@ -1,5 +1,5 @@
 
-  [32m[1mVITE[22m v5.4.19[39m  [2mready in [0m[1m437[22m[2m[0m ms[22m
+  [32m[1mVITE[22m v5.4.19[39m  [2mready in [0m[1m597[22m[2m[0m ms[22m
 
   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m8080[22m/[39m
   [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.99.133:[1m8080[22m/[39m
@@ -7,10 +7,21 @@
 Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
   npx update-browserslist-db@latest
   Why you should do it regularly: https://github.com/browserslist/update-db#readme
-[2m21:34:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
-[2m21:35:11[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mandroid/app/src/main/assets/public/google363e5b04b77cf11b.html[22m
-[2m21:35:11[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mandroid/app/src/main/assets/public/index.html[22m
-[2m21:35:11[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mandroid/app/src/main/assets/public/google363e5b04b77cf11b.html[22m
-[2m21:35:11[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mandroid/app/src/main/assets/public/index.html[22m
-[2m21:36:44[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mandroid/app/build/intermediates/assets/release/mergeReleaseAssets/public/index.html[22m
-[2m21:37:21[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mandroid/build/reports/problems/problems-report.html[22m
+[2m18:36:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/admin/YesterdaySettleTab.tsx, /src/index.css[22m
+[2m18:40:05[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/admin/YesterdaySettleTab.tsx, /src/index.css[22m
+[2m18:56:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/admin/YesterdaySettleTab.tsx, /src/index.css[22m
+[2m19:07:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/SportyTraderImport.tsx, /src/components/ZawodTyperImport.tsx[22m
+[2m19:07:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/SportyTraderImport.tsx, /src/index.css[22m
+[2m19:08:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/SportyTraderImport.tsx, /src/index.css[22m
+[2m19:08:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/SportyTraderImport.tsx, /src/index.css[22m
+[2m19:08:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/SportyTraderImport.tsx, /src/index.css[22m
+[2m19:09:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/SportyTraderImport.tsx, /src/index.css[22m
+[2m19:09:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/SportyTraderImport.tsx, /src/index.css[22m
+[2m19:12:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/SportyTraderImport.tsx, /src/index.css[22m
+[2m19:28:12[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m19:29:41[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mandroid/app/src/main/assets/public/google363e5b04b77cf11b.html[22m
+[2m19:29:41[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mandroid/app/src/main/assets/public/index.html[22m
+[2m19:29:41[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mandroid/app/src/main/assets/public/google363e5b04b77cf11b.html[22m
+[2m19:29:41[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mandroid/app/src/main/assets/public/index.html[22m
+[2m19:31:29[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mandroid/app/build/intermediates/assets/release/mergeReleaseAssets/public/index.html[22m
+[2m19:36:11[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mandroid/build/reports/problems/problems-report.html[22m

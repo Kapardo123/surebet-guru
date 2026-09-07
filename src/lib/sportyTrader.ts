@@ -247,9 +247,18 @@ export const fetchSportyMatch = async (url: string): Promise<SportyMatchDetail> 
 
 // --- AI rewrite via OpenRouter edge function ---------------------------------
 
-export const rewriteWithAI = async (texts: string[]): Promise<string[]> => {
+export interface AiRewriteMatch {
+  text: string;
+  homeTeam?: string;
+  awayTeam?: string;
+  league?: string;
+  prediction?: string;
+  odds?: number;
+}
+
+export const rewriteWithAI = async (matches: AiRewriteMatch[]): Promise<string[]> => {
   const { data, error } = await supabase.functions.invoke("ai-rewrite", {
-    body: { texts },
+    body: { matches },
   });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);

@@ -12,8 +12,9 @@ import { loadFeaturedPick, saveFeaturedPick, deleteQueuedFeaturedPick, publishFe
 import { fetchTeamLogoCandidates, LogoCandidate, saveCustomTeamLogo } from "@/lib/logoFetcher";
 import QueueTab, { QueueBuilderState } from "@/components/admin/QueueTab";
 import LiveTab from "@/components/admin/LiveTab";
+import YesterdaySettleTab from "@/components/admin/YesterdaySettleTab";
 import { Tip } from "@/components/TipCard";
-import { Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, Users, Bell, Search, RefreshCw, PlusCircle, Loader2, Sparkles, ClipboardPaste, List, Send, Clock, EyeOff, Upload, Download, History, Hourglass, Globe } from "lucide-react";
+import { Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, Users, Bell, Search, RefreshCw, PlusCircle, Loader2, Sparkles, ClipboardPaste, List, Send, Clock, EyeOff, Upload, Download, History, Hourglass, Globe, CalendarClock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
@@ -237,6 +238,7 @@ const Admin = () => {
   const adminTabs = [
     { id: "import", label: "Import", icon: Download },
     { id: "queue", label: "Queue", icon: History },
+    { id: "yesterday", label: "Yesterday", icon: CalendarClock },
     { id: "live", label: "Live", icon: Globe },
     { id: "premium", label: "Premium", icon: Users },
   ];
@@ -1130,6 +1132,11 @@ const Admin = () => {
         {/* LIVE CONTENT (podglad/edycja/usuwanie opublikowanych) */}
         {activeTab === 'live' && (
           <LiveTab onSaved={() => refreshData(false)} />
+        )}
+
+        {/* YESTERDAY (rozstrzyganie wczorajszych meczów) */}
+        {activeTab === 'yesterday' && (
+          <YesterdaySettleTab onSaved={() => refreshData(false)} />
         )}
 
 

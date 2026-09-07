@@ -46,6 +46,7 @@ import {
 } from "@/lib/featuredPickStorage";
 import LogoPicker from "@/components/admin/LogoPicker";
 import { SPORTS } from "@/components/admin/QueueTab";
+import { supabase } from "@/integrations/supabase/client";
 
 // ---------------------------------------------------------------- helpers ---
 
@@ -119,9 +120,21 @@ const LiveTab = ({ onSaved }: { onSaved?: () => void }) => {
 
   const reload = useCallback(async () => {
     const [t, c, h] = await Promise.all([loadTips(true, true), loadCoupons(), loadFeaturedPick()]);
-    setTips(t);
+    // Wczorajsze mecze NIE należą do Live — trafiają do zakładki Yesterday
+    const warsawDay = (ms: number) =>
+      new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Warsaw", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(ms));
+    const today = warsawDay(Date.now());
+    const liveTips = t.filter((tip) => {
+      const ko = new Date(tip.kickoff).getTime();
+      return isNaN(ko) || warsawDay(ko) >= today;
+    });
+    const liveHero = h && (() => {
+      const ko = new Date(h.kickoff).getTime();
+      return isNaN(ko) || warsawDay(ko) >= today ? h : null;
+    })();
+    setTips(liveTips);
     setCoupons(c);
-    setHero(h);
+    setHero(liveHero);
   }, []);
 
   useEffect(() => {

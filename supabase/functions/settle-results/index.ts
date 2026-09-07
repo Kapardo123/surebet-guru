@@ -587,6 +587,18 @@ serve(async (req) => {
     // Cron może poprosić o release razem z settle (body.release = true).
     const releaseRequested = body?.release === true;
 
+    // ---------------- FAZA 0: publikacja kolejki (PRZED settle) -------------
+    // Release musi być PIERWSZY: tipy wypuszczone o 3:00 z kickoffem wczoraj
+    // mają być rozstrzygnięte w tym samym runie.
+    let release: ReleaseResult | null = null;
+    if (releaseRequested) {
+      try {
+        release = await releaseWaitingRoom(db, supabaseUrl, serviceRoleKey);
+      } catch (e: any) {
+        console.error("[settle-results] release failed:", e?.message || e);
+      }
+    }
+
     // ---------------- FAZA 1: dopasowanie + deterministyczne decyzje ---------
 
     const evaluateLeg = async (
@@ -1254,17 +1266,6 @@ Respond ONLY with JSON: {"verdict":"won"|"lost"|"void"|null, "score":"H:A"|null,
       }
     } catch (e: any) {
       console.error("[settle-results] web fallback failed:", e?.message || e);
-    }
-
-    // ---------------- FAZA 4: poczekalnia (cron o 3:00) ---------------------
-
-    let release: ReleaseResult | null = null;
-    if (releaseRequested) {
-      try {
-        release = await releaseWaitingRoom(db, supabaseUrl, serviceRoleKey);
-      } catch (e: any) {
-        console.error("[settle-results] release failed:", e?.message || e);
-      }
     }
 
     return new Response(JSON.stringify({

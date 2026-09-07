@@ -34,9 +34,11 @@ import {
   ImportTarget,
 } from "@/lib/sportyTrader";
 import { getSofaOdds } from "@/lib/sofaOdds";
+import { Sparkles } from "lucide-react";
 
 interface MatchCard extends ScrapedMatch {
   analysis: string; // rewritten
+  aiDone?: boolean;
 }
 
 interface Props {
@@ -83,6 +85,63 @@ const SportyTraderImport = ({ onImport, couponCount = 0, onGoToCoupon }: Props) 
   const [resetting, setResetting] = useState(false);
   const [editingOdds, setEditingOdds] = useState<string>("");
   const [importedIds, setImportedIds] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [aiGenerating, setAiGenerating] = useState(false);
+
+  const toggleSelected = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  /** AI generuje analizy tylko dla zaznaczonych meczów (jak w ZawodTyper). */
+  const handleGenerateAI = async () => {
+    const targets = matches.filter((m) => selected.has(m.id) && m.analysisRaw.length > 50 && !m.aiDone);
+    if (targets.length === 0) {
+      toast({ title: "Zaznacz mecze do analizy AI", description: "Kliknij checkbox na karcie meczu." });
+      return;
+    }
+    setAiGenerating(true);
+    try {
+      const results = await pool(
+        targets,
+        3,
+        async (m) => {
+          try {
+            const [rewritten] = await rewriteWithAI([{
+              text: m.analysisRaw,
+              homeTeam: m.homeTeam,
+              awayTeam: m.awayTeam,
+              league: m.league,
+              prediction: m.prediction,
+              odds: m.odds > 0 ? m.odds : undefined,
+            }]);
+            return { id: m.id, analysis: rewritten || m.analysisRaw, ok: !!rewritten };
+          } catch {
+            return { id: m.id, analysis: rewriteAnalysis(m.analysisRaw), ok: false };
+          }
+        },
+        (done, total) => setProgress({ done, total }),
+      );
+      setMatches((prev) => prev.map((m) => {
+        const r = results.find((x) => x?.id === m.id);
+        return r ? { ...m, analysis: r.analysis, aiDone: r.ok } : m;
+      }));
+      const ok = results.filter((r) => r?.ok).length;
+      toast({
+        title: `AI analysis: ${ok}/${targets.length} ✨`,
+        description: ok < targets.length ? "Niektóre fallback na wersję skróconą." : undefined,
+      });
+    } catch (e: any) {
+      toast({ title: "AI generation failed", description: e.message, variant: "destructive" });
+    } finally {
+      setAiGenerating(false);
+      setProgress(null);
+    }
+  };
 
   const handleOddsChange = (id: string, value: string) => {
     const parsed = parseFloat(value);
@@ -212,26 +271,6 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
         .filter((c) => !hasClientOdds || c.odds > 0)
         .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 
-      // AI rewrite: rewrite all analyses via OpenRouter, fallback to algorithmic
-      const rawAnalyses = cards.map((c) => c.analysisRaw).filter((a) => a.length > 50);
-      let aiRewrites: string[] = [];
-      if (rawAnalyses.length > 0) {
-        try {
-          aiRewrites = await rewriteWithAI(rawAnalyses);
-        } catch {
-          // AI failed, will fall back to algorithmic rewriteAnalysis below
-        }
-      }
-      let aiIdx = 0;
-      for (const card of cards) {
-        if (card.analysisRaw.length > 50 && aiRewrites[aiIdx]) {
-          card.analysis = aiRewrites[aiIdx];
-          aiIdx++;
-        } else {
-          card.analysis = rewriteAnalysis(card.analysisRaw);
-        }
-      }
-
       const now = Date.now();
       // Track which IDs are new (not in previous fetch)
       const newCount = usable.filter((c) => !seenIds.has(c.id)).length;
@@ -356,6 +395,25 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
           >
             {resetting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
           </Button>
+              <Button
+            size="sm"
+            className="h-9 gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white"
+            onClick={handleGenerateAI}
+            disabled={aiGenerating || selected.size === 0}
+            title="Generuj profesjonalną analizę AI dla zaznaczonych meczów"
+          >
+            {aiGenerating ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                {progress ? `${progress.done}/${progress.total}` : "AI..."}
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                AI Analysis ({selected.size})
+              </>
+            )}
+          </Button>
           <Button
             size="sm"
             className="h-9 gap-2 bg-accent hover:bg-accent/90"
@@ -423,19 +481,40 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
             }`}
           >
             <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <Badge variant="outline" className="text-[9px] uppercase">
-                    {m.sport}
-                  </Badge>
-                  <span className="text-[10px] text-muted-foreground truncate">{m.league}</span>
-                </div>
-                <div className="flex items-center gap-1.5 mt-1 text-sm font-bold min-w-0">
-                  <TeamLogo teamName={m.homeTeam} logoUrl={m.homeTeamLogo || undefined} size={18} />
-                  <span className="truncate">{m.homeTeam}</span>
-                  <span className="text-muted-foreground font-normal px-0.5">vs</span>
-                  <TeamLogo teamName={m.awayTeam} logoUrl={m.awayTeamLogo || undefined} size={18} />
-                  <span className="truncate">{m.awayTeam}</span>
+              <div className="flex items-start gap-2 min-w-0">
+                {!isImported && (
+                  <button
+                    type="button"
+                    onClick={() => toggleSelected(m.id)}
+                    className={`mt-0.5 w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
+                      selected.has(m.id)
+                        ? "bg-amber-500 border-amber-500 text-white"
+                        : "border-white/20 hover:border-amber-400"
+                    }`}
+                    title="Zaznacz do analizy AI"
+                  >
+                    {selected.has(m.id) && <Sparkles className="w-2.5 h-2.5" />}
+                  </button>
+                )}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Badge variant="outline" className="text-[9px] uppercase">
+                      {m.sport}
+                    </Badge>
+                    {m.aiDone && (
+                      <span className="inline-flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded-full">
+                        <Sparkles className="w-2 h-2" /> AI
+                      </span>
+                    )}
+                    <span className="text-[10px] text-muted-foreground truncate">{m.league}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1 text-sm font-bold min-w-0">
+                    <TeamLogo teamName={m.homeTeam} logoUrl={m.homeTeamLogo || undefined} size={18} />
+                    <span className="truncate">{m.homeTeam}</span>
+                    <span className="text-muted-foreground font-normal px-0.5">vs</span>
+                    <TeamLogo teamName={m.awayTeam} logoUrl={m.awayTeamLogo || undefined} size={18} />
+                    <span className="truncate">{m.awayTeam}</span>
+                  </div>
                 </div>
               </div>
               <div className="text-right shrink-0">
