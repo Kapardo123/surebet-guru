@@ -361,6 +361,7 @@ interface ReleaseResult {
   push: { attempted: number; success: number; skipped?: string };
   coupons?: number;
   heroPicks?: number;
+  leftovers?: string[];
 }
 
 const sendNewTipsPush = async (
@@ -455,6 +456,8 @@ const releaseWaitingRoom = async (
   supabaseUrl: string,
   serviceRoleKey: string,
 ): Promise<ReleaseResult> => {
+  const leftovers: string[] = [];
+
   // --- TIPS ---------------------------------------------------------------
   const { data: queuedRows, error: loadError } = await db
     .from("tips")
@@ -471,6 +474,12 @@ const releaseWaitingRoom = async (
       .update({ queued: false, is_published: true })
       .eq("queued", true);
     if (updateError) throw new Error(`release update: ${updateError.message}`);
+    // Weryfikacja — cicha blokada RLS/update zwraca 200 przy 0 rows.
+    const { data: stillQueued } = await db.from("tips").select("id").eq("queued", true).limit(5);
+    if (stillQueued?.length) {
+      leftovers.push(`tips: ${stillQueued.length} still queued`);
+      console.error(`[settle-results] TIPS not released: ${stillQueued.length} left`);
+    }
     releasedTips = queued.length;
   }
 
@@ -488,6 +497,11 @@ const releaseWaitingRoom = async (
       .update({ queued: false })
       .eq("queued", true);
     if (error) throw new Error(`coupon release: ${error.message}`);
+    const { data: stillQueuedCoupons } = await db.from("coupons").select("id").eq("queued", true).limit(5);
+    if (stillQueuedCoupons?.length) {
+      leftovers.push(`coupons: ${stillQueuedCoupons.length} still queued`);
+      console.error(`[settle-results] COUPONS not released: ${stillQueuedCoupons.length} left`);
+    }
     releasedCoupons = queuedCouponRows.length;
   }
 
@@ -510,12 +524,19 @@ const releaseWaitingRoom = async (
       .neq("id", newestHero.id);
     if (delError) {
       console.error(`[settle-results] hero cleanup: ${delError.message}`);
+      leftovers.push(`hero cleanup failed: ${delError.message}`);
     }
     const { error } = await db
       .from("featured_picks")
       .update({ queued: false })
       .eq("id", newestHero.id);
     if (error) throw new Error(`hero release: ${error.message}`);
+    // Weryfikacja
+    const { data: heroCheck } = await db.from("featured_picks").select("queued, id").eq("id", newestHero.id).maybeSingle();
+    if (!heroCheck || heroCheck.queued === true) {
+      leftovers.push("hero: not published (RLS/update blocked)");
+      console.error("[settle-results] HERO not released");
+    }
     releasedHero = 1;
   }
 
@@ -523,7 +544,7 @@ const releaseWaitingRoom = async (
   const push = total > 0
     ? await sendNewTipsPush(supabaseUrl, serviceRoleKey)
     : { attempted: 0, success: 0, skipped: "Kolejka pusta" };
-  return { released: total, coupons: releasedCoupons, heroPicks: releasedHero, push };
+  return { released: total, coupons: releasedCoupons, heroPicks: releasedHero, push, leftovers };
 };
 
 serve(async (req) => {
