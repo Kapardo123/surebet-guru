@@ -15,7 +15,6 @@ import { initRevenueCat } from "@/integrations/revenuecat";
 const Admin = lazy(() => import("./pages/Admin"));
 const Premium = lazy(() => import("./pages/Premium"));
 const Coupons = lazy(() => import("./pages/Coupons"));
-const Results = lazy(() => import("./pages/Results"));
 const Auth = lazy(() => import("./pages/Auth"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
@@ -69,7 +68,6 @@ const AnimatedRoutes = () => {
         <Route path="/admin" element={<Admin />} />
         <Route path="/premium" element={<Premium />} />
         <Route path="/coupons" element={<Coupons />} />
-        <Route path="/results" element={<Results />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />

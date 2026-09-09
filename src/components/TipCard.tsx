@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Timer, Shield, Gem, ChevronDown, ChevronUp, Crosshair, BadgeCheck, BadgeX, Minus } from "lucide-react";
 import TeamLogo, { SportIcon } from "@/components/TeamLogo";
+import { IconTargetReal } from "@/components/icons/RealisticIcons";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useCallback, memo } from "react";
@@ -107,6 +108,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
           {/* Top row: badges */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
+              <IconTargetReal size={17} className="flex-shrink-0 opacity-90" />
               {tip.isPremium && !isSettled && (
                 <span className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-2.5 py-0.5 text-[9px] font-display font-bold uppercase tracking-wider rounded-full flex items-center gap-1 shadow-md shadow-pink-500/30">
                   <Gem className="w-2.5 h-2.5 fill-white" />

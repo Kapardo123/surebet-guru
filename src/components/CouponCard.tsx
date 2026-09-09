@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Coupon } from "@/lib/couponStorage";
 import { Ticket, Timer, Gem, Shield, Layers, BadgeCheck, BadgeX, Minus } from "lucide-react";
 import TeamLogo, { SportIcon } from "@/components/TeamLogo";
+import { IconTicketReal } from "@/components/icons/RealisticIcons";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { memo } from "react";
@@ -56,8 +57,8 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
           {/* Header */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center ring-1 ring-blue-500/20 flex-shrink-0">
-                <Ticket className="w-4 h-4 text-blue-400" />
+              <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center ring-1 ring-blue-500/25 flex-shrink-0 shadow-sm">
+                <IconTicketReal size={24} />
               </div>
               <div className="min-w-0">
                 <h3 className="font-display font-bold text-sm text-foreground truncate">{coupon.name}</h3>

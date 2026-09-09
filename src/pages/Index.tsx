@@ -5,13 +5,13 @@ import DailySpin from "@/components/DailySpin";
 import TodayHotTip from "@/components/TodayHotTip";
 import BottomNav from "@/components/BottomNav";
 import AdminLoginDialog from "@/components/AdminLoginDialog";
-import YesterdayResults from "@/components/YesterdayResults";
 import TipsCountdown from "@/components/TipsCountdown";
 import { loadTips } from "@/lib/tipsStorage";
 import { loadCoupons, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
 import { Tip } from "@/components/TipCard";
 import { Gem, Crosshair, Ticket, ArrowRightToLine, ArrowLeftFromLine, Sparkles, Timer, History } from "lucide-react";
+import { IconTargetReal, IconTicketReal, IconTrophyReal } from "@/components/icons/RealisticIcons";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import PremiumBadge from "@/components/PremiumBadge";
@@ -226,25 +226,16 @@ const Index = () => {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           <TabsList className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.06] p-1.5 w-full md:w-auto rounded-2xl shadow-lg shadow-black/10">
-            <TabsTrigger value="tips" 
+            <TabsTrigger value="tips"
                         className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:via-purple-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-pink-500/20 rounded-xl py-3 transition-all duration-300 text-white/40 hover:text-white/70">
-              <Crosshair className="w-4 h-4" />
+              <IconTargetReal size={17} />
               Single Tips
             </TabsTrigger>
-            <TabsTrigger value="coupons" 
+            <TabsTrigger value="coupons"
                         className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:via-purple-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-pink-500/20 rounded-xl py-3 transition-all duration-300 text-white/40 hover:text-white/70">
-              <Ticket className="w-4 h-4" />
+              <IconTicketReal size={17} />
               Coupons
             </TabsTrigger>
-            <Link to="/results" className="flex-1 md:flex-none">
-              <span
-                className="btn-gold flex items-center justify-center gap-2 h-full w-full font-display text-xs font-black uppercase tracking-wider rounded-xl py-3 px-4 transition-all duration-300 hover:scale-[1.02]"
-                title="Yesterday's Wins — rozstrzygnięte wygrane"
-              >
-                <History className="w-4 h-4" />
-                <span className="whitespace-nowrap">Yesterday's Wins</span>
-              </span>
-            </Link>
           </TabsList>
 
           {/* Tips Tab Content */}

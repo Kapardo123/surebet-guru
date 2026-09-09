@@ -3,11 +3,11 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 
 const APP_VERSION = {
-  version: "29.0.0",
-  build: 2900,
+  version: "30.0.0",
+  build: 3000,
   forceUpdate: false,
   releaseDate: "2026-09-07",
-  updateMessage: "New version available! v29.0.0 ✨ Yesterday admin tab (manual + AI settle), coupon editing in Queue, R8 obfuscation, fixed daily-win archiving.",
+  updateMessage: "New version available! v30.0.0 ✨ Streamlined app: Queue + countdown + Live management, realistic custom icons, R8 optimised.",
   downloadUrl: "https://play.google.com/store/apps/details?id=com.surebet.guru",
   minSupportedVersion: "10.0.0"
 };
