@@ -159,8 +159,9 @@ export const purgeExpiredTips = async (): Promise<number> => {
 
 
 export const loadTips = async (publishedOnly: boolean = true, forceRefresh: boolean = false): Promise<Tip[]> => {
-  // Najpierw trwale usun wygasle mecze (>8h) z bazy i lokalnego cache
-  await purgeExpiredTips();
+  // Purge w TLE — nie blokuje renderu tipów (widoczne od razu, sprzątanie
+  // wygasłych leci asynchronicznie).
+  purgeExpiredTips().catch(() => {});
 
   // Jeśli forceRefresh - pomijamy cache całkowicie
   const cached = forceRefresh ? [] : getCachedTips();

@@ -41,16 +41,9 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange
           {navItems.map((item) => {
             const active = isActive(item);
             const Icon = item.icon;
-            return (
-              <button
-                key={item.label}
-                onClick={() => handleClick(item)}
-                className={`relative flex-1 flex flex-col items-center gap-0.5 px-0.5 py-1.5 rounded-2xl transition-all duration-300 ${
-                  active
-                    ? "bg-gradient-to-b from-pink-500/15 to-purple-500/[0.08]"
-                    : "active:bg-white/5"
-                }`}
-              >
+            const isTab = item.path === "/" || item.path === "/#coupons";
+            const inner = (
+              <>
                 {active && (
                   <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-gradient-to-r from-pink-500 to-purple-500 shadow-[0_0_8px_rgba(236,72,153,0.8)]" />
                 )}
@@ -70,7 +63,25 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange
                 >
                   {item.label}
                 </span>
-              </button>
+              </>
+            );
+            const className = `relative flex-1 flex flex-col items-center gap-0.5 px-0.5 py-1.5 rounded-2xl transition-all duration-300 ${
+              active
+                ? "bg-gradient-to-b from-pink-500/15 to-purple-500/[0.08]"
+                : "active:bg-white/5"
+            }`;
+
+            if (isTab) {
+              return (
+                <button key={item.label} onClick={() => handleClick(item)} className={className}>
+                  {inner}
+                </button>
+              );
+            }
+            return (
+              <Link key={item.label} to={item.path} className={className}>
+                {inner}
+              </Link>
             );
           })}
 

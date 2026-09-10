@@ -7,9 +7,26 @@ const CUSTOM_TEAM_LOGOS_KEY = "custom_team_logos_v1";
 const normalize = (value: string): string =>
   value
     .toLowerCase()
+    .replace(/ł/g, "l")
+    .replace(/ø/g, "o")
+    .replace(/ß/g, "s")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]/g, "")
+    .trim();
+
+// Wersja zachowująca spacje — klucze mapy fallback ("lech poznan") mają spacje,
+// więc zwykłe `normalize` (które je usuwa) nigdy by ich nie dopasowało.
+const normalizeSpaced = (value: string): string =>
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ł/g, "l")
+    .replace(/ø/g, "o")
+    .replace(/ß/g, "s")
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 
 // Hard cap per request so one slow or hung source never stalls rendering —
@@ -108,13 +125,21 @@ export const makeQueries = (teamName: string): string[] => {
 
   // Druzyny młodzieżowe: "Lech U-19" / "Polska U19" / "under 21" — warianty
   // zapisu wieku mają priorytet, a sam bazowy klub (herb seniorów) idzie na końcu.
+  const translated = translateQuery(teamName);
   const youth = clean.match(/\b(?:u|under)[\s-]?(\d{2})\b/i);
   if (youth) {
     const age = youth[1];
     const base = clean.replace(/\b(?:u|under)[\s-]?\d{2}\b/i, "").replace(/\s+/g, " ").trim();
+    // Wariant angielski: "Polska U-19" → "Poland under-19" (Wikipedia EN)
+    if (translated) {
+      const tBase = translated.replace(/\b(?:u|under)[\s-]?\d{2}\b/i, "").replace(/\s+/g, " ").trim();
+      add(`${tBase} under-${age}`);
+      add(`${tBase} U${age}`);
+    }
     add(`${base} U${age}`);
     add(`${base} under-${age}`);
     add(teamName.trim());
+    if (translated) add(translated);
     add(base);
     return queries;
   }
@@ -124,8 +149,27 @@ export const makeQueries = (teamName: string): string[] => {
   add(`${clean} FC`);
   add(`${clean} football`);
   add(`FC ${clean}`);
+  // Angielski wariant nazwy (np. "Legia Warszawa" → "Legia Warsaw",
+  // "Polska" → "Poland") — otwiera angielskie źródła dla polskich drużyn.
+  if (translated) add(translated);
 
-  return queries.slice(0, 4);
+  return queries.slice(0, 6);
+};
+
+/** Zamienia polskie wyrazy w nazwie na angielskie (kraje/miasta) na podstawie
+ *  NAME_SYNONYMS. Zwraca null, gdy nic nie zmieniono. */
+const translateQuery = (name: string): string | null => {
+  const tokens = normalizeSpaced(name).split(" ").filter(Boolean);
+  let changed = false;
+  const out = tokens.map((t) => {
+    const syn = NAME_SYNONYMS[t];
+    if (syn && syn !== t) {
+      changed = true;
+      return syn;
+    }
+    return t;
+  });
+  return changed ? out.join(" ") : null;
 };
 
 // ---------------------------------------------------------------------------
@@ -395,8 +439,15 @@ const FALLBACK_LOGOS: Record<string, string> = {
   "kks kielce": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a8/Korona_Kielce.svg/120px-Korona_Kielce.svg.png",
 };
 
+// Znormalizowane klucze mapy (spacje zachowane, bez ogonków) — jedno źródło
+// prawdy dla dopasowania: "Lech Poznań" → "lech poznan".
+const FALLBACK_LOGOS_NORM: Record<string, string> = Object.fromEntries(
+  Object.entries(FALLBACK_LOGOS).map(([k, v]) => [normalizeSpaced(k), v]),
+);
+
 const getFallbackLogo = (teamName: string): LogoCandidate | null => {
-  const key = normalize(teamName).replace(/\s+/g, " ");
+  const key = normalizeSpaced(teamName);
+  if (!key) return null;
   if (FALLBACK_LOGOS[key]) {
     return {
       url: FALLBACK_LOGOS[key],
@@ -405,8 +456,9 @@ const getFallbackLogo = (teamName: string): LogoCandidate | null => {
       score: 200,
     };
   }
-  // Sprawdz czesciowe dopasowanie
-  for (const [mapKey, url] of Object.entries(FALLBACK_LOGOS)) {
+  // Sprawdz czesciowe dopasowanie (klucze mapy normalizujemy, żeby "Lech
+  // Poznań" trafiło w "lech poznan", a "KKS Lech Poznan" w "lech poznan").
+  for (const [mapKey, url] of Object.entries(FALLBACK_LOGOS_NORM)) {
     if (mapKey.includes(key) || key.includes(mapKey)) {
       return {
         url,
@@ -491,10 +543,21 @@ const fetchWikiSearchLogos = async (teamName: string): Promise<LogoCandidate[]> 
   const clean = teamName.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
   if (!clean || clean.length < 3) return results;
 
-  for (const lang of ["en", "pl"]) {
+  // Szukamy po polsku w PL, a po angielsku (przetłumaczona nazwa) w EN —
+  // inaczej "Polska U-19" nigdy nie trafi w "Poland national under-19 ...".
+  const translated = translateQuery(teamName);
+  const searchTerms: { lang: string; q: string }[] = [
+    { lang: "pl", q: clean },
+    { lang: "en", q: clean },
+  ];
+  if (translated && translated !== clean.toLowerCase()) {
+    searchTerms.unshift({ lang: "en", q: translated });
+  }
+
+  for (const { lang, q } of searchTerms) {
     if (wikiFamilyBlocked()) break;
     try {
-      const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(clean)}&srlimit=10&format=json&origin=*`;
+      const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&srlimit=10&format=json&origin=*`;
       const searchRes = await fetchT(searchUrl);
       if (searchRes.status === 429) { noteWiki429(); break; }
       if (!searchRes.ok) continue;
@@ -552,10 +615,19 @@ const fetchWikiPageImagesLogos = async (teamName: string): Promise<LogoCandidate
   const clean = teamName.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
   if (!clean || clean.length < 3) return results;
 
-  for (const lang of ["en", "pl"]) {
+  const translated = translateQuery(teamName);
+  const tasks: { lang: string; q: string }[] = [
+    { lang: "pl", q: clean },
+    { lang: "en", q: clean },
+  ];
+  if (translated && translated !== clean.toLowerCase()) {
+    tasks.unshift({ lang: "en", q: translated });
+  }
+
+  for (const { lang, q } of tasks) {
     if (wikiFamilyBlocked()) break;
     try {
-      const apiUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(clean)}&gsrlimit=10&prop=pageimages&piprop=thumbnail&pithumbsize=200&format=json&origin=*`;
+      const apiUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=10&prop=pageimages&piprop=thumbnail&pithumbsize=200&format=json&origin=*`;
       const res = await fetchT(apiUrl);
       if (res.status === 429) { noteWiki429(); break; }
       if (!res.ok) continue;
@@ -607,7 +679,9 @@ const fetchOpenverseLogos = async (teamName: string): Promise<LogoCandidate[]> =
   const clean = teamName.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
   if (!clean || clean.length < 3) return results;
 
+  const translated = translateQuery(teamName);
   const queries = [`${clean} logo`, `${clean} crest`];
+  if (translated) queries.push(`${translated} logo`, `${translated} crest`);
 
   for (const q of queries) {
     try {
@@ -743,10 +817,13 @@ const fetchMultiLangWikipediaLogos = async (teamName: string): Promise<LogoCandi
 
   // Jezyki z najwieksza iloscia artykulow o klubach sportowych
   const langs = ["en", "es", "fr", "de", "it", "pt", "pl"];
+  const translated = translateQuery(teamName);
 
   for (const lang of langs) {
     try {
-      const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(clean)}&limit=6&format=json&origin=*`;
+      // W angielskiej Wikipedii szukamy przetłumaczonej nazwy (Polska→Poland).
+      const query = lang === "en" && translated ? translated : clean;
+      const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=6&format=json&origin=*`;
       const searchRes = await fetchT(searchUrl);
       if (searchRes.status === 429) { noteWiki429(); break; }
       if (!searchRes.ok) continue;

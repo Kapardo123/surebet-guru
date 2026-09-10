@@ -157,6 +157,33 @@ export const updateFeaturedPickById = async (id: number, pick: FeaturedPick): Pr
   if (error) throw new Error(error.message || "Unknown Supabase error");
 };
 
+// Cache hero w localStorage — przy kolejnych wejściach prawdziwy hero pojawia
+// się NATYCHMIAST (stale-while-revalidate), bez mignięcia demo.
+const HERO_CACHE_KEY = "gsb_hero_cache_v1";
+let heroMemory: FeaturedPick | null | undefined;
+
+export const getCachedFeaturedPick = (): FeaturedPick | null => {
+  if (heroMemory !== undefined) return heroMemory;
+  try {
+    const raw = localStorage.getItem(HERO_CACHE_KEY);
+    if (!raw) { heroMemory = null; return null; }
+    const parsed = JSON.parse(raw);
+    heroMemory = parsed && typeof parsed === "object" ? parsed : null;
+    return heroMemory;
+  } catch {
+    heroMemory = null;
+    return null;
+  }
+};
+
+const setCachedFeaturedPick = (pick: FeaturedPick | null) => {
+  heroMemory = pick;
+  try {
+    if (pick) localStorage.setItem(HERO_CACHE_KEY, JSON.stringify(pick));
+    else localStorage.removeItem(HERO_CACHE_KEY);
+  } catch { /* ignore */ }
+};
+
 export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
   // Poczekalnia: bierzemy najnowszy wiersz, ktory NIE jest w kolejce
   // (queued=true znaczy "czeka na 3:00" i nie moze sie wyswietlac na stronie).
@@ -168,13 +195,16 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
 
   if (error) {
     console.error("Error loading featured pick:", error);
-    return null;
+    return getCachedFeaturedPick();
   }
 
   const row = ((data || []) as any[]).find((r: any) => r.queued !== true);
-  if (!row) return null;
+  if (!row) {
+    setCachedFeaturedPick(null);
+    return null;
+  }
 
-  return {
+  const pick: FeaturedPick = {
     id: row.id,
     league: row.league,
     kickoff: row.kickoff,
@@ -192,6 +222,8 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
     unlockFree: row.unlock_free ?? false,
     queued: false,
   };
+  setCachedFeaturedPick(pick);
+  return pick;
 };
 
 export const saveFeaturedPick = async (pick: FeaturedPick): Promise<void> => {

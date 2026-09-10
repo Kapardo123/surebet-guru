@@ -58,9 +58,12 @@ const Index = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const loadedTips = await loadTips();
-      const loadedCoupons = await loadCoupons();
-      const loadedHeroPick = await loadFeaturedPick();
+      // Równolegle — skraca czas do pierwszego renderu.
+      const [loadedTips, loadedCoupons, loadedHeroPick] = await Promise.all([
+        loadTips(),
+        loadCoupons(),
+        loadFeaturedPick(),
+      ]);
 
       // Widok strony glownej: DZISIEJSZE mecze (Warsaw). Wczorajsze znikaja
       // stad i trafiaja do zakladki "Yesterday's Results" (archiwum, cron 3:00).
@@ -136,13 +139,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-hidden">
-      {/* Synthwave glow effects - GPU composited */}
-      <div className="fixed top-0 left-0 w-[500px] h-[500px] rounded-full pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(-30%, -30%)', filter: 'blur(120px)', opacity: 0.15, willChange: 'transform' }} />
-      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] rounded-full pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', transform: 'translate(30%, 30%)', filter: 'blur(120px)', opacity: 0.15, willChange: 'transform' }} />
-      <div className="fixed top-1/2 left-1/2 w-[400px] h-[400px] rounded-full pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)', transform: 'translate(-50%, -50%)', filter: 'blur(100px)', opacity: 0.1, willChange: 'transform' }} />
+      {/* Synthwave glow effects - GPU composited (lżejsze blur = płynność) */}
+      <div className="fixed top-0 left-0 w-[380px] h-[380px] rounded-full pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(-30%, -30%)', filter: 'blur(70px)', opacity: 0.16, willChange: 'transform' }} />
+      <div className="fixed bottom-0 right-0 w-[380px] h-[380px] rounded-full pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', transform: 'translate(30%, 30%)', filter: 'blur(70px)', opacity: 0.16, willChange: 'transform' }} />
+      <div className="fixed top-1/2 left-1/2 w-[320px] h-[320px] rounded-full pointer-events-none" 
+           style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)', transform: 'translate(-50%, -50%)', filter: 'blur(60px)', opacity: 0.1, willChange: 'transform' }} />
 
       {/* Glass Header */}
       <header className="sticky top-0 z-50 backdrop-blur-2xl border-b border-white/[0.06] shadow-2xl shadow-black/40"

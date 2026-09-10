@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, memo } from "react";
 import { Flame, Play, Loader2, Gem, Shield, Crosshair, ChevronDown, Clock, Target, TrendingUp, Zap } from "lucide-react";
 import TeamLogo from "@/components/TeamLogo";
 import { motion, AnimatePresence } from "framer-motion";
-import { FeaturedPick, loadFeaturedPick } from "@/lib/featuredPickStorage";
+import { FeaturedPick, loadFeaturedPick, getCachedFeaturedPick } from "@/lib/featuredPickStorage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAdMob } from "@/hooks/useAdMob";
@@ -47,56 +47,67 @@ const useCountdown = (kickoff: string) => {
 };
 
 const TodayHotTip = () => {
-  const [pick, setPick] = useState<FeaturedPick | null>(null);
+  // Start z cache — prawdziwy hero pojawia się natychmiast, bez mignięcia demo.
+  const [pick, setPick] = useState<FeaturedPick | null>(() => getCachedFeaturedPick());
+  const [loaded, setLoaded] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const { isLoading, isRewardedAdReady, error, showRewardedAd } = useAdMob();
   const { active: isPremium } = usePremiumStatus();
 
-  const data = pick || {
-    league: "UEFA Champions League",
-    kickoff: new Date(Date.now() + 3600000 * 3).toISOString(),
-    homeTeam: "Real Madrid",
-    awayTeam: "Bayern Munich",
-    prediction: "Real Madrid Win",
-    odds: "2.15",
-    confidence: "High",
-    status: "upcoming" as const,
-  };
+  // Demo pokazujemy WYŁĄCZNIE gdy wiemy, że nie ma hero (po zakończeniu
+  // ładowania). Podczas ładowania renderujemy skeleton, nie fałszywy mecz.
+  const data = pick || (!loaded
+    ? null
+    : {
+        league: "UEFA Champions League",
+        kickoff: new Date(Date.now() + 3600000 * 3).toISOString(),
+        homeTeam: "Real Madrid",
+        awayTeam: "Bayern Munich",
+        prediction: "Real Madrid Win",
+        odds: "2.15",
+        confidence: "High",
+        status: "upcoming" as const,
+      });
 
-  const countdown = useCountdown(data.kickoff);
+  const countdown = useCountdown(data?.kickoff || "");
 
   useEffect(() => {
-    if (isPremium) {
-      setIsUnlocked(true);
-      return;
-    }
-
     loadFeaturedPick().then((featured) => {
-      if (featured) {
-        setPick(featured);
+      if (featured) setPick(featured);
+      setLoaded(true);
 
-        // Admin unlocked hero without ad — show immediately
-        if (featured.unlockFree) {
-          setIsUnlocked(true);
-          return;
-        }
+      if (!featured) return;
 
-        const currentTipId = `${featured.homeTeam}-${featured.awayTeam}-${featured.kickoff}`;
-        const savedTipId = localStorage.getItem("lastUnlockedTipId");
-        
-        if (!isPremium && savedTipId && savedTipId !== currentTipId) {
-          setIsUnlocked(false);
-          localStorage.setItem("hotTipUnlocked", "false");
-          return;
-        }
+      if (isPremium) {
+        setIsUnlocked(true);
+        return;
+      }
 
-        const savedUnlocked = localStorage.getItem("hotTipUnlocked");
-        if (savedUnlocked === "true") {
-          setIsUnlocked(true);
-        }
+      // Admin unlocked hero without ad — show immediately
+      if (featured.unlockFree) {
+        setIsUnlocked(true);
+        return;
+      }
+
+      const currentTipId = `${featured.homeTeam}-${featured.awayTeam}-${featured.kickoff}`;
+      const savedTipId = localStorage.getItem("lastUnlockedTipId");
+
+      if (!isPremium && savedTipId && savedTipId !== currentTipId) {
+        setIsUnlocked(false);
+        localStorage.setItem("hotTipUnlocked", "false");
+        return;
+      }
+
+      const savedUnlocked = localStorage.getItem("hotTipUnlocked");
+      if (savedUnlocked === "true") {
+        setIsUnlocked(true);
       }
     });
+  }, [isPremium]);
+
+  useEffect(() => {
+    if (isPremium) setIsUnlocked(true);
   }, [isPremium]);
 
   const handleWatchAd = () => {
@@ -111,49 +122,58 @@ const TodayHotTip = () => {
     }, 5000);
   };
 
+  // Podczas ładowania (brak hero w cache) — skeleton, żeby nie mignęło demo.
+  if (!data) {
+    return (
+      <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-card/60 animate-pulse">
+        <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-purple-500/40 to-transparent" />
+        <div className="p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="h-7 w-40 rounded-full bg-white/5" />
+            <div className="h-5 w-16 rounded-full bg-white/5" />
+          </div>
+          <div className="flex items-center justify-center gap-6 py-6">
+            <div className="h-12 w-24 rounded-2xl bg-white/5" />
+            <div className="h-6 w-10 rounded bg-white/5" />
+            <div className="h-12 w-24 rounded-2xl bg-white/5" />
+          </div>
+          <div className="h-16 rounded-xl bg-white/5" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       layout
       className="relative overflow-hidden rounded-2xl"
     >
-      {/* Animated background glow */}
+      {/* Statyczne poświaty (bez ciągłej animacji — płynność na telefonie) */}
       <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
-        <motion.div
-          className="absolute -top-20 -left-20 w-60 h-60 rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%)", filter: "blur(40px)" }}
-          animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        <div
+          className="absolute -top-24 -left-24 w-64 h-64 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(168,85,247,0.16) 0%, transparent 70%)" }}
         />
-        <motion.div
-          className="absolute -bottom-20 -right-20 w-60 h-60 rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(236,72,153,0.12) 0%, transparent 70%)", filter: "blur(40px)" }}
-          animate={{ x: [0, -30, 0], y: [0, 20, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        <div
+          className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(236,72,153,0.12) 0%, transparent 70%)" }}
         />
       </div>
 
       <div className="relative rounded-2xl backdrop-blur-sm border border-white/[0.08] bg-gradient-to-br from-card/80 via-purple-950/10 to-pink-950/5 shadow-2xl shadow-black/20 overflow-hidden">
-        {/* Animated top accent */}
-        <motion.div
+        {/* Górny akcent — statyczny gradient */}
+        <div
           className="h-[2px] w-full"
           style={{ background: "linear-gradient(90deg, transparent, #a855f7, #ec4899, #a855f7, transparent)" }}
-          animate={{ backgroundPosition: ["0% 50%", "200% 50%"] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
         />
 
         <div className="p-5 space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <motion.div
-              className="flex items-center gap-1.5 bg-purple-500/10 text-purple-400 px-3 py-1.5 rounded-full border border-purple-500/20"
-              animate={{ borderColor: ["rgba(168,85,247,0.2)", "rgba(236,72,153,0.3)", "rgba(168,85,247,0.2)"] }}
-              transition={{ duration: 3, repeat: Infinity }}
-            >
-              <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                <Flame className="w-3.5 h-3.5" />
-              </motion.div>
+            <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-400 px-3 py-1.5 rounded-full border border-purple-500/20">
+              <Flame className="w-3.5 h-3.5 animate-pulse" />
               <span className="text-[10px] font-display font-bold uppercase tracking-wider">Today's Hot Tip</span>
-            </motion.div>
+            </div>
             <div className="flex items-center gap-2">
               {isPremium && isUnlocked && (
                 <motion.span
@@ -179,22 +199,16 @@ const TodayHotTip = () => {
               {data.league}
             </p>
             {countdown && (
-              <motion.div
-                className="flex items-center gap-1.5 bg-white/[0.04] px-2.5 py-1 rounded-lg border border-white/[0.06]"
-                animate={countdown.expired ? { borderColor: ["rgba(239,68,68,0.3)", "rgba(239,68,68,0.6)", "rgba(239,68,68,0.3)"] } : {}}
-                transition={{ duration: 1.5, repeat: Infinity }}
+              <div
+                className={`flex items-center gap-1.5 bg-white/[0.04] px-2.5 py-1 rounded-lg border ${
+                  countdown.expired ? "border-red-500/40" : "border-white/[0.06]"
+                }`}
               >
                 <Clock className="w-3 h-3 text-white/40" />
-                <span className={`text-[11px] font-mono font-bold tabular-nums ${countdown.expired ? "text-red-400" : "text-white/60"}`}>
-                  {countdown.expired ? (
-                    <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1, repeat: Infinity }}>
-                      LIVE
-                    </motion.span>
-                  ) : (
-                    countdown.text
-                  )}
+                <span className={`text-[11px] font-mono font-bold tabular-nums ${countdown.expired ? "text-red-400 animate-pulse" : "text-white/60"}`}>
+                  {countdown.expired ? "LIVE" : countdown.text}
                 </span>
-              </motion.div>
+              </div>
             )}
           </div>
 
