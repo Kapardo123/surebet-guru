@@ -8,9 +8,9 @@ import {
 } from "@/components/icons/RealisticIcons";
 
 const navItems = [
-  { label: "Tips", icon: Crosshair, path: "/" },
-  { label: "Coupons", icon: Ticket, path: "/#coupons" },
-  { label: "Premium", icon: Gem, path: "/premium" },
+  { label: "Tips", icon: IconTargetReal, path: "/" },
+  { label: "Coupons", icon: IconTicketReal, path: "/#coupons" },
+  { label: "Premium", icon: IconGemReal, path: "/premium" },
 ];
 
 const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange?: (tab: string) => void }) => {

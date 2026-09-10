@@ -3,11 +3,11 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 
 const APP_VERSION = {
-  version: "31.0.0",
-  build: 3100,
-  forceUpdate: false,
+  version: "32.0.0",
+  build: 3200,
+  forceUpdate: true,
   releaseDate: "2026-09-10",
-  updateMessage: "New version available! v31.0.0 ✨ Startup crash fix (ProGuard hardening for Capacitor bridge).",
+  updateMessage: "New version available! v32.0.0 ✨ CRITICAL: fixed startup crash (missing icon reference). Please update.",
   downloadUrl: "https://play.google.com/store/apps/details?id=com.surebet.guru",
   minSupportedVersion: "10.0.0"
 };

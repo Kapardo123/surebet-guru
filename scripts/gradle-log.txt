@@ -103,9 +103,9 @@ The Kotlin plugin was loaded in the following projects: ':capacitor-community-ad
 > Task :capacitor-community-admob:generateReleaseAssets UP-TO-DATE
 > Task :capacitor-community-admob:mergeReleaseAssets UP-TO-DATE
 > Task :capacitor-cordova-android-plugins:mergeReleaseShaders
-> Task :capacitor-cordova-android-plugins:parseReleaseLocalResources
 > Task :capacitor-cordova-android-plugins:compileReleaseShaders NO-SOURCE
 > Task :capacitor-cordova-android-plugins:generateReleaseAssets UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:parseReleaseLocalResources
 > Task :capacitor-cordova-android-plugins:mergeReleaseAssets
 > Task :capacitor-push-notifications:mergeReleaseShaders UP-TO-DATE
 > Task :capacitor-push-notifications:compileReleaseShaders NO-SOURCE
@@ -157,8 +157,8 @@ The Kotlin plugin was loaded in the following projects: ':capacitor-community-ad
 > Task :capacitor-android:bundleLibRuntimeToJarRelease UP-TO-DATE
 > Task :capacitor-community-admob:bundleLibRuntimeToJarRelease UP-TO-DATE
 > Task :capacitor-push-notifications:bundleLibRuntimeToJarRelease UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:bundleLibRuntimeToJarRelease
 > Task :revenuecat-purchases-capacitor:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:bundleLibRuntimeToJarRelease
 > Task :app:extractProguardFiles UP-TO-DATE
 > Task :app:processReleaseJavaRes NO-SOURCE
 > Task :capacitor-android:processReleaseJavaRes NO-SOURCE
@@ -178,8 +178,8 @@ The Kotlin plugin was loaded in the following projects: ':capacitor-community-ad
 > Task :capacitor-cordova-android-plugins:mergeReleaseJniLibFolders
 > Task :capacitor-cordova-android-plugins:mergeReleaseNativeLibs NO-SOURCE
 > Task :capacitor-push-notifications:mergeReleaseJniLibFolders UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:copyReleaseJniLibsProjectOnly
 > Task :capacitor-push-notifications:mergeReleaseNativeLibs NO-SOURCE
+> Task :capacitor-cordova-android-plugins:copyReleaseJniLibsProjectOnly
 > Task :capacitor-push-notifications:copyReleaseJniLibsProjectOnly UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:mergeReleaseJniLibFolders UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:mergeReleaseNativeLibs NO-SOURCE
@@ -196,15 +196,15 @@ The Kotlin plugin was loaded in the following projects: ':capacitor-community-ad
 > Task :capacitor-android:prepareLintJarForPublish UP-TO-DATE
 > Task :capacitor-community-admob:createFullJarRelease UP-TO-DATE
 > Task :capacitor-community-admob:extractProguardFiles UP-TO-DATE
-> Task :app:processReleaseResources
 > Task :capacitor-community-admob:generateReleaseLintModel UP-TO-DATE
-> Task :app:compileReleaseJavaWithJavac UP-TO-DATE
-> Task :app:expandReleaseArtProfileWildcards UP-TO-DATE
-> Task :app:mergeReleaseGeneratedProguardFiles UP-TO-DATE
 > Task :capacitor-community-admob:prepareLintJarForPublish UP-TO-DATE
 > Task :capacitor-cordova-android-plugins:createFullJarRelease
 > Task :capacitor-cordova-android-plugins:extractProguardFiles
+> Task :app:processReleaseResources
 > Task :capacitor-cordova-android-plugins:generateReleaseLintModel
+> Task :app:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :app:expandReleaseArtProfileWildcards UP-TO-DATE
+> Task :app:mergeReleaseGeneratedProguardFiles UP-TO-DATE
 > Task :capacitor-cordova-android-plugins:prepareLintJarForPublish UP-TO-DATE
 > Task :capacitor-push-notifications:createFullJarRelease UP-TO-DATE
 > Task :capacitor-push-notifications:extractProguardFiles UP-TO-DATE
@@ -271,12 +271,12 @@ The Kotlin plugin was loaded in the following projects: ':capacitor-community-ad
 > Task :revenuecat-purchases-capacitor:writeReleaseLintModelMetadata UP-TO-DATE
 > Task :capacitor-android:generateReleaseLintVitalModel UP-TO-DATE
 > Task :capacitor-community-admob:generateReleaseLintVitalModel UP-TO-DATE
-> Task :app:bundleReleaseResources
 > Task :capacitor-cordova-android-plugins:generateReleaseLintVitalModel
 > Task :capacitor-push-notifications:generateReleaseLintVitalModel UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:generateReleaseLintVitalModel UP-TO-DATE
 > Task :app:parseReleaseIntegrityConfig UP-TO-DATE
 > Task :app:validateSigningRelease UP-TO-DATE
+> Task :app:bundleReleaseResources
 > Task :capacitor-cordova-android-plugins:lintVitalAnalyzeRelease
 > Task :app:minifyReleaseWithR8
 > Task :app:lintVitalAnalyzeRelease
@@ -985,6 +985,6 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 
-BUILD SUCCESSFUL in 4m 18s
+BUILD SUCCESSFUL in 3m 38s
 232 actionable tasks: 46 executed, 186 up-to-date
 GRADLE_EXIT_CODE:0 
