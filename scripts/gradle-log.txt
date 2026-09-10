@@ -24,7 +24,7 @@ The Kotlin plugin was loaded in the following projects: ':capacitor-community-ad
 > Task :capacitor-community-admob:processReleaseNavigationResources UP-TO-DATE
 > Task :capacitor-cordova-android-plugins:preBuild UP-TO-DATE
 > Task :capacitor-cordova-android-plugins:preReleaseBuild UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:processReleaseNavigationResources UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:processReleaseNavigationResources
 > Task :capacitor-push-notifications:preBuild UP-TO-DATE
 > Task :capacitor-push-notifications:preReleaseBuild UP-TO-DATE
 > Task :capacitor-push-notifications:processReleaseNavigationResources UP-TO-DATE
@@ -41,49 +41,49 @@ The Kotlin plugin was loaded in the following projects: ':capacitor-community-ad
 > Task :capacitor-community-admob:generateReleaseResValues UP-TO-DATE
 > Task :capacitor-community-admob:generateReleaseResources UP-TO-DATE
 > Task :capacitor-community-admob:packageReleaseResources UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:generateReleaseResValues UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:generateReleaseResources UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:packageReleaseResources UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:generateReleaseResValues
+> Task :capacitor-cordova-android-plugins:generateReleaseResources
+> Task :capacitor-cordova-android-plugins:packageReleaseResources
 > Task :capacitor-push-notifications:generateReleaseResValues UP-TO-DATE
 > Task :capacitor-push-notifications:generateReleaseResources UP-TO-DATE
 > Task :capacitor-push-notifications:packageReleaseResources UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:generateReleaseResValues UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:generateReleaseResources UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:packageReleaseResources UP-TO-DATE
-> Task :app:mapReleaseSourceSetPaths
+> Task :app:mapReleaseSourceSetPaths UP-TO-DATE
 > Task :app:generateReleaseResources UP-TO-DATE
-> Task :app:createReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :app:mergeReleaseResources UP-TO-DATE
+> Task :app:createReleaseCompatibleScreenManifests
 > Task :app:extractDeepLinksRelease UP-TO-DATE
 > Task :capacitor-android:extractDeepLinksRelease UP-TO-DATE
 > Task :capacitor-android:processReleaseManifest UP-TO-DATE
 > Task :capacitor-community-admob:extractDeepLinksRelease UP-TO-DATE
 > Task :capacitor-community-admob:processReleaseManifest UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:extractDeepLinksRelease UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:processReleaseManifest UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:extractDeepLinksRelease
 > Task :capacitor-push-notifications:extractDeepLinksRelease UP-TO-DATE
 > Task :capacitor-push-notifications:processReleaseManifest UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:extractDeepLinksRelease UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:processReleaseManifest UP-TO-DATE
-> Task :app:processReleaseMainManifest UP-TO-DATE
-> Task :app:processReleaseManifest UP-TO-DATE
-> Task :app:processApplicationManifestReleaseForBundle
 > Task :capacitor-android:writeReleaseAarMetadata UP-TO-DATE
 > Task :capacitor-community-admob:writeReleaseAarMetadata UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:writeReleaseAarMetadata UP-TO-DATE
 > Task :capacitor-push-notifications:writeReleaseAarMetadata UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:writeReleaseAarMetadata UP-TO-DATE
-> Task :app:checkReleaseAarMetadata UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:writeReleaseAarMetadata
 > Task :app:packageReleaseResources UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:processReleaseManifest
+> Task :app:checkReleaseAarMetadata UP-TO-DATE
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:processApplicationManifestReleaseForBundle
 > Task :app:parseReleaseLocalResources UP-TO-DATE
-> Task :app:processReleaseManifestForPackage UP-TO-DATE
 > Task :capacitor-android:compileReleaseLibraryResources UP-TO-DATE
 > Task :capacitor-android:parseReleaseLocalResources UP-TO-DATE
 > Task :capacitor-android:generateReleaseRFile UP-TO-DATE
 > Task :capacitor-community-admob:compileReleaseLibraryResources UP-TO-DATE
+> Task :app:processReleaseManifestForPackage
 > Task :capacitor-community-admob:parseReleaseLocalResources UP-TO-DATE
 > Task :capacitor-community-admob:generateReleaseRFile UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:parseReleaseLocalResources UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:generateReleaseRFile UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:compileReleaseLibraryResources
 > Task :capacitor-push-notifications:compileReleaseLibraryResources UP-TO-DATE
 > Task :capacitor-push-notifications:parseReleaseLocalResources UP-TO-DATE
 > Task :capacitor-push-notifications:generateReleaseRFile UP-TO-DATE
@@ -102,10 +102,11 @@ The Kotlin plugin was loaded in the following projects: ':capacitor-community-ad
 > Task :capacitor-community-admob:compileReleaseShaders NO-SOURCE
 > Task :capacitor-community-admob:generateReleaseAssets UP-TO-DATE
 > Task :capacitor-community-admob:mergeReleaseAssets UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:mergeReleaseShaders UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:mergeReleaseShaders
+> Task :capacitor-cordova-android-plugins:parseReleaseLocalResources
 > Task :capacitor-cordova-android-plugins:compileReleaseShaders NO-SOURCE
 > Task :capacitor-cordova-android-plugins:generateReleaseAssets UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:mergeReleaseAssets UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:mergeReleaseAssets
 > Task :capacitor-push-notifications:mergeReleaseShaders UP-TO-DATE
 > Task :capacitor-push-notifications:compileReleaseShaders NO-SOURCE
 > Task :capacitor-push-notifications:generateReleaseAssets UP-TO-DATE
@@ -114,8 +115,8 @@ The Kotlin plugin was loaded in the following projects: ':capacitor-community-ad
 > Task :revenuecat-purchases-capacitor:compileReleaseShaders NO-SOURCE
 > Task :revenuecat-purchases-capacitor:generateReleaseAssets UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:mergeReleaseAssets UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:compileReleaseLibraryResources
-> Task :app:mergeReleaseAssets UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:generateReleaseRFile
+> Task :app:mergeReleaseAssets
 > Task :capacitor-android:javaPreCompileRelease UP-TO-DATE
 > Task :capacitor-android:compileReleaseJavaWithJavac UP-TO-DATE
 > Task :capacitor-android:bundleLibCompileToJarRelease UP-TO-DATE
@@ -137,27 +138,26 @@ The Kotlin plugin was loaded in the following projects: ':capacitor-community-ad
 > Task :revenuecat-purchases-capacitor:exportReleaseConsumerProguardFiles UP-TO-DATE
 > Task :capacitor-android:mergeReleaseGeneratedProguardFiles UP-TO-DATE
 > Task :capacitor-android:exportReleaseConsumerProguardFiles UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:javaPreCompileRelease UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:javaPreCompileRelease
+> Task :app:checkReleaseDuplicateClasses UP-TO-DATE
 > Task :capacitor-cordova-android-plugins:compileReleaseJavaWithJavac NO-SOURCE
 > Task :capacitor-cordova-android-plugins:mergeReleaseGeneratedProguardFiles UP-TO-DATE
 > Task :capacitor-cordova-android-plugins:exportReleaseConsumerProguardFiles UP-TO-DATE
-> Task :app:mergeReleaseResources
-> Task :app:checkReleaseDuplicateClasses UP-TO-DATE
 > Task :app:javaPreCompileRelease UP-TO-DATE
 > Task :capacitor-community-admob:bundleLibCompileToJarRelease UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:bundleLibCompileToJarRelease UP-TO-DATE
 > Task :capacitor-push-notifications:bundleLibCompileToJarRelease UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:bundleLibCompileToJarRelease UP-TO-DATE
 > Task :capacitor-android:prepareReleaseArtProfile UP-TO-DATE
 > Task :capacitor-community-admob:prepareReleaseArtProfile UP-TO-DATE
 > Task :capacitor-cordova-android-plugins:prepareReleaseArtProfile UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:bundleLibCompileToJarRelease
 > Task :capacitor-push-notifications:prepareReleaseArtProfile UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:prepareReleaseArtProfile UP-TO-DATE
 > Task :app:mergeReleaseArtProfile UP-TO-DATE
 > Task :capacitor-android:bundleLibRuntimeToJarRelease UP-TO-DATE
 > Task :capacitor-community-admob:bundleLibRuntimeToJarRelease UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:bundleLibRuntimeToJarRelease UP-TO-DATE
 > Task :capacitor-push-notifications:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:bundleLibRuntimeToJarRelease
 > Task :revenuecat-purchases-capacitor:bundleLibRuntimeToJarRelease UP-TO-DATE
 > Task :app:extractProguardFiles UP-TO-DATE
 > Task :app:processReleaseJavaRes NO-SOURCE
@@ -175,10 +175,10 @@ The Kotlin plugin was loaded in the following projects: ':capacitor-community-ad
 > Task :capacitor-community-admob:mergeReleaseJniLibFolders UP-TO-DATE
 > Task :capacitor-community-admob:mergeReleaseNativeLibs NO-SOURCE
 > Task :capacitor-community-admob:copyReleaseJniLibsProjectOnly UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:mergeReleaseJniLibFolders
 > Task :capacitor-cordova-android-plugins:mergeReleaseNativeLibs NO-SOURCE
-> Task :capacitor-cordova-android-plugins:copyReleaseJniLibsProjectOnly UP-TO-DATE
 > Task :capacitor-push-notifications:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:copyReleaseJniLibsProjectOnly
 > Task :capacitor-push-notifications:mergeReleaseNativeLibs NO-SOURCE
 > Task :capacitor-push-notifications:copyReleaseJniLibsProjectOnly UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:mergeReleaseJniLibFolders UP-TO-DATE
@@ -196,11 +196,15 @@ The Kotlin plugin was loaded in the following projects: ':capacitor-community-ad
 > Task :capacitor-android:prepareLintJarForPublish UP-TO-DATE
 > Task :capacitor-community-admob:createFullJarRelease UP-TO-DATE
 > Task :capacitor-community-admob:extractProguardFiles UP-TO-DATE
+> Task :app:processReleaseResources
 > Task :capacitor-community-admob:generateReleaseLintModel UP-TO-DATE
+> Task :app:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :app:expandReleaseArtProfileWildcards UP-TO-DATE
+> Task :app:mergeReleaseGeneratedProguardFiles UP-TO-DATE
 > Task :capacitor-community-admob:prepareLintJarForPublish UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:createFullJarRelease UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:extractProguardFiles UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:generateReleaseLintModel UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:createFullJarRelease
+> Task :capacitor-cordova-android-plugins:extractProguardFiles
+> Task :capacitor-cordova-android-plugins:generateReleaseLintModel
 > Task :capacitor-cordova-android-plugins:prepareLintJarForPublish UP-TO-DATE
 > Task :capacitor-push-notifications:createFullJarRelease UP-TO-DATE
 > Task :capacitor-push-notifications:extractProguardFiles UP-TO-DATE
@@ -210,6 +214,7 @@ The Kotlin plugin was loaded in the following projects: ':capacitor-community-ad
 > Task :revenuecat-purchases-capacitor:extractProguardFiles UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:generateReleaseLintModel UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:prepareLintJarForPublish UP-TO-DATE
+> Task :app:generateReleaseLintVitalReportModel
 > Task :capacitor-community-admob:checkReleaseAarMetadata UP-TO-DATE
 > Task :capacitor-community-admob:stripReleaseDebugSymbols NO-SOURCE
 > Task :capacitor-community-admob:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
@@ -246,40 +251,35 @@ The Kotlin plugin was loaded in the following projects: ':capacitor-community-ad
 > Task :capacitor-android:mergeReleaseJavaResource UP-TO-DATE
 > Task :capacitor-android:syncReleaseLibJars UP-TO-DATE
 > Task :capacitor-android:bundleReleaseLocalLintAar UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:checkReleaseAarMetadata UP-TO-DATE
 > Task :capacitor-cordova-android-plugins:stripReleaseDebugSymbols NO-SOURCE
-> Task :capacitor-cordova-android-plugins:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:copyReleaseJniLibsProjectAndLocalJars
 > Task :capacitor-cordova-android-plugins:extractDeepLinksForAarRelease UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:extractReleaseAnnotations UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:checkReleaseAarMetadata
+> Task :capacitor-cordova-android-plugins:extractReleaseAnnotations
 > Task :capacitor-cordova-android-plugins:mergeReleaseConsumerProguardFiles UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:mergeReleaseJavaResource UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:syncReleaseLibJars UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:bundleReleaseLocalLintAar UP-TO-DATE
 > Task :capacitor-android:lintVitalAnalyzeRelease UP-TO-DATE
 > Task :capacitor-android:writeReleaseLintModelMetadata UP-TO-DATE
 > Task :capacitor-community-admob:lintVitalAnalyzeRelease UP-TO-DATE
 > Task :capacitor-community-admob:writeReleaseLintModelMetadata UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:lintVitalAnalyzeRelease UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:mergeReleaseJavaResource
+> Task :capacitor-cordova-android-plugins:syncReleaseLibJars
+> Task :capacitor-cordova-android-plugins:bundleReleaseLocalLintAar
+> Task :capacitor-cordova-android-plugins:writeReleaseLintModelMetadata
 > Task :capacitor-push-notifications:lintVitalAnalyzeRelease UP-TO-DATE
 > Task :capacitor-push-notifications:writeReleaseLintModelMetadata UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:lintVitalAnalyzeRelease UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:writeReleaseLintModelMetadata UP-TO-DATE
 > Task :capacitor-android:generateReleaseLintVitalModel UP-TO-DATE
 > Task :capacitor-community-admob:generateReleaseLintVitalModel UP-TO-DATE
-> Task :capacitor-cordova-android-plugins:generateReleaseLintVitalModel UP-TO-DATE
+> Task :app:bundleReleaseResources
+> Task :capacitor-cordova-android-plugins:generateReleaseLintVitalModel
 > Task :capacitor-push-notifications:generateReleaseLintVitalModel UP-TO-DATE
 > Task :revenuecat-purchases-capacitor:generateReleaseLintVitalModel UP-TO-DATE
 > Task :app:parseReleaseIntegrityConfig UP-TO-DATE
 > Task :app:validateSigningRelease UP-TO-DATE
-> Task :app:processReleaseResources
-> Task :app:compileReleaseJavaWithJavac UP-TO-DATE
-> Task :app:expandReleaseArtProfileWildcards UP-TO-DATE
-> Task :app:mergeReleaseGeneratedProguardFiles UP-TO-DATE
-> Task :app:generateReleaseLintVitalReportModel
-> Task :app:bundleReleaseResources
-> Task :app:lintVitalAnalyzeRelease
+> Task :capacitor-cordova-android-plugins:lintVitalAnalyzeRelease
 > Task :app:minifyReleaseWithR8
+> Task :app:lintVitalAnalyzeRelease
 > Task :app:lintVitalReportRelease
 > Task :app:lintVitalRelease
 
@@ -970,7 +970,7 @@ WARNING: C:\Users\Sprzetowo\.gradle\caches\modules-2\files-2.1\com.amazon.device
 WARNING: C:\Users\Sprzetowo\.gradle\caches\modules-2\files-2.1\com.amazon.device\amazon-appstore-sdk\3.0.5\cb046867a6d127f404780c49287e63177e960304\amazon-appstore-sdk-3.0.5.jar: R8: Expected stack map table for method with non-linear control flow. In later version of R8, the method may be assumed not reachable.
 
 > Task :app:buildReleasePreBundle
-> Task :app:compileReleaseArtProfile
+> Task :app:compileReleaseArtProfile UP-TO-DATE
 > Task :app:packageReleaseBundle
 > Task :app:signReleaseBundle
 > Task :app:produceReleaseBundleIdeListingFile
@@ -985,6 +985,6 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 
-BUILD SUCCESSFUL in 5m 45s
-232 actionable tasks: 16 executed, 216 up-to-date
+BUILD SUCCESSFUL in 4m 18s
+232 actionable tasks: 46 executed, 186 up-to-date
 GRADLE_EXIT_CODE:0 
