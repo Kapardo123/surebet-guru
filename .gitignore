@@ -28,3 +28,4 @@ dist-ssr
 # Local tooling / Supabase CLI state
 .claude/
 supabase/.temp/
+.vite/

@@ -80,6 +80,15 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    // Never scan the Android build output or dist — the minified bundles there
+    // contain optional `require()` calls (e.g. @emotion/is-prop-valid) that
+    // would otherwise break the dev dependency scanner.
+    watch: {
+      ignored: ["**/android/**", "**/dist/**", "**/.git/**", "**/supabase/**"],
+    },
+  },
+  optimizeDeps: {
+    entries: ["index.html"],
   },
   plugins: [
     react(),
