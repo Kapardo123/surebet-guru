@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const APP_VERSION = {
-  version: "34.0.0",
-  build: 3400,
+  version: "36.0.0",
+  build: 3600,
   forceUpdate: false,
-  releaseDate: "2026-09-12",
-  updateMessage: "New version available! v34.0.0 ✨ Refreshed look (Evolve Neon), smoother splash & wheel, native-feeling filters, pull-to-refresh, premium fixes.",
+  releaseDate: "2026-09-13",
+  updateMessage: "New version available! v36.0.0 ✨ Premium fixes (7-day plan, day stacking), hidden Android navigation bar, and Google Play size optimization.",
   downloadUrl: "https://play.google.com/store/apps/details?id=com.surebet.guru",
   minSupportedVersion: "10.0.0",
 };

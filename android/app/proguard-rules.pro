@@ -1,54 +1,36 @@
-# --- Capacitor core: bridge, reflection, annotations ---
--keep class com.getcapacitor.** { *; }
--keep class com.getcapacitor.annotation.** { *; }
--keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
--keep class * extends com.getcapacitor.Plugin { *; }
+# Keep the WebView bridge surface only. Capacitor ships its own consumer rules
+# (node_modules/@capacitor/android/capacitor/proguard-rules.pro) that already
+# keep @CapacitorPlugin classes, com.getcapacitor.Plugin subclasses and Cordova
+# plugins. Blanket `-keep class <library>.** { *; }` would freeze large parts of
+# the DEX and make Google Play flag the app for low R8 optimization/shrinking.
+
+-keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations,AnnotationDefault,Signature,InnerClasses,EnclosingMethod,SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+
+# Capacitor plugins (mirrors the consumer rules — explicit and safe)
+-keep @com.getcapacitor.annotation.CapacitorPlugin public class * {
+    @com.getcapacitor.annotation.PermissionCallback <methods>;
+    @com.getcapacitor.annotation.ActivityCallback <methods>;
+    @com.getcapacitor.annotation.Permission <methods>;
+    @com.getcapacitor.PluginMethod public <methods>;
+}
+-keep public class * extends com.getcapacitor.Plugin { *; }
+-keep public class * extends org.apache.cordova.* { public <methods>; public <fields>; }
+
+# WebView JS bridge entry points (called by name from JavaScript)
 -keepclassmembers class * {
     @android.webkit.JavascriptInterface <methods>;
 }
--keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations,AnnotationDefault,Signature,InnerClasses,EnclosingMethod
 
-# --- Capacitor official plugins (@capacitor/* -> com.capacitorjs.*) ---
--keep class com.capacitorjs.** { *; }
-
-# --- Capacitor community plugins ---
--keep class com.getcapacitor.community.** { *; }
-
-# --- Capacitor Cordova compat layer ---
--keep class org.apache.cordova.** { *; }
--keep class com.capacitor.cordova.** { *; }
+# Third-party SDKs reference optional classes reflectively. These only silence
+# R8 (they do not reduce optimization/shrinking/obfuscation).
+-dontwarn com.getcapacitor.**
+-dontwarn com.capacitorjs.**
+-dontwarn com.getcapacitor.community.**
 -dontwarn org.apache.cordova.**
-
-# --- RevenueCat ---
--keep class com.revenuecat.** { *; }
 -dontwarn com.revenuecat.**
-
-# --- Google Play Services / AdMob ---
--keep class com.google.android.gms.ads.** { *; }
--keep class com.google.android.gms.internal.** { *; }
 -dontwarn com.google.android.gms.**
-
-# --- Firebase Messaging ---
--keep class com.google.firebase.messaging.** { *; }
 -dontwarn com.google.firebase.**
-
-# --- AndroidX ---
--keep class androidx.core.app.NotificationCompat { *; }
-
-# --- Kotlin coroutines ---
 -dontwarn kotlinx.coroutines.**
--keepclassmembers class kotlinx.coroutines.** { *; }
-
-# --- OkHttp / Okio ---
 -dontwarn okhttp3.**
 -dontwarn okio.**
--keepclassmembers class okhttp3.** { *; }
-
-# Readable crash reports
--keepattributes SourceFile,LineNumberTable
--renamesourcefileattribute SourceFile
-
-# Generic safety: keep all annotated WebView entry points
--keepclasseswithmembers class * {
-    @android.webkit.JavascriptInterface <methods>;
-}
