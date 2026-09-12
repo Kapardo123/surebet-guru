@@ -126,7 +126,7 @@ const TodayHotTip = () => {
   if (!data) {
     return (
       <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-card/60 animate-pulse">
-        <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-purple-500/40 to-transparent" />
+        <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-pink-500/40 to-transparent" />
         <div className="p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div className="h-7 w-40 rounded-full bg-white/5" />
@@ -148,31 +148,28 @@ const TodayHotTip = () => {
       layout
       className="relative overflow-hidden rounded-2xl"
     >
-      {/* Statyczne poświaty (bez ciągłej animacji — płynność na telefonie) */}
+      {/* Subtelne, statyczne tło (bez poświat na treści) */}
       <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
         <div
           className="absolute -top-24 -left-24 w-64 h-64 rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(168,85,247,0.16) 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, rgba(236,72,153,0.10) 0%, transparent 70%)" }}
         />
         <div
           className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(236,72,153,0.12) 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 70%)" }}
         />
       </div>
 
-      <div className="relative rounded-2xl backdrop-blur-sm border border-white/[0.08] bg-gradient-to-br from-card/80 via-purple-950/10 to-pink-950/5 shadow-2xl shadow-black/20 overflow-hidden">
-        {/* Górny akcent — statyczny gradient */}
-        <div
-          className="h-[2px] w-full"
-          style={{ background: "linear-gradient(90deg, transparent, #a855f7, #ec4899, #a855f7, transparent)" }}
-        />
+      <div className="relative rounded-2xl border border-white/[0.08] bg-card/90 shadow-2xl shadow-black/30 overflow-hidden">
+        {/* Górny akcent — pink (akcent marki) */}
+        <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-pink-500 to-transparent"         />
 
-        <div className="p-5 space-y-4">
+        <div className="p-4 space-y-3.5">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-400 px-3 py-1.5 rounded-full border border-purple-500/20">
-              <Flame className="w-3.5 h-3.5 animate-pulse" />
-              <span className="text-[10px] font-display font-bold uppercase tracking-wider">Today's Hot Tip</span>
+            <div className="flex items-center gap-1.5 bg-pink-500/10 text-pink-400 px-3 py-1.5 rounded-full border border-pink-500/25">
+              <Flame className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-display font-bold uppercase tracking-wider">Today's Hot Tip</span>
             </div>
             <div className="flex items-center gap-2">
               {isPremium && isUnlocked && (
@@ -195,17 +192,17 @@ const TodayHotTip = () => {
 
           {/* League + Countdown */}
           <div className="flex items-center justify-between">
-            <p className="text-white/30 text-[10px] uppercase tracking-[0.2em] font-medium">
+            <p className="text-white/55 text-[11px] uppercase tracking-[0.15em] font-medium">
               {data.league}
             </p>
             {countdown && (
               <div
                 className={`flex items-center gap-1.5 bg-white/[0.04] px-2.5 py-1 rounded-lg border ${
-                  countdown.expired ? "border-red-500/40" : "border-white/[0.06]"
+                  countdown.expired ? "border-red-500/40" : "border-white/[0.08]"
                 }`}
               >
-                <Clock className="w-3 h-3 text-white/40" />
-                <span className={`text-[11px] font-mono font-bold tabular-nums ${countdown.expired ? "text-red-400 animate-pulse" : "text-white/60"}`}>
+                <Clock className="w-3 h-3 text-white/55" />
+                <span className={`text-[11px] font-mono font-bold tabular-nums ${countdown.expired ? "text-red-400" : "text-white/75"}`}>
                   {countdown.expired ? "LIVE" : countdown.text}
                 </span>
               </div>
@@ -220,12 +217,9 @@ const TodayHotTip = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-purple-500/10 blur-lg" />
-                <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-purple-500/10 to-transparent flex items-center justify-center ring-2 ring-purple-500/15">
+              <div className="relative w-14 h-14 rounded-full bg-white/[0.04] flex items-center justify-center ring-1 ring-white/10">
                   <TeamLogo teamName={data.homeTeam} logoUrl={data.homeTeamLogo} size={32} />
                 </div>
-              </div>
               <span className="font-display text-sm font-bold text-foreground text-center truncate w-full">{data.homeTeam}</span>
             </motion.div>
 
@@ -246,12 +240,9 @@ const TodayHotTip = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-pink-500/10 blur-lg" />
-                <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-pink-500/10 to-transparent flex items-center justify-center ring-2 ring-pink-500/15">
+              <div className="relative w-14 h-14 rounded-full bg-pink-500/[0.06] flex items-center justify-center ring-1 ring-pink-500/20">
                   <TeamLogo teamName={data.awayTeam} logoUrl={data.awayTeamLogo} size={32} />
                 </div>
-              </div>
               <span className="font-display text-sm font-bold text-foreground text-center truncate w-full">{data.awayTeam}</span>
             </motion.div>
           </div>
@@ -267,26 +258,26 @@ const TodayHotTip = () => {
                 className="space-y-3"
               >
                 {/* Locked preview */}
-                <div className="rounded-xl px-4 py-3 border border-white/[0.06] bg-white/[0.02]">
-                  <div className="flex items-center justify-center gap-2 text-white/40 mb-3">
+                <div className="rounded-xl px-4 py-3 border border-white/[0.08] bg-white/[0.02]">
+                  <div className="flex items-center justify-center gap-2 text-white/60 mb-3">
                     <Shield className="w-4 h-4" />
-                    <span className="font-display text-[10px] font-bold uppercase tracking-wider">Premium Content Locked</span>
+                    <span className="font-display text-[11px] font-bold uppercase tracking-wider">Premium Content Locked</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 opacity-30">
+                  <div className="grid grid-cols-3 gap-2 opacity-40">
                     <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
-                      <Target className="w-3.5 h-3.5 text-white/40 mx-auto mb-1" />
-                      <p className="text-[9px] text-white/40 uppercase">Prediction</p>
-                      <p className="text-[10px] font-bold text-white">???</p>
+                      <Target className="w-3.5 h-3.5 text-white/50 mx-auto mb-1" />
+                      <p className="text-[10px] text-white/55 uppercase">Prediction</p>
+                      <p className="text-[11px] font-bold text-white">???</p>
                     </div>
                     <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
-                      <TrendingUp className="w-3.5 h-3.5 text-white/40 mx-auto mb-1" />
-                      <p className="text-[9px] text-white/40 uppercase">Odds</p>
-                      <p className="text-[10px] font-bold text-white">?.??</p>
+                      <TrendingUp className="w-3.5 h-3.5 text-white/50 mx-auto mb-1" />
+                      <p className="text-[10px] text-white/55 uppercase">Odds</p>
+                      <p className="text-[11px] font-bold text-white">?.??</p>
                     </div>
                     <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
-                      <Zap className="w-3.5 h-3.5 text-white/40 mx-auto mb-1" />
-                      <p className="text-[9px] text-white/40 uppercase">Confidence</p>
-                      <p className="text-[10px] font-bold text-white">???</p>
+                      <Zap className="w-3.5 h-3.5 text-white/50 mx-auto mb-1" />
+                      <p className="text-[10px] text-white/55 uppercase">Confidence</p>
+                      <p className="text-[11px] font-bold text-white">???</p>
                     </div>
                   </div>
                 </div>
@@ -295,11 +286,9 @@ const TodayHotTip = () => {
                 <Button
                   onClick={handleWatchAd}
                   disabled={isLoading || !isRewardedAdReady}
-                  className="w-full h-11 font-bold uppercase tracking-wider text-xs text-white rounded-xl relative overflow-hidden group transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
-                  style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+                  className="w-full h-11 font-bold uppercase tracking-wider text-xs text-white rounded-xl bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-500 hover:to-pink-600 transition-transform active:scale-[0.98] disabled:opacity-50"
                 >
-                  <span className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-white/10 to-purple-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                  <span className="relative flex items-center gap-2">
+                  <span className="flex items-center gap-2">
                     {isLoading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
@@ -309,8 +298,8 @@ const TodayHotTip = () => {
                   </span>
                 </Button>
 
-                {error && <p className="text-red-400/70 text-[10px] text-center">{error}</p>}
-                <p className="text-[9px] text-white/25 text-center">~30 seconds · No purchase necessary</p>
+                {error && <p className="text-red-400/80 text-[11px] text-center">{error}</p>}
+                <p className="text-[11px] text-white/45 text-center">~30 seconds · No purchase necessary</p>
               </motion.div>
             ) : (
               <motion.div
@@ -323,30 +312,30 @@ const TodayHotTip = () => {
                 {/* Stats grid - interactive */}
                 <div className="grid grid-cols-3 gap-2">
                   <motion.div
-                    className="rounded-xl px-3 py-3 border border-white/[0.06] bg-white/[0.02] text-center cursor-default group/stat hover:border-purple-500/20 hover:bg-purple-500/5 transition-all"
-                    whileHover={{ scale: 1.03 }}
+                    className="rounded-xl px-3 py-3 border border-white/[0.08] bg-white/[0.02] text-center cursor-default"
+                    whileHover={{ scale: 1.02 }}
                     transition={{ type: "spring", stiffness: 400 }}
                   >
-                    <Target className="w-4 h-4 text-purple-400/50 mx-auto mb-1.5 group-hover/stat:text-purple-400 transition-colors" />
-                    <p className="text-[8px] text-white/30 uppercase tracking-wider mb-1">Prediction</p>
+                    <Target className="w-4 h-4 text-white/50 mx-auto mb-1.5" />
+                    <p className="text-[10px] text-white/50 uppercase tracking-wider mb-1">Prediction</p>
                     <p className="font-display font-bold text-foreground text-xs">{data.prediction}</p>
                   </motion.div>
                   <motion.div
-                    className="rounded-xl px-3 py-3 border border-purple-500/10 bg-purple-500/5 text-center cursor-default group/stat hover:border-purple-500/25 hover:bg-purple-500/10 transition-all"
-                    whileHover={{ scale: 1.03 }}
+                    className="rounded-xl px-3 py-3 border border-cyan-500/20 bg-cyan-500/5 text-center cursor-default"
+                    whileHover={{ scale: 1.02 }}
                     transition={{ type: "spring", stiffness: 400 }}
                   >
-                    <Crosshair className="w-4 h-4 text-purple-400/50 mx-auto mb-1.5 group-hover/stat:text-purple-400 transition-colors" />
-                    <p className="text-[8px] text-white/30 uppercase tracking-wider mb-1">Odds</p>
-                    <p className="font-display font-bold text-purple-400 text-sm">{data.odds}</p>
+                    <Crosshair className="w-4 h-4 text-cyan-400/70 mx-auto mb-1.5" />
+                    <p className="text-[10px] text-white/50 uppercase tracking-wider mb-1">Odds</p>
+                    <p className="font-display font-bold text-cyan-400 text-sm tabular-nums">{data.odds}</p>
                   </motion.div>
                   <motion.div
-                    className="rounded-xl px-3 py-3 border border-emerald-500/10 bg-emerald-500/5 text-center cursor-default group/stat hover:border-emerald-500/25 hover:bg-emerald-500/10 transition-all"
-                    whileHover={{ scale: 1.03 }}
+                    className="rounded-xl px-3 py-3 border border-emerald-500/15 bg-emerald-500/5 text-center cursor-default"
+                    whileHover={{ scale: 1.02 }}
                     transition={{ type: "spring", stiffness: 400 }}
                   >
-                    <Zap className="w-4 h-4 text-emerald-400/50 mx-auto mb-1.5 group-hover/stat:text-emerald-400 transition-colors" />
-                    <p className="text-[8px] text-white/30 uppercase tracking-wider mb-1">Confidence</p>
+                    <Zap className="w-4 h-4 text-emerald-400/70 mx-auto mb-1.5" />
+                    <p className="text-[10px] text-white/50 uppercase tracking-wider mb-1">Confidence</p>
                     <p className="font-display font-bold text-emerald-400 text-xs">{data.confidence}</p>
                   </motion.div>
                 </div>
@@ -356,7 +345,7 @@ const TodayHotTip = () => {
                   <div>
                     <button
                       onClick={() => setShowAnalysis(!showAnalysis)}
-                      className="flex items-center gap-1.5 text-[10px] font-display font-bold uppercase tracking-wider text-white/40 hover:text-purple-400 transition-colors w-full"
+                      className="flex items-center gap-1.5 text-[11px] font-display font-bold uppercase tracking-wider text-white/60 hover:text-pink-400 transition-colors w-full"
                     >
                       <motion.div animate={{ rotate: showAnalysis ? 180 : 0 }} transition={{ duration: 0.25 }}>
                         <ChevronDown className="w-3.5 h-3.5" />
@@ -374,7 +363,7 @@ const TodayHotTip = () => {
                           className="overflow-hidden"
                         >
                           <div className="mt-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.05]">
-                            <p className="text-[11px] text-white/50 leading-relaxed italic">
+                            <p className="text-[12px] text-white/65 leading-relaxed italic">
                               {data.description}
                             </p>
                           </div>

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Capacitor } from "@capacitor/core";
 import { getCustomerInfo } from "@/integrations/revenuecat";
+import { daysForProduct } from "@/lib/premiumPlans";
 
 interface PremiumStatusState {
   active: boolean;
@@ -32,7 +33,9 @@ const getCachedStatus = (userId: string): PremiumStatusState | null => {
 const setCachedStatus = (userId: string, state: PremiumStatusState) => {
   try {
     localStorage.setItem(`${PREMIUM_CACHE_KEY}_${userId}`, JSON.stringify(state));
-  } catch (e) {}
+  } catch {
+    /* storage quota — ignore */
+  }
 };
 
 export const usePremiumStatus = () => {
@@ -80,29 +83,36 @@ export const usePremiumStatus = () => {
               active = true;
               expiresAt = entitlement.expirationDate;
 
-              if (!expiresAt && manualDuration) {
-                const expiryDate = new Date();
-                expiryDate.setDate(expiryDate.getDate() + manualDuration);
-                expiresAt = expiryDate.toISOString();
+              // Non-renewing products (premium_XX_days) come back from
+              // RevenueCat as lifetime (expirationDate = null). Derive the real
+              // expiry from the product id + purchase date so a 30-day purchase
+              // is not treated as unlimited.
+              if (!expiresAt) {
+                const planDays = daysForProduct(entitlement.productIdentifier);
+                const purchaseMs =
+                  entitlement.latestPurchaseDateMillis ||
+                  entitlement.originalPurchaseDateMillis ||
+                  (entitlement.latestPurchaseDate ? new Date(entitlement.latestPurchaseDate).getTime() : 0) ||
+                  (entitlement.originalPurchaseDate ? new Date(entitlement.originalPurchaseDate).getTime() : 0);
+
+                if (planDays > 0 && purchaseMs > 0) {
+                  expiresAt = new Date(purchaseMs + planDays * 86400000).toISOString();
+                } else if (manualDuration) {
+                  const expiryDate = new Date();
+                  expiryDate.setDate(expiryDate.getDate() + manualDuration);
+                  expiresAt = expiryDate.toISOString();
+                }
               }
 
               if (expiresAt) {
                 const expiryDate = new Date(expiresAt);
-                daysLeft = Math.max(0, Math.ceil((expiryDate.getTime() - Date.now()) / 86400000));
+                active = expiryDate.getTime() > Date.now();
+                daysLeft = active
+                  ? Math.max(0, Math.ceil((expiryDate.getTime() - Date.now()) / 86400000))
+                  : 0;
               } else {
-                daysLeft = 999;
+                daysLeft = 999; // genuinely lifetime product
               }
-
-              // SYNCHRONIZACJA Z BAZĄ
-              try {
-                await (supabase as any)
-                  .from("premium_access")
-                  .upsert({
-                    user_id: user.id,
-                    expires_at: expiresAt || new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString(),
-                    updated_at: new Date().toISOString(),
-                  });
-              } catch (e) {}
             }
           }
         } catch (e) {

@@ -1,13 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const SplashScreen = ({ onFinish }: { onFinish?: () => void }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
 
+  // Keep the latest callback in a ref so the one-shot splash effect stays
+  // pinned to mount and never restarts when the parent re-renders.
+  const onFinishRef = useRef(onFinish);
+  useEffect(() => {
+    onFinishRef.current = onFinish;
+  });
+
   useEffect(() => {
     if (sessionStorage.getItem("splash_shown")) {
-      onFinish?.();
+      onFinishRef.current?.();
       return;
     }
 
@@ -17,7 +24,7 @@ const SplashScreen = ({ onFinish }: { onFinish?: () => void }) => {
     const hideTimer = setTimeout(() => {
       setIsVisible(false);
       sessionStorage.setItem("splash_shown", "true");
-      onFinish?.();
+      onFinishRef.current?.();
     }, 3400);
 
     return () => {
@@ -37,12 +44,13 @@ const SplashScreen = ({ onFinish }: { onFinish?: () => void }) => {
         transition={{ duration: 0.5 }}
         className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden bg-[#05000a]"
       >
-        {/* Layered background glows */}
+        {/* Glows: pure radial gradients (no blur filter) animated only on
+            transform/opacity so they stay on the compositor thread. */}
         <motion.div
           className="pointer-events-none absolute h-[600px] w-[600px] rounded-full"
           style={{
-            background: "radial-gradient(circle, rgba(236,72,153,0.18) 0%, rgba(139,92,246,0.12) 40%, transparent 70%)",
-            filter: "blur(80px)",
+            background: "radial-gradient(circle, rgba(236,72,153,0.22) 0%, rgba(139,92,246,0.10) 42%, transparent 68%)",
+            willChange: "transform, opacity",
           }}
           animate={{ scale: [1, 1.15, 1], opacity: [0.7, 1, 0.7] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -50,8 +58,8 @@ const SplashScreen = ({ onFinish }: { onFinish?: () => void }) => {
         <motion.div
           className="pointer-events-none absolute h-[300px] w-[300px] translate-y-[-60px] rounded-full"
           style={{
-            background: "radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%)",
-            filter: "blur(60px)",
+            background: "radial-gradient(circle, rgba(6,182,212,0.16) 0%, transparent 68%)",
+            willChange: "transform, opacity",
           }}
           animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.9, 0.5] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }}
@@ -64,7 +72,7 @@ const SplashScreen = ({ onFinish }: { onFinish?: () => void }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15 }}
             className="font-splash text-7xl tracking-[0.15em] text-white sm:text-8xl md:text-9xl"
-            style={{ textShadow: "0 0 40px rgba(255,255,255,0.08)" }}
+            style={{ willChange: "transform, opacity" }}
           >
             GREAT
           </motion.h1>
@@ -76,11 +84,11 @@ const SplashScreen = ({ onFinish }: { onFinish?: () => void }) => {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="font-splash text-6xl leading-[0.9] tracking-[0.12em] sm:text-7xl md:text-8xl"
             style={{
-              background: "linear-gradient(135deg, #ec4899 0%, #a855f7 40%, #06b6d4 100%)",
+              background: "linear-gradient(135deg, #ec4899 0%, #06b6d4 100%)",
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               WebkitTextFillColor: "transparent",
-              filter: "drop-shadow(0 0 30px rgba(236,72,153,0.25))",
+              willChange: "transform, opacity",
             }}
           >
             SPORT BETS
@@ -97,6 +105,7 @@ const SplashScreen = ({ onFinish }: { onFinish?: () => void }) => {
               width="48"
               height="48"
               viewBox="0 0 48 48"
+              style={{ willChange: "transform" }}
               animate={{ rotate: 360 }}
               transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
             >

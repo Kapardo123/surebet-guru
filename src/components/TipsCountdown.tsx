@@ -32,7 +32,7 @@ const warsawWallClock = (ms: number): WarsawClock => {
 };
 
 /** Najbliższa godzina 03:00 PL (jako instant UTC) późniejsza od `now`. */
-export const nextReleaseInstant = (now: number): number => {
+const nextReleaseInstant = (now: number): number => {
   const candidates: number[] = [];
   for (const dayOffset of [0, 1]) {
     const { date } = warsawWallClock(now + dayOffset * 24 * 60 * 60 * 1000);
@@ -51,7 +51,6 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 const DigitPill = ({ value }: { value: string }) => (
   <span
     className="inline-flex items-center justify-center min-w-[30px] md:min-w-[34px] px-1 py-0.5 rounded-lg bg-white/[0.07] border border-white/[0.12] font-mono text-base md:text-lg font-black text-pink-300 tabular-nums"
-    style={{ textShadow: "0 0 12px rgba(236,72,153,0.6)" }}
   >
     {value}
   </span>
@@ -84,7 +83,7 @@ const TipsCountdown = () => {
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-2xl border border-pink-500/20 bg-gradient-to-r from-[#12001f]/90 via-[#1a002e]/90 to-[#0a0015]/90 backdrop-blur-xl shadow-lg shadow-pink-500/10"
+      className="relative overflow-hidden rounded-2xl border border-pink-500/20 bg-gradient-to-r from-[#12001f]/90 via-[#1a002e]/90 to-[#0a0015]/90 shadow-lg shadow-black/20"
     >
       <div
         className="absolute inset-0 pointer-events-none opacity-40"

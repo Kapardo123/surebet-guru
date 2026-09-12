@@ -81,7 +81,9 @@ export const useAdMob = () => {
         const cleanup = async () => {
           try {
             await handler.remove();
-          } catch (e) {}
+          } catch {
+            /* listener already removed */
+          }
         };
 
         const handler = AdMob.addListener('onUserEarnedReward', (info: any) => {

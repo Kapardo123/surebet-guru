@@ -190,7 +190,7 @@ const parsePick = (
 ): ParsedPick | null => {
   const p = normalizeTeamName(prediction);
 
-  const lineM = p.match(/(?:over|under|ponad|ponizej|nad|pod|\bo|\bu)\s*(\d+(?:[\.,]\d+)?)/);
+  const lineM = p.match(/(?:over|under|ponad|ponizej|nad|pod|\bo|\bu)\s*(\d+(?:[.,]\d+)?)/);
   if (/over|ponad|powyzej/.test(p) || (lineM && p.includes("over"))) {
     return { type: "total", side: "over", line: parseFloat(lineM![1].replace(",", ".")) };
   }

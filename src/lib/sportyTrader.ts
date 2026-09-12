@@ -129,11 +129,6 @@ const getCorsProxyKey = (): string => {
   return key.trim();
 };
 
-export const hasClientOddsSource = (): boolean => {
-  if (Capacitor.isNativePlatform()) return true; // direct native fetch
-  return getCorsProxyKey().length > 0;
-};
-
 export const fetchClientOdds = async (): Promise<ClientOddsMap> => {
   // Every click re-importing a match would otherwise hammer the proxies;
   // three minutes keeps values fresh enough for pre-match odds.

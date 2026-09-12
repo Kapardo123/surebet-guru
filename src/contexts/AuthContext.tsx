@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -26,13 +26,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Keep navigate in a ref: the auth subscription must be created once, and
+  // navigate's identity is not guaranteed to be stable across renders.
+  const navigateRef = useRef(navigate);
+  useEffect(() => {
+    navigateRef.current = navigate;
+  });
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "PASSWORD_RECOVERY") {
           // When the user clicks the password recovery link, Supabase fires this event.
           // We can then navigate them to the password update page.
-          navigate("/auth?mode=update-password", { replace: true });
+          navigateRef.current("/auth?mode=update-password", { replace: true });
         }
         
         if (session?.user) {

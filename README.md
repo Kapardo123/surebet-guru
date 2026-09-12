@@ -1,6 +1,6 @@
 # Great Sport Bets
 
-Aplikacja do wyszukiwania i zarządzania typami bukmacherskimi (Surebets), zintegrowana z Supabase i Stripe.
+Aplikacja do wyszukiwania i zarządzania typami bukmacherskimi (Surebets), zintegrowana z Supabase i RevenueCat.
 
 ## Rozpoczęcie pracy
 
@@ -34,14 +34,24 @@ Możesz wdrożyć tę aplikację na własnej infrastrukturze, używając **Supab
 
 1. Utwórz nowy projekt na [Supabase](https://supabase.com/).
 2. **Baza danych**: Wykonaj zapytania SQL z folderu `supabase/migrations/` w Edytorze SQL Supabase, aby utworzyć tabele i polityki RLS.
-3. **Edge Functions**: Wdróż funkcje z folderu `supabase/functions/` za pomocą Supabase CLI:
+3. **Edge Functions**: wdróż funkcje z folderu `supabase/functions/` za pomocą Supabase CLI (wszystkie jako `--no-verify-jwt`):
    ```sh
-   supabase functions deploy create-payment
-   supabase functions deploy verify-payment
-   supabase functions deploy premium-status
-   supabase functions deploy referral
+   supabase functions deploy team-logo --no-verify-jwt
+   supabase functions deploy settle-results --no-verify-jwt
+   supabase functions deploy send-premium-push --no-verify-jwt
+   supabase functions deploy sportytrader-proxy --no-verify-jwt
+   supabase functions deploy zawodtyper-proxy --no-verify-jwt
+   supabase functions deploy ai-rewrite --no-verify-jwt
+   supabase functions deploy ai-analyze --no-verify-jwt
    ```
-4. **Zmienne środowiskowe**: Skonfiguruj `STRIPE_SECRET_KEY` w ustawieniach funkcji Supabase.
+4. **Sekrety**: `OPENROUTER_API_KEY` (analizy AI), `FCM_SERVICE_ACCOUNT` (push), `ODDS_API_KEY` (weryfikacja terminarza), `REVENUECAT_WEBHOOK_SECRET` (synchronizacja premium z RevenueCat). Płatności obsługuje RevenueCat po stronie klienta, ale zapisy do `premium_access` wykonują wyłącznie funkcje serwerowe.
+
+   **Reward / premium (bezpieczeństwo)**: `premium_access` i `daily_spins` są tylko do odczytu dla klienta (RLS). Zapisują je wyłącznie funkcje serwerowe:
+   - `daily-reward` — koło dziennej nagrody, cooldown 24h i losowanie po stronie serwera,
+   - `grant-premium` — nadanie premium z panelu admina (bramka `ADMIN_EMAIL`),
+   - `revenuecat-webhook` — zakupy/odnowienia/wygaśnięcia z RevenueCat.
+
+   Aby zakupy mobilne trafiały do bazy, skonfiguruj webhook w panelu RevenueCat (Project → Integrations → Webhooks) na URL `https://<projekt>.supabase.co/functions/v1/revenuecat-webhook` z nagłówkiem `Authorization: Bearer <REVENUECAT_WEBHOOK_SECRET>`.
 
 ### Import typów (panel Admin → zakładka Import)
 
@@ -116,5 +126,5 @@ klucz zaszyty w kliencie.
 - **Frontend**: React + Vite + TypeScript
 - **UI**: shadcn/ui + Tailwind CSS
 - **Backend/DB**: Supabase
-- **Płatności**: Stripe
+- **Płatności**: RevenueCat (in-app) + Stripe Payment Links (web)
 - **Animacje**: Framer Motion

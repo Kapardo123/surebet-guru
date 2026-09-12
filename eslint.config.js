@@ -27,4 +27,12 @@ export default tseslint.config(
       "react-hooks/exhaustive-deps": "warn",
     },
   },
+  {
+    // shadcn/ui primitives and context providers intentionally co-locate
+    // variants/hooks with components — fast-refresh purity is not applicable.
+    files: ["src/components/ui/**/*.{ts,tsx}", "src/contexts/**/*.{ts,tsx}"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
 );

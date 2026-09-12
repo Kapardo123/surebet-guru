@@ -15,14 +15,6 @@ import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from 
 
 export default function Premium() {
   const { user, signOut, loading: authLoading } = useAuth();
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-accent" />
-      </div>
-    );
-  }
   const navigate = useNavigate();
   const { toast } = useToast();
   const { active, daysLeft, refresh } = usePremiumStatus();
@@ -49,6 +41,15 @@ export default function Premium() {
       }).catch(() => {});
     }
   }, [refresh]);
+
+  // Keep this early return AFTER every hook so hook order stays stable.
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   const handleRestore = async () => {
     setRestoring(true);
@@ -108,7 +109,7 @@ export default function Premium() {
       desc: "Every premium tip is selected and reviewed by our team of experienced betting analysts. No noise — only picks they truly believe in.",
     },
     {
-      icon: <TrendingUp className="w-5 h-5 text-purple-400" />,
+      icon: <TrendingUp className="w-5 h-5 text-pink-400" />,
       title: "High-Value Selections",
       desc: "Quality over quantity. You get a small number of carefully researched picks instead of dozens of random bets.",
     },
@@ -118,7 +119,7 @@ export default function Premium() {
       desc: "Be first to know when a new premium tip or coupon drops — straight to your phone the moment it goes live.",
     },
     {
-      icon: <Layers className="w-5 h-5 text-blue-400" />,
+      icon: <Layers className="w-5 h-5 text-cyan-400" />,
       title: "Exclusive Coupons & Hero Pick",
       desc: "Premium accumulators and the daily hero pick are reserved for members — higher odds, bigger combined value.",
     },
@@ -151,31 +152,31 @@ export default function Premium() {
     <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-hidden">
       {/* Synthwave glow effects */}
       <div className="fixed top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none"
-           style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)', transform: 'translate(-30%, -30%)' }} />
+           style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', transform: 'translate(-30%, -30%)', opacity: 0.12 }} />
       <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none"
            style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(30%, 30%)' }} />
 
       {/* Glass Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-[#0a0015]/80 via-[#150025]/80 to-[#0a0020]/80 border-b border-purple-500/20 shadow-xl shadow-black/30">
+      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-[#0a0015]/80 via-[#150025]/80 to-[#0a0020]/80 border-b border-white/10 shadow-xl shadow-black/30">
         <div className="container max-w-6xl mx-auto px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between">
           <div onClick={handleBack} className="cursor-pointer flex items-center gap-2.5 md:gap-3">
             <Logo />
           </div>
           <div className="flex items-center gap-2 md:gap-2.5">
             {user ? (
-              <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 text-purple-300/70 hover:text-pink-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-pink-500/30">
+              <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 text-white/60 hover:text-pink-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-pink-500/30">
                 <LogOut className="w-4 h-4" />
                 <span className="text-xs font-medium hidden lg:inline">Logout</span>
               </Button>
             ) : (
               <Link to="/auth?redirect=/premium">
-                <Button variant="outline" size="sm" className="gap-2 text-xs font-medium border-purple-500/30 text-purple-300 hover:border-cyan-500/50 hover:text-cyan-400 hover:bg-cyan-500/5 transition-all duration-200 rounded-full px-3 md:px-3.5 shadow-sm">
+                <Button variant="outline" size="sm" className="gap-2 text-xs font-medium border-pink-500/30 text-white/70 hover:border-cyan-500/50 hover:text-cyan-400 hover:bg-cyan-500/5 transition-all duration-200 rounded-full px-3 md:px-3.5 shadow-sm">
                   <LogIn className="w-4 h-4" />
                   Sign In
                 </Button>
               </Link>
             )}
-            <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1.5 text-purple-300/70 hover:text-cyan-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-cyan-500/30">
+            <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1.5 text-white/60 hover:text-cyan-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-cyan-500/30">
               <Home className="w-4 h-4" />
               Home
             </Button>
@@ -188,15 +189,15 @@ export default function Premium() {
         {/* Hero */}
         <section className="text-center space-y-6 py-6 md:py-10">
           <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500/20 to-purple-600/20 border border-pink-500/30 shadow-lg shadow-pink-500/20 flex items-center justify-center rotate-3">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500/20 to-pink-500/10 border border-pink-500/30 shadow-lg shadow-pink-500/20 flex items-center justify-center rotate-3">
               <Crown className="w-8 h-8 text-pink-400" />
             </div>
           </div>
           <div className="space-y-3">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter uppercase">
-              GSB <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400">Premium</span>
+              GSB <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400">Premium</span>
             </h1>
-            <p className="text-purple-300/70 text-sm md:text-base max-w-xl mx-auto leading-relaxed">
+            <p className="text-white/60 text-sm md:text-base max-w-xl mx-auto leading-relaxed">
               Hand-picked tips from our team of betting experts.
               <span className="text-white/70 font-semibold"> No noise, no filler</span> — only selections they truly stand behind.
             </p>
@@ -206,7 +207,7 @@ export default function Premium() {
             <div className="h-[1px] w-16 bg-gradient-to-r from-transparent to-pink-500/40" />
             <div className="flex gap-1.5">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"
+                <div key={i} className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse"
                      style={{ animationDelay: `${i * 0.2}s` }} />
               ))}
             </div>
@@ -217,11 +218,11 @@ export default function Premium() {
         {/* Current Status (if active) */}
         {active && (
           <div className="space-y-4 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="relative overflow-hidden rounded-2xl border border-pink-500/30 bg-gradient-to-r from-pink-500/[0.08] via-purple-500/[0.06] to-transparent backdrop-blur-xl shadow-lg shadow-pink-500/10">
+            <div className="relative overflow-hidden rounded-2xl border border-pink-500/30 bg-gradient-to-r from-pink-500/[0.08] to-transparent backdrop-blur-xl shadow-lg shadow-pink-500/10">
               <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
               <div className="p-6 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500/20 to-purple-600/20 ring-1 ring-pink-500/30 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500/20 to-pink-500/10 ring-1 ring-pink-500/30 flex items-center justify-center">
                     <Crown className="w-6 h-6 text-pink-400" />
                   </div>
                   <div>
@@ -287,7 +288,7 @@ export default function Premium() {
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-black uppercase tracking-tight">Choose Your Plan</h2>
             <p className="text-xs text-muted-foreground">Instant access · cancel anytime · works on all devices</p>
-            <div className="h-[2px] w-16 mx-auto rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500" />
+            <div className="h-[2px] w-16 mx-auto rounded-full bg-gradient-to-r from-pink-500 to-cyan-500" />
           </div>
 
           <div className="grid gap-5 md:gap-6 md:grid-cols-3">
@@ -298,10 +299,10 @@ export default function Premium() {
                   plan.popular
                     ? "border border-pink-500/40 bg-gradient-to-b from-pink-500/[0.08] to-transparent shadow-xl shadow-pink-500/10"
                     : "border border-white/[0.07] bg-white/[0.03] hover:border-white/15"
-                } backdrop-blur-xl`}
+                }`}
               >
                 {plan.popular && (
-                  <div className="absolute top-0 right-0 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-widest shadow-lg shadow-pink-500/30">
+                  <div className="absolute top-0 right-0 bg-gradient-to-r from-pink-500 to-pink-600 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-widest shadow-lg shadow-pink-500/30">
                     Most Popular
                   </div>
                 )}
@@ -337,7 +338,7 @@ export default function Premium() {
                     disabled={loading !== null}
                     className={`w-full h-11 font-black uppercase tracking-widest text-[11px] mt-auto transition-all active:scale-95 ${
                       plan.popular
-                        ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-400 hover:to-purple-500 shadow-[0_0_24px_rgba(236,72,153,0.35)]'
+                        ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:from-pink-400 hover:to-pink-500'
                         : 'bg-white/[0.07] text-white border border-white/10 hover:bg-white/[0.12]'
                     }`}
                   >

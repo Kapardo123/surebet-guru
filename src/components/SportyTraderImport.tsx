@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Download,
   Loader2,
-  TrendingUp,
   Zap,
   Receipt,
   Clock,

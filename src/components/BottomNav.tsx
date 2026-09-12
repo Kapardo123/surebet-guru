@@ -35,8 +35,8 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
-      <div className="mx-3 mb-3 rounded-3xl border border-white/[0.09] bg-gradient-to-r from-[#0a0015]/95 via-[#1a002e]/95 to-[#0a0015]/95 backdrop-blur-2xl shadow-[0_8px_40px_rgba(0,0,0,0.6),0_0_30px_rgba(168,85,247,0.12)]">
-        <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-pink-500/60 to-transparent" />
+      <div className="mx-3 mb-3 rounded-3xl border border-white/[0.09] bg-card/95 shadow-[0_10px_30px_rgba(0,0,0,0.55)]">
+        <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-pink-500/50 to-transparent" />
         <div className="flex items-stretch px-1.5 py-2 gap-0.5">
           {navItems.map((item) => {
             const active = isActive(item);
@@ -45,20 +45,20 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange
             const inner = (
               <>
                 {active && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-gradient-to-r from-pink-500 to-purple-500 shadow-[0_0_8px_rgba(236,72,153,0.8)]" />
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-pink-500" />
                 )}
                 <div
                   className={`w-9 h-9 rounded-2xl flex items-center justify-center transition-all duration-300 ${
                     active
-                      ? "bg-white/[0.08] scale-110 drop-shadow-[0_0_6px_rgba(236,72,153,0.45)]"
+                      ? "bg-white/[0.08] scale-105"
                       : "opacity-60"
                   }`}
                 >
                   <Icon size={26} />
                 </div>
                 <span
-                  className={`text-[8.5px] font-display font-black tracking-wider uppercase transition-colors duration-300 ${
-                    active ? "text-pink-300" : "text-white/35"
+                  className={`text-[10px] font-display font-black tracking-wider uppercase transition-colors duration-300 ${
+                    active ? "text-pink-300" : "text-white/45"
                   }`}
                 >
                   {item.label}
@@ -67,7 +67,7 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange
             );
             const className = `relative flex-1 flex flex-col items-center gap-0.5 px-0.5 py-1.5 rounded-2xl transition-all duration-300 ${
               active
-                ? "bg-gradient-to-b from-pink-500/15 to-purple-500/[0.08]"
+                ? "bg-gradient-to-b from-pink-500/15 to-pink-500/[0.06]"
                 : "active:bg-white/5"
             }`;
 
@@ -93,7 +93,7 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange
               <div className="w-9 h-9 rounded-2xl flex items-center justify-center opacity-60">
                 <ArrowLeftFromLine className="w-5 h-5 text-white/60" />
               </div>
-              <span className="text-[8.5px] font-display font-black tracking-wider uppercase text-white/35">Logout</span>
+              <span className="text-[10px] font-display font-black tracking-wider uppercase text-white/45">Logout</span>
             </button>
           ) : (
             <Link to="/auth" className="no-underline flex-1">
@@ -101,7 +101,7 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange
                 <div className="w-9 h-9 rounded-2xl flex items-center justify-center opacity-60">
                   <ArrowRightToLine className="w-5 h-5 text-white/60" />
                 </div>
-                <span className="text-[8.5px] font-display font-black tracking-wider uppercase text-white/35">Sign In</span>
+                <span className="text-[10px] font-display font-black tracking-wider uppercase text-white/45">Sign In</span>
               </button>
             </Link>
           )}

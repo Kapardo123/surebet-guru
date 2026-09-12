@@ -12,5 +12,23 @@ verify_jwt = false
 [functions.ai-analyze]
 verify_jwt = false
 
+[functions.ai-rewrite]
+verify_jwt = false
+
+[functions.sportytrader-proxy]
+verify_jwt = false
+
+[functions.team-logo]
+verify_jwt = false
+
+[functions.daily-reward]
+verify_jwt = false
+
+[functions.grant-premium]
+verify_jwt = false
+
+[functions.revenuecat-webhook]
+verify_jwt = false
+
 [functions.settle-results]
 verify_jwt = false

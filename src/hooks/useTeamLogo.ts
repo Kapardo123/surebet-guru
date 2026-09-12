@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { fetchTeamLogoUrl, getCustomTeamLogo } from "@/lib/logoFetcher";
 
-// v2 — unieważnia stare negatywne wpisy z okresu, gdy mapa fallback była zepsuta
-const LOGO_CACHE_KEY = "team_logos_cache_v2";
+// v3 — nowy serwerowy resolver (edge function `team-logo`); unieważnia stare wpisy
+const LOGO_CACHE_KEY = "team_logos_cache_v3";
 const MAX_CACHE_ENTRIES = 500; // a busy day lists ~115 matches × 2 teams
 // A failed lookup is remembered so one team without a logo does not re-fire
 // six API searches on every page render. Shorter than the success TTL because

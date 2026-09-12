@@ -20,7 +20,9 @@ const getCachedTips = (): Tip[] => {
 const setCachedTips = (tips: Tip[]) => {
   try {
     localStorage.setItem(TIPS_CACHE_KEY, JSON.stringify(tips));
-  } catch (e) {}
+  } catch {
+    /* storage quota — ignore */
+  }
 };
 
 const clearTipsCache = () => {

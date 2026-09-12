@@ -31,7 +31,9 @@ const getCachedCoupons = (): Coupon[] => {
 const setCachedCoupons = (coupons: Coupon[]) => {
   try {
     localStorage.setItem(COUPONS_CACHE_KEY, JSON.stringify(coupons));
-  } catch (e) {}
+  } catch {
+    /* storage quota — ignore */
+  }
 };
 
 export interface Coupon {

@@ -85,7 +85,6 @@ const TeamLogo = ({
     if (isUsableUrl(propLogoUrl) && !propLogoUrl.startsWith("data:")) {
       setCachedTeamLogo(teamName, propLogoUrl.trim());
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propLogoUrl, teamName]);
 
   const url = useMemo(

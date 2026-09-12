@@ -36,13 +36,13 @@ window.onerror = (msg, url, line, col, err) => {
 const PageLoader = () => (
   <div className="min-h-screen bg-[#05000a] flex flex-col items-center justify-center gap-6">
     <div className="flex items-baseline gap-1">
-      <span className="text-3xl font-black tracking-tighter bg-gradient-to-r from-pink-500 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+      <span className="text-3xl font-black tracking-tighter text-pink-500">
         GREAT
       </span>
-      <span className="text-3xl font-extralight tracking-[0.15em] text-white/80">
+      <span className="text-3xl font-extralight tracking-[0.15em] text-white/85">
         SPORT
       </span>
-      <span className="text-sm font-semibold uppercase tracking-[0.35em] text-cyan-400/70 ml-1">
+      <span className="text-sm font-semibold uppercase tracking-[0.35em] text-white/55 ml-1">
         BETS
       </span>
     </div>
@@ -51,7 +51,7 @@ const PageLoader = () => (
       <div
         className="absolute inset-0 rounded-full animate-spin"
         style={{
-          background: "conic-gradient(from 0deg, transparent 0%, #ec4899 35%, #a855f7 65%, #06b6d4 100%)",
+          background: "conic-gradient(from 0deg, transparent 0%, #ec4899 55%, #06b6d4 100%)",
           WebkitMask: "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px))",
           mask: "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px))",
         }}

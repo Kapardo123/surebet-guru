@@ -45,7 +45,7 @@ import {
   FeaturedPick,
 } from "@/lib/featuredPickStorage";
 import LogoPicker from "@/components/admin/LogoPicker";
-import { SPORTS } from "@/components/admin/QueueTab";
+import { SPORTS } from "@/lib/sports";
 import { supabase } from "@/integrations/supabase/client";
 
 // ---------------------------------------------------------------- helpers ---

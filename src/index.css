@@ -4,60 +4,66 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   EVOLVE NEON — design tokens
+   Discipline: dark synthwave base, PINK is the only accent (actions/brand),
+   CYAN is reserved for data (odds, stats, live). No glows on content.
+   ========================================================================== */
 @layer base {
   :root {
-    --background: 260 25% 5%;
-    --foreground: 240 10% 94%;
+    --background: 258 30% 4%;
+    --foreground: 250 15% 96%;
 
-    --card: 260 22% 8%;
-    --card-foreground: 240 10% 94%;
+    --card: 258 24% 8%;
+    --card-foreground: 250 15% 96%;
 
-    --popover: 260 22% 8%;
-    --popover-foreground: 240 10% 94%;
+    --popover: 258 24% 8%;
+    --popover-foreground: 250 15% 96%;
 
-    --primary: 330 90% 60%;
-    --primary-foreground: 260 25% 5%;
+    --primary: 330 85% 62%;
+    --primary-foreground: 258 30% 6%;
 
-    --secondary: 260 16% 13%;
-    --secondary-foreground: 240 8% 65%;
+    --secondary: 258 18% 12%;
+    --secondary-foreground: 250 12% 72%;
 
-    --muted: 260 16% 11%;
-    --muted-foreground: 250 8% 42%;
+    --muted: 258 18% 11%;
+    --muted-foreground: 250 12% 64%;
 
-    --accent: 200 100% 60%;
-    --accent-foreground: 260 25% 5%;
+    --accent: 190 95% 56%;
+    --accent-foreground: 258 30% 6%;
 
-    --destructive: 0 65% 52%;
+    --destructive: 0 70% 56%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 260 12% 14%;
-    --input: 260 12% 16%;
-    --ring: 330 90% 60%;
+    --border: 258 14% 16%;
+    --input: 258 14% 18%;
+    --ring: 330 85% 62%;
 
-    --radius: 0.75rem;
+    --radius: 0.9rem;
 
-    --sidebar-background: 260 22% 8%;
-    --sidebar-foreground: 240 8% 65%;
-    --sidebar-primary: 330 90% 60%;
-    --sidebar-primary-foreground: 260 25% 5%;
-    --sidebar-accent: 260 16% 13%;
-    --sidebar-accent-foreground: 240 8% 65%;
-    --sidebar-border: 260 12% 14%;
-    --sidebar-ring: 330 90% 60%;
+    --sidebar-background: 258 24% 8%;
+    --sidebar-foreground: 250 12% 72%;
+    --sidebar-primary: 330 85% 62%;
+    --sidebar-primary-foreground: 258 30% 6%;
+    --sidebar-accent: 258 18% 12%;
+    --sidebar-accent-foreground: 250 12% 72%;
+    --sidebar-border: 258 14% 16%;
+    --sidebar-ring: 330 85% 62%;
 
-    --success: 142 70% 48%;
-    --loss: 0 65% 52%;
-    --draw: 45 90% 55%;
-    --confidence-high: 142 70% 48%;
-    --confidence-medium: 45 90% 55%;
-    --confidence-low: 0 65% 52%;
+    --success: 152 62% 46%;
+    --loss: 0 70% 56%;
+    --draw: 42 90% 56%;
+    --confidence-high: 152 62% 46%;
+    --confidence-medium: 42 90% 56%;
+    --confidence-low: 0 70% 56%;
 
     --font-display: 'Plus Jakarta Sans', sans-serif;
     --font-body: 'DM Sans', sans-serif;
 
-    --glow-primary: 0 0 30px hsl(330 90% 60% / 0.25), 0 0 60px hsl(330 90% 60% / 0.1);
-    --glow-accent: 0 0 30px hsl(200 100% 60% / 0.25), 0 0 60px hsl(200 100% 60% / 0.1);
-    --card-shadow: 0 2px 16px hsl(0 0% 0% / 0.6), 0 0 0 1px hsl(260 12% 14% / 0.5);
+    /* Soft elevation instead of neon glow. */
+    --glow-primary: 0 8px 24px hsl(330 85% 62% / 0.20);
+    --glow-accent: 0 8px 24px hsl(190 95% 56% / 0.18);
+    --card-shadow: 0 12px 32px hsl(0 0% 0% / 0.45), 0 0 0 1px hsl(258 14% 16% / 0.6);
   }
 }
 
@@ -93,16 +99,16 @@
   }
   .card-glow {
     box-shadow: var(--card-shadow);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease;
   }
   .card-glow:hover {
-    box-shadow: var(--glow-primary), var(--card-shadow);
     transform: translateY(-1px);
+    border-color: hsl(var(--border));
   }
   .glass {
-    background: hsl(var(--card) / 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
   .gradient-border {
     position: relative;
@@ -113,7 +119,7 @@
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(135deg, hsl(var(--primary) / 0.4), hsl(var(--accent) / 0.4));
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.3), hsl(var(--accent) / 0.25));
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
@@ -122,50 +128,26 @@
   }
 }
 
-@keyframes shimmer {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-/* Złoty przycisk premium — błysk + glow */
+/* Premium CTA — clean pink gradient, no shimmer/glow. */
 .btn-gold {
-  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 30%, #f59e0b 60%, #d97706 100%);
-  border: 1px solid rgba(251, 191, 36, 0.65);
-  color: #451a03;
+  background: linear-gradient(135deg, #f472b6 0%, #ec4899 55%, #db2777 100%);
+  border: 1px solid rgba(236, 72, 153, 0.55);
+  color: #fff;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 0 24px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-}
-.btn-gold::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -75%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.55), transparent);
-  transform: skewX(-20deg);
-  animation: goldShine 3.5s ease-in-out infinite;
-  pointer-events: none;
-}
-@keyframes goldShine {
-  0% { left: -75%; }
-  60%, 100% { left: 125%; }
+  box-shadow: 0 8px 22px rgba(219, 39, 119, 0.28);
 }
 .btn-gold:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.06);
 }
 .btn-gold:active {
-  filter: brightness(0.95);
+  filter: brightness(0.96);
 }
 .btn-gold:disabled {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.3);
   box-shadow: none;
   filter: none;
   cursor: not-allowed;
-}
-.btn-gold:disabled::after {
-  display: none;
 }

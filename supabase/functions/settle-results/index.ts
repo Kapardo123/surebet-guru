@@ -457,93 +457,120 @@ const releaseWaitingRoom = async (
   serviceRoleKey: string,
 ): Promise<ReleaseResult> => {
   const leftovers: string[] = [];
+  let releasedTips = 0;
+  let releasedCoupons = 0;
+  let releasedHero = 0;
+
+  // Każda sekcja niezależnie — pojedynczy błąd (np. chwilowy problem z DB)
+  // NIE może udaremnić publikacji pozostałych treści.
 
   // --- TIPS ---------------------------------------------------------------
-  const { data: queuedRows, error: loadError } = await db
-    .from("tips")
-    .select("id")
-    .eq("queued", true)
-    .limit(200);
-  if (loadError) throw new Error(`queued load: ${loadError.message}`);
-
-  const queued = queuedRows || [];
-  let releasedTips = 0;
-  if (queued.length) {
-    const { error: updateError } = await db
+  try {
+    const { data: queuedRows, error: loadError } = await db
       .from("tips")
-      .update({ queued: false, is_published: true })
-      .eq("queued", true);
-    if (updateError) throw new Error(`release update: ${updateError.message}`);
-    // Weryfikacja — cicha blokada RLS/update zwraca 200 przy 0 rows.
-    const { data: stillQueued } = await db.from("tips").select("id").eq("queued", true).limit(5);
-    if (stillQueued?.length) {
-      leftovers.push(`tips: ${stillQueued.length} still queued`);
-      console.error(`[settle-results] TIPS not released: ${stillQueued.length} left`);
+      .select("id")
+      .eq("queued", true)
+      .limit(200);
+    if (loadError) throw new Error(`load: ${loadError.message}`);
+
+    if (queuedRows?.length) {
+      const { error: updateError } = await db
+        .from("tips")
+        .update({ queued: false, is_published: true })
+        .eq("queued", true);
+      if (updateError) throw new Error(`update: ${updateError.message}`);
+
+      const { data: stillQueued } = await db.from("tips").select("id").eq("queued", true).limit(5);
+      if (stillQueued?.length) {
+        leftovers.push(`tips: ${stillQueued.length} still queued`);
+      }
+      releasedTips = queuedRows.length;
     }
-    releasedTips = queued.length;
+  } catch (e: any) {
+    console.error("[settle-results] tips release failed:", e?.message || e);
+    leftovers.push(`tips release failed: ${e?.message || e}`);
   }
 
   // --- COUPONS ------------------------------------------------------------
-  const { data: queuedCouponRows, error: couponLoadError } = await db
-    .from("coupons")
-    .select("id")
-    .eq("queued", true)
-    .limit(100);
-  if (couponLoadError) throw new Error(`queued coupons load: ${couponLoadError.message}`);
-  let releasedCoupons = 0;
-  if (queuedCouponRows?.length) {
-    const { error } = await db
+  try {
+    const { data: queuedCouponRows, error: couponLoadError } = await db
       .from("coupons")
-      .update({ queued: false })
-      .eq("queued", true);
-    if (error) throw new Error(`coupon release: ${error.message}`);
-    const { data: stillQueuedCoupons } = await db.from("coupons").select("id").eq("queued", true).limit(5);
-    if (stillQueuedCoupons?.length) {
-      leftovers.push(`coupons: ${stillQueuedCoupons.length} still queued`);
-      console.error(`[settle-results] COUPONS not released: ${stillQueuedCoupons.length} left`);
+      .select("id")
+      .eq("queued", true)
+      .limit(100);
+    if (couponLoadError) throw new Error(`load: ${couponLoadError.message}`);
+
+    if (queuedCouponRows?.length) {
+      const { error } = await db
+        .from("coupons")
+        .update({ queued: false })
+        .eq("queued", true);
+      if (error) throw new Error(`update: ${error.message}`);
+
+      const { data: stillQueuedCoupons } = await db.from("coupons").select("id").eq("queued", true).limit(5);
+      if (stillQueuedCoupons?.length) {
+        leftovers.push(`coupons: ${stillQueuedCoupons.length} still queued`);
+      }
+      releasedCoupons = queuedCouponRows.length;
     }
-    releasedCoupons = queuedCouponRows.length;
+  } catch (e: any) {
+    console.error("[settle-results] coupons release failed:", e?.message || e);
+    leftovers.push(`coupons release failed: ${e?.message || e}`);
   }
 
   // --- HERO PICKS ---------------------------------------------------------
   // Model "ostatni wiersz = aktywny hero": publikowany wiersz przestaje być
   // queued, wszystkie inne usuwamy (także dotychczasowy aktywny).
-  const { data: queuedHeroRows, error: heroLoadError } = await db
-    .from("featured_picks")
-    .select("id")
-    .eq("queued", true)
-    .order("created_at", { ascending: false })
-    .limit(1);
-  if (heroLoadError) throw new Error(`queued hero load: ${heroLoadError.message}`);
-  let releasedHero = 0;
-  const newestHero = queuedHeroRows?.[0];
-  if (newestHero?.id) {
-    const { error: delError } = await db
+  try {
+    const { data: queuedHeroRows, error: heroLoadError } = await db
       .from("featured_picks")
-      .delete()
-      .neq("id", newestHero.id);
-    if (delError) {
-      console.error(`[settle-results] hero cleanup: ${delError.message}`);
-      leftovers.push(`hero cleanup failed: ${delError.message}`);
+      .select("id")
+      .eq("queued", true)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (heroLoadError) throw new Error(`load: ${heroLoadError.message}`);
+
+    const newestHero = queuedHeroRows?.[0];
+    if (newestHero?.id) {
+      const { error: delError } = await db
+        .from("featured_picks")
+        .delete()
+        .neq("id", newestHero.id);
+      if (delError) {
+        console.error(`[settle-results] hero cleanup: ${delError.message}`);
+        leftovers.push(`hero cleanup failed: ${delError.message}`);
+      }
+      const { error } = await db
+        .from("featured_picks")
+        .update({ queued: false })
+        .eq("id", newestHero.id);
+      if (error) throw new Error(`update: ${error.message}`);
+
+      const { data: heroCheck } = await db
+        .from("featured_picks")
+        .select("queued, id")
+        .eq("id", newestHero.id)
+        .maybeSingle();
+      if (!heroCheck || heroCheck.queued === true) {
+        leftovers.push("hero: not published (update blocked)");
+      }
+      releasedHero = 1;
     }
-    const { error } = await db
-      .from("featured_picks")
-      .update({ queued: false })
-      .eq("id", newestHero.id);
-    if (error) throw new Error(`hero release: ${error.message}`);
-    // Weryfikacja
-    const { data: heroCheck } = await db.from("featured_picks").select("queued, id").eq("id", newestHero.id).maybeSingle();
-    if (!heroCheck || heroCheck.queued === true) {
-      leftovers.push("hero: not published (RLS/update blocked)");
-      console.error("[settle-results] HERO not released");
-    }
-    releasedHero = 1;
+  } catch (e: any) {
+    console.error("[settle-results] hero release failed:", e?.message || e);
+    leftovers.push(`hero release failed: ${e?.message || e}`);
   }
 
   const total = releasedTips + releasedCoupons + releasedHero;
-  const push = total > 0
-    ? await sendNewTipsPush(supabaseUrl, serviceRoleKey)
-    : { attempted: 0, success: 0, skipped: "Kolejka pusta" };
+  let push: ReleaseResult["push"] = { attempted: 0, success: 0, skipped: "Kolejka pusta" };
+  if (total > 0) {
+    try {
+      push = await sendNewTipsPush(supabaseUrl, serviceRoleKey);
+    } catch (e: any) {
+      console.error("[settle-results] release push failed:", e?.message || e);
+      push = { attempted: 0, success: 0, skipped: `push failed: ${e?.message || e}` };
+    }
+  }
   return { released: total, coupons: releasedCoupons, heroPicks: releasedHero, push, leftovers };
 };
 
@@ -615,6 +642,13 @@ serve(async (req) => {
     if (releaseRequested) {
       try {
         release = await releaseWaitingRoom(db, supabaseUrl, serviceRoleKey);
+        // Jedna ponowna próba — pojedynczy chwilowy błąd DB nie może zostawić
+        // kolejki nieopublikowanej.
+        if (release.leftovers?.length) {
+          console.warn("[settle-results] release retry, leftovers:", release.leftovers.join("; "));
+          await new Promise((r) => setTimeout(r, 800));
+          release = await releaseWaitingRoom(db, supabaseUrl, serviceRoleKey);
+        }
       } catch (e: any) {
         console.error("[settle-results] release failed:", e?.message || e);
       }

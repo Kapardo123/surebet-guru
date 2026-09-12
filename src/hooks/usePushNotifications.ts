@@ -46,6 +46,9 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
   }, [isNative, platform, premiumActive, userId]);
 
   const hasAutoRegistered = useRef(false);
+  // registerAndUpsert is defined below; keep it in a ref so this one-shot
+  // effect doesn't need it as a dependency (which would re-run every render).
+  const registerRef = useRef<() => Promise<unknown>>();
 
   useEffect(() => {
     if (!isNative || !userId || !premiumActive || hasAutoRegistered.current) return;
@@ -57,7 +60,7 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
           const { PushNotifications } = await import('@capacitor/push-notifications');
           const permStatus = await PushNotifications.checkPermissions();
           if (permStatus.receive === 'granted') {
-            await registerAndUpsert();
+            await registerRef.current?.();
           }
         } catch (e) {
           console.error("Auto-registration failed:", e);
@@ -210,6 +213,10 @@ export const usePushNotifications = (params: { userId?: string; premiumActive: b
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    registerRef.current = registerAndUpsert;
+  });
 
   const setPushEnabled = async (shouldEnable: boolean) => {
     if (!userId) throw new Error("Not authenticated");

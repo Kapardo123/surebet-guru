@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { matches, makeQueries } from "../../src/lib/logoFetcher";
+import { matches, makeQueries } from "../../src/lib/teamNameMatch";
 
 describe("matches — dopasowanie nazw drużyn", () => {
   it("exact i substring", () => {
@@ -14,7 +14,6 @@ describe("matches — dopasowanie nazw drużyn", () => {
 
   it("warianty zapisu wieku: U19 / U-19 / under 19 są równoważne", () => {
     expect(matches("Poland U-19", "Polska U19")).toBeGreaterThanOrEqual(120);
-    // Wszystkie tokeny zapytania pasują (100%) + bonus za młodzieżówkę.
     expect(matches("Poland national under-19 football team", "Poland U19")).toBeGreaterThanOrEqual(120);
   });
 
