@@ -1,3 +1,14 @@
+# --- Capacitor core + plugins ---
+# The core reads @CapacitorPlugin/@Permission through reflection and stores the
+# bridge/annotation in fields; R8 full mode broke that (NPE in
+# Plugin.getPermissionStates -> Bridge.getPermissionStates). Keep the whole
+# Capacitor surface. Third-party SDKs below rely on their own consumer rules.
+
+-keep class com.getcapacitor.** { *; }
+-keep class com.capacitorjs.** { *; }
+-keep class com.getcapacitor.community.** { *; }
+-keep @interface com.getcapacitor.annotation.** { *; }
+
 # Keep only the WebView bridge surface. Capacitor ships its own consumer rules
 # (node_modules/@capacitor/android/capacitor/proguard-rules.pro) that already
 # keep @CapacitorPlugin classes, com.getcapacitor.Plugin subclasses and Cordova
