@@ -1,16 +1,11 @@
-import { ArrowRightToLine, ArrowLeftFromLine } from "lucide-react";
+import { ArrowRightToLine, ArrowLeftFromLine, Target, Ticket, Gem } from "@/components/icons/gsb";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  IconTargetReal,
-  IconTicketReal,
-  IconGemReal,
-} from "@/components/icons/RealisticIcons";
 
 const navItems = [
-  { label: "Tips", icon: IconTargetReal, path: "/" },
-  { label: "Coupons", icon: IconTicketReal, path: "/#coupons" },
-  { label: "Premium", icon: IconGemReal, path: "/premium" },
+  { label: "Tips", icon: Target, path: "/" },
+  { label: "Coupons", icon: Ticket, path: "/#coupons" },
+  { label: "Premium", icon: Gem, path: "/premium" },
 ];
 
 const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange?: (tab: string) => void }) => {

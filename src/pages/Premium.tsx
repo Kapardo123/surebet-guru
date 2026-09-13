@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, TrendingUp, Crown, Loader2, LogIn, LogOut, Bell, Smartphone, Home, Crosshair, Layers } from "lucide-react";
+import { Shield, TrendingUp, Crown, Loader2, LogIn, LogOut, Bell, Smartphone, Home, Crosshair, Layers } from "@/components/icons/gsb";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
@@ -191,7 +191,7 @@ export default function Premium() {
 
   return (
     <PageTransition>
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-clip">
       {/* Synthwave glow effects */}
       <div className="fixed top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none"
            style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', transform: 'translate(-30%, -30%)', opacity: 0.12 }} />
@@ -384,7 +384,7 @@ export default function Premium() {
                         : 'bg-white/[0.07] text-white border border-white/10 hover:bg-white/[0.12]'
                     }`}
                   >
-                    {loading === plan.duration ? <Loader2 className="animate-spin" /> : "Get it now"}
+                    {loading === plan.duration ? <Loader2 className={`animate-spin ${plan.popular ? "brightness-0 invert" : ""}`} /> : "Get it now"}
                   </Button>
                 </div>
               </div>

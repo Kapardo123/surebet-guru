@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Gem, SlidersHorizontal, Award, Check } from "lucide-react";
+import { Gem, SlidersHorizontal, Award, Check } from "@/components/icons/gsb";
 import {
   Drawer,
   DrawerContent,
@@ -91,7 +91,7 @@ const FilterBar = ({
                     onClick={() => onSportChange?.("All")}
                     className={`${chipBase} ${activeSport === "All" ? chipOn : chipOff}`}
                   >
-                    <Award className="w-3 h-3" />
+                    <Award className={`w-3 h-3 ${activeSport === "All" ? "brightness-0 invert" : ""}`} />
                     All
                   </button>
                   {sports!.map((sport) => (
@@ -116,7 +116,7 @@ const FilterBar = ({
                     onClick={() => onPremiumChange(type)}
                     className={`${chipBase} ${activePremium === type ? chipOn : chipOff}`}
                   >
-                    {type === "premium" && <Gem className="w-3 h-3" />}
+                    {type === "premium" && <Gem className={`w-3 h-3 ${activePremium === type ? "brightness-0 invert" : ""}`} />}
                     {premiumLabels[type]}
                   </button>
                 ))}
@@ -133,7 +133,7 @@ const FilterBar = ({
             </button>
             <DrawerClose asChild>
               <button className="flex-1 h-11 rounded-xl bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold text-sm inline-flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
-                <Check className="w-4 h-4" />
+                <Check className="w-4 h-4 brightness-0 invert" />
                 Show {filteredItems}
               </button>
             </DrawerClose>

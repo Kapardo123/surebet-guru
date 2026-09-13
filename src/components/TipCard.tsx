@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge";
-import { Timer, Shield, Gem, ChevronDown, ChevronUp, Crosshair, BadgeCheck, BadgeX, Minus } from "lucide-react";
+import { Timer, Shield, Gem, ChevronDown, ChevronUp, Crosshair, BadgeCheck, BadgeX, Minus, Target } from "@/components/icons/gsb";
 import TeamLogo, { SportIcon } from "@/components/TeamLogo";
-import { IconTargetReal } from "@/components/icons/RealisticIcons";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useCallback, memo } from "react";
@@ -110,15 +109,15 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
           {/* Top row: badges */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
-              <IconTargetReal size={17} className="flex-shrink-0 opacity-90" />
+              <Target size={17} className="flex-shrink-0 opacity-90" />
               {tip.isPremium && !isSettled && (
                 <span className="bg-pink-500 text-white px-2.5 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider rounded-full flex items-center gap-1">
-                  <Gem className="w-2.5 h-2.5 fill-white" />
+                  <Gem className="w-2.5 h-2.5 brightness-0 invert" />
                   Premium
                 </span>
               )}
               <Badge variant="sport" className="text-[10px] bg-white/[0.04] text-white/60 border-white/10 gap-1 inline-flex">
-                <SportIcon sport={tip.sport} size={8} />
+                <SportIcon sport={tip.sport} size={12} />
                 {tip.sport}
               </Badge>
               <span className="text-[11px] text-white/55 font-medium truncate max-w-[120px]">{tip.league}</span>

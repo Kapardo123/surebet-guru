@@ -10,8 +10,7 @@ import { loadTips } from "@/lib/tipsStorage";
 import { loadCoupons, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
 import { Tip } from "@/components/TipCard";
-import { Gem, Crosshair, Ticket, ArrowRightToLine, ArrowLeftFromLine, Sparkles, Timer, History, Loader2 } from "lucide-react";
-import { IconTargetReal, IconTicketReal, IconTrophyReal } from "@/components/icons/RealisticIcons";
+import { Gem, Crosshair, Ticket, ArrowRightToLine, ArrowLeftFromLine, Sparkles, Timer, History, Loader2, Target } from "@/components/icons/gsb";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import PremiumBadge from "@/components/PremiumBadge";
@@ -106,19 +105,6 @@ const Index = () => {
   const { pullY, refreshing } = usePullToRefresh(loadData);
 
   // Auto-hide the header while scrolling down; reveal it on scroll up.
-  const [headerHidden, setHeaderHidden] = useState(false);
-  useEffect(() => {
-    let lastY = window.scrollY;
-    const onScroll = () => {
-      const y = window.scrollY;
-      if (y > lastY && y > 90) setHeaderHidden(true);
-      else if (y < lastY - 4) setHeaderHidden(false);
-      lastY = y;
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   const tipSports = useMemo(() =>
     Array.from(new Set(tips.map((t) => t.sport).filter(Boolean) as string[])).sort(),
     [tips]
@@ -166,7 +152,7 @@ const Index = () => {
   }, [allLoadedTips, toast]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-clip">
       {/* Synthwave glow effects - GPU composited (lżejsze blur = płynność) */}
       <div className="fixed top-0 left-0 w-[380px] h-[380px] rounded-full pointer-events-none" 
            style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(-30%, -30%)', filter: 'blur(70px)', opacity: 0.16, willChange: 'transform' }} />
@@ -176,7 +162,7 @@ const Index = () => {
            style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', transform: 'translate(-50%, -50%)', filter: 'blur(60px)', opacity: 0.08, willChange: 'transform' }} />
 
       {/* Glass Header */}
-      <header className={`sticky top-0 z-50 border-b border-white/[0.06] shadow-2xl shadow-black/40 transition-transform duration-300 ${headerHidden ? "-translate-y-full" : "translate-y-0"}`}
+      <header className="sticky top-0 z-50 border-b border-white/[0.06] shadow-2xl shadow-black/40"
         style={{ background: "linear-gradient(135deg, rgba(10,0,21,0.92) 0%, rgba(21,0,37,0.95) 50%, rgba(10,0,32,0.92) 100%)" }}>
         {/* Top accent line */}
         <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-pink-500/50 to-transparent" />
@@ -216,7 +202,7 @@ const Index = () => {
                     <Button size="sm"
                             className="gap-1.5 font-bold uppercase tracking-wider text-[11px] text-white rounded-full px-5 py-2 border border-white/10 relative overflow-hidden group transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-pink-500/20"
                             style={{ background: "linear-gradient(135deg, #ec4899 0%, #db2777 55%, #06b6d4 100%)" }}>
-                    <Gem className="w-3.5 h-3.5" />
+                    <Gem className="w-3.5 h-3.5 brightness-0 invert" />
                     Go Premium
                   </Button>
                 </Link>
@@ -272,12 +258,12 @@ const Index = () => {
           <TabsList className="bg-white/[0.04] border border-white/[0.06] p-1.5 w-full md:w-auto rounded-2xl shadow-lg shadow-black/10">
             <TabsTrigger value="tips"
                         className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-pink-500/20 rounded-xl py-3 transition-all duration-300 text-white/60 hover:text-white/80">
-              <IconTargetReal size={17} />
+              <Target size={17} className={activeTab === "tips" ? "brightness-0 invert" : ""} />
               Single Tips
             </TabsTrigger>
             <TabsTrigger value="coupons"
                         className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-pink-500/20 rounded-xl py-3 transition-all duration-300 text-white/60 hover:text-white/80">
-              <IconTicketReal size={17} />
+              <Ticket size={17} className={activeTab === "coupons" ? "brightness-0 invert" : ""} />
               Coupons
             </TabsTrigger>
           </TabsList>

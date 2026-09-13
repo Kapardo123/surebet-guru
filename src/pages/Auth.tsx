@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Mail, Lock, Loader2, Sparkles, KeyRound } from "lucide-react";
+import { ArrowLeft, Mail, Lock, Loader2, Sparkles, KeyRound } from "@/components/icons/gsb";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import PageTransition from "@/components/PageTransition";
 import { useToast } from "@/hooks/use-toast";

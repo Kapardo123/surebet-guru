@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, memo } from "react";
-import { Flame, Play, Loader2, Gem, Shield, Crosshair, ChevronDown, Clock, Target, TrendingUp, Zap } from "lucide-react";
+import { Flame, Play, Loader2, Gem, Shield, Crosshair, ChevronDown, Clock, Target, TrendingUp, Zap } from "@/components/icons/gsb";
 import TeamLogo from "@/components/TeamLogo";
 import { motion, AnimatePresence } from "framer-motion";
 import { FeaturedPick, loadFeaturedPick, getCachedFeaturedPick } from "@/lib/featuredPickStorage";
@@ -290,9 +290,9 @@ const TodayHotTip = () => {
                 >
                   <span className="flex items-center gap-2">
                     {isLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin brightness-0 invert" />
                     ) : (
-                      <Play className="w-4 h-4" />
+                      <Play className="w-4 h-4 brightness-0 invert" />
                     )}
                     {!isRewardedAdReady ? "Preparing Ad..." : "Watch Ad - Unlock Free"}
                   </span>

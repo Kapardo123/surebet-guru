@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Hourglass, Zap } from "lucide-react";
+import { Hourglass, Zap } from "@/components/icons/gsb";
 import { motion } from "framer-motion";
 
 // Publikacja typów z poczekalni obsługiwana jest przez cron o 01:00 UTC codziennie.

@@ -22,7 +22,7 @@ import {
   BadgeX,
   RotateCcw,
   EyeOff,
-} from "lucide-react";
+} from "@/components/icons/gsb";
 import {
   loadTips,
   updateTip,

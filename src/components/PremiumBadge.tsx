@@ -1,4 +1,4 @@
-import { Gem, Timer } from "lucide-react";
+import { Gem, Timer } from "@/components/icons/gsb";
 import { Link } from "react-router-dom";
 
 interface PremiumBadgeProps {

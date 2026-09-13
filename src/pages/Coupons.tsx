@@ -5,7 +5,7 @@ import Logo from "@/components/Logo";
 import PageTransition from "@/components/PageTransition";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Crown, Receipt, ArrowLeft, Sparkles } from "lucide-react";
+import { Crown, Receipt, ArrowLeft, Sparkles } from "@/components/icons/gsb";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 
 const Coupons = () => {
@@ -46,7 +46,7 @@ const Coupons = () => {
 
   return (
     <PageTransition>
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-clip">
       {/* Synthwave glow effects */}
       <div className="fixed top-0 left-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none" 
            style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(-30%, -30%)' }} />
@@ -87,7 +87,7 @@ const Coupons = () => {
                         className="gap-1.5 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-400 hover:to-pink-500 text-white font-bold uppercase tracking-wider text-[11px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-all duration-300 hover:scale-105 rounded-full px-4 py-2 border border-white/10 relative overflow-hidden group">
                   <span className="absolute inset-0 bg-gradient-to-r from-pink-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <span className="relative flex items-center gap-1.5">
-                    <Crown className="w-3.5 h-3.5" />
+                    <Crown className="w-3.5 h-3.5 brightness-0 invert" />
                     Go Premium
                   </span>
                 </Button>
@@ -154,7 +154,7 @@ const Coupons = () => {
             <div className="pt-4">
               <Link to="/premium">
                 <Button className="gap-2 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-400 hover:to-pink-500 text-white font-bold uppercase tracking-wider text-sm shadow-xl shadow-pink-500/25 transition-all duration-300 hover:scale-105 rounded-full px-6 py-3">
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-4 h-4 brightness-0 invert" />
                   Unlock Premium Coupons
                 </Button>
               </Link>

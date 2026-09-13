@@ -1,8 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Coupon } from "@/lib/couponStorage";
-import { Ticket, Timer, Gem, Shield, Layers, BadgeCheck, BadgeX, Minus } from "lucide-react";
+import { Ticket, Timer, Gem, Shield, Layers, BadgeCheck, BadgeX, Minus } from "@/components/icons/gsb";
 import TeamLogo, { SportIcon } from "@/components/TeamLogo";
-import { IconTicketReal } from "@/components/icons/RealisticIcons";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { memo } from "react";
@@ -58,13 +57,13 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <div className="w-9 h-9 rounded-xl bg-cyan-500/10 flex items-center justify-center ring-1 ring-cyan-500/20 flex-shrink-0">
-                <IconTicketReal size={24} />
+                <Ticket size={24} />
               </div>
               <div className="min-w-0">
                 <h3 className="font-display font-bold text-sm text-foreground truncate">{coupon.name}</h3>
                 {coupon.sport && (
                   <span className="text-[9px] text-muted-foreground font-medium tracking-wider uppercase inline-flex items-center gap-1">
-                    <SportIcon sport={coupon.sport} size={7} />
+                    <SportIcon sport={coupon.sport} size={11} />
                     {coupon.sport}
                   </span>
                 )}
@@ -73,7 +72,7 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
             <div className="flex items-center gap-1.5 shrink-0">
               {coupon.isPremium && (
                 <span className="bg-pink-500 text-white px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider rounded-full flex items-center gap-0.5">
-                  <Gem className="w-2 h-2 fill-white" />
+                  <Gem className="w-2 h-2 brightness-0 invert" />
                   PRO
                 </span>
               )}
@@ -96,7 +95,7 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
                   <div className="flex flex-wrap items-center gap-1.5 pb-2 mb-2 border-b border-white/[0.04]">
                     {match.sport && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded-full">
-                        <SportIcon sport={match.sport} size={7} />
+                        <SportIcon sport={match.sport} size={11} />
                         {match.sport}
                       </span>
                     )}

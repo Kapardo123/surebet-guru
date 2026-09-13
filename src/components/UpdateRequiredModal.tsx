@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, AlertTriangle } from "lucide-react";
+import { Download, AlertTriangle } from "@/components/icons/gsb";
 import { Button } from "@/components/ui/button";
 
 interface UpdateRequiredModalProps {

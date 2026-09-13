@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, memo } from "react";
 import { useTeamLogo, getCachedTeamLogo, setCachedTeamLogo } from "@/hooks/useTeamLogo";
-import { Loader2 } from "lucide-react";
-import { MdSportsTennis } from "react-icons/md";
+import { Loader2, Tennis, Football, Basketball, Volleyball, Hockey, Handball, Mma, Baseball, Esports, Darts, Target } from "@/components/icons/gsb";
 
 interface TeamLogoProps {
   teamName: string;
@@ -10,16 +9,24 @@ interface TeamLogoProps {
   sport?: string;
 }
 
-export const SportIcon = ({ sport, size = 12 }: { sport: string; size?: number }) => {
-  const isTennis = sport?.toLowerCase().includes("tennis");
-  if (isTennis)
-    return (
-      <MdSportsTennis
-        size={size * 1.5}
-        className="text-yellow-500"
-      />
-    );
-  return null;
+const resolveSportIcon = (sport?: string): typeof Tennis => {
+  const s = (sport || "").toLowerCase();
+  if (s.includes("football") || s.includes("soccer")) return Football;
+  if (s.includes("basket")) return Basketball;
+  if (s.includes("tennis")) return Tennis;
+  if (s.includes("volley")) return Volleyball;
+  if (s.includes("hockey")) return Hockey;
+  if (s.includes("handball")) return Handball;
+  if (s.includes("mma") || s.includes("ufc") || s.includes("box")) return Mma;
+  if (s.includes("baseball")) return Baseball;
+  if (s.includes("esport") || s.includes("e-sport")) return Esports;
+  if (s.includes("dart") || s.includes("snooker")) return Darts;
+  return Target;
+};
+
+export const SportIcon = ({ sport, size = 12, className }: { sport?: string; size?: number; className?: string }) => {
+  const Icon = resolveSportIcon(sport);
+  return <Icon size={size} className={className} />;
 };
 
 const getInitials = (name: string) => {
@@ -103,10 +110,7 @@ const TeamLogo = ({
         className="rounded-full bg-gradient-to-br from-yellow-400/20 to-amber-500/10 border border-yellow-400/30 flex items-center justify-center flex-shrink-0"
         style={{ width: size, height: size }}
       >
-        <MdSportsTennis
-          size={size * 0.6}
-          className="text-yellow-500"
-        />
+        <Tennis size={size * 0.6} />
       </div>
     );
   }

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Gift, Gem, Timer, Sparkles, ArrowRightToLine } from "lucide-react";
+import { Gift, Gem, Timer, Sparkles, ArrowRightToLine } from "@/components/icons/gsb";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -346,7 +346,7 @@ const DailySpin = ({ isLoggedIn = false, userId, onFreeTip, onPremiumWon }: { is
                 className="px-8 py-3.5 rounded-full font-display font-black text-[11px] uppercase tracking-[0.2em] text-white flex items-center gap-2 shadow-[0_0_24px_rgba(236,72,153,0.35)]"
                 style={{ background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)" }}
               >
-                <ArrowRightToLine className="w-4 h-4" /> Log in to spin
+                <ArrowRightToLine className="w-4 h-4 brightness-0 invert" /> Log in to spin
               </motion.button>
             </Link>
           ) : (

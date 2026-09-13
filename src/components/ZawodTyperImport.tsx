@@ -21,7 +21,7 @@ import {
   X,
   Hourglass,
   Send,
-} from "lucide-react";
+} from "@/components/icons/gsb";
 import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
 import { markImported, ImportTarget, ScrapedMatch } from "@/lib/sportyTrader";
@@ -581,11 +581,11 @@ const ZawodTyperImport = ({ onImport, couponCount = 0, onGoToCoupon }: Props) =>
           >
             {analyzing ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" /> AI pisze analizy...
+                <Loader2 className="w-3.5 h-3.5 animate-spin brightness-0 invert" /> AI pisze analizy...
               </>
             ) : (
               <>
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5 brightness-0 invert" />
                 Generuj analizy AI ({pendingAnalysis.length})
               </>
             )}
@@ -794,7 +794,7 @@ const ZawodTyperImport = ({ onImport, couponCount = 0, onGoToCoupon }: Props) =>
                   onClick={() => handleRoute(m, "queue")}
                   title="Dodaj do kolejki — publikacja o 3:00"
                 >
-                  <Hourglass className="w-3.5 h-3.5" /> Add to Queue (3:00)
+                  <Hourglass className="w-3.5 h-3.5 brightness-0 invert" /> Add to Queue (3:00)
                 </Button>
                 <Button
                   size="sm"

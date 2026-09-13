@@ -14,7 +14,7 @@ import LiveTab from "@/components/admin/LiveTab";
 import {
   Trash2, ArrowLeft, Receipt, X, Save, Users, Bell, RefreshCw,
   Hourglass, Download, History, Globe,
-} from "lucide-react";
+} from "@/components/icons/gsb";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
@@ -283,7 +283,7 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 relative overflow-clip">
       <div className="fixed top-0 left-1/3 w-[400px] h-[400px] rounded-full blur-[100px] opacity-10 pointer-events-none"
         style={{ background: "radial-gradient(circle, #ec4899 0%, transparent 70%)" }} />
 
@@ -318,7 +318,7 @@ const Admin = () => {
                     : "text-white/60 hover:text-pink-300 hover:bg-white/5"
                 }`}
               >
-                <tab.icon className="w-4 h-4" />
+                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? "brightness-0 invert" : ""}`} />
                 {tab.label}
               </button>
             ))}
@@ -412,7 +412,7 @@ const Admin = () => {
                         onClick={() => handleSaveCoupon(false)}
                         disabled={!couponName || couponMatches.length < 2}
                       >
-                        <Save className="w-3 h-3" />
+                        <Save className="w-3 h-3 brightness-0 invert" />
                         Save
                       </Button>
                       <Button
@@ -422,7 +422,7 @@ const Admin = () => {
                         disabled={!couponName || couponMatches.length < 2}
                         title="Zapisz do kolejki (live o 3:00)"
                       >
-                        <Hourglass className="w-3 h-3" />
+                        <Hourglass className="w-3 h-3 brightness-0 invert" />
                         Queue
                       </Button>
                     </div>

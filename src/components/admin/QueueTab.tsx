@@ -21,7 +21,7 @@ import {
   Pencil,
   X,
   PlusCircle,
-} from "lucide-react";
+} from "@/components/icons/gsb";
 import {
   loadQueuedTips,
   unqueueTipById,
@@ -577,7 +577,7 @@ const QueueTab = ({ onSaved, builder, setBuilder }: QueueTabProps) => {
                 onClick={handleReleaseAll}
                 disabled={releasing || total === 0}
               >
-                {releasing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                {releasing ? <Loader2 className="w-3.5 h-3.5 animate-spin brightness-0 invert" /> : <Send className="w-3.5 h-3.5 brightness-0 invert" />}
                 Release Now
               </Button>
             </div>
@@ -611,7 +611,7 @@ const QueueTab = ({ onSaved, builder, setBuilder }: QueueTabProps) => {
                 className={`h-8 gap-1.5 text-[10px] ${subTab === t.id ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white" : ""}`}
                 onClick={() => setSubTab(t.id)}
               >
-                <t.icon className="w-3 h-3" /> {t.label}
+                <t.icon className={`w-3 h-3 ${subTab === t.id ? "brightness-0 invert" : ""}`} /> {t.label}
               </Button>
             ))}
           </div>
@@ -682,7 +682,7 @@ const QueueTab = ({ onSaved, builder, setBuilder }: QueueTabProps) => {
                           </Label>
                         </div>
                         <Button size="sm" className="h-8 gap-1.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white" onClick={handleSaveTip} disabled={savingTip}>
-                          {savingTip ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Hourglass className="w-3.5 h-3.5" />}
+                          {savingTip ? <Loader2 className="w-3.5 h-3.5 animate-spin brightness-0 invert" /> : <Hourglass className="w-3.5 h-3.5 brightness-0 invert" />}
                           {editingTipId !== null ? "Save changes" : "Add to Queue"}
                         </Button>
                       </div>
@@ -833,7 +833,7 @@ const QueueTab = ({ onSaved, builder, setBuilder }: QueueTabProps) => {
                     )}
 
                     <Button size="sm" className="h-8 gap-1.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white" onClick={handleSaveCoupon} disabled={savingCoupon}>
-                      {savingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Hourglass className="w-3.5 h-3.5" />}
+                      {savingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin brightness-0 invert" /> : <Hourglass className="w-3.5 h-3.5 brightness-0 invert" />}
                       {editingQueuedCouponId !== null ? "Save changes" : "Add coupon to Queue"}
                     </Button>
                   </div>
@@ -937,7 +937,7 @@ const QueueTab = ({ onSaved, builder, setBuilder }: QueueTabProps) => {
                     </div>
                     <Textarea className="min-h-[70px] text-xs" value={heroForm.description} onChange={(e) => setHeroForm({ ...heroForm, description: e.target.value })} placeholder="Hero analysis (optional)" />
                     <Button size="sm" className="h-8 gap-1.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white" onClick={handleSaveHero} disabled={savingHero}>
-                      {savingHero ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Hourglass className="w-3.5 h-3.5" />}
+                      {savingHero ? <Loader2 className="w-3.5 h-3.5 animate-spin brightness-0 invert" /> : <Hourglass className="w-3.5 h-3.5 brightness-0 invert" />}
                       {editingHeroId !== null ? "Save changes" : "Add hero to Queue"}
                     </Button>
                   </div>

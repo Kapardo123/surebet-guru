@@ -14,7 +14,7 @@ import {
   ArrowRight,
   Hourglass,
   Send,
-} from "lucide-react";
+} from "@/components/icons/gsb";
 import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
 import {
@@ -33,7 +33,7 @@ import {
   ImportTarget,
 } from "@/lib/sportyTrader";
 import { getSofaOdds } from "@/lib/sofaOdds";
-import { Sparkles } from "lucide-react";
+import { Sparkles } from "@/components/icons/gsb";
 
 interface MatchCard extends ScrapedMatch {
   analysis: string; // rewritten
@@ -587,7 +587,7 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
                 onClick={() => handleRoute(m, "queue")}
                 title="Dodaj do kolejki — publikacja o 3:00"
               >
-                <Hourglass className="w-3.5 h-3.5" /> Add to Queue (3:00)
+                <Hourglass className="w-3.5 h-3.5 brightness-0 invert" /> Add to Queue (3:00)
               </Button>
               <Button
                 size="sm"
