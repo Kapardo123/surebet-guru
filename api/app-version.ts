@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const APP_VERSION = {
-  version: "39.0.0",
-  build: 3900,
+  version: "40.0.0",
+  build: 4000,
   forceUpdate: false,
   releaseDate: "2026-09-13",
-  updateMessage: "New version available! v39.0.0 ✨ New GSB icons, refreshed logo and UI polish.",
+  updateMessage: "New version available! v40.0.0 ✨ Fixes Premium disappearing after purchase.",
   downloadUrl: "https://play.google.com/store/apps/details?id=com.surebet.guru",
   minSupportedVersion: "10.0.0",
 };

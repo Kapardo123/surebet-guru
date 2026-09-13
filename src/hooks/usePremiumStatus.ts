@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Capacitor } from "@capacitor/core";
 import { getCustomerInfo } from "@/integrations/revenuecat";
 import { daysForProduct } from "@/lib/premiumPlans";
+import { syncPremiumFromRevenueCat } from "@/lib/premiumSync";
 
 interface PremiumStatusState {
   active: boolean;
@@ -63,6 +64,12 @@ export const usePremiumStatus = () => {
     try {
       const nowMs = Date.now();
 
+      // 0. Server-side reconcile with RevenueCat (once per session; forced after
+      // a purchase). Keeps premium_access correct for non-renewing products.
+      if (Capacitor.getPlatform() !== "web" && user?.id) {
+        await syncPremiumFromRevenueCat(user.id, { force: !!providedInfo || !!manualDuration });
+      }
+
       // 1. Database premium — the source of truth for STACKING. Wheel prizes,
       // admin grants, Stripe and the RevenueCat webhook all ADD days here.
       const { data } = await (supabase as any)
@@ -106,6 +113,32 @@ export const usePremiumStatus = () => {
               } else if (/life|forever|unlimited/.test(String(entitlement.productIdentifier || "").toLowerCase())) {
                 lifetime = true; // explicit lifetime product
               }
+            }
+          }
+
+          // Non-renewing products (premium_XX_days) do NOT stay in active
+          // entitlements, so also read the raw non-subscription purchases that
+          // RevenueCat keeps for this customer. Without this, premium vanished
+          // as soon as the Premium screen unmounted (only the manualDuration
+          // fallback used to show it right after purchase).
+          const rawInfo = info as any;
+          const nonSubs: any[] = Array.isArray(rawInfo?.nonSubscriptionTransactions)
+            ? rawInfo.nonSubscriptionTransactions
+            : Object.entries(rawInfo?.nonSubscriptions || {}).flatMap(
+                ([productId, list]: [string, any]) =>
+                  (Array.isArray(list) ? list : []).map((t: any) => ({
+                    productIdentifier: productId,
+                    purchaseDate: t?.purchase_date || t?.purchaseDate,
+                    purchaseDateMillis: t?.purchase_date_ms || t?.purchaseDateMillis,
+                  })),
+              );
+          for (const tx of nonSubs) {
+            const planDays = daysForProduct(tx?.productIdentifier || tx?.productId);
+            const purchaseMs =
+              tx?.purchaseDateMillis ||
+              (tx?.purchaseDate ? new Date(tx.purchaseDate).getTime() : 0);
+            if (planDays > 0 && purchaseMs > 0) {
+              rcExpiryMs = Math.max(rcExpiryMs, purchaseMs + planDays * 86400000);
             }
           }
         } catch (e) {
