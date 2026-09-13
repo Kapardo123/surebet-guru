@@ -1,8 +1,9 @@
-# Keep the WebView bridge surface only. Capacitor ships its own consumer rules
+# Keep only the WebView bridge surface. Capacitor ships its own consumer rules
 # (node_modules/@capacitor/android/capacitor/proguard-rules.pro) that already
 # keep @CapacitorPlugin classes, com.getcapacitor.Plugin subclasses and Cordova
-# plugins. Blanket `-keep class <library>.** { *; }` would freeze large parts of
-# the DEX and make Google Play flag the app for low R8 optimization/shrinking.
+# plugins; RevenueCat, Google Play services and Firebase ship theirs too.
+# Blanket `-keep class <library>.** { *; }` would freeze large parts of the DEX
+# and keep Google Play's optimization/shrinking below the 25% threshold.
 
 -keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations,AnnotationDefault,Signature,InnerClasses,EnclosingMethod,SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile

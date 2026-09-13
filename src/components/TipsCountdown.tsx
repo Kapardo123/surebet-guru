@@ -2,48 +2,28 @@ import { useEffect, useMemo, useState } from "react";
 import { Hourglass, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
-// Publikacja typów z poczekalni: codziennie o 03:00 czasu polskiego.
-// 01:00 UTC pokrywa CEST (UTC+2); zimą cron zadziała o 02:00 PL.
-const RELEASE_UTC_HOURS = [1, 2];
+// Publikacja typów z poczekalni obsługiwana jest przez cron o 01:00 UTC codziennie.
+// Latem (CEST, UTC+2) to 03:00 czasu polskiego, zimą (CET, UTC+1) 02:00.
+const RELEASE_UTC_HOUR = 1;
 const GRACE_MINUTES = 15;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-interface WarsawClock {
-  date: string; // "YYYY-MM-DD"
-  hour: number;
-  minute: number;
-}
-
-const warsawWallClock = (ms: number): WarsawClock => {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Warsaw",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date(ms));
-  const get = (type: string) => parts.find((p) => p.type === type)?.value || "00";
-  return {
-    date: `${get("year")}-${get("month")}-${get("day")}`,
-    hour: Number(get("hour")),
-    minute: Number(get("minute")),
-  };
-};
-
-/** Najbliższa godzina 03:00 PL (jako instant UTC) późniejsza od `now`. */
-const nextReleaseInstant = (now: number): number => {
-  const candidates: number[] = [];
-  for (const dayOffset of [0, 1]) {
-    const { date } = warsawWallClock(now + dayOffset * 24 * 60 * 60 * 1000);
-    for (const utcHour of RELEASE_UTC_HOURS) {
-      candidates.push(
-        new Date(`${date}T${String(utcHour).padStart(2, "0")}:00:00Z`).getTime(),
-      );
-    }
-  }
-  const future = candidates.filter((c) => c > now);
-  return future.length ? Math.min(...future) : now + 24 * 60 * 60 * 1000;
+/** Ostatnia i najbliższa publikacja (01:00 UTC codziennie) + okno "właśnie dodawane".
+ *  Liczone wprost w UTC, żeby zmiana czasu (DST) nie przesuwała countdownu. */
+const computeRelease = (now: number) => {
+  const d = new Date(now);
+  const todayRelease = Date.UTC(
+    d.getUTCFullYear(),
+    d.getUTCMonth(),
+    d.getUTCDate(),
+    RELEASE_UTC_HOUR,
+    0,
+    0,
+  );
+  const last = now >= todayRelease ? todayRelease : todayRelease - DAY_MS;
+  const next = last + DAY_MS;
+  const releasing = now - last < GRACE_MINUTES * 60 * 1000;
+  return { last, next, releasing };
 };
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -69,9 +49,8 @@ const TipsCountdown = () => {
   }, []);
 
   const { releasing, target } = useMemo(() => {
-    const clock = warsawWallClock(now);
-    const isGrace = clock.hour === 3 && clock.minute < GRACE_MINUTES;
-    return { releasing: isGrace, target: nextReleaseInstant(now) };
+    const { releasing, next } = computeRelease(now);
+    return { releasing, target: next };
   }, [now]);
 
   const remaining = Math.max(0, target - now);

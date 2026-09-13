@@ -11,7 +11,8 @@ import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Capacitor } from "@capacitor/core";
-import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from "@/integrations/revenuecat";
+import { supabase } from "@/integrations/supabase/client";
+import { getOfferings, purchasePackage, restorePurchases } from "@/integrations/revenuecat";
 
 export default function Premium() {
   const { user, signOut, loading: authLoading } = useAuth();
@@ -41,6 +42,34 @@ export default function Premium() {
       }).catch(() => {});
     }
   }, [refresh]);
+
+  // Web checkout return: verify the Stripe session, then unlock premium.
+  useEffect(() => {
+    if (Capacitor.getPlatform() !== "web") return; // Stripe flow is web-only
+    if (searchParams.get("success") !== "true") return;
+    const sessionId = searchParams.get("session_id");
+    if (!sessionId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("verify-payment", {
+          body: { sessionId },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        await refresh();
+        if (!cancelled) toast({ title: "Payment successful! Premium unlocked 🎉" });
+      } catch (e: any) {
+        if (!cancelled) {
+          toast({ title: "Could not verify payment", description: e?.message, variant: "destructive" });
+        }
+      } finally {
+        // Strip the query params so a refresh doesn't re-verify.
+        window.history.replaceState({}, "", `${window.location.pathname}#/premium`);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [searchParams, refresh, toast]);
 
   // Keep this early return AFTER every hook so hook order stays stable.
   if (authLoading) {
@@ -76,23 +105,36 @@ export default function Premium() {
     setLoading(duration);
     try {
       if (Capacitor.getPlatform() !== 'web') {
-        const info = await presentPaywall();
-        if (info) {
-          await refresh(info, duration);
-        } else if (rcOfferings?.current) {
-          let pkg = null;
-          if (duration === 7) pkg = rcOfferings.current.weekly;
-          else if (duration === 30) pkg = rcOfferings.current.monthly;
-          else {
-            pkg = rcOfferings.current.availablePackages.find((p: any) => p.identifier.includes('15'));
-          }
-          if (pkg) {
-            const dInfo = await purchasePackage(pkg);
-            if (dInfo) await refresh(dInfo, duration);
-          }
+        // RevenueCat 13 moved the hosted paywall to a separate UI package, so we
+        // purchase the selected plan directly from the current offering.
+        const offerings = rcOfferings?.current ? rcOfferings : await getOfferings();
+        const current = offerings?.current;
+        let pkg: any = null;
+        if (current) {
+          if (duration === 7) pkg = current.weekly;
+          else if (duration === 30) pkg = current.monthly;
+          else pkg = current.availablePackages.find((p: any) => p.identifier.includes('15'));
         }
-      } else if (paymentLink) {
-        window.location.href = `${paymentLink}?client_reference_id=${user.id}&customer_email=${encodeURIComponent(user.email || "")}`;
+        if (pkg) {
+          const dInfo = await purchasePackage(pkg);
+          if (dInfo) await refresh(dInfo, duration);
+        } else {
+          toast({ title: "Plan unavailable", description: "Please try again in a moment.", variant: "destructive" });
+        }
+      } else {
+        // Web: Stripe Checkout through our edge function, so the purchase is
+        // recorded and premium is granted when the user returns.
+        const { data, error } = await supabase.functions.invoke("create-payment", {
+          body: { duration, origin: window.location.origin },
+        });
+        if (error) throw error;
+        if (data?.url) {
+          window.location.href = data.url;
+        } else if (paymentLink) {
+          window.location.href = paymentLink;
+        } else {
+          throw new Error(data?.error || "Could not start checkout");
+        }
       }
     } catch (e) {
       console.error("Purchase error", e);

@@ -60,8 +60,8 @@ serve(async (req: Request) => {
       },
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "payment",
-      success_url: `${origin}/premium?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/premium`,
+      success_url: `${origin}/#/premium?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/#/premium`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

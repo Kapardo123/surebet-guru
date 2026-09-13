@@ -29,7 +29,7 @@ export const initRevenueCat = async () => {
 export const loginRevenueCat = async (appUserId: string) => {
   if (Capacitor.getPlatform() === 'web') return;
   try {
-    const { customerInfo } = await Purchases.logIn({ appUserId });
+    const { customerInfo } = await Purchases.logIn({ appUserID: appUserId });
     console.log('Użytkownik zalogowany w RevenueCat:', appUserId);
     return customerInfo;
   } catch (error) {
@@ -89,18 +89,6 @@ export const getCustomerInfo = async () => {
     return customerInfo;
   } catch (error) {
     console.error('Błąd pobierania informacji o kliencie:', error);
-    return null;
-  }
-};
-
-export const presentPaywall = async () => {
-  try {
-    const { customerInfo } = await Purchases.presentPaywall();
-    return customerInfo;
-  } catch (error: any) {
-    if (!error.userCancelled) {
-      console.error('Błąd wyświetlania Paywall:', error);
-    }
     return null;
   }
 };
