@@ -17,9 +17,11 @@ const corsHeaders = {
 };
 
 const API_KEY = Deno.env.get("OPENROUTER_API_KEY") || "";
+// Best-first, verified on OpenRouter Oct 2026. See ai-analyze for the rationale.
 const MODELS = [
-  "deepseek/deepseek-chat",
-  "openai/gpt-4o-mini",
+  "deepseek/deepseek-v4.1-flash",
+  "google/gemini-3-flash-preview",
+  "z-ai/glm-5.3-flash",
 ];
 
 interface OpenRouterResponse {

@@ -27,7 +27,7 @@ const premiumLabels: Record<PremiumFilter, string> = {
   free: "Free",
 };
 
-/** Compact trigger + native bottom-sheet with the same filters. */
+/** Desktop shows filters inline; mobile keeps the compact trigger + bottom-sheet. */
 const FilterBar = ({
   sports,
   activeSport,
@@ -54,9 +54,67 @@ const FilterBar = ({
     onPremiumChange("all");
   };
 
+  const sportChips = hasSports ? (
+    <>
+      <button
+        onClick={() => onSportChange?.("All")}
+        className={`${chipBase} ${activeSport === "All" ? chipOn : chipOff}`}
+      >
+        <Award className={`w-3 h-3 ${activeSport === "All" ? "brightness-0 invert" : ""}`} />
+        All
+      </button>
+      {sports!.map((sport) => (
+        <button
+          key={sport}
+          onClick={() => onSportChange?.(sport)}
+          className={`${chipBase} ${activeSport === sport ? chipOn : chipOff}`}
+        >
+          {sport}
+        </button>
+      ))}
+    </>
+  ) : null;
+
+  const typeChips = (["all", "premium", "free"] as PremiumFilter[]).map((type) => (
+    <button
+      key={type}
+      onClick={() => onPremiumChange(type)}
+      className={`${chipBase} ${activePremium === type ? chipOn : chipOff}`}
+    >
+      {type === "premium" && <Gem className={`w-3 h-3 ${activePremium === type ? "brightness-0 invert" : ""}`} />}
+      {premiumLabels[type]}
+    </button>
+  ));
+
   return (
     <>
-      <div className="flex items-center justify-between gap-3">
+      {/* Desktop: inline filters — no bottom-sheet */}
+      <div className="hidden md:flex items-center flex-wrap gap-x-6 gap-y-3">
+        {hasSports && (
+          <div className="flex items-center gap-2.5">
+            <p className="text-[11px] uppercase tracking-[0.15em] text-white/50 font-bold">Sport</p>
+            <div className="flex flex-wrap gap-1.5">{sportChips}</div>
+          </div>
+        )}
+        <div className="flex items-center gap-2.5">
+          <p className="text-[11px] uppercase tracking-[0.15em] text-white/50 font-bold">Type</p>
+          <div className="flex flex-wrap gap-1.5">{typeChips}</div>
+        </div>
+        {activeCount > 0 && (
+          <button
+            onClick={reset}
+            className="text-xs text-white/50 hover:text-white/80 underline underline-offset-4 transition-colors"
+          >
+            Clear
+          </button>
+        )}
+        <span className="ml-auto text-xs text-white/55 font-display font-medium">
+          {filteredItems} of {totalItems}
+        </span>
+      </div>
+
+      {/* Mobile: compact trigger opens the bottom-sheet */}
+      <div className="flex md:hidden items-center justify-between gap-3">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -86,41 +144,13 @@ const FilterBar = ({
             {hasSports && (
               <div className="space-y-2.5">
                 <p className="text-[11px] uppercase tracking-[0.15em] text-white/50 font-bold">Sport</p>
-                <div className="flex flex-wrap gap-1.5">
-                  <button
-                    onClick={() => onSportChange?.("All")}
-                    className={`${chipBase} ${activeSport === "All" ? chipOn : chipOff}`}
-                  >
-                    <Award className={`w-3 h-3 ${activeSport === "All" ? "brightness-0 invert" : ""}`} />
-                    All
-                  </button>
-                  {sports!.map((sport) => (
-                    <button
-                      key={sport}
-                      onClick={() => onSportChange?.(sport)}
-                      className={`${chipBase} ${activeSport === sport ? chipOn : chipOff}`}
-                    >
-                      {sport}
-                    </button>
-                  ))}
-                </div>
+                <div className="flex flex-wrap gap-1.5">{sportChips}</div>
               </div>
             )}
 
             <div className="space-y-2.5">
               <p className="text-[11px] uppercase tracking-[0.15em] text-white/50 font-bold">Type</p>
-              <div className="flex flex-wrap gap-1.5">
-                {(["all", "premium", "free"] as PremiumFilter[]).map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => onPremiumChange(type)}
-                    className={`${chipBase} ${activePremium === type ? chipOn : chipOff}`}
-                  >
-                    {type === "premium" && <Gem className={`w-3 h-3 ${activePremium === type ? "brightness-0 invert" : ""}`} />}
-                    {premiumLabels[type]}
-                  </button>
-                ))}
-              </div>
+              <div className="flex flex-wrap gap-1.5">{typeChips}</div>
             </div>
           </div>
 

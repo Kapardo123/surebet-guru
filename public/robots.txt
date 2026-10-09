@@ -12,3 +12,7 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Replace with your production domain before going live.
+Sitemap: https://REPLACE-WITH-YOUR-DOMAIN/sitemap.xml
+

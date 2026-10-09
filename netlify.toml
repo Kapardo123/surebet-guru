@@ -1,0 +1,11 @@
+# Netlify config for the web shell build (does not affect the Vercel app deploy).
+# Static build with hash routing — the SPA redirect is just a safety net.
+
+[build]
+  command = "npm run build:web"
+  publish = "dist-web"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

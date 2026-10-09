@@ -5,6 +5,7 @@ import { Shield, TrendingUp, Crown, Loader2, LogIn, LogOut, Bell, Smartphone, Ho
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
+import NavLinks from "@/components/NavLinks";
 import PageTransition from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
@@ -200,10 +201,11 @@ export default function Premium() {
 
       {/* Glass Header */}
       <header className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-[#0a0015]/80 via-[#150025]/80 to-[#0a0020]/80 border-b border-white/10 shadow-xl shadow-black/30">
-        <div className="container max-w-6xl mx-auto px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between">
+        <div className="relative container max-w-6xl xl:max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between gap-4">
           <div onClick={handleBack} className="cursor-pointer flex items-center gap-2.5 md:gap-3">
             <Logo />
           </div>
+          <NavLinks active="premium" className="absolute left-1/2 -translate-x-1/2" />
           <div className="flex items-center gap-2 md:gap-2.5">
             {user ? (
               <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 text-white/60 hover:text-pink-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-pink-500/30">
@@ -226,7 +228,7 @@ export default function Premium() {
         </div>
       </header>
 
-      <main className="container max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-12 relative z-10">
+      <main className="container max-w-6xl xl:max-w-7xl mx-auto px-4 py-8 md:py-12 space-y-12 relative z-10">
 
         {/* Hero */}
         <section className="text-center space-y-6 py-6 md:py-10">
@@ -308,7 +310,7 @@ export default function Premium() {
         )}
 
         {/* Features */}
-        <section className="grid gap-4 md:gap-5 md:grid-cols-2 max-w-3xl mx-auto">
+        <section className="grid gap-4 md:gap-5 md:grid-cols-2 lg:grid-cols-4 max-w-3xl lg:max-w-5xl mx-auto">
           {features.map((f, i) => (
             <div key={i} className="relative overflow-hidden rounded-2xl bg-white/[0.03] border border-white/[0.06] p-5 hover:border-pink-500/25 hover:bg-white/[0.05] transition-all duration-300 group">
               <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />

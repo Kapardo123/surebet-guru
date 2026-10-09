@@ -1,11 +1,13 @@
 {
   "name": "vite_react_shadcn_ts",
   "private": true,
-  "version": "40.0.0",
+  "version": "41.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:web": "vite --open /web.html",
     "build": "vite build",
+    "build:web": "vite build --mode web",
     "build:android": "vite build --mode android",
     "lint": "eslint .",
     "preview": "vite preview",

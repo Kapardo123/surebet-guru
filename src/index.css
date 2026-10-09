@@ -151,3 +151,336 @@
   filter: none;
   cursor: not-allowed;
 }
+
+/* ============================================================================
+   Animated header logo — "Great Sport Bets"
+   Rotating-gradient bolt badge + Bebas Neue wordmark with a pink/cyan shimmer.
+   ========================================================================== */
+.gsb-logo {
+  line-height: 1;
+}
+
+.gsb-logo__badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.65rem;
+  flex: 0 0 auto;
+  animation: gsb-logo-glow 3.2s ease-in-out infinite;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* The spinning conic gradient forms the ring; the inner panel masks the middle. */
+.gsb-logo__badge::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, #ec4899, #a855f7, #06b6d4, #ec4899);
+  animation: gsb-logo-spin 3.6s linear infinite;
+}
+
+.gsb-logo__badge-inner {
+  position: relative;
+  z-index: 1;
+  width: calc(100% - 3px);
+  height: calc(100% - 3px);
+  border-radius: calc(0.65rem - 2px);
+  background: radial-gradient(circle at 30% 20%, #241041, #0a0015 72%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+/* Monogram inside the badge. */
+.gsb-logo__mono {
+  font-family: "Bebas Neue", var(--font-display), sans-serif;
+  font-size: 0.78rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  background-image: linear-gradient(160deg, #ffffff 0%, #f9a8d4 55%, #67e8f9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 3px rgba(236, 72, 153, 0.5));
+}
+
+.gsb-logo__word {
+  font-family: "Bebas Neue", var(--font-display), sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background-image: linear-gradient(
+    100deg,
+    #ffffff 0%,
+    #ffffff 38%,
+    #f9a8d4 48%,
+    #67e8f9 56%,
+    #ffffff 66%,
+    #ffffff 100%
+  );
+  background-size: 250% 100%;
+  background-position: 150% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gsb-logo-shine 5s linear infinite;
+}
+
+@media (min-width: 640px) {
+  .gsb-logo__word {
+    font-size: 1.4rem;
+  }
+}
+
+.gsb-logo:hover .gsb-logo__badge {
+  transform: scale(1.08) rotate(-4deg);
+}
+.gsb-logo:hover .gsb-logo__word {
+  animation-duration: 2.2s;
+}
+
+@keyframes gsb-logo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes gsb-logo-shine {
+  0% {
+    background-position: 150% 0;
+  }
+  100% {
+    background-position: -60% 0;
+  }
+}
+
+@keyframes gsb-logo-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(6, 182, 212, 0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gsb-logo__badge,
+  .gsb-logo__badge::before,
+  .gsb-logo__word {
+    animation: none;
+  }
+}
+
+/* ============================================================================
+   Splash screen — same GSB lockup as the header, pure CSS (no JS animation),
+   only transform/opacity so everything stays on the compositor thread.
+   ========================================================================== */
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, #150025 0%, #05000a 72%);
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+.splash-screen--out {
+  opacity: 0;
+}
+
+.splash-screen__glow {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.splash-screen__glow--pink {
+  width: min(82vw, 560px);
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.22), transparent 68%);
+  animation: gsb-float 6s ease-in-out infinite;
+}
+.splash-screen__glow--cyan {
+  width: min(56vw, 360px);
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.18), transparent 68%);
+  animation: gsb-float 5s ease-in-out infinite 1s;
+}
+
+.splash-screen__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.15rem;
+  padding: 1.5rem;
+  animation: gsb-splash-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.splash-screen__badge {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 22px;
+  animation: gsb-logo-glow 3.2s ease-in-out infinite;
+}
+.splash-screen__badge::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, #ec4899, #a855f7, #06b6d4, #ec4899);
+  animation: gsb-logo-spin 3.6s linear infinite;
+}
+.splash-screen__badge-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - 5px);
+  height: calc(100% - 5px);
+  border-radius: 18px;
+  background: radial-gradient(circle at 30% 20%, #241041, #0a0015 72%);
+}
+.splash-screen__mono {
+  font-family: "Bebas Neue", var(--font-display), sans-serif;
+  font-size: 2.3rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  background-image: linear-gradient(160deg, #ffffff, #f9a8d4 55%, #67e8f9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 6px rgba(236, 72, 153, 0.5));
+}
+
+.splash-screen__word {
+  font-family: "Bebas Neue", var(--font-display), sans-serif;
+  font-size: 1.9rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background-image: linear-gradient(
+    100deg,
+    #ffffff 0%,
+    #ffffff 38%,
+    #f9a8d4 48%,
+    #67e8f9 56%,
+    #ffffff 66%,
+    #ffffff 100%
+  );
+  background-size: 250% 100%;
+  background-position: 150% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gsb-logo-shine 5s linear infinite;
+}
+
+.splash-screen__bar {
+  width: 150px;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.splash-screen__bar span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ec4899, #06b6d4);
+  animation: gsb-bar 1.2s ease-in-out infinite;
+}
+
+@keyframes gsb-float {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+@keyframes gsb-splash-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes gsb-bar {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-screen__glow,
+  .splash-screen__badge,
+  .splash-screen__badge::before,
+  .splash-screen__word,
+  .splash-screen__content,
+  .splash-screen__bar span {
+    animation: none;
+  }
+}
+
+/* Premium upsell CTA — a light sheen sweeping across the button. */
+.premium-upsell__cta {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 26px rgba(219, 39, 119, 0.32);
+}
+.premium-upsell__cta::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-18deg);
+  animation: premium-upsell-shine 3.8s ease-in-out infinite;
+  pointer-events: none;
+}
+.premium-upsell__cta:hover {
+  filter: brightness(1.06);
+}
+@keyframes premium-upsell-shine {
+  0% {
+    left: -60%;
+  }
+  55%,
+  100% {
+    left: 130%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .premium-upsell__cta::after {
+    animation: none;
+  }
+}

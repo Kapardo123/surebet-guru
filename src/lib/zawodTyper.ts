@@ -92,10 +92,12 @@ export const fetchZawodTyperList = async (
 
 export const analyzeMatches = async (
   matches: ZawodTyperMatch[],
+  grounded = true,
 ): Promise<ZawodTyperAnalysis[]> => {
   if (matches.length === 0) return [];
   const { data, error } = await supabase.functions.invoke("ai-analyze", {
     body: {
+      grounded,
       matches: matches.map((m) => ({
         homeTeam: m.homeTeam,
         awayTeam: m.awayTeam,

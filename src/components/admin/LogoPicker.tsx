@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, X } from "@/components/icons/gsb";
 import { useToast } from "@/hooks/use-toast";
@@ -58,14 +58,23 @@ const LogoPicker = ({ label, teamName, value, onChange }: {
     reader.readAsDataURL(file);
   };
 
+  // When a match arrives without a logo, fetch candidates for it straight away so
+  // the admin can pick one without pressing the magnifier first.
+  useEffect(() => {
+    if (!value && teamName && teamName.trim().length >= 3) {
+      run();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-full bg-muted/40 ring-1 ring-border/40 flex items-center justify-center overflow-hidden flex-shrink-0">
+        <div className="w-12 h-12 rounded-xl bg-muted/40 ring-1 ring-border/40 flex items-center justify-center overflow-hidden flex-shrink-0">
           {value ? (
-            <img src={value} alt="" className="w-6 h-6 object-contain" />
+            <img src={value} alt="" className="w-10 h-10 object-contain" />
           ) : (
-            <TeamLogo teamName={teamName || "?"} logoUrl={null} size={16} />
+            <TeamLogo teamName={teamName || "?"} logoUrl={null} size={40} />
           )}
         </div>
         <div className="flex-1 min-w-0">
@@ -94,7 +103,7 @@ const LogoPicker = ({ label, teamName, value, onChange }: {
             <button
               key={`${c.url}-${i}`}
               type="button"
-              className="w-10 h-10 rounded-lg bg-background border border-border/40 hover:ring-2 hover:ring-pink-500/50 flex items-center justify-center p-1"
+              className="w-16 h-16 rounded-xl bg-background border border-border/40 hover:ring-2 hover:ring-pink-500/50 flex items-center justify-center p-1.5"
               onClick={() => { onChange(c.url); setCandidates([]); }}
               title={`${c.source} — ${c.teamName}`}
             >

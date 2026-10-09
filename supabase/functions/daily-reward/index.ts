@@ -84,9 +84,9 @@ serve(async (req) => {
       return json({ ok: false, reason: "cooldown", nextSpinAt });
     }
 
-    // First-ever spin always gives something real (1 day premium) so new users
-    // feel the value immediately; later spins use the normal odds.
-    const prize: Prize = isFirstSpin ? "premium_1d" : rollPrize();
+    // Same odds for everyone — the first spin is no longer a guaranteed premium
+    // (new users were always winning 1 day, which made premium feel free).
+    const prize: Prize = rollPrize();
     let expiresAt: string | null = null;
 
     if (prize === "premium_1d" || prize === "premium_7d") {

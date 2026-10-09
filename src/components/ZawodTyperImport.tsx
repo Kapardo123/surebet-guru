@@ -95,6 +95,9 @@ const ZawodTyperImport = ({ onImport, couponCount = 0, onGoToCoupon }: Props) =>
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filters, setFilters] = useState<ZTFilters>(defaultZTFilters);
   const [fetched, setFetched] = useState(false);
+  // Web search + reasoning make the analysis fact-based but slower and ~10x
+  // costlier per tip; the admin can switch it off for a cheap, fast pass.
+  const [grounded, setGrounded] = useState(true);
 
   // Restore the last fetch so switching admin tabs does not lose the day's list
   // (and, more importantly, does not lose already-generated analyses).
@@ -215,7 +218,7 @@ const ZawodTyperImport = ({ onImport, couponCount = 0, onGoToCoupon }: Props) =>
     }
     setAnalyzing(true);
     try {
-      const results = await analyzeMatches(pendingAnalysis);
+      const results = await analyzeMatches(pendingAnalysis, grounded);
       const next = { ...analyses };
       pendingAnalysis.forEach((m, i) => {
         const r = results[i];
@@ -572,6 +575,13 @@ const ZawodTyperImport = ({ onImport, couponCount = 0, onGoToCoupon }: Props) =>
             <span className="text-[10px] text-muted-foreground">
               Zaznaczono {selectedVisible.length}/{MAX_BATCH}
             </span>
+            <label className="flex items-center gap-1.5 text-[10px] cursor-pointer text-muted-foreground">
+              <Checkbox
+                checked={grounded}
+                onCheckedChange={(v) => setGrounded(Boolean(v))}
+              />
+              Web + reasoning (wolniej, ~$0.01/typ)
+            </label>
           </div>
           <Button
             size="sm"

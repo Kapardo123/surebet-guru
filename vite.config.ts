@@ -72,6 +72,21 @@ const sportytraderOddsDev = () => ({
   },
 });
 
+// Web build entry: emit the shell as `index.html` so `dist-web` is a drop-in
+// static SPA (HashRouter needs no server rewrites).
+const webIndexHtml = () => ({
+  name: "web-index-html",
+  enforce: "post" as const,
+  generateBundle(_options: unknown, bundle: Record<string, any>) {
+    const asset = bundle["web.html"];
+    if (asset) {
+      asset.fileName = "index.html";
+      bundle["index.html"] = asset;
+      delete bundle["web.html"];
+    }
+  },
+});
+
 export default defineConfig(({ mode }) => ({
   base: mode === 'android' ? './' : '/',
   server: {
@@ -90,9 +105,19 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     entries: ["index.html"],
   },
+  ...(mode === "web"
+    ? {
+        build: {
+          outDir: "dist-web",
+          rollupOptions: { input: path.resolve(__dirname, "web.html") },
+        },
+      }
+    : {}),
   plugins: [
     react(),
     sportytraderOddsDev(),
+    ...(mode === "web" ? [webIndexHtml()] : []),
+    ...(mode === "web" ? [] : [
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "logo.png", "splash.png"],
@@ -139,6 +164,7 @@ export default defineConfig(({ mode }) => ({
         ],
       },
     }),
+    ]),
   ],
   resolve: {
     alias: {

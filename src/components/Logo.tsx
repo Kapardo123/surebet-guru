@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback } from "react";
 import AdminLoginDialog from "@/components/AdminLoginDialog";
-import logo from "@/assets/brand/logo.png";
 
+// Animated wordmark: a rotating-gradient bolt badge + a Bebas Neue wordmark with
+// a pink/cyan shimmer sweep. Styling/animation live in index.css (.gsb-logo*).
 const Logo = () => {
   const [tapCount, setTapCount] = useState(0);
   const [showLogin, setShowLogin] = useState(false);
@@ -23,15 +24,17 @@ const Logo = () => {
   return (
     <>
       <div
-        className="select-none cursor-pointer flex items-center group"
+        className="gsb-logo select-none cursor-pointer flex items-center gap-2 min-w-0 group"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTap(); }}
+        aria-label="Great Sport Bets"
+        role="button"
       >
-        <img
-          src={logo}
-          alt="Great Sport Bets"
-          draggable={false}
-          className="h-6 sm:h-7 md:h-8 w-auto transition-transform duration-300 group-hover:scale-105"
-        />
+        <span className="gsb-logo__badge" aria-hidden="true">
+          <span className="gsb-logo__badge-inner">
+            <span className="gsb-logo__mono">GSB</span>
+          </span>
+        </span>
+        <span className="gsb-logo__word">Great Sport Bets</span>
       </div>
 
       <AdminLoginDialog open={showLogin} onOpenChange={setShowLogin} />

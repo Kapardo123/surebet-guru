@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { loadCoupons, Coupon } from "@/lib/couponStorage";
 import CouponCard from "@/components/CouponCard";
 import Logo from "@/components/Logo";
+import NavLinks from "@/components/NavLinks";
 import PageTransition from "@/components/PageTransition";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,7 @@ const Coupons = () => {
 
       {/* Modern Glass Header - Synthwave Style */}
       <header className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-[#0a0015]/80 via-[#150025]/80 to-[#0a0020]/80 border-b border-white/10 shadow-xl shadow-black/30">
-        <div className="container max-w-6xl mx-auto px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between">
+        <div className="relative container max-w-6xl xl:max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2.5 md:gap-3">
             <div className="relative">
               <Logo />
@@ -73,6 +74,8 @@ const Coupons = () => {
             </div>
           </Link>
           
+          <NavLinks active="coupons" className="absolute left-1/2 -translate-x-1/2" />
+
           <div className="flex items-center gap-2 md:gap-2.5">
             <Link to="/">
               <Button variant="ghost" size="sm" className="gap-2 text-white/60 hover:text-pink-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-pink-500/30">
@@ -97,7 +100,7 @@ const Coupons = () => {
         </div>
       </header>
 
-      <main className="container max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-8 relative z-10">
+      <main className="container max-w-6xl xl:max-w-7xl mx-auto px-4 py-8 md:py-12 space-y-8 relative z-10">
         {/* Page Header */}
         <div className="space-y-4">
           <div className="flex items-center gap-3">
@@ -129,7 +132,7 @@ const Coupons = () => {
             </div>
           </div>
         ) : coupons.length > 0 ? (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2 max-w-5xl mx-auto">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3 max-w-5xl mx-auto">
             {coupons.map((coupon) => (
               <CouponCard key={coupon.id} coupon={coupon} userIsPremium={isPremium} />
             ))}

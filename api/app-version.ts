@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const APP_VERSION = {
-  version: "40.0.0",
-  build: 4000,
+  version: "41.0.0",
+  build: 4100,
   forceUpdate: false,
-  releaseDate: "2026-09-13",
-  updateMessage: "New version available! v40.0.0 ✨ Fixes Premium disappearing after purchase.",
+  releaseDate: "2026-10-09",
+  updateMessage: "New version available! v41.0.0 ✨ New Pewniaczki tip source, smarter AI analyses, fresh animated look.",
   downloadUrl: "https://play.google.com/store/apps/details?id=com.surebet.guru",
   minSupportedVersion: "10.0.0",
 };

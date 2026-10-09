@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
 import SportyTraderImport from "@/components/SportyTraderImport";
 import ZawodTyperImport from "@/components/ZawodTyperImport";
+import PewniaczkiImport from "@/components/PewniaczkiImport";
 import { ScrapedMatch, ImportTarget } from "@/lib/sportyTrader";
 import Logo from "@/components/Logo";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,10 +30,11 @@ const Admin = () => {
 
   // Admin navigation
   const [activeTab, setActiveTab] = useState("import");
-  const [importSource, setImportSource] = useState<"sportytrader" | "zawodtyper">("sportytrader");
+  const [importSource, setImportSource] = useState<"sportytrader" | "zawodtyper" | "pewniaczki">("sportytrader");
   const importSources = [
     { id: "sportytrader" as const, label: "SportyTrader" },
     { id: "zawodtyper" as const, label: "ZawodTyper" },
+    { id: "pewniaczki" as const, label: "Pewniaczki" },
   ];
   const adminTabs = [
     { id: "import", label: "Import", icon: Download },
@@ -351,8 +353,14 @@ const Admin = () => {
                   couponCount={couponMatches.length}
                   onGoToCoupon={() => setActiveTab("queue")}
                 />
-              ) : (
+              ) : importSource === "zawodtyper" ? (
                 <ZawodTyperImport
+                  onImport={handleSportyImport}
+                  couponCount={couponMatches.length}
+                  onGoToCoupon={() => setActiveTab("queue")}
+                />
+              ) : (
+                <PewniaczkiImport
                   onImport={handleSportyImport}
                   couponCount={couponMatches.length}
                   onGoToCoupon={() => setActiveTab("queue")}

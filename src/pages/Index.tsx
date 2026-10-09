@@ -19,8 +19,10 @@ import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
+import NavLinks from "@/components/NavLinks";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ScrollReveal from "@/components/ScrollReveal";
+import PremiumUpsell from "@/components/PremiumUpsell";
 import { useToast } from "@/hooks/use-toast";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useAuth } from "@/contexts/AuthContext";
@@ -129,6 +131,12 @@ const Index = () => {
     [coupons, couponPremium]
   );
 
+  // How many premium tips are still locked (upcoming) today — feeds the upsell.
+  const lockedPremiumCount = useMemo(
+    () => tips.filter((t) => t.isPremium && t.status === "upcoming").length,
+    [tips]
+  );
+
   const handleFreeTip = useCallback(() => {
     const now = Date.now();
     // Nagroda to JEDEN typ premium, którego mecz jeszcze się NIE rozpoczął.
@@ -167,9 +175,16 @@ const Index = () => {
         {/* Top accent line */}
         <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-pink-500/50 to-transparent" />
         
-        <div className="container max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="relative container max-w-6xl xl:max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <Logo />
-          
+
+          <NavLinks
+            active={activeTab === "coupons" ? "coupons" : "tips"}
+            onTips={() => setActiveTab("tips")}
+            onCoupons={() => setActiveTab("coupons")}
+            className="absolute left-1/2 -translate-x-1/2"
+          />
+
           <div className="flex items-center gap-2">
             <PremiumBadge active={isPremium} daysLeft={premiumDaysLeft} loading={premiumLoading} />
             
@@ -211,7 +226,7 @@ const Index = () => {
               {user ? (
                 <Button variant="ghost" size="sm" className="gap-2 text-white/50 hover:text-white hover:bg-white/[0.06] transition-all duration-200 rounded-full px-3 border border-transparent hover:border-white/10" onClick={signOut}>
                   <ArrowLeftFromLine className="w-4 h-4" />
-                  <span className="text-xs font-medium hidden lg:inline">{user.email?.split("@")[0]}</span>
+                  <span className="text-xs font-medium hidden lg:inline max-w-[120px] truncate">{user.email?.split("@")[0]}</span>
                 </Button>
               ) : (
                 <Link to="/auth">
@@ -239,7 +254,7 @@ const Index = () => {
         )}
       </div>
 
-      <main className="container max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-10 md:space-y-14 relative z-10">
+      <main className="container max-w-6xl xl:max-w-7xl mx-auto px-4 py-8 md:py-12 space-y-10 md:space-y-14 relative z-10">
         
         {/* Licznik 3:00 + hero — blisko siebie */}
         <div className="space-y-4">
@@ -294,7 +309,7 @@ const Index = () => {
               />
             )}
 
-            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2">
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {loading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <div key={`skel-${i}`} className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 space-y-4 animate-pulse">
@@ -364,7 +379,7 @@ const Index = () => {
               />
             )}
 
-            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-2">
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {loading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <div key={`skel-c-${i}`} className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 space-y-3 animate-pulse">
@@ -407,6 +422,13 @@ const Index = () => {
 
           </Tabs>
 
+        {/* Premium upsell — only for signed-in-free / non-premium users */}
+        {!premiumLoading && !isPremium && (
+          <ScrollReveal>
+            <PremiumUpsell lockedCount={lockedPremiumCount} />
+          </ScrollReveal>
+        )}
+
         {/* Daily Spin - spin requires login */}
         <ScrollReveal>
           <DailySpin
@@ -420,7 +442,7 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="border-t border-white/[0.05] mt-20 pb-24 md:pb-0 bg-white/[0.01] backdrop-blur-sm">
-        <div className="container max-w-6xl mx-auto px-4 py-10 flex flex-col items-center justify-center gap-5 text-center">
+        <div className="container max-w-6xl xl:max-w-7xl mx-auto px-4 py-10 flex flex-col items-center justify-center gap-5 text-center">
           <div className="flex flex-wrap items-center justify-center gap-6">
             <Link to="/privacy" className="text-xs text-white/30 hover:text-white/60 transition-colors underline underline-offset-4 decoration-white/10 hover:decoration-white/30 font-medium">
               Privacy Policy
@@ -460,8 +482,8 @@ const Index = () => {
           >
             <span className="text-5xl">🎰</span>
             <div>
-              <h3 className="font-display text-lg font-bold text-white">Win Free Tips!</h3>
-              <p className="text-xs text-white/40 mt-1">Log in or create an account to spin the wheel and win premium tips every day.</p>
+              <h3 className="font-display text-lg font-bold text-white">Daily Free Spin!</h3>
+              <p className="text-xs text-white/40 mt-1">Log in or create an account and spin the wheel once a day — win premium days or a free tip.</p>
             </div>
             <div className="space-y-2">
               <Link to="/auth">
