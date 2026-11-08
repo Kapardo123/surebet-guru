@@ -176,6 +176,32 @@ serve(async (req) => {
     const existingMs = existing?.expires_at ? new Date(existing.expires_at).getTime() : 0;
     const finalMs = Math.max(existingMs, rcExpiry);
 
+    // RevenueCat has nothing to add: keep the existing grant untouched,
+    // including its subscription metadata (provider/subscription_id/auto_renew).
+    // Without this, a sync from a customer with no store data would blank the
+    // metadata of a valid webhook/admin subscription while keeping the expiry.
+    if (rcExpiry <= 0 && existingMs > now) {
+      return json({
+        ok: true,
+        active: true,
+        expiresAt: existing?.expires_at ?? null,
+        rcExpiry: null,
+        purchases: items.length,
+        source: "existing",
+      });
+    }
+
+    if (existingMs >= rcExpiry && !subProductId) {
+      return json({
+        ok: true,
+        active: existingMs > now,
+        expiresAt: existing?.expires_at ?? null,
+        rcExpiry: rcExpiry > 0 ? new Date(rcExpiry).toISOString() : null,
+        purchases: items.length,
+        source: "existing",
+      });
+    }
+
     if (finalMs > now) {
       const expiresAt = new Date(finalMs).toISOString();
       const subActive = subMs > now;
