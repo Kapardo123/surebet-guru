@@ -577,3 +577,28 @@ body {
   overflow-x: hidden;
 }
 
+
+/* Matchday primary CTA — light sheen sweep (reduced-motion aware). */
+.gsb-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.gsb-sheen::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: skewX(-18deg);
+  animation: gsb-sheen-sweep 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes gsb-sheen-sweep {
+  0% { left: -60%; }
+  55%, 100% { left: 130%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gsb-sheen::after { animation: none; }
+}

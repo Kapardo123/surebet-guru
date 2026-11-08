@@ -1323,11 +1323,27 @@ Respond ONLY with JSON: {"verdict":"won"|"lost"|"void"|null, "score":"H:A"|null,
       console.error("[settle-results] web fallback failed:", e?.message || e);
     }
 
+    // Retention: purge stale coupons and tips with the service role so cleanup
+    // runs daily even if nobody opens the app (48h, same rule as the client).
+    let purgedCoupons = 0;
+    try {
+      const { data } = await db.rpc("purge_old_coupons", { expiry_hours: 48 });
+      purgedCoupons = typeof data === "number" ? data : 0;
+    } catch (e: any) {
+      console.error("[settle-results] purge old coupons:", e?.message || e);
+    }
+    try {
+      await db.rpc("purge_old_tips", { expiry_hours: 48 });
+    } catch (e: any) {
+      console.error("[settle-results] purge old tips:", e?.message || e);
+    }
+
     return new Response(JSON.stringify({
       ok: true,
       date,
       tips: { total: allTips.length, ...tipStats, unresolved },
       coupons: couponStats,
+      purgedCoupons,
       hero: heroSettled ? { status: heroSettled.status, finalScore: heroSettled.finalScore } : (heroUnresolvedReason ? { unresolved: heroUnresolvedReason } : null),
       aiCalls,
       webCalls,

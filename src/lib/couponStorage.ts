@@ -100,7 +100,77 @@ export const calculateTotalOdds = (matches: CouponMatch[]): number => {
   return matches.reduce((acc, m) => acc * m.odds, 1);
 };
 
+// ---- Retention: coupons are purged like tips (48h) -------------------------
+const COUPON_EXPIRY_HOURS = 48;
+const COUPON_EXPIRY_MS = COUPON_EXPIRY_HOURS * 60 * 60 * 1000;
+const COUPON_DEEP_CUTOFF_MS = 7 * 24 * 60 * 60 * 1000;
+
+export const isCouponExpired = (coupon: Coupon, now: number = Date.now()): boolean => {
+  if (coupon.queued) return false;
+  const created = new Date(coupon.createdAt).getTime();
+
+  if (coupon.status === "won" || coupon.status === "lost" || coupon.status === "void") {
+    const won = coupon.wonAt ? new Date(coupon.wonAt).getTime() : NaN;
+    const ref = !isNaN(won) ? won : created;
+    if (!isNaN(ref) && now - ref > COUPON_EXPIRY_MS) return true;
+  }
+
+  if (coupon.status === "active" || coupon.status === "pending") {
+    const kicks = (coupon.matches || [])
+      .map((m) => new Date(String(m.kickoff || "").replace(" ", "T")).getTime())
+      .filter((n) => !isNaN(n));
+    const ref = kicks.length ? Math.max(...kicks) : created;
+    if (!isNaN(ref) && now - ref > COUPON_EXPIRY_MS) return true;
+  }
+
+  return !isNaN(created) && now - created > COUPON_DEEP_CUTOFF_MS;
+};
+
+/**
+ * Deletes stale coupons from the DB (RPC `purge_old_coupons`, SECURITY DEFINER).
+ * Falls back to a client-side delete (admin only under current RLS) if the RPC
+ * is not deployed yet. Safe to call often; the row rule is idempotent.
+ */
+export const purgeExpiredCoupons = async (): Promise<number> => {
+  let dbDeleted = -1;
+  try {
+    const { data, error } = await (supabase as any).rpc("purge_old_coupons", {
+      expiry_hours: COUPON_EXPIRY_HOURS,
+    });
+    if (error) {
+      console.warn("[coupons] purge_old_coupons RPC error:", error.message);
+    } else {
+      dbDeleted = typeof data === "number" ? data : -1;
+    }
+  } catch (e) {
+    console.warn("[coupons] purge_old_coupons failed:", e);
+  }
+
+  if (dbDeleted < 0) {
+    try {
+      const { data: rows, error } = await supabase.from("coupons").select("*");
+      if (!error && rows?.length) {
+        const now = Date.now();
+        const ids = processCouponData(rows, true)
+          .filter((c) => isCouponExpired(c, now))
+          .map((c) => c.id);
+        if (ids.length) {
+          const { error: delError } = await supabase.from("coupons").delete().in("id", ids);
+          if (!delError) dbDeleted = ids.length;
+        }
+      }
+    } catch (e) {
+      console.warn("[coupons] client purge fallback failed:", e);
+    }
+  }
+
+  return dbDeleted;
+};
+
 export const loadCoupons = async (): Promise<Coupon[]> => {
+  // Fire-and-forget cleanup of stale coupons (same 48h rule as tips).
+  purgeExpiredCoupons().catch(() => {});
+
   const cached = getCachedCoupons();
 
   console.log('🎫 loadCoupons: Start - cache:', cached.length);
