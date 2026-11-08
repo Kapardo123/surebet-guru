@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { Timer, Check, X, Minus } from "@/components/icons/gsb";
 import TeamLogo from "@/components/TeamLogo";
@@ -9,17 +10,17 @@ import { toggleTipWatch, useWatched } from "@/lib/watchStorage";
 import stadium from "@/assets/brand/matchday-stadium.jpg";
 
 const statusChip = (status?: string | null) => {
-  if (status === "won") return { label: "Won", cls: "text-emerald-200 border-emerald-400/40 bg-emerald-500/20", Icon: Check };
-  if (status === "lost") return { label: "Lost", cls: "text-red-200 border-red-400/40 bg-red-500/20", Icon: X };
-  if (status === "draw" || status === "void") return { label: "Void", cls: "text-amber-200 border-amber-400/40 bg-amber-500/20", Icon: Minus };
+  if (status === "won") return { labelKey: "status.won", cls: "text-emerald-200 border-emerald-400/40 bg-emerald-500/20", Icon: Check };
+  if (status === "lost") return { labelKey: "status.lost", cls: "text-red-200 border-red-400/40 bg-red-500/20", Icon: X };
+  if (status === "draw" || status === "void") return { labelKey: "status.void", cls: "text-amber-200 border-amber-400/40 bg-amber-500/20", Icon: Minus };
   return null;
 };
 
-const formatKickoff = (value?: string) => {
+const formatKickoff = (value: string | undefined, locale: string) => {
   if (!value) return "";
   const d = new Date(value.replace(" ", "T"));
   if (isNaN(d.getTime())) return value;
-  return d.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
+  return d.toLocaleString(locale, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
 };
 
 const countdownText = (kickoffMs: number, now: number): string | null => {
@@ -38,6 +39,8 @@ interface MatchdayCardProps {
 }
 
 const MatchdayCard = ({ pick, loading = false }: MatchdayCardProps) => {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage || i18n.language || "en-GB";
   const [sheetOpen, setSheetOpen] = useState(false);
   const { isTipWatched } = useWatched();
 
@@ -91,10 +94,8 @@ const MatchdayCard = ({ pick, loading = false }: MatchdayCardProps) => {
   if (!pick) {
     return (
       <div className="surface-card p-5 text-center">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-white/40 font-semibold">GSB Matchday</p>
-        <p className="text-sm text-white/65 mt-2">
-          No free pick of the day right now. Check back later — we publish one standout match each day.
-        </p>
+        <p className="text-[11px] uppercase tracking-[0.16em] text-white/40 font-semibold">{t("matchday.title")}</p>
+        <p className="text-sm text-white/65 mt-2">{t("matchday.noPickText")}</p>
       </div>
     );
   }
@@ -187,11 +188,11 @@ const MatchdayCard = ({ pick, loading = false }: MatchdayCardProps) => {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h2 className="font-display font-black uppercase tracking-[0.2em] text-[14px] text-white leading-none">
-                    GSB Matchday
+                    {t("matchday.title")}
                   </h2>
                   <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-white/85">
                     <span className="w-1 h-1 rounded-full bg-emerald-400" />
-                    Free
+                    {t("matchday.free")}
                   </span>
                 </div>
                 <p className="text-[10px] uppercase tracking-[0.16em] text-white/55 font-semibold mt-1.5 truncate">
@@ -203,11 +204,11 @@ const MatchdayCard = ({ pick, loading = false }: MatchdayCardProps) => {
                 {chip ? (
                   <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${chip.cls}`}>
                     <chip.Icon className="w-3 h-3" />
-                    {chip.label}
+                    {t(chip.labelKey)}
                   </span>
                 ) : countdown ? (
                   <>
-                    <p className="text-[9px] uppercase tracking-[0.14em] text-white/50 font-semibold">Kick-off in</p>
+                    <p className="text-[9px] uppercase tracking-[0.14em] text-white/50 font-semibold">{t("matchday.kickoffIn")}</p>
                     <p className="font-display font-black text-[15px] text-white tabular-nums leading-none mt-0.5">
                       {countdown}
                     </p>
@@ -215,7 +216,7 @@ const MatchdayCard = ({ pick, loading = false }: MatchdayCardProps) => {
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[10px] text-white/65">
                     <Timer className="w-3 h-3" />
-                    {formatKickoff(pick.kickoff)}
+                    {formatKickoff(pick.kickoff, locale)}
                   </span>
                 )}
               </div>
@@ -233,7 +234,7 @@ const MatchdayCard = ({ pick, loading = false }: MatchdayCardProps) => {
             {/* Pick + odds */}
             <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-black/40 border border-white/12 px-3 py-2.5 backdrop-blur-sm">
               <div className="min-w-0">
-                <p className="text-[9px] uppercase tracking-[0.16em] text-white/45 font-semibold">Pick</p>
+                <p className="text-[9px] uppercase tracking-[0.16em] text-white/45 font-semibold">{t("tip.pick")}</p>
                 <p className="font-display font-bold text-[13px] text-white leading-snug break-words line-clamp-2">
                   {pick.prediction}
                 </p>
@@ -255,12 +256,12 @@ const MatchdayCard = ({ pick, loading = false }: MatchdayCardProps) => {
               onClick={() => setSheetOpen(true)}
               className="gsb-sheen flex-1 h-11 rounded-xl bg-pink-500 text-white font-display font-bold text-sm active:scale-[0.99] transition-transform"
             >
-              Read analysis
+              {t("matchday.readAnalysis")}
             </button>
             {watchedId !== -1 && (
               <button
                 onClick={handleWatch}
-                aria-label={watched ? "Remove from watched" : "Save match"}
+                aria-label={watched ? t("matchday.removeFromWatched") : t("matchday.saveMatch")}
                 aria-pressed={watched}
                 className={`w-11 h-11 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${
                   watched

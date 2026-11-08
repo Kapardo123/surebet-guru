@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Gem, SlidersHorizontal, Check, ChevronDown } from "@/components/icons/gsb";
 import {
   Drawer,
@@ -29,10 +30,10 @@ interface FilterBarProps {
   filteredItems: number;
 }
 
-const premiumLabels: Record<PremiumFilter, string> = { all: "All", premium: "Premium", free: "Free" };
-const statusLabels: Record<StatusFilter, string> = { all: "Any status", upcoming: "Upcoming", won: "Won", lost: "Lost" };
-const dayLabels: Record<DayFilter, string> = { all: "Any date", today: "Today", tomorrow: "Tomorrow" };
-const sortLabels: Record<SortMode, string> = { kickoff: "Kick-off time", recent: "Newest" };
+const premiumLabels: Record<PremiumFilter, string> = { all: "filters.all", premium: "filters.premium", free: "filters.free" };
+const statusLabels: Record<StatusFilter, string> = { all: "filters.anyStatus", upcoming: "filters.upcoming", won: "status.won", lost: "status.lost" };
+const dayLabels: Record<DayFilter, string> = { all: "filters.anyDate", today: "filters.today", tomorrow: "filters.tomorrow" };
+const sortLabels: Record<SortMode, string> = { kickoff: "filters.kickoffTime", recent: "filters.newest" };
 
 const chip = (active: boolean) =>
   `shrink-0 h-9 px-3 rounded-full border text-[12px] font-semibold inline-flex items-center gap-1.5 transition-colors min-h-[36px] ${
@@ -56,6 +57,7 @@ const FilterBar = ({
   totalItems,
   filteredItems,
 }: FilterBarProps) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const hasSports = !!sports && sports.length > 0 && !!onSportChange;
 
@@ -82,14 +84,14 @@ const FilterBar = ({
             {type === "premium" && (
               <Gem className={`w-3 h-3 ${activePremium === type ? "brightness-0 invert" : ""}`} />
             )}
-            {premiumLabels[type]}
+            {t(premiumLabels[type])}
           </button>
         ))}
         {hasSports && (
           <>
             <span className="mx-1 h-5 w-px bg-white/10" />
             <button onClick={() => onSportChange?.("All")} className={chip(activeSport === "All")}>
-              All sports
+              {t("filters.allSports")}
             </button>
             {sports!.map((sport) => (
               <button key={sport} onClick={() => onSportChange?.(sport)} className={chip(activeSport === sport)}>
@@ -105,31 +107,31 @@ const FilterBar = ({
   const advancedControls = (
     <div className="space-y-4">
       <div className="space-y-2">
-        <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 font-semibold">Date</p>
+        <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 font-semibold">{t("filters.date")}</p>
         <div className="grid grid-cols-3 gap-1.5">
           {(["all", "today", "tomorrow"] as DayFilter[]).map((d) => (
             <button key={d} onClick={() => onDayChange?.(d)} className={`${chip(day === d)} justify-center`}>
-              {dayLabels[d]}
+              {t(dayLabels[d])}
             </button>
           ))}
         </div>
       </div>
       <div className="space-y-2">
-        <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 font-semibold">Status</p>
+        <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 font-semibold">{t("filters.status")}</p>
         <div className="grid grid-cols-2 gap-1.5">
           {(["all", "upcoming", "won", "lost"] as StatusFilter[]).map((s) => (
             <button key={s} onClick={() => onStatusChange?.(s)} className={`${chip(status === s)} justify-center`}>
-              {statusLabels[s]}
+              {t(statusLabels[s])}
             </button>
           ))}
         </div>
       </div>
       <div className="space-y-2">
-        <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 font-semibold">Sort by</p>
+        <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 font-semibold">{t("filters.sortBy")}</p>
         <div className="grid grid-cols-2 gap-1.5">
           {(["kickoff", "recent"] as SortMode[]).map((s) => (
             <button key={s} onClick={() => onSortChange?.(s)} className={`${chip(sort === s)} justify-center`}>
-              {sortLabels[s]}
+              {t(sortLabels[s])}
             </button>
           ))}
         </div>
@@ -147,7 +149,7 @@ const FilterBar = ({
           className="inline-flex items-center gap-2 h-10 px-3.5 rounded-full border border-white/[0.1] bg-white/[0.04] text-[12px] font-semibold text-white/80 active:bg-white/[0.07]"
         >
           <SlidersHorizontal className="w-4 h-4" />
-          Filters
+          {t("filters.filters")}
           {advancedCount > 0 && (
             <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-pink-500 text-white text-[10px] font-bold flex items-center justify-center">
               {advancedCount}
@@ -163,14 +165,14 @@ const FilterBar = ({
       {activeCount > 0 && (
         <div className="flex items-center justify-between gap-2 text-[11px] text-white/55">
           <span className="truncate">
-            {activePremium !== "all" && premiumLabels[activePremium]}
+            {activePremium !== "all" && t(premiumLabels[activePremium])}
             {hasSports && activeSport && activeSport !== "All" ? ` · ${activeSport}` : ""}
-            {status !== "all" ? ` · ${statusLabels[status]}` : ""}
-            {day !== "all" ? ` · ${dayLabels[day]}` : ""}
-            {sort !== "kickoff" ? ` · ${sortLabels[sort]}` : ""}
+            {status !== "all" ? ` · ${t(statusLabels[status])}` : ""}
+            {day !== "all" ? ` · ${t(dayLabels[day])}` : ""}
+            {sort !== "kickoff" ? ` · ${t(sortLabels[sort])}` : ""}
           </span>
           <button onClick={reset} className="shrink-0 underline underline-offset-2 hover:text-white/80">
-            Clear
+            {t("filters.clear")}
           </button>
         </div>
       )}
@@ -178,7 +180,7 @@ const FilterBar = ({
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerContent className="bg-[#17141f] border-t border-white/10 text-white">
           <DrawerHeader className="text-left">
-            <DrawerTitle className="font-display text-base">Filters</DrawerTitle>
+            <DrawerTitle className="font-display text-base">{t("filters.filters")}</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 pb-2">{advancedControls}</div>
           <div className="px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] flex items-center gap-2">
@@ -186,12 +188,12 @@ const FilterBar = ({
               onClick={reset}
               className="h-11 px-4 rounded-xl border border-white/[0.12] text-white/70 text-[13px] font-semibold active:scale-[0.98] transition-transform"
             >
-              Clear
+              {t("filters.clear")}
             </button>
             <DrawerClose asChild>
               <button className="flex-1 h-11 rounded-xl bg-pink-500 text-white font-bold text-[13px] inline-flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
                 <Check className="w-4 h-4 brightness-0 invert" />
-                Show {filteredItems}
+                {t("filters.show", { count: filteredItems })}
               </button>
             </DrawerClose>
           </div>

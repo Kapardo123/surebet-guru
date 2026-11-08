@@ -151,9 +151,33 @@ serve(async (req) => {
 
     try {
       if (type === "EXPIRATION") {
+        // Never wipe a longer bonus (wheel/admin/Stripe) that is still active;
+        // just stop the subscription auto-renew flag.
+        const { data: existing } = await db
+          .from("premium_access")
+          .select("expires_at")
+          .eq("user_id", appUserId)
+          .maybeSingle();
+        const existingMs = existing?.expires_at ? new Date(existing.expires_at).getTime() : 0;
+        if (existingMs > Date.now()) {
+          await db
+            .from("premium_access")
+            .update({ auto_renew: false, updated_at: new Date().toISOString() })
+            .eq("user_id", appUserId);
+          return json({ ok: true, action: "kept-bonus", expiresAt: existing.expires_at });
+        }
         const { error } = await db.from("premium_access").delete().eq("user_id", appUserId);
         if (error) throw new Error(error.message);
         return json({ ok: true, action: "revoked" });
+      }
+
+      if (type === "CANCELLATION") {
+        // Access continues until expiration_at_ms; only stop auto-renew.
+        await db
+          .from("premium_access")
+          .update({ auto_renew: false, updated_at: new Date().toISOString() })
+          .eq("user_id", appUserId);
+        return json({ ok: true, action: "cancelled" });
       }
 
       if (!ACTIVE_EVENTS.has(type)) {
@@ -187,12 +211,22 @@ serve(async (req) => {
         return json({ ok: true, skipped: `no expiry for ${type}` });
       }
 
+      const isSubscription = !!expirationMs;
+      const periodEndIso = expirationMs ? new Date(expirationMs).toISOString() : null;
       const { error } = await db
         .from("premium_access")
-        .upsert({ user_id: appUserId, expires_at: expiresAt, updated_at: new Date().toISOString() });
+        .upsert({
+          user_id: appUserId,
+          expires_at: expiresAt,
+          provider: "revenuecat",
+          subscription_id: productId || null,
+          auto_renew: isSubscription,
+          current_period_end: periodEndIso ?? new Date(expiresAt).toISOString(),
+          updated_at: new Date().toISOString(),
+        });
       if (error) throw new Error(error.message);
 
-      return json({ ok: true, action: "granted", expiresAt, stackedDays: expirationMs ? 0 : productDays });
+      return json({ ok: true, action: "granted", expiresAt, stackedDays: isSubscription ? 0 : productDays });
     } catch (error) {
       // Release the idempotency claim so RevenueCat's retry can succeed.
       if (eventId) {

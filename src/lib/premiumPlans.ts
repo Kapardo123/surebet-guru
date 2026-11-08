@@ -12,6 +12,8 @@ export const KNOWN_PRODUCT_DAYS: Record<string, number> = {
   premium_15_days: 15,
   premium_30_days: 30,
   premium_77_days: 7, // store id for the 7-day plan (extra "7")
+  premium_90_days: 90,
+  premium_quarterly: 90,
 };
 
 const TRUSTED_DAYS = [1, 3, 7, 10, 14, 15, 30, 60, 90, 120, 180, 365];

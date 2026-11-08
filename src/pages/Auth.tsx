@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import Logo from "@/components/Logo";
 type AuthMode = "login" | "signup" | "reset" | "magic";
 
 const Auth = () => {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,14 +35,14 @@ const Auth = () => {
       });
       if (error) throw error;
       toast({
-        title: "Reset link sent! 📧",
-        description: "Check your email for the password reset link.",
+        title: t("auth.resetSent"),
+        description: t("auth.resetSentText"),
       });
       setMode("login");
     } catch (err: any) {
       toast({
-        title: "Error",
-        description: err.message || "Could not send reset link",
+        title: t("auth.error"),
+        description: err.message || t("auth.couldNotSendReset"),
         variant: "destructive",
       });
     } finally {
@@ -62,13 +64,13 @@ const Auth = () => {
       });
       if (error) throw error;
       toast({
-        title: "Magic link sent! ✨",
-        description: "Check your email to log in instantly.",
+        title: t("auth.magicSent"),
+        description: t("auth.magicSentText"),
       });
     } catch (err: any) {
       toast({
-        title: "Error",
-        description: err.message || "Could not send magic link",
+        title: t("auth.error"),
+        description: err.message || t("auth.couldNotSendMagic"),
         variant: "destructive",
       });
     } finally {
@@ -84,12 +86,12 @@ const Auth = () => {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      toast({ title: "Password updated! ✅" });
+      toast({ title: t("auth.passwordUpdated") });
       navigate("/");
     } catch (err: any) {
       toast({
-        title: "Error",
-        description: err.message || "Could not update password",
+        title: t("auth.error"),
+        description: err.message || t("auth.couldNotUpdatePassword"),
         variant: "destructive",
       });
     } finally {
@@ -114,7 +116,7 @@ const Auth = () => {
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
-        toast({ title: "Signed in! 🎉" });
+        toast({ title: t("auth.signedIn") });
         navigate(redirect);
       } else if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
@@ -124,14 +126,14 @@ const Auth = () => {
         });
         if (error) throw error;
         toast({
-          title: "Account created! 📧",
-          description: "Check your email to confirm your registration.",
+          title: t("auth.accountCreated"),
+          description: t("auth.accountCreatedText"),
         });
       }
     } catch (err: any) {
       toast({
-        title: "Error",
-        description: err.message || "Something went wrong",
+        title: t("auth.error"),
+        description: err.message || t("auth.somethingWrong"),
         variant: "destructive",
       });
     } finally {
@@ -142,20 +144,20 @@ const Auth = () => {
   const isUpdatePassword = searchParams.get("mode") === "update-password";
 
   const getTitle = () => {
-    if (isUpdatePassword) return "Update Password";
-    if (mode === "login") return "Sign In";
-    if (mode === "signup") return "Create Account";
-    if (mode === "reset") return "Reset Password";
-    if (mode === "magic") return "Magic Link";
-    return "Auth";
+    if (isUpdatePassword) return "auth.titleUpdate";
+    if (mode === "login") return "auth.titleLogin";
+    if (mode === "signup") return "auth.titleSignup";
+    if (mode === "reset") return "auth.titleReset";
+    if (mode === "magic") return "auth.titleMagic";
+    return "auth.titleLogin";
   };
 
   const getSubtitle = () => {
-    if (isUpdatePassword) return "Enter your new password";
-    if (mode === "login") return "Access your account";
-    if (mode === "signup") return "Sign up to get Premium";
-    if (mode === "reset") return "Send a recovery link to your email";
-    if (mode === "magic") return "Log in without a password";
+    if (isUpdatePassword) return "auth.subtitleUpdate";
+    if (mode === "login") return "auth.subtitleLogin";
+    if (mode === "signup") return "auth.subtitleSignup";
+    if (mode === "reset") return "auth.subtitleReset";
+    if (mode === "magic") return "auth.subtitleMagic";
     return "";
   };
 
@@ -168,10 +170,10 @@ const Auth = () => {
             <Logo />
           </div>
            <h1 className="font-display text-2xl font-bold text-foreground">
-            {getTitle()}
+            {t(getTitle())}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {getSubtitle()}
+            {t(getSubtitle())}
           </p>
         </div>
 
@@ -180,13 +182,13 @@ const Auth = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isUpdatePassword && (
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-foreground">Email</Label>
+                  <Label htmlFor="email" className="text-foreground">{t("auth.email")}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       id="email"
                       type="email"
-                      placeholder="your@email.com"
+                      placeholder={t("auth.emailPlaceholder")}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10"
@@ -200,7 +202,7 @@ const Auth = () => {
               {((mode === "login" || mode === "signup") || isUpdatePassword) && (
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-foreground">
-                    {isUpdatePassword ? "New Password" : "Password"}
+                    {isUpdatePassword ? t("auth.newPassword") : t("auth.password")}
                   </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -220,10 +222,10 @@ const Auth = () => {
 
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {isUpdatePassword ? "Update Password" : (
-                  mode === "login" ? "Sign In" : 
-                  mode === "signup" ? "Sign Up" : 
-                  mode === "reset" ? "Send Reset Link" : "Send Magic Link"
+                {isUpdatePassword ? t("auth.updatePassword") : (
+                  mode === "login" ? t("auth.signIn") : 
+                  mode === "signup" ? t("auth.signUp") : 
+                  mode === "reset" ? t("auth.sendReset") : t("auth.sendMagic")
                 )}
               </Button>
             </form>
@@ -237,21 +239,21 @@ const Auth = () => {
                         onClick={() => setMode("signup")}
                         className="text-sm text-primary hover:underline bg-transparent border-none cursor-pointer"
                       >
-                        Don't have an account? Sign Up
+                        {t("auth.noAccount")}
                       </button>
                       <button
                         onClick={() => setMode("magic")}
                         className="text-sm text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 bg-transparent border-none cursor-pointer"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
-                        Log in with Magic Link
+                        {t("auth.magicLogin")}
                       </button>
                       <button
                         onClick={() => setMode("reset")}
                         className="text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 bg-transparent border-none cursor-pointer mt-2"
                       >
                         <KeyRound className="w-3.5 h-3.5" />
-                        Forgot password?
+                        {t("auth.forgotPassword")}
                       </button>
                     </div>
                   )}
@@ -262,13 +264,13 @@ const Auth = () => {
                         onClick={() => setMode("login")}
                         className="text-sm text-primary hover:underline bg-transparent border-none cursor-pointer"
                       >
-                        Already have an account? Sign In
+                        {t("auth.haveAccount")}
                       </button>
                       <p className="text-[10px] text-muted-foreground px-4">
-                        By signing up, you agree to our{" "}
-                        <Link to="/terms" className="underline hover:text-primary">Terms of Service</Link>{" "}
-                        and{" "}
-                        <Link to="/privacy" className="underline hover:text-primary">Privacy Policy</Link>.
+                        {t("auth.termsAgree")}{" "}
+                        <Link to="/terms" className="underline hover:text-primary">{t("auth.terms")}</Link>{" "}
+                        {t("auth.and")}{" "}
+                        <Link to="/privacy" className="underline hover:text-primary">{t("auth.privacy")}</Link>.
                       </p>
                     </div>
                   )}
@@ -278,7 +280,7 @@ const Auth = () => {
                       onClick={() => setMode("login")}
                       className="text-sm text-primary hover:underline bg-transparent border-none cursor-pointer"
                     >
-                      Back to Sign In
+                      {t("auth.backToSignIn")}
                     </button>
                   )}
                 </>
@@ -290,7 +292,7 @@ const Auth = () => {
         <div className="text-center">
           <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5">
             <ArrowLeft className="w-3.5 h-3.5" />
-            Back to Home
+            {t("auth.backHome")}
           </Link>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { memo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { Coupon } from "@/lib/couponStorage";
 import { Ticket, Gem, Lock, ChevronDown, ChevronUp, Check, X, Minus, Timer } from "@/components/icons/gsb";
@@ -9,28 +10,30 @@ import { toggleCouponWatch, unwatchCoupon, useWatched } from "@/lib/watchStorage
 import { decodeEntities } from "@/lib/text";
 
 const statusMeta = (status: Coupon["status"]) => {
-  if (status === "won") return { label: "Won", cls: "text-emerald-300 border-emerald-500/40 bg-emerald-500/10", Icon: Check };
-  if (status === "lost") return { label: "Lost", cls: "text-red-300 border-red-500/40 bg-red-500/10", Icon: X };
-  if (status === "pending") return { label: "Pending", cls: "text-cyan-300 border-cyan-500/40 bg-cyan-500/10", Icon: Minus };
-  if (status === "void") return { label: "Void", cls: "text-amber-300 border-amber-500/40 bg-amber-500/10", Icon: Minus };
-  return { label: "Active", cls: "text-white/70 border-white/15 bg-white/[0.04]", Icon: Minus };
+  if (status === "won") return { labelKey: "status.won", cls: "text-emerald-300 border-emerald-500/40 bg-emerald-500/10", Icon: Check };
+  if (status === "lost") return { labelKey: "status.lost", cls: "text-red-300 border-red-500/40 bg-red-500/10", Icon: X };
+  if (status === "pending") return { labelKey: "status.pending", cls: "text-cyan-300 border-cyan-500/40 bg-cyan-500/10", Icon: Minus };
+  if (status === "void") return { labelKey: "status.void", cls: "text-amber-300 border-amber-500/40 bg-amber-500/10", Icon: Minus };
+  return { labelKey: "status.active", cls: "text-white/70 border-white/15 bg-white/[0.04]", Icon: Minus };
 };
 
-const formatDate = (value?: string | null) => {
+const formatDate = (value: string | null | undefined, locale: string) => {
   if (!value) return "";
   const d = new Date(value);
   if (isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+  return d.toLocaleDateString(locale, { day: "2-digit", month: "short" });
 };
 
-const formatKickoff = (value?: string) => {
+const formatKickoff = (value: string | undefined, locale: string) => {
   if (!value) return "";
   const d = new Date(String(value).replace(" ", "T"));
   if (isNaN(d.getTime())) return String(value);
-  return d.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
+  return d.toLocaleString(locale, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
 };
 
 const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsPremium?: boolean }) => {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage || i18n.language || "en-GB";
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const { isCouponWatched } = useWatched();
@@ -44,10 +47,10 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
   const handleWatch = () => {
     const nowWatched = toggleCouponWatch(coupon);
     toast({
-      title: nowWatched ? "Coupon saved to Watched" : "Coupon removed from Watched",
+      title: nowWatched ? t("coupon.savedToWatched") : t("coupon.removedFromWatched"),
       action: nowWatched ? (
-        <ToastAction altText="Undo" onClick={() => unwatchCoupon(coupon.id)}>
-          Undo
+        <ToastAction altText={t("coupon.undo")} onClick={() => unwatchCoupon(coupon.id)}>
+          {t("coupon.undo")}
         </ToastAction>
       ) : undefined,
     });
@@ -67,8 +70,8 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
                 {decodeEntities(coupon.name)}
               </h3>
               <p className="text-[10px] text-white/50 mt-0.5">
-                {legs} {legs === 1 ? "match" : "matches"}
-                {coupon.createdAt ? ` · Published ${formatDate(coupon.createdAt)}` : ""}
+                {t("coupon.legs", { count: legs })}
+                {coupon.createdAt ? ` · ${t("coupon.published", { date: formatDate(coupon.createdAt, locale) })}` : ""}
               </p>
             </div>
           </div>
@@ -76,19 +79,19 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
             {coupon.isPremium && (
               <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase bg-pink-500/15 text-pink-300 border border-pink-500/25">
                 <Gem className="w-2.5 h-2.5" />
-                Pro
+                {t("coupon.pro")}
               </span>
             )}
             <span className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase border ${status.cls}`}>
               <status.Icon className="w-2.5 h-2.5" />
-              {status.label}
+              {t(status.labelKey)}
             </span>
           </div>
         </div>
 
         {/* Total odds always visible before expanding */}
         <div className="mt-2.5 flex items-center justify-between gap-2 rounded-lg bg-white/[0.03] border border-white/[0.07] px-2.5 py-2">
-          <span className="text-[10px] uppercase tracking-[0.14em] text-white/45 font-semibold">Total odds</span>
+          <span className="text-[10px] uppercase tracking-[0.14em] text-white/45 font-semibold">{t("coupon.totalOdds")}</span>
           <span className="font-display font-black text-[18px] text-cyan-400 tabular-nums leading-none">
             {Number(coupon.totalOdds || 0).toFixed(2)}
           </span>
@@ -101,7 +104,7 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
           className="mt-2 w-full min-h-[44px] rounded-lg border border-white/[0.1] bg-white/[0.03] text-[12px] font-semibold text-white/75 inline-flex items-center justify-center gap-1.5 active:bg-white/[0.07] transition-colors"
         >
           {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          {open ? "Hide matches" : `Show ${legs} ${legs === 1 ? "match" : "matches"}`}
+          {open ? t("coupon.hideMatches") : t("coupon.showMatches", { count: legs })}
         </button>
 
         {open && (
@@ -113,7 +116,7 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
               >
                 <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-pink-300">
                   <Lock className="w-3.5 h-3.5" />
-                  See all {legs} {legs === 1 ? "pick" : "picks"} in Premium
+                  {t("coupon.seeAllPicks", { count: legs })}
                 </span>
               </Link>
             ) : (
@@ -124,12 +127,12 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
                 >
                   <div className="min-w-0">
                     <p className="text-[12px] font-semibold text-white leading-snug line-clamp-2 break-words">
-                      {decodeEntities(m.homeTeam)} <span className="text-white/40 font-normal">vs</span>{" "}
+                      {decodeEntities(m.homeTeam)} <span className="text-white/40 font-normal">{t("coupon.vs")}</span>{" "}
                       {decodeEntities(m.awayTeam)}
                     </p>
                     <p className="text-[10px] text-white/45 truncate mt-0.5">
                       {decodeEntities(m.league)}
-                      {m.kickoff ? ` · ${formatKickoff(m.kickoff)}` : ""}
+                      {m.kickoff ? ` · ${formatKickoff(m.kickoff, locale)}` : ""}
                       {m.legStatus ? ` · ${m.legStatus}` : ""}
                     </p>
                   </div>
@@ -152,12 +155,14 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
           <div className="flex items-center gap-1.5 text-[10px] text-white/45 min-w-0">
             <Timer className="w-3 h-3 shrink-0" />
             <span className="truncate">
-              {coupon.matches?.[0]?.kickoff ? `First kick-off ${formatKickoff(coupon.matches[0].kickoff)}` : ""}
+              {coupon.matches?.[0]?.kickoff
+                ? t("coupon.firstKickoff", { date: formatKickoff(coupon.matches[0].kickoff, locale) })
+                : ""}
             </span>
           </div>
           <button
             onClick={handleWatch}
-            aria-label={watched ? "Remove from watched" : "Save coupon to watched"}
+            aria-label={watched ? t("coupon.removeFromWatched") : t("coupon.saveToWatched")}
             aria-pressed={watched}
             className={`w-11 h-11 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
               watched

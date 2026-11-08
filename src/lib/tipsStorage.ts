@@ -1,25 +1,24 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Tip } from "@/components/TipCard";
+import { applyTipTranslations, tipsCacheKey } from "@/lib/tipTranslations";
 
 export type { Tip };
 
 const isTipStatus = (value: unknown): value is Tip["status"] =>
   value === "upcoming" || value === "won" || value === "lost" || value === "draw" || value === "void";
 
-const TIPS_CACHE_KEY = "gsb_tips_cache";
-
-const getCachedTips = (): Tip[] => {
+const getCachedTips = (locale?: string): Tip[] => {
   try {
-    const cached = localStorage.getItem(TIPS_CACHE_KEY);
+    const cached = localStorage.getItem(tipsCacheKey(locale));
     return cached ? JSON.parse(cached) : [];
   } catch (e) {
     return [];
   }
 };
 
-const setCachedTips = (tips: Tip[]) => {
+const setCachedTips = (tips: Tip[], locale?: string) => {
   try {
-    localStorage.setItem(TIPS_CACHE_KEY, JSON.stringify(tips));
+    localStorage.setItem(tipsCacheKey(locale), JSON.stringify(tips));
   } catch {
     /* storage quota — ignore */
   }
@@ -27,7 +26,9 @@ const setCachedTips = (tips: Tip[]) => {
 
 const clearTipsCache = () => {
   try {
-    localStorage.removeItem(TIPS_CACHE_KEY);
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith("gsb_tips_cache")) localStorage.removeItem(key);
+    }
     console.log('🗑️ Tips cache cleared');
   } catch (e) {
     console.error('Error clearing tips cache:', e);
@@ -141,15 +142,22 @@ export const purgeExpiredTips = async (): Promise<number> => {
     }
   }
 
-  // 3) Wyczysc lokalny cache z wygaslych (zawsze dziala, rowniez offline)
+  // 3) Wyczysc lokalny cache z wygaslych (zawsze dziala, rowniez offline).
+  //    Cache jest teraz per jezyk, wiec sprzatamy kazdy bucket.
   try {
-    const cached = getCachedTips();
-    if (cached.length) {
-      const now = Date.now();
-      const fresh = cached.filter((t) => !isTipExpiredByRule(t, now));
-      if (fresh.length !== cached.length) {
-        setCachedTips(fresh);
-        console.log("[purge] Removed " + (cached.length - fresh.length) + " expired tips from local cache");
+    const now = Date.now();
+    for (const key of Object.keys(localStorage)) {
+      if (!key.startsWith("gsb_tips_cache")) continue;
+      try {
+        const cached: Tip[] = JSON.parse(localStorage.getItem(key) || "[]");
+        if (!Array.isArray(cached) || cached.length === 0) continue;
+        const fresh = cached.filter((t) => !isTipExpiredByRule(t, now));
+        if (fresh.length !== cached.length) {
+          localStorage.setItem(key, JSON.stringify(fresh));
+          console.log("[purge] Removed " + (cached.length - fresh.length) + " expired tips from " + key);
+        }
+      } catch {
+        /* ignore one malformed bucket */
       }
     }
   } catch (e) {
@@ -160,13 +168,45 @@ export const purgeExpiredTips = async (): Promise<number> => {
 };
 
 
-export const loadTips = async (publishedOnly: boolean = true, forceRefresh: boolean = false): Promise<Tip[]> => {
+const withTranslations = async (tips: Tip[], locale?: string): Promise<Tip[]> => {
+  if (!locale || tips.length === 0) return tips;
+  try {
+    const ids = tips.map((tip) => tip.id);
+    const { data, error } = await (supabase as any)
+      .from("tip_translations")
+      .select("tip_id, prediction, description")
+      .in("tip_id", ids)
+      .eq("locale", String(locale).split("-")[0])
+      .in("status", ["draft", "reviewed"]);
+    if (error || !data?.length) return tips;
+    return applyTipTranslations(tips, data);
+  } catch {
+    // Migration not applied yet — keep the source text.
+    return tips;
+  }
+};
+
+/** Best-effort: asks the edge function to translate this tip (or drain the queue). */
+const requestTipTranslations = (tipId?: number) => {
+  try {
+    const body = tipId ? { tipId } : { action: "process" };
+    void supabase.functions.invoke("translate-content", { body }).catch(() => {});
+  } catch {
+    /* translation must never block publishing */
+  }
+};
+
+export const loadTips = async (
+  publishedOnly: boolean = true,
+  forceRefresh: boolean = false,
+  locale?: string,
+): Promise<Tip[]> => {
   // Purge w TLE — nie blokuje renderu tipów (widoczne od razu, sprzątanie
   // wygasłych leci asynchronicznie).
   purgeExpiredTips().catch(() => {});
 
   // Jeśli forceRefresh - pomijamy cache całkowicie
-  const cached = forceRefresh ? [] : getCachedTips();
+  const cached = forceRefresh ? [] : getCachedTips(locale);
 
   console.log(`📦 Loading tips (published: ${publishedOnly}, force: ${forceRefresh}, cached: ${cached.length})`);
 
@@ -213,8 +253,9 @@ export const loadTips = async (publishedOnly: boolean = true, forceRefresh: bool
           wonAt: tip.won_at || null,
         }));
         
-        setCachedTips(tips);
-        return tips;
+        const translated = await withTranslations(tips, locale);
+        setCachedTips(translated, locale);
+        return translated;
       }
     }
     
@@ -224,7 +265,7 @@ export const loadTips = async (publishedOnly: boolean = true, forceRefresh: bool
   // Tarcza bezpieczeństwa: nawet gdy usuwanie z bazy nie jest mozliwe
   // (RLS/brak RPC), wygasle tipy nigdy nie trafiaja do stanu "Published Tips".
   const now = Date.now();
-  const tips = (data || [])
+  let tips = (data || [])
     .filter(
       (tip: any) =>
         tip.is_published !== false &&
@@ -253,8 +294,10 @@ export const loadTips = async (publishedOnly: boolean = true, forceRefresh: bool
     wonAt: tip.won_at || null,
   }));
 
+  tips = await withTranslations(tips, locale);
+
   if (publishedOnly) {
-    setCachedTips(tips);
+    setCachedTips(tips, locale);
   }
   return tips;
 };
@@ -355,7 +398,8 @@ export const publishAllDrafts = async (): Promise<number> => {
     return 0;
   }
 
-  localStorage.removeItem(TIPS_CACHE_KEY);
+  clearTipsCache();
+  requestTipTranslations();
   return data?.length || 0;
 };
 
@@ -370,7 +414,8 @@ export const publishTipById = async (id: number): Promise<boolean> => {
     return false;
   }
 
-  localStorage.removeItem(TIPS_CACHE_KEY);
+  clearTipsCache();
+  requestTipTranslations(id);
   return true;
 };
 
@@ -386,7 +431,7 @@ export const unqueueTipById = async (id: number): Promise<boolean> => {
     return false;
   }
 
-  localStorage.removeItem(TIPS_CACHE_KEY);
+  clearTipsCache();
   return true;
 };
 
@@ -401,7 +446,7 @@ export const unpublishTipById = async (id: number): Promise<boolean> => {
     return false;
   }
 
-  localStorage.removeItem(TIPS_CACHE_KEY);
+  clearTipsCache();
   return true;
 };
 
@@ -444,6 +489,8 @@ export const addTip = async (tip: Omit<Tip, "id"> & { isPublished?: boolean; que
   console.log('✅ Tip added successfully');
 
   const record = data as any;
+
+  if (isPublished && !tip.queued) requestTipTranslations(record.id);
 
   return {
     id: record.id,
@@ -510,6 +557,7 @@ export const updateTip = async (updatedTip: Tip & { isPublished?: boolean; queue
 
   // Czyść cache po aktualizacji - wymuś pobranie świeżych danych
   clearTipsCache();
+  if (isPublished && !updatedTip.queued) requestTipTranslations(updatedTip.id);
   console.log('✅ Tip updated successfully:', updatedTip.id);
   return true;
 };

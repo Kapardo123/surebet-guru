@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import AppHeader from "@/components/AppHeader";
 import BottomNav from "@/components/BottomNav";
 import TipCard from "@/components/TipCard";
@@ -9,6 +10,7 @@ import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Bookmark } from "lucide-react";
 
 const Watched = () => {
+  const { t } = useTranslation();
   const { tips, coupons } = useWatched();
   const { active: isPremium } = usePremiumStatus();
   const [tab, setTab] = useState<"tips" | "coupons">("tips");
@@ -28,16 +30,16 @@ const Watched = () => {
       <AppHeader />
       <main className="mx-auto max-w-3xl lg:max-w-6xl px-4 pt-4 space-y-4">
         <div>
-          <h1 className="font-display text-[26px] font-extrabold tracking-tight">Watched</h1>
-          <p className="text-[11px] text-white/45 mt-0.5">Saved on this device</p>
+          <h1 className="font-display text-[26px] font-extrabold tracking-tight">{t("watched.title")}</h1>
+          <p className="text-[11px] text-white/45 mt-0.5">{t("watched.subtitle")}</p>
         </div>
 
         <div className="flex items-center gap-1.5">
           <button onClick={() => setTab("tips")} className={chip(tab === "tips")}>
-            Tips ({currentTips.length})
+            {t("watched.tipsTab", { count: currentTips.length })}
           </button>
           <button onClick={() => setTab("coupons")} className={chip(tab === "coupons")}>
-            Coupons ({currentCoupons.length})
+            {t("watched.couponsTab", { count: currentCoupons.length })}
           </button>
         </div>
 
@@ -46,15 +48,15 @@ const Watched = () => {
             <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.07] mx-auto flex items-center justify-center">
               <Bookmark className="w-5 h-5 text-white/30" />
             </div>
-            <p className="font-display font-semibold text-white/75">Nothing saved yet</p>
+            <p className="font-display font-semibold text-white/75">{t("watched.emptyTitle")}</p>
             <p className="text-[12px] text-white/45">
-              Tap the bookmark on any {tab === "tips" ? "tip" : "coupon"} to keep it here.
+              {tab === "tips" ? t("watched.emptyTipText") : t("watched.emptyCouponText")}
             </p>
             <Link
               to={tab === "tips" ? "/" : "/coupons"}
               className="inline-flex items-center justify-center h-11 px-4 rounded-xl bg-white/[0.06] border border-white/[0.1] text-sm font-semibold text-white/80 active:bg-white/[0.1]"
             >
-              Browse {tab}
+              {tab === "tips" ? t("watched.browseTips") : t("watched.browseCoupons")}
             </Link>
           </div>
         ) : (

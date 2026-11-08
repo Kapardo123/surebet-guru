@@ -1,5 +1,6 @@
 import { memo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import TeamLogo, { SportIcon } from "@/components/TeamLogo";
 import AnalysisSheet from "@/components/AnalysisSheet";
@@ -33,18 +34,18 @@ export interface Tip {
 }
 
 const statusMeta = (status: Tip["status"]) => {
-  if (status === "won") return { label: "Won", cls: "text-emerald-300 border-emerald-500/40 bg-emerald-500/10", Icon: Check };
-  if (status === "lost") return { label: "Lost", cls: "text-red-300 border-red-500/40 bg-red-500/10", Icon: X };
-  if (status === "draw" || status === "void") return { label: "Void", cls: "text-amber-300 border-amber-500/40 bg-amber-500/10", Icon: Minus };
+  if (status === "won") return { labelKey: "status.won", cls: "text-emerald-300 border-emerald-500/40 bg-emerald-500/10", Icon: Check };
+  if (status === "lost") return { labelKey: "status.lost", cls: "text-red-300 border-red-500/40 bg-red-500/10", Icon: X };
+  if (status === "draw" || status === "void") return { labelKey: "status.void", cls: "text-amber-300 border-amber-500/40 bg-amber-500/10", Icon: Minus };
   return null;
 };
 
-const formatKickoff = (value: string) => {
+const formatKickoff = (value: string, locale: string) => {
   const d = new Date(String(value).replace(" ", "T"));
   if (isNaN(d.getTime())) return String(value || "");
   const now = new Date();
   const sameDay = d.toDateString() === now.toDateString();
-  return d.toLocaleString("en-GB", {
+  return d.toLocaleString(locale, {
     ...(sameDay ? {} : { day: "2-digit", month: "short" }),
     hour: "2-digit",
     minute: "2-digit",
@@ -53,6 +54,8 @@ const formatKickoff = (value: string) => {
 };
 
 const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boolean }) => {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage || i18n.language || "en-GB";
   const locked = !!tip.isPremium && !userIsPremium && tip.status === "upcoming";
   const [sheetOpen, setSheetOpen] = useState(false);
   const { toast } = useToast();
@@ -67,10 +70,10 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
   const handleWatch = () => {
     const nowWatched = toggleTipWatch(tip);
     toast({
-      title: nowWatched ? "Saved to Watched" : "Removed from Watched",
+      title: nowWatched ? t("tip.savedToWatched") : t("tip.removedFromWatched"),
       action: nowWatched ? (
-        <ToastAction altText="Undo" onClick={() => unwatchTip(tip.id)}>
-          Undo
+        <ToastAction altText={t("tip.undo")} onClick={() => unwatchTip(tip.id)}>
+          {t("tip.undo")}
         </ToastAction>
       ) : undefined,
     });
@@ -102,16 +105,16 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
               {tip.isPremium && (
                 <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide bg-pink-500/15 text-pink-300 border border-pink-500/25">
                   <Gem className="w-2.5 h-2.5" />
-                  Pro
+                  {t("tip.pro")}
                 </span>
               )}
               {status && (
                 <span className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase border ${status.cls}`}>
                   <status.Icon className="w-2.5 h-2.5" />
-                  {status.label}
+                  {t(status.labelKey)}
                 </span>
               )}
-              <span className="text-[10px] text-white/50 tabular-nums">{formatKickoff(tip.kickoff)}</span>
+              <span className="text-[10px] text-white/50 tabular-nums">{formatKickoff(tip.kickoff, locale)}</span>
             </div>
           </div>
 
@@ -129,7 +132,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
             >
               <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-pink-300">
                 <Lock className="w-3.5 h-3.5" />
-                See in Premium
+                {t("tip.seeInPremium")}
               </span>
               {!isNaN(odds) && odds > 0 && (
                 <span className="text-sm font-black text-cyan-400/80 tabular-nums">{odds.toFixed(2)}</span>
@@ -138,7 +141,7 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
           ) : (
             <div className="mt-2.5 flex items-center justify-between gap-3 rounded-lg bg-white/[0.03] border border-white/[0.07] px-2.5 py-2">
               <div className="min-w-0">
-                <p className="text-[9px] uppercase tracking-[0.14em] text-white/40 font-semibold">Pick</p>
+                <p className="text-[9px] uppercase tracking-[0.14em] text-white/40 font-semibold">{t("tip.pick")}</p>
                 <p className="font-display font-bold text-[13px] text-white leading-snug break-words line-clamp-2">
                   {decodeEntities(tip.prediction)}
                 </p>
@@ -162,11 +165,11 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
                   : "border-white/[0.1] bg-white/[0.03] text-white/75 active:bg-white/[0.07]"
               }`}
             >
-              Analysis
+              {t("tip.analysis")}
             </button>
             <button
               onClick={handleWatch}
-              aria-label={watched ? "Remove from watched" : "Save to watched"}
+              aria-label={watched ? t("tip.removeFromWatched") : t("tip.saveToWatched")}
               aria-pressed={watched}
               className={`w-11 h-11 rounded-lg border flex items-center justify-center transition-colors ${
                 watched

@@ -156,9 +156,13 @@ serve(async (req) => {
 
     // --- subscriptions: use the authoritative period end RevenueCat reports ---
     let subMs = 0;
+    let subProductId: string | null = null;
     for (const s of subscriptions?.items ?? []) {
       const ends = Number(s?.current_period_end ?? s?.expires_at ?? s?.period_end ?? 0);
-      if (ends > subMs) subMs = ends;
+      if (ends > subMs) {
+        subMs = ends;
+        subProductId = s?.product_id ? String(s.product_id) : null;
+      }
     }
 
     const rcExpiry = lifetime ? LIFETIME_MS : Math.max(stackBase, subMs);
@@ -174,9 +178,19 @@ serve(async (req) => {
 
     if (finalMs > now) {
       const expiresAt = new Date(finalMs).toISOString();
+      const subActive = subMs > now;
+      const subEndIso = subMs > 0 ? new Date(subMs).toISOString() : null;
       const { error } = await svc
         .from("premium_access")
-        .upsert({ user_id: userId, expires_at: expiresAt, updated_at: new Date().toISOString() });
+        .upsert({
+          user_id: userId,
+          expires_at: expiresAt,
+          provider: "revenuecat",
+          subscription_id: subProductId,
+          auto_renew: subActive,
+          current_period_end: subEndIso,
+          updated_at: new Date().toISOString(),
+        });
       if (error) throw new Error(error.message);
       return json({
         ok: true,

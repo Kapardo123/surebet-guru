@@ -2,10 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "@/components/icons/gsb";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import PageTransition from "@/components/PageTransition";
 
 const TermsOfService = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage || i18n.language || "en";
 
   return (
     <PageTransition>
@@ -17,48 +20,36 @@ const TermsOfService = () => {
             onClick={() => navigate(-1)}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            {t("legal.back")}
           </Button>
 
           <Card className="bg-zinc-900/50 border-zinc-800 text-gray-300">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold text-white">Terms of Service</CardTitle>
+              <CardTitle className="text-2xl font-bold text-white">{t("legal.terms.title")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <section>
-                <h2 className="text-xl font-semibold text-white mb-2">1. Use of Service</h2>
-                <p>
-                  Great Sport Bets provides informational betting tips and surebets. We do not provide 
-                  gambling services or financial advice. All betting activities are at your own risk.
-                </p>
+                <h2 className="text-xl font-semibold text-white mb-2">{t("legal.terms.s1Title")}</h2>
+                <p>{t("legal.terms.s1Body")}</p>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-white mb-2">2. Subscription & Payments</h2>
-                <p>
-                  Premium access is provided via subscriptions processed through Stripe. 
-                  All sales are final, and we do not offer refunds once access has been granted.
-                </p>
+                <h2 className="text-xl font-semibold text-white mb-2">{t("legal.terms.s2Title")}</h2>
+                <p>{t("legal.terms.s2Body")}</p>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-white mb-2">3. Referral System</h2>
-                <p>
-                  Our referral system is intended for personal use. Abuse, including self-referral 
-                  or fraudulent account creation, will result in account suspension and loss of bonuses.
-                </p>
+                <h2 className="text-xl font-semibold text-white mb-2">{t("legal.terms.s3Title")}</h2>
+                <p>{t("legal.terms.s3Body")}</p>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-white mb-2">4. Disclaimers</h2>
-                <p>
-                  Great Sport Bets does not guarantee winnings. Past performance is not indicative of future results. 
-                  Always gamble responsibly.
-                </p>
+                <h2 className="text-xl font-semibold text-white mb-2">{t("legal.terms.s4Title")}</h2>
+                <p>{t("legal.terms.s4Body")}</p>
               </section>
 
               <p className="text-sm text-gray-500 mt-8">
-                Last updated: {new Date().toLocaleDateString()}
+                {t("legal.lastUpdated", { date: new Date().toLocaleDateString(locale) })}
               </p>
             </CardContent>
           </Card>

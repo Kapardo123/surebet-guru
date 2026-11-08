@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import TipCard, { Tip } from "@/components/TipCard";
 import BottomNav from "@/components/BottomNav";
 import AppHeader from "@/components/AppHeader";
@@ -27,6 +28,7 @@ const warsawDay = (ms: number) =>
   }).format(new Date(ms));
 
 const Index = () => {
+  const { t, i18n } = useTranslation();
   const [tips, setTips] = useState<Tip[]>([]);
   const [heroPick, setHeroPick] = useState<FeaturedPick | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,6 +42,7 @@ const Index = () => {
   const [tipDay, setTipDay] = useState<DayFilter>("all");
 
   const { active: isPremium } = usePremiumStatus();
+  const contentLocale = String(i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
 
   // 3 taps on the footer copyright opens the admin login dialog
   const [footerTaps, setFooterTaps] = useState(0);
@@ -59,7 +62,10 @@ const Index = () => {
 
   const loadData = useCallback(async () => {
     try {
-      const [loadedTips, hero] = await Promise.all([loadTips(), loadFeaturedPick()]);
+      const [loadedTips, hero] = await Promise.all([
+        loadTips(true, false, contentLocale),
+        loadFeaturedPick(),
+      ]);
       const today = warsawDay(Date.now());
       const visibleTips = loadedTips
         .filter((tip) => {
@@ -73,12 +79,12 @@ const Index = () => {
       setError(null);
     } catch (e) {
       console.error("Index load failed:", e);
-      setError("Couldn't load tips. Pull down to retry.");
+      setError("home.loadError");
     } finally {
       setLoading(false);
       setHeroLoading(false);
     }
-  }, []);
+  }, [contentLocale]);
 
   useEffect(() => {
     loadData();
@@ -124,7 +130,7 @@ const Index = () => {
     [tips],
   );
 
-  const todayLabel = new Intl.DateTimeFormat("en-GB", {
+  const todayLabel = new Intl.DateTimeFormat(i18n.resolvedLanguage || i18n.language || "en", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -160,15 +166,15 @@ const Index = () => {
         <section className="flex items-end justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-[0.16em] text-white/45 font-semibold">{todayLabel}</p>
-            <h1 className="font-display text-[26px] leading-tight font-extrabold tracking-tight mt-0.5">Today</h1>
-            <p className="text-[11px] text-white/40 mt-0.5">New picks are added daily</p>
+            <h1 className="font-display text-[26px] leading-tight font-extrabold tracking-tight mt-0.5">{t("home.today")}</h1>
+            <p className="text-[11px] text-white/40 mt-0.5">{t("home.newPicksDaily")}</p>
           </div>
           <div className="text-right shrink-0">
             <p className="font-display text-xl font-bold tabular-nums leading-none">
               {loading && tips.length === 0 ? "—" : filteredTips.length}
             </p>
             <p className="text-[10px] text-white/45 mt-0.5 uppercase tracking-wide">
-              {filteredTips.length === 1 ? "analysis" : "analyses"}
+              {t("home.analysis", { count: filteredTips.length })}
             </p>
           </div>
         </section>
@@ -179,7 +185,7 @@ const Index = () => {
         {/* Filters */}
         <section className="space-y-3 pt-1">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="font-display text-[15px] font-bold">Tips</h2>
+            <h2 className="font-display text-[15px] font-bold">{t("home.tips")}</h2>
           </div>
           <FilterBar
             sports={tipSports}
@@ -211,13 +217,13 @@ const Index = () => {
           </div>
         ) : error && tips.length === 0 ? (
           <div className="surface-card p-6 text-center space-y-3">
-            <p className="text-sm text-white/70">{error}</p>
+            <p className="text-sm text-white/70">{t(error)}</p>
             <button
               onClick={loadData}
               className="inline-flex items-center gap-2 h-11 px-4 rounded-xl border border-white/[0.12] text-sm font-semibold text-white/80 active:bg-white/[0.06]"
             >
               <RefreshCw className="w-4 h-4" />
-              Retry
+              {t("home.retry")}
             </button>
           </div>
         ) : tips.length === 0 ? (
@@ -225,18 +231,18 @@ const Index = () => {
             <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.07] mx-auto flex items-center justify-center">
               <Crosshair className="w-6 h-6 text-white/25" />
             </div>
-            <p className="font-display font-semibold text-white/75">No tips yet</p>
-            <p className="text-[12px] text-white/45">Check back soon — new predictions are published daily.</p>
+            <p className="font-display font-semibold text-white/75">{t("home.noTipsTitle")}</p>
+            <p className="text-[12px] text-white/45">{t("home.noTipsText")}</p>
           </div>
         ) : filteredTips.length === 0 ? (
           <div className="surface-card p-8 text-center space-y-3">
-            <p className="font-display font-semibold text-white/75">No tips match your filters</p>
-            <p className="text-[12px] text-white/45">Try clearing the filters to see all picks.</p>
+            <p className="font-display font-semibold text-white/75">{t("home.noMatchTitle")}</p>
+            <p className="text-[12px] text-white/45">{t("home.noMatchText")}</p>
             <button
               onClick={clearFilters}
               className="h-11 px-4 rounded-xl bg-white/[0.06] border border-white/[0.1] text-sm font-semibold text-white/80 active:bg-white/[0.1]"
             >
-              Clear filters
+              {t("home.clearFilters")}
             </button>
           </div>
         ) : (
@@ -255,22 +261,22 @@ const Index = () => {
         {/* Footer */}
         <footer className="pt-4 pb-2 border-t border-white/[0.06] space-y-3">
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-            <Link to="/privacy" className="text-[11px] text-white/35 hover:text-white/60">Privacy</Link>
-            <Link to="/terms" className="text-[11px] text-white/35 hover:text-white/60">Terms</Link>
-            <Link to="/deletion" className="text-[11px] text-white/35 hover:text-white/60">Delete account</Link>
+            <Link to="/privacy" className="text-[11px] text-white/35 hover:text-white/60">{t("footer.privacy")}</Link>
+            <Link to="/terms" className="text-[11px] text-white/35 hover:text-white/60">{t("footer.terms")}</Link>
+            <Link to="/deletion" className="text-[11px] text-white/35 hover:text-white/60">{t("footer.deleteAccount")}</Link>
             <a
               href="mailto:greatsportbets@gmail.com"
               className="inline-flex items-center gap-1 text-[11px] text-white/35 hover:text-white/60"
             >
               <Sparkles className="w-3 h-3" />
-              Help
+              {t("footer.help")}
             </a>
           </div>
           <p
             onClick={handleFooterTap}
             className="text-center text-[10px] text-white/25 select-none cursor-pointer"
           >
-            © 2026 Great Sport Bets
+            {t("footer.copyright")}
           </p>
         </footer>
       </main>

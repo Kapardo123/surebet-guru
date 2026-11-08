@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.settle-results]
 verify_jwt = false
+
+[functions.translate-content]
+verify_jwt = false

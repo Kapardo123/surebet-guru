@@ -21,7 +21,7 @@ interface UpdateStatus {
   loading: boolean;
 }
 
-const CURRENT_VERSION = "41.0.0";
+const CURRENT_VERSION = "42.0.0";
 const DEFAULT_DOWNLOAD = "https://play.google.com/store/apps/details?id=com.surebet.guru";
 const CACHE_KEY = "gsb_update_requirement_v1";
 
