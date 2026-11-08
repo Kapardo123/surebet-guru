@@ -31,7 +31,10 @@ const AdminLoginDialog = ({ open, onOpenChange }: AdminLoginDialogProps) => {
       onOpenChange(false);
       setLogin("");
       setPassword("");
-      navigate("/admin");
+      // Navigate on the next tick: closing the dialog first avoids the click
+      // "passing through" to whatever sits under the button (which used to send
+      // the user back to "/" and hid the admin panel).
+      window.setTimeout(() => navigate("/admin"), 0);
     } else {
       toast({ title: "Wrong credentials", variant: "destructive" });
     }

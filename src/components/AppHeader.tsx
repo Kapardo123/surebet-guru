@@ -21,9 +21,9 @@ const AppHeader = () => {
   return (
     <header className="sticky top-0 z-40 tabbar-blur border-b border-white/[0.07] gsb-safe-top">
       <div className="mx-auto max-w-3xl lg:max-w-6xl px-4 h-14 flex items-center justify-between gap-3">
-        <Link to="/" aria-label="Great Sport Bets — home" className="min-w-0">
+        <div className="min-w-0">
           <Logo compact />
-        </Link>
+        </div>
 
         {/* Desktop navigation (the bottom bar is mobile-only). */}
         <nav className="hidden md:flex items-center gap-1" aria-label="Primary">
