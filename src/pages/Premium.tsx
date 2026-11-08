@@ -1,85 +1,181 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Shield, TrendingUp, Crown, Loader2, LogIn, LogOut, Bell, Smartphone, Home, Crosshair, Layers } from "@/components/icons/gsb";
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import Logo from "@/components/Logo";
-import NavLinks from "@/components/NavLinks";
-import PageTransition from "@/components/PageTransition";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import AppHeader from "@/components/AppHeader";
+import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
-import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import { getOfferings, purchasePackage, restorePurchases } from "@/integrations/revenuecat";
+import { Switch } from "@/components/ui/switch";
+import { Gem, Check, Shield, Smartphone, Loader2, Bell, LogIn } from "@/components/icons/gsb";
+
+interface Plan {
+  duration: number;
+  label: string;
+  webPrice: string;
+  paymentLink: string;
+}
+
+// Prices mirror the Stripe price map in create-payment (one-time, non-renewing).
+const PLANS: Plan[] = [
+  { duration: 7, label: "7 days", webPrice: "$3.99", paymentLink: "https://buy.stripe.com/aFafZg6dW6kP3Ga5TX6EU03" },
+  { duration: 15, label: "15 days", webPrice: "$6.99", paymentLink: "https://buy.stripe.com/4gM3cu59SdNh4Ke0zD6EU04" },
+  { duration: 30, label: "30 days", webPrice: "$9.99", paymentLink: "https://buy.stripe.com/aFa28q59S10v0tYgyB6EU05" },
+];
+
+const BENEFITS = [
+  "All premium tips unlocked",
+  "Premium accumulators",
+  "Expert match analyses",
+  "Push alerts for new tips",
+];
+
+/** Extract amount + currency token from a store price string (e.g. "$3.99", "3,99 €"). */
+const parsePrice = (value?: string | null): { amount: number; symbol: string } | null => {
+  if (!value) return null;
+  const raw = String(value).trim();
+  const m = raw.match(/([^\d]*?)(\d[\d.,\s]*)([^\d]*)$/);
+  if (!m) return null;
+  const prefix = m[1].trim();
+  const suffix = m[3].trim();
+  const numeric = m[2].replace(/\s/g, "");
+  // Treat a trailing ,dd or .dd as decimals, strip thousands separators.
+  const normalized = /[.,]\d{1,2}$/.test(numeric)
+    ? numeric.replace(/,/g, ".")
+    : numeric.replace(/[.,]/g, "");
+  const amount = Number(normalized.replace(/(\.\d{2}).*$/, "$1"));
+  if (!isFinite(amount) || amount <= 0) return null;
+  return { amount, symbol: prefix || suffix };
+};
+
+const formatMoney = (amount: number, symbol: string): string => {
+  const fixed = amount.toFixed(2);
+  if (!symbol) return fixed;
+  if (/^[$€£¥₹]$/.test(symbol)) return `${symbol}${fixed}`;
+  return `${fixed} ${symbol}`;
+};
 
 export default function Premium() {
-  const { user, signOut, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { active, daysLeft, refresh } = usePremiumStatus();
-  const [loading, setLoading] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [rcOfferings, setRcOfferings] = useState<any>(null);
+  const [selected, setSelected] = useState(7);
   const [searchParams] = useSearchParams();
 
   const push = usePushNotifications({ userId: user?.id, premiumActive: active });
 
-  const handleBack = () => {
-    // Force a complete reload to "/" to avoid any potential WebView history/state hanging
-    // This is a known workaround for Android WebView navigation/black screen issues
-    window.location.href = "/";
-  };
-
   useEffect(() => {
-    // Immediate status check and RC offering fetch
     refresh().catch(() => {});
-
-    if (Capacitor.getPlatform() !== 'web') {
-      getOfferings().then(offerings => {
-        if (offerings) setRcOfferings(offerings);
-      }).catch(() => {});
+    if (Capacitor.getPlatform() !== "web") {
+      getOfferings()
+        .then((offerings) => offerings && setRcOfferings(offerings))
+        .catch(() => {});
     }
   }, [refresh]);
 
   // Web checkout return: verify the Stripe session, then unlock premium.
   useEffect(() => {
-    if (Capacitor.getPlatform() !== "web") return; // Stripe flow is web-only
+    if (Capacitor.getPlatform() !== "web") return;
     if (searchParams.get("success") !== "true") return;
     const sessionId = searchParams.get("session_id");
     if (!sessionId) return;
     let cancelled = false;
     (async () => {
       try {
-        const { data, error } = await supabase.functions.invoke("verify-payment", {
-          body: { sessionId },
-        });
+        const { data, error } = await supabase.functions.invoke("verify-payment", { body: { sessionId } });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
         await refresh();
-        if (!cancelled) toast({ title: "Payment successful! Premium unlocked 🎉" });
+        if (!cancelled) toast({ title: "Payment successful — Premium unlocked" });
       } catch (e: any) {
-        if (!cancelled) {
-          toast({ title: "Could not verify payment", description: e?.message, variant: "destructive" });
-        }
+        if (!cancelled) toast({ title: "Could not verify payment", description: e?.message, variant: "destructive" });
       } finally {
-        // Strip the query params so a refresh doesn't re-verify.
         window.history.replaceState({}, "", `${window.location.pathname}#/premium`);
       }
     })();
     return () => { cancelled = true; };
   }, [searchParams, refresh, toast]);
 
-  // Keep this early return AFTER every hook so hook order stays stable.
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-accent" />
-      </div>
-    );
-  }
+  const rcPackageFor = (duration: number) => {
+    const current = rcOfferings?.current;
+    if (!current) return null;
+    if (duration === 7) return current.weekly;
+    if (duration === 30) return current.monthly;
+    return current.availablePackages?.find((p: any) => String(p.identifier).includes("15")) ?? null;
+  };
+
+  const displayPrice = (plan: Plan): string => {
+    if (Capacitor.getPlatform() !== "web") {
+      const pkg = rcPackageFor(plan.duration);
+      if (pkg?.product?.priceString) return pkg.product.priceString;
+    }
+    return plan.webPrice;
+  };
+
+  // Real per-day price only when the amount is parseable, so currency never mismatches.
+  const planPerDay = (plan: Plan): string | null => {
+    const parsed = parsePrice(displayPrice(plan));
+    if (!parsed) return null;
+    return formatMoney(parsed.amount / plan.duration, parsed.symbol);
+  };
+
+  const perDayValues = useMemo(
+    () =>
+      PLANS.map((p) => {
+        const parsed = parsePrice(displayPrice(p));
+        return parsed ? parsed.amount / p.duration : null;
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rcOfferings],
+  );
+  const bestIndex = useMemo(() => {
+    const valid = perDayValues.filter((v): v is number => v != null);
+    if (valid.length < PLANS.length) return -1;
+    const min = Math.min(...valid);
+    return perDayValues.findIndex((v) => v === min);
+  }, [perDayValues]);
+
+  const selectedPlan = PLANS.find((p) => p.duration === selected) || PLANS[0];
+
+  const handleBuy = async () => {
+    if (!user) {
+      navigate("/auth?redirect=/premium");
+      return;
+    }
+    setLoading(true);
+    try {
+      if (Capacitor.getPlatform() !== "web") {
+        const offerings = rcOfferings?.current ? rcOfferings : await getOfferings();
+        const pkg = rcPackageFor(selectedPlan.duration);
+        if (pkg) {
+          const info = await purchasePackage(pkg);
+          if (info) await refresh(info, selectedPlan.duration);
+        } else {
+          toast({ title: "Plan unavailable", description: "Please try again in a moment.", variant: "destructive" });
+        }
+      } else {
+        const { data, error } = await supabase.functions.invoke("create-payment", {
+          body: { duration: selectedPlan.duration, origin: window.location.origin },
+        });
+        if (error) throw error;
+        if (data?.url) window.location.href = data.url;
+        else if (selectedPlan.paymentLink) window.location.href = selectedPlan.paymentLink;
+        else throw new Error(data?.error || "Could not start checkout");
+      }
+    } catch (e) {
+      console.error("Purchase error", e);
+      toast({ title: "Purchase failed", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRestore = async () => {
     setRestoring(true);
@@ -87,347 +183,180 @@ export default function Premium() {
       const info = await restorePurchases();
       if (info) {
         await refresh(info);
-        toast({ title: "Purchases restored! ✅" });
+        toast({ title: "Purchases restored" });
       } else {
         toast({ title: "No active purchases found", variant: "destructive" });
       }
-    } catch (e) {
-      toast({ title: "Restore failed", variant: "destructive" });
     } finally {
       setRestoring(false);
     }
   };
 
-  const handleBuy = async (duration: number, paymentLink?: string) => {
-    if (!user) {
-      navigate("/auth?redirect=/premium");
-      return;
-    }
-    setLoading(duration);
-    try {
-      if (Capacitor.getPlatform() !== 'web') {
-        // RevenueCat 13 moved the hosted paywall to a separate UI package, so we
-        // purchase the selected plan directly from the current offering.
-        const offerings = rcOfferings?.current ? rcOfferings : await getOfferings();
-        const current = offerings?.current;
-        let pkg: any = null;
-        if (current) {
-          if (duration === 7) pkg = current.weekly;
-          else if (duration === 30) pkg = current.monthly;
-          else pkg = current.availablePackages.find((p: any) => p.identifier.includes('15'));
-        }
-        if (pkg) {
-          const dInfo = await purchasePackage(pkg);
-          if (dInfo) await refresh(dInfo, duration);
-        } else {
-          toast({ title: "Plan unavailable", description: "Please try again in a moment.", variant: "destructive" });
-        }
-      } else {
-        // Web: Stripe Checkout through our edge function, so the purchase is
-        // recorded and premium is granted when the user returns.
-        const { data, error } = await supabase.functions.invoke("create-payment", {
-          body: { duration, origin: window.location.origin },
-        });
-        if (error) throw error;
-        if (data?.url) {
-          window.location.href = data.url;
-        } else if (paymentLink) {
-          window.location.href = paymentLink;
-        } else {
-          throw new Error(data?.error || "Could not start checkout");
-        }
-      }
-    } catch (e) {
-      console.error("Purchase error", e);
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  // Features: eksperci i wyselekcjonowane typy
-  const features = [
-    {
-      icon: <Crown className="w-5 h-5 text-pink-400" />,
-      title: "Hand-Picked by Experts",
-      desc: "Every premium tip is selected and reviewed by our team of experienced betting analysts. No noise — only picks they truly believe in.",
-    },
-    {
-      icon: <TrendingUp className="w-5 h-5 text-pink-400" />,
-      title: "High-Value Selections",
-      desc: "Quality over quantity. You get a small number of carefully researched picks instead of dozens of random bets.",
-    },
-    {
-      icon: <Bell className="w-5 h-5 text-cyan-400" />,
-      title: "Instant Push Alerts",
-      desc: "Be first to know when a new premium tip or coupon drops — straight to your phone the moment it goes live.",
-    },
-    {
-      icon: <Layers className="w-5 h-5 text-cyan-400" />,
-      title: "Exclusive Coupons & Hero Pick",
-      desc: "Premium accumulators and the daily hero pick are reserved for members — higher odds, bigger combined value.",
-    },
-  ];
-
-  const plans = [
-    { duration: 7, label: "Weekly Pass", days: "7 Days", price: "$3.99", paymentLink: "https://buy.stripe.com/aFafZg6dW6kP3Ga5TX6EU03", perDay: "$0.57/day" },
-    { duration: 15, label: "Pro Access", days: "15 Days", price: "$6.99", popular: true, paymentLink: "https://buy.stripe.com/4gM3cu59SdNh4Ke0zD6EU04", perDay: "$0.46/day", save: "Save 15%" },
-    { duration: 30, label: "Monthly VIP", days: "30 Days", price: "$9.99", paymentLink: "https://buy.stripe.com/aFa28q59S10v0tYgyB6EU05", perDay: "$0.33/day", save: "Save 40%" },
-  ];
-
-  // Helper to get localized price from RC
-  const getPlanPrice = (plan: any) => {
-    if (Capacitor.getPlatform() !== 'web' && rcOfferings?.current) {
-      let pkg = null;
-      if (plan.duration === 7) pkg = rcOfferings.current.weekly;
-      else if (plan.duration === 30) pkg = rcOfferings.current.monthly;
-      else {
-        pkg = rcOfferings.current.availablePackages.find((p: any) => p.identifier.includes('15'));
-      }
-      if (pkg && pkg.product) {
-        return pkg.product.priceString;
-      }
-    }
-    return plan.price;
-  };
+  if (authLoading) {
+    return (
+      <div className="app-shell flex items-center justify-center">
+        <Loader2 className="w-7 h-7 animate-spin text-pink-400" />
+      </div>
+    );
+  }
 
   return (
-    <PageTransition>
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-clip">
-      {/* Synthwave glow effects */}
-      <div className="fixed top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none"
-           style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', transform: 'translate(-30%, -30%)', opacity: 0.12 }} />
-      <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none"
-           style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(30%, 30%)' }} />
-
-      {/* Glass Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-[#0a0015]/80 via-[#150025]/80 to-[#0a0020]/80 border-b border-white/10 shadow-xl shadow-black/30">
-        <div className="relative container max-w-6xl xl:max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between gap-4">
-          <div onClick={handleBack} className="cursor-pointer flex items-center gap-2.5 md:gap-3">
-            <Logo />
-          </div>
-          <NavLinks active="premium" className="absolute left-1/2 -translate-x-1/2" />
-          <div className="flex items-center gap-2 md:gap-2.5">
-            {user ? (
-              <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 text-white/60 hover:text-pink-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-pink-500/30">
-                <LogOut className="w-4 h-4" />
-                <span className="text-xs font-medium hidden lg:inline">Logout</span>
-              </Button>
-            ) : (
-              <Link to="/auth?redirect=/premium">
-                <Button variant="outline" size="sm" className="gap-2 text-xs font-medium border-pink-500/30 text-white/70 hover:border-cyan-500/50 hover:text-cyan-400 hover:bg-cyan-500/5 transition-all duration-200 rounded-full px-3 md:px-3.5 shadow-sm">
-                  <LogIn className="w-4 h-4" />
-                  Sign In
-                </Button>
-              </Link>
-            )}
-            <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1.5 text-white/60 hover:text-cyan-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-cyan-500/30">
-              <Home className="w-4 h-4" />
-              Home
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="container max-w-6xl xl:max-w-7xl mx-auto px-4 py-8 md:py-12 space-y-12 relative z-10">
-
-        {/* Hero */}
-        <section className="text-center space-y-6 py-6 md:py-10">
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500/20 to-pink-500/10 border border-pink-500/30 shadow-lg shadow-pink-500/20 flex items-center justify-center rotate-3">
-              <Crown className="w-8 h-8 text-pink-400" />
-            </div>
-          </div>
-          <div className="space-y-3">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter uppercase">
-              GSB <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400">Premium</span>
-            </h1>
-            <p className="text-white/60 text-sm md:text-base max-w-xl mx-auto leading-relaxed">
-              Hand-picked tips from our team of betting experts.
-              <span className="text-white/70 font-semibold"> No noise, no filler</span> — only selections they truly stand behind.
-            </p>
-          </div>
-          {/* Decorative line */}
-          <div className="flex items-center justify-center gap-3 pt-2">
-            <div className="h-[1px] w-16 bg-gradient-to-r from-transparent to-pink-500/40" />
-            <div className="flex gap-1.5">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse"
-                     style={{ animationDelay: `${i * 0.2}s` }} />
-              ))}
-            </div>
-            <div className="h-[1px] w-16 bg-gradient-to-l from-transparent to-cyan-500/40" />
-          </div>
-        </section>
-
-        {/* Current Status (if active) */}
-        {active && (
-          <div className="space-y-4 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="relative overflow-hidden rounded-2xl border border-pink-500/30 bg-gradient-to-r from-pink-500/[0.08] to-transparent backdrop-blur-xl shadow-lg shadow-pink-500/10">
-              <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
-              <div className="p-6 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500/20 to-pink-500/10 ring-1 ring-pink-500/30 flex items-center justify-center">
-                    <Crown className="w-6 h-6 text-pink-400" />
-                  </div>
-                  <div>
-                    <p className="font-display text-xs font-black uppercase tracking-[0.2em] text-pink-400">Premium Active</p>
-                    <p className="text-[10px] text-white/40 mt-1">Full access unlocked on all devices</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-pink-300">{daysLeft}</div>
-                  <div className="text-[9px] text-white/40 uppercase tracking-[0.25em] font-bold">days left</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] backdrop-blur-xl">
-              <div className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-cyan-500/10 ring-1 ring-cyan-500/30 flex items-center justify-center">
-                    <Bell className="w-4 h-4 text-cyan-400" />
-                  </div>
-                  <div className="space-y-0.5">
-                    <p className="font-bold text-sm">Push Notifications</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">New tips straight to your phone</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={push.enabled}
-                  onCheckedChange={async (val) => {
-                    try {
-                      await push.setPushEnabled(val);
-                      toast({ title: val ? "Enabled! 🔔" : "Disabled" });
-                    } catch (e: any) {
-                      toast({ title: "Error", description: e.message, variant: "destructive" });
-                    }
-                  }}
-                  disabled={push.loading}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Features */}
-        <section className="grid gap-4 md:gap-5 md:grid-cols-2 lg:grid-cols-4 max-w-3xl lg:max-w-5xl mx-auto">
-          {features.map((f, i) => (
-            <div key={i} className="relative overflow-hidden rounded-2xl bg-white/[0.03] border border-white/[0.06] p-5 hover:border-pink-500/25 hover:bg-white/[0.05] transition-all duration-300 group">
-              <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-              <div className="flex gap-4">
-                <div className="shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-white/[0.07] to-white/[0.02] border border-white/[0.08] flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                  {f.icon}
-                </div>
-                <div className="space-y-1 min-w-0">
-                  <h3 className="font-bold text-sm text-white">{f.title}</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </section>
-
-        {/* Pricing */}
-        <section className="space-y-8">
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-black uppercase tracking-tight">Choose Your Plan</h2>
-            <p className="text-xs text-muted-foreground">Instant access · cancel anytime · works on all devices</p>
-            <div className="h-[2px] w-16 mx-auto rounded-full bg-gradient-to-r from-pink-500 to-cyan-500" />
-          </div>
-
-          <div className="grid gap-5 md:gap-6 md:grid-cols-3">
-            {plans.map((plan) => (
-              <div
-                key={plan.duration}
-                className={`relative rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] ${
-                  plan.popular
-                    ? "border border-pink-500/40 bg-gradient-to-b from-pink-500/[0.08] to-transparent shadow-xl shadow-pink-500/10"
-                    : "border border-white/[0.07] bg-white/[0.03] hover:border-white/15"
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute top-0 right-0 bg-gradient-to-r from-pink-500 to-pink-600 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-widest shadow-lg shadow-pink-500/30">
-                    Most Popular
-                  </div>
-                )}
-                {plan.save && (
-                  <div className={`absolute top-3 left-3 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider border ${
-                    plan.popular ? "bg-pink-500/15 text-pink-300 border-pink-500/30" : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                  }`}>
-                    {plan.save}
-                  </div>
-                )}
-                <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-pink-500/60 to-transparent" />
-                <div className="p-7 flex flex-col items-center text-center h-full space-y-5">
-                  <div className="space-y-1">
-                    <p className="font-display font-black text-xs uppercase tracking-[0.25em] text-white/50">{plan.label}</p>
-                    <p className="text-[10px] font-bold text-pink-400 uppercase tracking-[0.3em]">{plan.days}</p>
-                    <div className="flex items-baseline justify-center gap-1 mt-3">
-                      <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60">{getPlanPrice(plan)}</span>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest mt-1">{plan.perDay}</p>
-                  </div>
-
-                  <ul className="space-y-2 w-full text-left">
-                    {["All premium tips", "Premium coupons & hero pick", "Push notifications"].map(( perk ) => (
-                      <li key={perk} className="flex items-center gap-2 text-[11px] text-white/60">
-                        <CheckIcon />
-                        {perk}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <Button
-                    onClick={() => handleBuy(plan.duration, plan.paymentLink)}
-                    disabled={loading !== null}
-                    className={`w-full h-11 font-black uppercase tracking-widest text-[11px] mt-auto transition-all active:scale-95 ${
-                      plan.popular
-                        ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:from-pink-400 hover:to-pink-500'
-                        : 'bg-white/[0.07] text-white border border-white/10 hover:bg-white/[0.12]'
-                    }`}
-                  >
-                    {loading === plan.duration ? <Loader2 className={`animate-spin ${plan.popular ? "brightness-0 invert" : ""}`} /> : "Get it now"}
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Restore (Native only) */}
-        {Capacitor.isNativePlatform() && (
-          <section className="text-center pt-6 border-t border-white/5">
-            <p className="text-xs text-muted-foreground mb-4">Already have a subscription?</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRestore}
-              disabled={restoring}
-              className="font-display uppercase tracking-widest text-[10px] h-9 border-white/10 hover:bg-white/5"
-            >
-              {restoring ? <Loader2 className="animate-spin w-3 h-3 mr-2" /> : <Smartphone className="w-3 h-3 mr-2" />}
-              Restore Purchases
-            </Button>
-          </section>
-        )}
-
-        {/* Footer info */}
-        <section className="text-center max-w-md mx-auto pb-8 space-y-4">
-          <div className="flex items-center justify-center gap-6 text-[9px] uppercase tracking-widest text-white/25 font-bold">
-            <span className="flex items-center gap-1.5"><Shield className="w-3 h-3" /> Secure payment</span>
-            <span className="flex items-center gap-1.5"><Crosshair className="w-3 h-3" /> Expert picks</span>
-          </div>
-          <p className="text-[10px] text-muted-foreground leading-relaxed">
-            Payments are processed securely by Stripe. Premium access is granted instantly across all your devices.
-            By subscribing you agree to our <Link to="/terms" className="underline hover:text-primary">Terms of Service</Link>.
+    <div className="app-shell pb-24 md:pb-0">
+      <AppHeader />
+      <main className="mx-auto max-w-xl px-4 pt-4 space-y-5">
+        {/* Value proposition */}
+        <section className="space-y-2">
+          <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full border border-pink-500/30 bg-pink-500/10 text-pink-300 text-[10px] font-bold uppercase tracking-[0.14em]">
+            <Gem className="w-3 h-3" /> GSB Premium
+          </span>
+          <h1 className="font-display text-[26px] font-extrabold tracking-tight leading-tight">
+            Every pick. Every analysis.
+          </h1>
+          <p className="text-[13px] text-white/55 leading-relaxed max-w-md">
+            Unlock the full tip board, premium accumulators and expert analyses — hand-picked, no filler.
           </p>
         </section>
+
+        {/* Active status */}
+        {active && (
+          <div className="surface-card p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="w-9 h-9 rounded-xl bg-pink-500/12 border border-pink-500/25 flex items-center justify-center">
+                <Gem className="w-4 h-4 text-pink-400" />
+              </span>
+              <div>
+                <p className="font-display font-semibold text-sm">Premium active</p>
+                <p className="text-[11px] text-white/45">{daysLeft} days left</p>
+              </div>
+            </div>
+            <span className="text-[10px] uppercase tracking-wide text-emerald-300 border border-emerald-500/30 bg-emerald-500/10 rounded-full px-2 py-0.5">
+              Active
+            </span>
+          </div>
+        )}
+
+        {active && (
+          <div className="surface-card p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                <Bell className="w-4 h-4 text-white/60" />
+              </span>
+              <div>
+                <p className="font-display font-semibold text-sm">Push notifications</p>
+                <p className="text-[11px] text-white/45">New tips straight to your phone</p>
+              </div>
+            </div>
+            <Switch
+              checked={push.enabled}
+              disabled={push.loading}
+              onCheckedChange={async (val) => {
+                try {
+                  await push.setPushEnabled(val);
+                  toast({ title: val ? "Notifications enabled" : "Notifications disabled" });
+                } catch (e: any) {
+                  toast({ title: "Could not update", description: e?.message, variant: "destructive" });
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* Benefits — single, accurate list */}
+        <section className="surface-card p-4">
+          <ul className="space-y-2.5">
+            {BENEFITS.map((benefit) => (
+              <li key={benefit} className="flex items-center gap-2.5 text-[13px] text-white/80">
+                <span className="w-5 h-5 rounded-full bg-pink-500/12 border border-pink-500/25 flex items-center justify-center shrink-0">
+                  <Check className="w-3 h-3 text-pink-400" />
+                </span>
+                {benefit}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Plans — stacked, one main CTA */}
+        <section className="space-y-2">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-white/45 font-semibold">Choose access</p>
+          {PLANS.map((plan, i) => {
+            const isSelected = selected === plan.duration;
+            const perDay = planPerDay(plan);
+            return (
+              <button
+                key={plan.duration}
+                onClick={() => setSelected(plan.duration)}
+                aria-pressed={isSelected}
+                className={`w-full text-left rounded-2xl border p-3.5 flex items-center justify-between gap-3 transition-colors ${
+                  isSelected
+                    ? "border-pink-500/50 bg-pink-500/[0.08]"
+                    : "border-white/[0.09] bg-[#17141f] active:bg-white/[0.04]"
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span
+                    className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                      isSelected ? "border-pink-500 bg-pink-500" : "border-white/25"
+                    }`}
+                  >
+                    {isSelected && <Check className="w-3 h-3 brightness-0 invert" />}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-display font-bold text-[15px] text-white">{plan.label}</p>
+                    <p className="text-[11px] text-white/45">
+                      {perDay ? `${perDay} / day` : "One-time access"}
+                      {i === bestIndex && <span className="ml-2 text-emerald-300">Best daily value</span>}
+                    </p>
+                  </div>
+                </div>
+                <span className="font-display font-extrabold text-[17px] text-white tabular-nums shrink-0">
+                  {displayPrice(plan)}
+                </span>
+              </button>
+            );
+          })}
+        </section>
+
+        <button
+          onClick={handleBuy}
+          disabled={loading}
+          className="w-full h-12 rounded-2xl bg-pink-500 text-white font-display font-bold text-sm inline-flex items-center justify-center gap-2 active:scale-[0.99] transition-transform disabled:opacity-70"
+        >
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              {user ? `Get ${selectedPlan.label} · ${displayPrice(selectedPlan)}` : "Sign in to continue"}
+              {!user && <LogIn className="w-4 h-4" />}
+            </>
+          )}
+        </button>
+
+        <p className="text-[11px] text-white/40 text-center leading-relaxed">
+          One-time purchase for the selected period. Access does not auto-renew.
+        </p>
+
+        {Capacitor.isNativePlatform() && (
+          <button
+            onClick={handleRestore}
+            disabled={restoring}
+            className="w-full h-10 rounded-xl border border-white/[0.1] text-[12px] font-semibold text-white/70 inline-flex items-center justify-center gap-2 active:bg-white/[0.05]"
+          >
+            {restoring ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Smartphone className="w-3.5 h-3.5" />}
+            Restore purchases
+          </button>
+        )}
+
+        <div className="flex items-center justify-center gap-4 text-[10px] text-white/30 pt-1">
+          <span className="inline-flex items-center gap-1"><Shield className="w-3 h-3" /> Secure payment</span>
+          <span className="inline-flex items-center gap-1"><Gem className="w-3 h-3" /> Instant access</span>
+        </div>
+
+        <p className="text-[10px] text-white/30 text-center leading-relaxed pb-2">
+          By purchasing you agree to our{" "}
+          <Link to="/terms" className="underline hover:text-white/50">Terms of Service</Link>.
+        </p>
       </main>
+      <BottomNav />
     </div>
-    </PageTransition>
   );
 }
-
-const CheckIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-pink-400 flex-shrink-0"><path d="M20 6 9 17l-5-5" /></svg>
-);

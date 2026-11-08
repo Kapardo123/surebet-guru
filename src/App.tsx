@@ -7,7 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SplashScreen from "./components/SplashScreen";
-import UpdateRequiredModal from "./components/UpdateRequiredModal";
+import ForceUpdateScreen from "./components/ForceUpdateScreen";
 import { useAppUpdate } from "@/hooks/useAppUpdate";
 import { useEffect, useState, lazy, Suspense } from "react";
 import { initRevenueCat } from "@/integrations/revenuecat";
@@ -15,6 +15,8 @@ import { initRevenueCat } from "@/integrations/revenuecat";
 const Admin = lazy(() => import("./pages/Admin"));
 const Premium = lazy(() => import("./pages/Premium"));
 const Coupons = lazy(() => import("./pages/Coupons"));
+const Watched = lazy(() => import("./pages/Watched"));
+const Account = lazy(() => import("./pages/Account"));
 const Auth = lazy(() => import("./pages/Auth"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
@@ -68,6 +70,8 @@ const AnimatedRoutes = () => {
         <Route path="/admin" element={<Admin />} />
         <Route path="/premium" element={<Premium />} />
         <Route path="/coupons" element={<Coupons />} />
+        <Route path="/watched" element={<Watched />} />
+        <Route path="/account" element={<Account />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
@@ -82,7 +86,6 @@ const AppContent = () => {
   const [error, setError] = useState<string | null>(globalError);
   const [splashDone, setSplashDone] = useState(sessionStorage.getItem("splash_shown") === "true");
   const {
-    needsUpdate,
     forceUpdate,
     currentVersion,
     latestVersion,
@@ -126,6 +129,36 @@ const AppContent = () => {
     );
   }
 
+  // Hard gate: an outdated native build never mounts the app UI.
+  if (forceUpdate) {
+    return (
+      <ForceUpdateScreen
+        currentVersion={currentVersion}
+        latestVersion={latestVersion}
+        message={message}
+        downloadUrl={downloadUrl}
+      />
+    );
+  }
+
+  // Wait for the version check before showing the app (native only; web is
+  // always the latest build). The check times out after 5s and fails open.
+  if (updateLoading) {
+    return (
+      <div className="app-shell min-h-[100dvh] flex flex-col items-center justify-center gap-4">
+        <div className="gsb-logo flex items-center gap-2" aria-hidden="true">
+          <span className="gsb-logo__badge">
+            <span className="gsb-logo__badge-inner">
+              <span className="gsb-logo__mono">GSB</span>
+            </span>
+          </span>
+          <span className="gsb-logo__word">Great Sport Bets</span>
+        </div>
+        <div className="w-6 h-6 rounded-full border-2 border-white/10 border-t-pink-500 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <AuthProvider>
       <SplashScreen onFinish={() => setSplashDone(true)} />
@@ -134,17 +167,6 @@ const AppContent = () => {
           <Toaster />
           <Sonner />
           <AnimatedRoutes />
-
-          {/* Update Modal - shows over everything */}
-          {!updateLoading && needsUpdate && (
-            <UpdateRequiredModal
-              isOpen={needsUpdate}
-              currentVersion={currentVersion}
-              latestVersion={latestVersion}
-              message={message}
-              downloadUrl={downloadUrl}
-            />
-          )}
         </>
       )}
     </AuthProvider>

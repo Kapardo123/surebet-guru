@@ -19,8 +19,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["'Plus Jakarta Sans'", "sans-serif"],
-        body: ["'DM Sans'", "sans-serif"],
+        display: ["'Inter'", "system-ui", "sans-serif"],
+        body: ["'Manrope'", "system-ui", "sans-serif"],
         splash: ["'Bebas Neue'", "sans-serif"],
       },
       colors: {

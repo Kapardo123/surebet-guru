@@ -1,11 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ============================================================================
-   EVOLVE NEON — design tokens
+   EVOLVE NEON â€” design tokens
    Discipline: dark synthwave base, PINK is the only accent (actions/brand),
    CYAN is reserved for data (odds, stats, live). No glows on content.
    ========================================================================== */
@@ -57,8 +57,18 @@
     --confidence-medium: 42 90% 56%;
     --confidence-low: 0 70% 56%;
 
-    --font-display: 'Plus Jakarta Sans', sans-serif;
-    --font-body: 'DM Sans', sans-serif;
+    --font-display: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-body: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+    /* GSB mobile surfaces */
+    --gsb-bg-top: #0a0015;
+    --gsb-bg-bottom: #11091d;
+    --gsb-surface: #17141f;
+    --gsb-surface-2: #1d1927;
+    --gsb-line: rgba(255, 255, 255, 0.07);
+    --gsb-line-strong: rgba(255, 255, 255, 0.12);
+    --gsb-pink: #ec4899;
+    --gsb-cyan: #06b6d4;
 
     /* Soft elevation instead of neon glow. */
     --glow-primary: 0 8px 24px hsl(330 85% 62% / 0.20);
@@ -73,8 +83,11 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
     font-family: var(--font-body);
+    background: linear-gradient(180deg, #0a0015 0%, #11091d 100%);
+    background-attachment: fixed;
+    min-height: 100dvh;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -128,7 +141,7 @@
   }
 }
 
-/* Premium CTA — clean pink gradient, no shimmer/glow. */
+/* Premium CTA â€” clean pink gradient, no shimmer/glow. */
 .btn-gold {
   background: linear-gradient(135deg, #f472b6 0%, #ec4899 55%, #db2777 100%);
   border: 1px solid rgba(236, 72, 153, 0.55);
@@ -153,7 +166,7 @@
 }
 
 /* ============================================================================
-   Animated header logo — "Great Sport Bets"
+   Animated header logo â€” "Great Sport Bets"
    Rotating-gradient bolt badge + Bebas Neue wordmark with a pink/cyan shimmer.
    ========================================================================== */
 .gsb-logo {
@@ -279,7 +292,7 @@
 }
 
 /* ============================================================================
-   Splash screen — same GSB lockup as the header, pure CSS (no JS animation),
+   Splash screen â€” same GSB lockup as the header, pure CSS (no JS animation),
    only transform/opacity so everything stays on the compositor thread.
    ========================================================================== */
 .splash-screen {
@@ -449,7 +462,7 @@
   }
 }
 
-/* Premium upsell CTA — a light sheen sweeping across the button. */
+/* Premium upsell CTA â€” a light sheen sweeping across the button. */
 .premium-upsell__cta {
   position: relative;
   overflow: hidden;
@@ -484,3 +497,83 @@
     animation: none;
   }
 }
+
+/* ============================================================================
+   GSB mobile shell â€” shared surfaces, safe areas, matchday ticket
+   ========================================================================== */
+.app-shell {
+  min-height: 100dvh;
+  background: linear-gradient(180deg, #0a0015 0%, #11091d 100%);
+  background-attachment: fixed;
+}
+
+.surface-card {
+  background: var(--gsb-surface);
+  border: 1px solid var(--gsb-line);
+  border-radius: 18px;
+}
+
+.surface-card-2 {
+  background: var(--gsb-surface-2);
+  border: 1px solid var(--gsb-line);
+  border-radius: 16px;
+}
+
+/* Header respects the notch/status bar; the bottom nav already uses safe-area. */
+.gsb-safe-top {
+  padding-top: max(env(safe-area-inset-top), 0.5rem);
+}
+
+/* Matchday ticket: side notches + dashed perforation for a stadium-ticket feel. */
+.matchday-ticket {
+  position: relative;
+}
+.matchday-ticket::before,
+.matchday-ticket::after {
+  content: "";
+  position: absolute;
+  top: auto;
+  bottom: 60px;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #0f0719;
+  z-index: 2;
+}
+.matchday-ticket::before { left: -9px; }
+.matchday-ticket::after { right: -9px; }
+.perforation {
+  border-top: 1px dashed rgba(255, 255, 255, 0.14);
+}
+
+/* Just enough blur/opacity so content never reads through the fixed bar. */
+.tabbar-blur {
+  background: rgba(15, 7, 24, 0.92);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gsb-anim,
+  .gsb-anim * {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Compact header: hide the wordmark on phones so the row never overflows. */
+@media (max-width: 639px) {
+  .gsb-logo--compact .gsb-logo__word {
+    display: none;
+  }
+}
+
+/* Never allow sideways scrolling on mobile. */
+html,
+body {
+  overflow-x: hidden;
+}
+.app-shell {
+  overflow-x: hidden;
+}
+

@@ -3,7 +3,7 @@ import AdminLoginDialog from "@/components/AdminLoginDialog";
 
 // Animated wordmark: a rotating-gradient bolt badge + a Bebas Neue wordmark with
 // a pink/cyan shimmer sweep. Styling/animation live in index.css (.gsb-logo*).
-const Logo = () => {
+const Logo = ({ compact = false }: { compact?: boolean } = {}) => {
   const [tapCount, setTapCount] = useState(0);
   const [showLogin, setShowLogin] = useState(false);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -24,7 +24,7 @@ const Logo = () => {
   return (
     <>
       <div
-        className="gsb-logo select-none cursor-pointer flex items-center gap-2 min-w-0 group"
+        className={`gsb-logo select-none cursor-pointer flex items-center gap-2 min-w-0 group${compact ? " gsb-logo--compact" : ""}`}
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTap(); }}
         aria-label="Great Sport Bets"
         role="button"

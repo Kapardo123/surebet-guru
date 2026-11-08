@@ -72,7 +72,7 @@ const PremiumUpsell = ({ lockedCount = 0, className = "" }: PremiumUpsellProps) 
           </button>
         </Link>
         <p className="mt-2 text-center text-[11px] text-white/40">
-          From 7 days · cancel anytime
+          One-time access · 7 / 15 / 30 days
         </p>
       </div>
     </div>

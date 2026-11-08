@@ -1,172 +1,125 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { loadCoupons, Coupon } from "@/lib/couponStorage";
 import CouponCard from "@/components/CouponCard";
-import Logo from "@/components/Logo";
-import NavLinks from "@/components/NavLinks";
-import PageTransition from "@/components/PageTransition";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Crown, Receipt, ArrowLeft, Sparkles } from "@/components/icons/gsb";
+import AppHeader from "@/components/AppHeader";
+import BottomNav from "@/components/BottomNav";
+import { Receipt, RefreshCw } from "@/components/icons/gsb";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
+
+type Filter = "all" | "free" | "premium";
 
 const Coupons = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // 🎯 PRZYWRÓCONE: usePremiumStatus - potrzebne do logiki kłódki!
+  const [filter, setFilter] = useState<Filter>("all");
+
   const { active: isPremium } = usePremiumStatus();
 
-  useEffect(() => {
-    const fetchCoupons = async () => {
-      console.log('🎫 Coupons: Pobieranie kuponów...');
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const loaded = await loadCoupons();
-        console.log('🎫 Coupons: Pobrano', loaded.length, 'kuponów');
-        
-        if (loaded.length === 0) {
-          console.warn('🎫 Coupons: Brak kuponów');
-          setError('No coupons available');
-        }
-        
-        setCoupons(loaded);
-      } catch (err) {
-        console.error('❌ Coupons: Błąd pobierania:', err);
-        setError('Failed to load coupons');
-        setCoupons([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchCoupons();
+  const fetchCoupons = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const loaded = await loadCoupons();
+      setCoupons(loaded);
+    } catch (e) {
+      console.error("Coupons load failed:", e);
+      setError("Couldn't load coupons. Please retry.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchCoupons();
+  }, [fetchCoupons]);
+
+  const filtered = useMemo(
+    () =>
+      coupons.filter((c) => {
+        if (filter === "premium") return c.isPremium;
+        if (filter === "free") return !c.isPremium;
+        return true;
+      }),
+    [coupons, filter],
+  );
+
+  const chip = (active: boolean) =>
+    `h-9 px-3 rounded-full border text-[12px] font-semibold transition-colors ${
+      active ? "border-transparent bg-pink-500 text-white" : "border-white/[0.1] text-white/65 active:bg-white/[0.06]"
+    }`;
+
+  const countText = loading && coupons.length === 0
+    ? "—"
+    : `${filtered.length} ${filtered.length === 1 ? "coupon" : "coupons"}`;
+
   return (
-    <PageTransition>
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-clip">
-      {/* Synthwave glow effects */}
-      <div className="fixed top-0 left-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(-30%, -30%)' }} />
-      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', transform: 'translate(30%, 30%)' }} />
-      <div className="fixed top-1/2 right-1/3 w-[400px] h-[400px] rounded-full blur-[100px] opacity-10 pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', opacity: 0.08 }} />
-
-      {/* Modern Glass Header - Synthwave Style */}
-      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-[#0a0015]/80 via-[#150025]/80 to-[#0a0020]/80 border-b border-white/10 shadow-xl shadow-black/30">
-        <div className="relative container max-w-6xl xl:max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-2.5 md:gap-3">
-            <div className="relative">
-              <Logo />
-              <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-gradient-to-r from-pink-500 to-pink-600 rounded-full animate-pulse" />
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="font-display text-base font-bold bg-gradient-to-r from-pink-400 to-pink-500 bg-clip-text text-transparent">
-                Coupons
-              </h1>
-              <p className="text-[10px] text-white/55 font-medium tracking-wider uppercase">
-                Premium Accumulators
-              </p>
-            </div>
-          </Link>
-          
-          <NavLinks active="coupons" className="absolute left-1/2 -translate-x-1/2" />
-
-          <div className="flex items-center gap-2 md:gap-2.5">
-            <Link to="/">
-              <Button variant="ghost" size="sm" className="gap-2 text-white/60 hover:text-pink-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-pink-500/30">
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </Button>
-            </Link>
-            
-            {!isPremium && (
-              <Link to="/premium">
-                <Button size="sm" 
-                        className="gap-1.5 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-400 hover:to-pink-500 text-white font-bold uppercase tracking-wider text-[11px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-all duration-300 hover:scale-105 rounded-full px-4 py-2 border border-white/10 relative overflow-hidden group">
-                  <span className="absolute inset-0 bg-gradient-to-r from-pink-500 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <span className="relative flex items-center gap-1.5">
-                    <Crown className="w-3.5 h-3.5 brightness-0 invert" />
-                    Go Premium
-                  </span>
-                </Button>
-              </Link>
-            )}
+    <div className="app-shell pb-24 md:pb-0">
+      <AppHeader />
+      <main className="mx-auto max-w-3xl lg:max-w-6xl px-4 pt-4 space-y-4">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h1 className="font-display text-[26px] font-extrabold tracking-tight">Coupons</h1>
+            <p className="text-[11px] text-white/45 mt-0.5">Accumulators & combos</p>
           </div>
-        </div>
-      </header>
-
-      <main className="container max-w-6xl xl:max-w-7xl mx-auto px-4 py-8 md:py-12 space-y-8 relative z-10">
-        {/* Page Header */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-gradient-to-r from-pink-500/10 to-cyan-500/10 px-4 py-2 rounded-full border border-pink-500/20 backdrop-blur-sm">
-              <Receipt className="w-4 h-4 text-pink-400" />
-              <span className="text-xs font-bold uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-pink-500">Accumulators</span>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-1 h-8 bg-gradient-to-b from-pink-500 to-pink-600 rounded-full" />
-              <h2 className="font-display text-2xl md:text-3xl font-bold text-white tracking-tight">
-                All Coupons
-              </h2>
-            </div>
-            <span className="text-xs text-white/60 font-display uppercase tracking-wider bg-gradient-to-r from-pink-500/10 to-cyan-500/10 px-4 py-2 rounded-full border border-white/10 font-medium">
-              {coupons.length} coupons
-            </span>
-          </div>
+          <span className="text-[11px] text-white/50 font-medium tabular-nums">{countText}</span>
         </div>
 
-        {/* Coupons Grid */}
-        {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <div className="text-center space-y-4">
-              <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto" />
-              <p className="text-muted-foreground font-display text-sm font-semibold">Loading coupons...</p>
-            </div>
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => setFilter("all")} className={chip(filter === "all")}>All</button>
+          <button onClick={() => setFilter("free")} className={chip(filter === "free")}>Free</button>
+          <button onClick={() => setFilter("premium")} className={chip(filter === "premium")}>Premium</button>
+        </div>
+
+        {loading && coupons.length === 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="surface-card p-3 space-y-2 animate-pulse">
+                <div className="h-4 w-32 rounded bg-white/[0.06]" />
+                <div className="h-10 rounded bg-white/[0.05]" />
+                <div className="h-11 rounded bg-white/[0.05]" />
+              </div>
+            ))}
           </div>
-        ) : coupons.length > 0 ? (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3 max-w-5xl mx-auto">
-            {coupons.map((coupon) => (
+        ) : error && coupons.length === 0 ? (
+          <div className="surface-card p-6 text-center space-y-3">
+            <p className="text-sm text-white/70">{error}</p>
+            <button
+              onClick={fetchCoupons}
+              className="inline-flex items-center gap-2 h-11 px-4 rounded-xl border border-white/[0.12] text-sm font-semibold text-white/80 active:bg-white/[0.06]"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Retry
+            </button>
+          </div>
+        ) : coupons.length === 0 ? (
+          <div className="surface-card p-8 text-center space-y-2">
+            <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.07] mx-auto flex items-center justify-center">
+              <Receipt className="w-6 h-6 text-white/25" />
+            </div>
+            <p className="font-display font-semibold text-white/75">No coupons yet</p>
+            <p className="text-[12px] text-white/45">New accumulators are added throughout the day.</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="surface-card p-8 text-center space-y-3">
+            <p className="font-display font-semibold text-white/75">No coupons match this filter</p>
+            <button
+              onClick={() => setFilter("all")}
+              className="h-11 px-4 rounded-xl bg-white/[0.06] border border-white/[0.1] text-sm font-semibold text-white/80 active:bg-white/[0.1]"
+            >
+              Show all coupons
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {filtered.map((coupon) => (
               <CouponCard key={coupon.id} coupon={coupon} userIsPremium={isPremium} />
             ))}
           </div>
-        ) : (
-          /* Empty State */
-          <div className="text-center py-24 space-y-5 max-w-md mx-auto">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 mx-auto flex items-center justify-center border border-cyan-500/20">
-              <Receipt className="w-11 h-11 text-cyan-400" />
-            </div>
-            <div className="space-y-2">
-              <p className="text-muted-foreground font-display text-lg font-semibold">
-                {error || 'No coupons yet'}
-              </p>
-              <p className="text-muted-foreground/60 text-sm leading-relaxed">
-                {error === 'Failed to load coupons' 
-                  ? 'There was an error loading coupons. Please try again later.'
-                  : 'Check back soon for new premium accumulators with high odds'
-                }
-              </p>
-            </div>
-            <div className="pt-4">
-              <Link to="/premium">
-                <Button className="gap-2 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-400 hover:to-pink-500 text-white font-bold uppercase tracking-wider text-sm shadow-xl shadow-pink-500/25 transition-all duration-300 hover:scale-105 rounded-full px-6 py-3">
-                  <Sparkles className="w-4 h-4 brightness-0 invert" />
-                  Unlock Premium Coupons
-                </Button>
-              </Link>
-            </div>
-          </div>
         )}
       </main>
+      <BottomNav />
     </div>
-    </PageTransition>
   );
 };
 

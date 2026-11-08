@@ -1,46 +1,45 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import TipCard from "@/components/TipCard";
-import CouponCard from "@/components/CouponCard";
-import DailySpin from "@/components/DailySpin";
-import TodayHotTip from "@/components/TodayHotTip";
+import TipCard, { Tip } from "@/components/TipCard";
 import BottomNav from "@/components/BottomNav";
+import AppHeader from "@/components/AppHeader";
 import AdminLoginDialog from "@/components/AdminLoginDialog";
-import TipsCountdown from "@/components/TipsCountdown";
-import { loadTips } from "@/lib/tipsStorage";
-import { loadCoupons, Coupon } from "@/lib/couponStorage";
-import { loadFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
-import { Tip } from "@/components/TipCard";
-import { Gem, Crosshair, Ticket, ArrowRightToLine, ArrowLeftFromLine, Sparkles, Timer, History, Loader2, Target } from "@/components/icons/gsb";
-import { Badge } from "@/components/ui/badge";
-import { motion } from "framer-motion";
-import PremiumBadge from "@/components/PremiumBadge";
-import FilterBar, { PremiumFilter } from "@/components/FilterBar";
-import { usePremiumStatus } from "@/hooks/usePremiumStatus";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import Logo from "@/components/Logo";
-import NavLinks from "@/components/NavLinks";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import ScrollReveal from "@/components/ScrollReveal";
+import MatchdayCard from "@/components/MatchdayCard";
 import PremiumUpsell from "@/components/PremiumUpsell";
-import { useToast } from "@/hooks/use-toast";
+import FilterBar, {
+  PremiumFilter,
+  StatusFilter,
+  SortMode,
+  DayFilter,
+} from "@/components/FilterBar";
+import { loadTips } from "@/lib/tipsStorage";
+import { loadFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
-import { useAuth } from "@/contexts/AuthContext";
+import { Crosshair, Sparkles, Loader2, RefreshCw } from "@/components/icons/gsb";
+import { Link } from "react-router-dom";
+
+const warsawDay = (ms: number) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Warsaw",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(ms));
 
 const Index = () => {
   const [tips, setTips] = useState<Tip[]>([]);
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [activeTab, setActiveTab] = useState("tips");
+  const [heroPick, setHeroPick] = useState<FeaturedPick | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [heroLoading, setHeroLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [tipSport, setTipSport] = useState("All");
   const [tipPremium, setTipPremium] = useState<PremiumFilter>("all");
-  const [couponPremium, setCouponPremium] = useState<PremiumFilter>("all");
-  const [heroPick, setHeroPick] = useState<FeaturedPick | null>(null);
-  const [freeTip, setFreeTip] = useState<Tip | null>(null);
-  const [allLoadedTips, setAllLoadedTips] = useState<Tip[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { active: isPremium, daysLeft: premiumDaysLeft, loading: premiumLoading, refresh: refreshPremium } = usePremiumStatus();
-  const { user, signOut, loading: authLoading } = useAuth();
-  const { toast } = useToast();
+  const [tipStatus, setTipStatus] = useState<StatusFilter>("all");
+  const [tipSort, setTipSort] = useState<SortMode>("kickoff");
+  const [tipDay, setTipDay] = useState<DayFilter>("all");
+
+  const { active: isPremium } = usePremiumStatus();
 
   // 3 taps on the footer copyright opens the admin login dialog
   const [footerTaps, setFooterTaps] = useState(0);
@@ -50,10 +49,8 @@ const Index = () => {
   const handleFooterTap = useCallback(() => {
     const next = footerTaps + 1;
     setFooterTaps(next);
-
     if (footerTapTimer.current) clearTimeout(footerTapTimer.current);
     footerTapTimer.current = setTimeout(() => setFooterTaps(0), 2000);
-
     if (next >= 3) {
       setFooterTaps(0);
       setAdminLoginOpen(true);
@@ -61,43 +58,26 @@ const Index = () => {
   }, [footerTaps]);
 
   const loadData = useCallback(async () => {
-    // Równolegle — skraca czas do pierwszego renderu.
-    const [loadedTips, loadedCoupons, loadedHeroPick] = await Promise.all([
-      loadTips(),
-      loadCoupons(),
-      loadFeaturedPick(),
-    ]);
-
-    // Widok strony glownej: DZISIEJSZE mecze (Warsaw).
-    const warsawDay = (ms: number) =>
-      new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Europe/Warsaw",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).format(new Date(ms));
-    const today = warsawDay(Date.now());
-
-    const visibleTips = loadedTips.filter(tip => {
-      const kickoffTime = new Date(tip.kickoff).getTime();
-      if (isNaN(kickoffTime)) return true; // brak daty — nie ukrywamy
-      return warsawDay(kickoffTime) >= today;
-    }).sort((a, b) => (a.kickoff || "").localeCompare(b.kickoff || ""));
-
-    const COUPON_WINDOW_MS = 12 * 60 * 60 * 1000; // kupony: okno 12h po rozstrzygnięciu
-    const visibleCoupons = loadedCoupons.filter(coupon => {
-      if (coupon.status === 'active' || coupon.status === 'pending') return true;
-      if ((coupon.status === 'won' || coupon.status === 'void') && coupon.wonAt) {
-        return (Date.now() - new Date(coupon.wonAt).getTime()) < COUPON_WINDOW_MS;
-      }
-      return false;
-    });
-
-    setTips(visibleTips);
-    setAllLoadedTips(loadedTips);
-    setCoupons(visibleCoupons);
-    setHeroPick(loadedHeroPick);
-    setLoading(false);
+    try {
+      const [loadedTips, hero] = await Promise.all([loadTips(), loadFeaturedPick()]);
+      const today = warsawDay(Date.now());
+      const visibleTips = loadedTips
+        .filter((tip) => {
+          const kickoff = new Date(tip.kickoff).getTime();
+          if (isNaN(kickoff)) return true;
+          return warsawDay(kickoff) >= today;
+        })
+        .sort((a, b) => (a.kickoff || "").localeCompare(b.kickoff || ""));
+      setTips(visibleTips);
+      setHeroPick(hero);
+      setError(null);
+    } catch (e) {
+      console.error("Index load failed:", e);
+      setError("Couldn't load tips. Pull down to retry.");
+    } finally {
+      setLoading(false);
+      setHeroLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -106,145 +86,66 @@ const Index = () => {
 
   const { pullY, refreshing } = usePullToRefresh(loadData);
 
-  // Auto-hide the header while scrolling down; reveal it on scroll up.
-  const tipSports = useMemo(() =>
-    Array.from(new Set(tips.map((t) => t.sport).filter(Boolean) as string[])).sort(),
-    [tips]
+  const tipSports = useMemo(
+    () => Array.from(new Set(tips.map((t) => t.sport).filter(Boolean) as string[])).sort(),
+    [tips],
   );
 
-  const filteredTips = useMemo(() =>
-    tips.filter((tip) => {
+  const filteredTips = useMemo(() => {
+    const today = warsawDay(Date.now());
+    const tomorrow = warsawDay(Date.now() + 86400000);
+
+    const list = tips.filter((tip) => {
       if (tipSport !== "All" && tip.sport !== tipSport) return false;
       if (tipPremium === "premium" && !tip.isPremium) return false;
       if (tipPremium === "free" && tip.isPremium) return false;
+
+      if (tipStatus === "upcoming" && tip.status !== "upcoming") return false;
+      if (tipStatus === "won" && tip.status !== "won") return false;
+      if (tipStatus === "lost" && tip.status !== "lost") return false;
+
+      if (tipDay !== "all") {
+        const kickoff = new Date(tip.kickoff).getTime();
+        if (isNaN(kickoff)) return false;
+        const day = warsawDay(kickoff);
+        if (tipDay === "today" && day !== today) return false;
+        if (tipDay === "tomorrow" && day !== tomorrow) return false;
+      }
       return true;
-    }),
-    [tips, tipSport, tipPremium]
-  );
-
-  const filteredCoupons = useMemo(() =>
-    coupons.filter((coupon) => {
-      if (couponPremium === "premium" && !coupon.isPremium) return false;
-      if (couponPremium === "free" && coupon.isPremium) return false;
-      return true;
-    }),
-    [coupons, couponPremium]
-  );
-
-  // How many premium tips are still locked (upcoming) today — feeds the upsell.
-  const lockedPremiumCount = useMemo(
-    () => tips.filter((t) => t.isPremium && t.status === "upcoming").length,
-    [tips]
-  );
-
-  const handleFreeTip = useCallback(() => {
-    const now = Date.now();
-    // Nagroda to JEDEN typ premium, którego mecz jeszcze się NIE rozpoczął.
-    // Sam status "upcoming" nie wystarcza — przy meczu po gwizdku, a przed
-    // rozliczeniem, status w bazie wciąż bywa "upcoming".
-    const premiumUpcoming = allLoadedTips.filter((t) => {
-      if (!t.isPremium || t.status !== "upcoming") return false;
-      const kickoff = new Date(t.kickoff).getTime();
-      return !isNaN(kickoff) && kickoff > now;
     });
 
-    if (premiumUpcoming.length === 0) {
-      toast({
-        title: "You won a free premium tip 🎁",
-        description: "But there are no upcoming premium picks right now — check back when new tips drop.",
-      });
-      return;
-    }
+    return tipSort === "recent"
+      ? [...list].sort((a, b) => b.id - a.id)
+      : [...list].sort((a, b) => (a.kickoff || "").localeCompare(b.kickoff || ""));
+  }, [tips, tipSport, tipPremium, tipStatus, tipDay, tipSort]);
 
-    setFreeTip(premiumUpcoming[Math.floor(Math.random() * premiumUpcoming.length)]);
-  }, [allLoadedTips, toast]);
+  const lockedPremiumCount = useMemo(
+    () => tips.filter((t) => t.isPremium && t.status === "upcoming").length,
+    [tips],
+  );
+
+  const todayLabel = new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date());
+
+  const clearFilters = () => {
+    setTipSport("All");
+    setTipPremium("all");
+    setTipStatus("all");
+    setTipDay("all");
+    setTipSort("kickoff");
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 md:pb-0 relative overflow-clip">
-      {/* Synthwave glow effects - GPU composited (lżejsze blur = płynność) */}
-      <div className="fixed top-0 left-0 w-[380px] h-[380px] rounded-full pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)', transform: 'translate(-30%, -30%)', filter: 'blur(70px)', opacity: 0.16, willChange: 'transform' }} />
-      <div className="fixed bottom-0 right-0 w-[380px] h-[380px] rounded-full pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', transform: 'translate(30%, 30%)', filter: 'blur(70px)', opacity: 0.16, willChange: 'transform' }} />
-      <div className="fixed top-1/2 left-1/2 w-[320px] h-[320px] rounded-full pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)', transform: 'translate(-50%, -50%)', filter: 'blur(60px)', opacity: 0.08, willChange: 'transform' }} />
-
-      {/* Glass Header */}
-      <header className="sticky top-0 z-50 border-b border-white/[0.06] shadow-2xl shadow-black/40"
-        style={{ background: "linear-gradient(135deg, rgba(10,0,21,0.92) 0%, rgba(21,0,37,0.95) 50%, rgba(10,0,32,0.92) 100%)" }}>
-        {/* Top accent line */}
-        <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-pink-500/50 to-transparent" />
-        
-        <div className="relative container max-w-6xl xl:max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <Logo />
-
-          <NavLinks
-            active={activeTab === "coupons" ? "coupons" : "tips"}
-            onTips={() => setActiveTab("tips")}
-            onCoupons={() => setActiveTab("coupons")}
-            className="absolute left-1/2 -translate-x-1/2"
-          />
-
-          <div className="flex items-center gap-2">
-            <PremiumBadge active={isPremium} daysLeft={premiumDaysLeft} loading={premiumLoading} />
-            
-            {/* Mobile: small icon buttons */}
-            <div className="flex md:hidden items-center gap-1.5">
-              {!isPremium && (
-                <Link to="/premium">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500/20 to-pink-500/10 border border-pink-500/20 flex items-center justify-center">
-                    <Gem className="w-4 h-4 text-pink-400" />
-                  </div>
-                </Link>
-              )}
-              {user ? (
-                <button onClick={signOut} className="w-8 h-8 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center">
-                  <ArrowLeftFromLine className="w-4 h-4 text-white/60" />
-                </button>
-              ) : (
-                <Link to="/auth">
-                  <div className="w-8 h-8 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center">
-                    <ArrowRightToLine className="w-4 h-4 text-white/60" />
-                  </div>
-                </Link>
-              )}
-            </div>
-            
-            {/* Desktop: full buttons */}
-            <div className="hidden md:flex items-center gap-2">
-              {!isPremium && (
-                <Link to="/premium">
-                    <Button size="sm"
-                            className="gap-1.5 font-bold uppercase tracking-wider text-[11px] text-white rounded-full px-5 py-2 border border-white/10 relative overflow-hidden group transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-pink-500/20"
-                            style={{ background: "linear-gradient(135deg, #ec4899 0%, #db2777 55%, #06b6d4 100%)" }}>
-                    <Gem className="w-3.5 h-3.5 brightness-0 invert" />
-                    Go Premium
-                  </Button>
-                </Link>
-              )}
-              
-              {user ? (
-                <Button variant="ghost" size="sm" className="gap-2 text-white/50 hover:text-white hover:bg-white/[0.06] transition-all duration-200 rounded-full px-3 border border-transparent hover:border-white/10" onClick={signOut}>
-                  <ArrowLeftFromLine className="w-4 h-4" />
-                  <span className="text-xs font-medium hidden lg:inline max-w-[120px] truncate">{user.email?.split("@")[0]}</span>
-                </Button>
-              ) : (
-                <Link to="/auth">
-                  <Button size="sm" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/[0.1] border border-white/10 hover:border-white/20 transition-all duration-200">
-                    <ArrowRightToLine className="w-4 h-4" />
-                    Sign In
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="app-shell pb-24 md:pb-0">
+      <AppHeader />
 
       {/* Pull-to-refresh indicator */}
       <div
         className="flex items-center justify-center overflow-hidden"
-        style={{ height: refreshing ? 44 : pullY, transition: pullY && !refreshing ? "none" : "height 0.2s ease" }}
+        style={{ height: refreshing ? 40 : pullY, transition: pullY && !refreshing ? "none" : "height 0.2s ease" }}
       >
         {(pullY > 0 || refreshing) && (
           <Loader2
@@ -254,327 +155,128 @@ const Index = () => {
         )}
       </div>
 
-      <main className="container max-w-6xl xl:max-w-7xl mx-auto px-4 py-8 md:py-12 space-y-10 md:space-y-14 relative z-10">
-        
-        {/* Licznik 3:00 + hero — blisko siebie */}
-        <div className="space-y-4">
-          <ScrollReveal>
-            <TipsCountdown />
-          </ScrollReveal>
-
-          {/* Hero Section with Today's Hot Tip */}
-          <ScrollReveal>
-            <TodayHotTip />
-          </ScrollReveal>
-        </div>
-
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="bg-white/[0.04] border border-white/[0.06] p-1.5 w-full md:w-auto rounded-2xl shadow-lg shadow-black/10">
-            <TabsTrigger value="tips"
-                        className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-pink-500/20 rounded-xl py-3 transition-all duration-300 text-white/60 hover:text-white/80">
-              <Target size={17} className={activeTab === "tips" ? "brightness-0 invert" : ""} />
-              Single Tips
-            </TabsTrigger>
-            <TabsTrigger value="coupons"
-                        className="flex-1 md:flex-none gap-2 font-display text-xs uppercase tracking-wider data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-pink-500/20 rounded-xl py-3 transition-all duration-300 text-white/60 hover:text-white/80">
-              <Ticket size={17} className={activeTab === "coupons" ? "brightness-0 invert" : ""} />
-              Coupons
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Tips Tab Content */}
-          <TabsContent value="tips" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-1 h-8 bg-gradient-to-b from-pink-500 to-pink-600 rounded-full" />
-                <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-                  All Tips
-                </h2>
-              </div>
-              <span className="text-xs text-white/60 font-display uppercase tracking-wider bg-white/[0.04] px-4 py-2 rounded-full border border-white/[0.06] font-medium">
-                {filteredTips.length} picks
-              </span>
-            </div>
-
-            {tipSports.length > 0 && (
-              <FilterBar
-                sports={tipSports}
-                activeSport={tipSport}
-                onSportChange={setTipSport}
-                activePremium={tipPremium}
-                onPremiumChange={setTipPremium}
-                totalItems={tips.length}
-                filteredItems={filteredTips.length}
-              />
-            )}
-
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {loading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <div key={`skel-${i}`} className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 space-y-4 animate-pulse">
-                    <div className="flex items-center gap-2">
-                      <div className="h-5 w-16 rounded-full bg-white/5" />
-                      <div className="h-5 w-20 rounded-full bg-white/5" />
-                    </div>
-                    <div className="flex items-center justify-center gap-4 py-3">
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="h-10 w-10 rounded-full bg-white/5" />
-                        <div className="h-4 w-20 rounded bg-white/5" />
-                      </div>
-                      <div className="h-5 w-8 rounded bg-white/5" />
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="h-10 w-10 rounded-full bg-white/5" />
-                        <div className="h-4 w-20 rounded bg-white/5" />
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="flex-1 h-12 rounded-lg bg-white/5" />
-                      <div className="flex-1 h-12 rounded-lg bg-white/5" />
-                    </div>
-                  </div>
-                ))
-              ) : filteredTips.map((tip, i) => (
-                <ScrollReveal key={tip.id} delay={i * 0.08}>
-                  <TipCard tip={tip} userIsPremium={isPremium} />
-                </ScrollReveal>
-              ))}
-            </div>
-
-            {filteredTips.length === 0 && (
-              <div className="text-center py-20 md:py-28 space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-white/[0.03] mx-auto flex items-center justify-center border border-white/[0.06]">
-                  <Crosshair className="w-7 h-7 text-white/20" />
-                </div>
-                <p className="text-white/65 font-display text-base font-medium">
-                  No tips yet
-                </p>
-                <p className="text-white/45 text-sm">
-                  Check back soon for new predictions
-                </p>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Coupons Tab Content */}
-          <TabsContent value="coupons" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-1 h-8 bg-gradient-to-b from-cyan-500 to-cyan-600 rounded-full" />
-                <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-                  All Coupons
-                </h2>
-              </div>
-              <span className="text-xs text-white/60 font-display uppercase tracking-wider bg-white/[0.04] px-4 py-2 rounded-full border border-white/[0.06] font-medium">
-                {filteredCoupons.length} coupons
-              </span>
-            </div>
-
-            {coupons.length > 0 && (
-              <FilterBar
-                activePremium={couponPremium}
-                onPremiumChange={setCouponPremium}
-                totalItems={coupons.length}
-                filteredItems={filteredCoupons.length}
-              />
-            )}
-
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {loading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <div key={`skel-c-${i}`} className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 space-y-3 animate-pulse">
-                    <div className="flex items-center gap-2">
-                      <div className="h-5 w-16 rounded-full bg-white/5" />
-                      <div className="h-5 w-24 rounded-full bg-white/5" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-4 w-full rounded bg-white/5" />
-                      <div className="h-4 w-3/4 rounded bg-white/5" />
-                      <div className="h-4 w-5/6 rounded bg-white/5" />
-                    </div>
-                    <div className="flex justify-between">
-                      <div className="h-6 w-20 rounded-full bg-white/5" />
-                      <div className="h-6 w-16 rounded bg-white/5" />
-                    </div>
-                  </div>
-                ))
-              ) : filteredCoupons.map((coupon, i) => (
-                <ScrollReveal key={coupon.id} delay={i * 0.08}>
-                  <CouponCard coupon={coupon} userIsPremium={isPremium} />
-                </ScrollReveal>
-              ))}
-            </div>
-
-            {filteredCoupons.length === 0 && (
-              <div className="text-center py-20 md:py-28 space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-white/[0.03] mx-auto flex items-center justify-center border border-white/[0.06]">
-                  <Ticket className="w-7 h-7 text-white/20" />
-                </div>
-                <p className="text-white/65 font-display text-base font-medium">
-                  No coupons yet
-                </p>
-                <p className="text-white/45 text-sm">
-                  Check back soon for new accumulators
-                </p>
-              </div>
-            )}
-          </TabsContent>
-
-          </Tabs>
-
-        {/* Premium upsell — only for signed-in-free / non-premium users */}
-        {!premiumLoading && !isPremium && (
-          <ScrollReveal>
-            <PremiumUpsell lockedCount={lockedPremiumCount} />
-          </ScrollReveal>
-        )}
-
-        {/* Daily Spin - spin requires login */}
-        <ScrollReveal>
-          <DailySpin
-            isLoggedIn={!!user}
-            userId={user?.id}
-            onFreeTip={handleFreeTip}
-            onPremiumWon={refreshPremium}
-          />
-        </ScrollReveal>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-white/[0.05] mt-20 pb-24 md:pb-0 bg-white/[0.01] backdrop-blur-sm">
-        <div className="container max-w-6xl xl:max-w-7xl mx-auto px-4 py-10 flex flex-col items-center justify-center gap-5 text-center">
-          <div className="flex flex-wrap items-center justify-center gap-6">
-            <Link to="/privacy" className="text-xs text-white/30 hover:text-white/60 transition-colors underline underline-offset-4 decoration-white/10 hover:decoration-white/30 font-medium">
-              Privacy Policy
-            </Link>
-            <Link to="/terms" className="text-xs text-white/30 hover:text-white/60 transition-colors underline underline-offset-4 decoration-white/10 hover:decoration-white/30 font-medium">
-              Terms of Service
-            </Link>
-            <Link to="/deletion" className="text-xs text-white/30 hover:text-white/60 transition-colors underline underline-offset-4 decoration-white/10 hover:decoration-white/30 font-medium">
-              Delete Account
-            </Link>
+      <main className="mx-auto max-w-3xl lg:max-w-6xl px-4 pt-3 space-y-5">
+        {/* Today header */}
+        <section className="flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-white/45 font-semibold">{todayLabel}</p>
+            <h1 className="font-display text-[26px] leading-tight font-extrabold tracking-tight mt-0.5">Today</h1>
+            <p className="text-[11px] text-white/40 mt-0.5">New picks are added daily</p>
           </div>
-          
-          <a href="mailto:greatsportbets@gmail.com" 
-             className="inline-flex items-center gap-2 text-xs text-white/25 hover:text-white/50 transition-colors group">
-            <Sparkles className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" />
-            Help & Collaboration
-          </a>
-          
-          <div className="pt-3 border-t border-white/[0.04]">
-            <p
-              className="text-xs text-white/20 font-medium select-none cursor-pointer"
-              onClick={handleFooterTap}
-            >
-              © 2026 Great Sport Bets
+          <div className="text-right shrink-0">
+            <p className="font-display text-xl font-bold tabular-nums leading-none">
+              {loading && tips.length === 0 ? "—" : filteredTips.length}
+            </p>
+            <p className="text-[10px] text-white/45 mt-0.5 uppercase tracking-wide">
+              {filteredTips.length === 1 ? "analysis" : "analyses"}
             </p>
           </div>
-        </div>
-      </footer>
+        </section>
 
-      {/* First-visit login prompt - shown once */}
-      {!user && !authLoading && !localStorage.getItem("gsb_spin_prompt_dismissed") && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-gradient-to-br from-[#0d001a] via-[#12001f] to-[#0a0015] border border-white/10 rounded-2xl p-6 max-w-xs w-full shadow-2xl shadow-black/50 text-center space-y-4"
-          >
-            <span className="text-5xl">🎰</span>
-            <div>
-              <h3 className="font-display text-lg font-bold text-white">Daily Free Spin!</h3>
-              <p className="text-xs text-white/40 mt-1">Log in or create an account and spin the wheel once a day — win premium days or a free tip.</p>
-            </div>
-            <div className="space-y-2">
-              <Link to="/auth">
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="w-full py-3 rounded-full font-bold text-sm text-white"
-                  style={{ background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)" }}
-                >
-                  <ArrowRightToLine className="w-4 h-4 inline mr-2" />
-                  Log in &amp; Spin
-                </motion.button>
-              </Link>
-              <button
-                onClick={() => {
-                  try {
-                    localStorage.setItem("gsb_spin_prompt_dismissed", "1");
-                  } catch {
-                    /* storage unavailable — non-fatal */
-                  }
-                  window.location.reload();
-                }}
-                className="text-[11px] text-white/50 hover:text-white/70 transition-colors"
-              >
-                Maybe later
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
+        {/* GSB MATCHDAY */}
+        <MatchdayCard pick={heroPick} loading={heroLoading} />
 
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+        {/* Filters */}
+        <section className="space-y-3 pt-1">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-display text-[15px] font-bold">Tips</h2>
+          </div>
+          <FilterBar
+            sports={tipSports}
+            activeSport={tipSport}
+            onSportChange={setTipSport}
+            activePremium={tipPremium}
+            onPremiumChange={setTipPremium}
+            status={tipStatus}
+            onStatusChange={setTipStatus}
+            sort={tipSort}
+            onSortChange={setTipSort}
+            day={tipDay}
+            onDayChange={setTipDay}
+            totalItems={tips.length}
+            filteredItems={filteredTips.length}
+          />
+        </section>
 
-      {/* Admin login dialog - opened by 3 taps on the footer copyright */}
-      <AdminLoginDialog open={adminLoginOpen} onOpenChange={setAdminLoginOpen} />
-
-      {/* Free Tip Modal */}
-      {freeTip && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={() => setFreeTip(null)}>
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-gradient-to-br from-[#0d001a] via-[#12001f] to-[#0a0015] border border-white/10 rounded-2xl p-5 max-w-sm w-full shadow-2xl shadow-black/50"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-center mb-4">
-              <span className="text-4xl">🎁</span>
-              <h3 className="font-display text-lg font-bold text-pink-400 mt-2">Free Premium Tip!</h3>
-              <p className="text-xs text-white/55">You won a premium tip from the wheel!</p>
-            </div>
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-[9px] text-pink-400 border-pink-500/30">{freeTip.sport}</Badge>
-                <span className="text-[11px] text-white/55">{freeTip.league}</span>
+        {/* Tips list */}
+        {loading && tips.length === 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="surface-card p-3 space-y-2 animate-pulse">
+                <div className="h-3 w-28 rounded bg-white/[0.06]" />
+                <div className="h-8 rounded bg-white/[0.05]" />
+                <div className="h-12 rounded bg-white/[0.05]" />
               </div>
-              <div className="flex items-center justify-center gap-4">
-                <span className="font-bold text-sm">{freeTip.homeTeam}</span>
-                <span className="text-xs text-white/50">vs</span>
-                <span className="font-bold text-sm">{freeTip.awayTeam}</span>
-              </div>
-              <div className="flex items-center justify-between bg-white/[0.03] rounded-lg px-3 py-2">
-                <span className="text-xs font-semibold">{freeTip.prediction}</span>
-                <span className="text-sm font-black text-cyan-400 tabular-nums">@ {freeTip.odds.toFixed(2)}</span>
-              </div>
-              {freeTip.description && (
-                <p className="text-[12px] text-white/60 leading-relaxed italic border-t border-white/[0.05] pt-2 mt-1">
-                  "{freeTip.description}"
-                </p>
-              )}
-              <div className="flex items-center gap-1 text-[11px] text-white/55">
-                <Timer className="w-3 h-3" />
-                {(() => {
-                  try {
-                    const d = new Date(freeTip.kickoff);
-                    return !isNaN(d.getTime())
-                      ? d.toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
-                      : String(freeTip.kickoff);
-                  } catch { return String(freeTip.kickoff); }
-                })()}
-              </div>
-            </div>
+            ))}
+          </div>
+        ) : error && tips.length === 0 ? (
+          <div className="surface-card p-6 text-center space-y-3">
+            <p className="text-sm text-white/70">{error}</p>
             <button
-              onClick={() => setFreeTip(null)}
-              className="w-full mt-4 h-12 rounded-2xl font-bold text-sm text-white active:scale-[0.98] transition-transform"
-              style={{ background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)" }}
+              onClick={loadData}
+              className="inline-flex items-center gap-2 h-11 px-4 rounded-xl border border-white/[0.12] text-sm font-semibold text-white/80 active:bg-white/[0.06]"
             >
-              Nice, thanks! 🎉
+              <RefreshCw className="w-4 h-4" />
+              Retry
             </button>
-          </motion.div>
-        </div>
-      )}
+          </div>
+        ) : tips.length === 0 ? (
+          <div className="surface-card p-8 text-center space-y-2">
+            <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.07] mx-auto flex items-center justify-center">
+              <Crosshair className="w-6 h-6 text-white/25" />
+            </div>
+            <p className="font-display font-semibold text-white/75">No tips yet</p>
+            <p className="text-[12px] text-white/45">Check back soon — new predictions are published daily.</p>
+          </div>
+        ) : filteredTips.length === 0 ? (
+          <div className="surface-card p-8 text-center space-y-3">
+            <p className="font-display font-semibold text-white/75">No tips match your filters</p>
+            <p className="text-[12px] text-white/45">Try clearing the filters to see all picks.</p>
+            <button
+              onClick={clearFilters}
+              className="h-11 px-4 rounded-xl bg-white/[0.06] border border-white/[0.1] text-sm font-semibold text-white/80 active:bg-white/[0.1]"
+            >
+              Clear filters
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {filteredTips.map((tip) => (
+              <TipCard key={tip.id} tip={tip} userIsPremium={isPremium} />
+            ))}
+          </div>
+        )}
+
+        {/* Premium upsell */}
+        {!isPremium && (
+          <PremiumUpsell lockedCount={lockedPremiumCount} className="mt-2" />
+        )}
+
+        {/* Footer */}
+        <footer className="pt-4 pb-2 border-t border-white/[0.06] space-y-3">
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            <Link to="/privacy" className="text-[11px] text-white/35 hover:text-white/60">Privacy</Link>
+            <Link to="/terms" className="text-[11px] text-white/35 hover:text-white/60">Terms</Link>
+            <Link to="/deletion" className="text-[11px] text-white/35 hover:text-white/60">Delete account</Link>
+            <a
+              href="mailto:greatsportbets@gmail.com"
+              className="inline-flex items-center gap-1 text-[11px] text-white/35 hover:text-white/60"
+            >
+              <Sparkles className="w-3 h-3" />
+              Help
+            </a>
+          </div>
+          <p
+            onClick={handleFooterTap}
+            className="text-center text-[10px] text-white/25 select-none cursor-pointer"
+          >
+            © 2026 Great Sport Bets
+          </p>
+        </footer>
+      </main>
+
+      <BottomNav />
+      <AdminLoginDialog open={adminLoginOpen} onOpenChange={setAdminLoginOpen} />
     </div>
   );
 };

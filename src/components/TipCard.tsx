@@ -1,9 +1,13 @@
-import { Badge } from "@/components/ui/badge";
-import { Timer, Shield, Gem, ChevronDown, ChevronUp, Crosshair, BadgeCheck, BadgeX, Minus, Target } from "@/components/icons/gsb";
-import TeamLogo, { SportIcon } from "@/components/TeamLogo";
+import { memo, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { useState, useCallback, memo } from "react";
+import { Bookmark, BookmarkCheck } from "lucide-react";
+import TeamLogo, { SportIcon } from "@/components/TeamLogo";
+import AnalysisSheet from "@/components/AnalysisSheet";
+import { Gem, Lock, Check, X, Minus } from "@/components/icons/gsb";
+import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { toggleTipWatch, unwatchTip, useWatched } from "@/lib/watchStorage";
+import { decodeEntities } from "@/lib/text";
 
 export interface Tip {
   id: number;
@@ -28,222 +32,170 @@ export interface Tip {
   queued?: boolean;
 }
 
-const statusVariant = {
-  upcoming: "outline" as const,
-  won: "win" as const,
-  lost: "loss" as const,
-  draw: "draw" as const,
-  void: "draw" as const,
-};
-
-const statusLabel = {
-  upcoming: "Upcoming",
-  won: "Won",
-  lost: "Lost",
-  draw: "Draw",
-  void: "Void",
-};
-
-const StatusIcon = ({ status }: { status: Tip["status"] }) => {
-  if (status === "won") return <BadgeCheck className="w-3 h-3 text-emerald-400" />;
-  if (status === "lost") return <BadgeX className="w-3 h-3 text-red-400" />;
-  if (status === "draw" || status === "void") return <Minus className="w-3 h-3 text-amber-400" />;
+const statusMeta = (status: Tip["status"]) => {
+  if (status === "won") return { label: "Won", cls: "text-emerald-300 border-emerald-500/40 bg-emerald-500/10", Icon: Check };
+  if (status === "lost") return { label: "Lost", cls: "text-red-300 border-red-500/40 bg-red-500/10", Icon: X };
+  if (status === "draw" || status === "void") return { label: "Void", cls: "text-amber-300 border-amber-500/40 bg-amber-500/10", Icon: Minus };
   return null;
 };
 
+const formatKickoff = (value: string) => {
+  const d = new Date(String(value).replace(" ", "T"));
+  if (isNaN(d.getTime())) return String(value || "");
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  return d.toLocaleString("en-GB", {
+    ...(sameDay ? {} : { day: "2-digit", month: "short" }),
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+};
 
 const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boolean }) => {
-  const [showAnalysis, setShowAnalysis] = useState(false);
+  const locked = !!tip.isPremium && !userIsPremium && tip.status === "upcoming";
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const { toast } = useToast();
+  const { isTipWatched } = useWatched();
 
-  const isSettled = tip.status !== "upcoming";
-  const isWon = tip.status === "won";
-  const isLost = tip.status === "lost";
-  const locked = tip.isPremium && !userIsPremium && !isSettled;
+  const home = decodeEntities(tip.homeTeam);
+  const away = decodeEntities(tip.awayTeam);
+  const odds = Number(tip.odds);
+  const status = statusMeta(tip.status);
+  const watched = isTipWatched(tip.id);
 
-  const formatKickoff = useCallback((kickoffStr: string) => {
-    try {
-      if (!kickoffStr) return "TBD";
-      
-      const cleanKickoff = String(kickoffStr).replace(/\[object Object\]/g, "").trim();
-      const date = new Date(cleanKickoff.replace(' ', 'T'));
-      if (!isNaN(date.getTime())) {
-        return date.toLocaleString("pl-PL", {
-          day: '2-digit',
-          month: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        });
-      }
-      return cleanKickoff || "TBD";
-    } catch {
-      /* invalid date — fall back to the raw string */
-    }
-    return String(kickoffStr);
-  }, []);
+  const handleWatch = () => {
+    const nowWatched = toggleTipWatch(tip);
+    toast({
+      title: nowWatched ? "Saved to Watched" : "Removed from Watched",
+      action: nowWatched ? (
+        <ToastAction altText="Undo" onClick={() => unwatchTip(tip.id)}>
+          Undo
+        </ToastAction>
+      ) : undefined,
+    });
+  };
+
+  const teamRow = (name: string, logo?: string | null) => (
+    <div className="flex items-center gap-2 min-w-0">
+      <TeamLogo teamName={name} logoUrl={logo} size={18} sport={tip.sport} />
+      <span className="font-display font-semibold text-[13px] text-white leading-tight line-clamp-2 break-words min-w-0">
+        {name}
+      </span>
+    </div>
+  );
 
   return (
-    <motion.div
-      className={`relative overflow-hidden rounded-2xl group ${locked ? "select-none" : ""} ${
-        isLost ? "opacity-70" : ""
-      }`}
-    >
-      <div
-        className={`relative rounded-2xl overflow-hidden transition-all duration-300 ${
-          isWon
-            ? "bg-card border border-emerald-500/30 shadow-lg shadow-emerald-500/10"
-            : tip.isPremium
-            ? "bg-card border border-pink-500/25 shadow-lg shadow-black/20 group-hover:-translate-y-0.5 group-hover:border-pink-500/40"
-            : "bg-card border border-white/[0.08] shadow-lg shadow-black/20 group-hover:border-white/15 group-hover:-translate-y-0.5"
-        }`}
-      >
-        {/* Top accent line */}
-        <div className={`h-[2px] w-full ${
-          isWon ? "bg-gradient-to-r from-transparent via-emerald-500 to-transparent" :
-          tip.isPremium
-            ? "bg-gradient-to-r from-transparent via-pink-500/70 to-transparent"
-            : "bg-gradient-to-r from-transparent via-white/15 to-transparent"
-        }`} />
-
-        <div className="p-3.5 space-y-2.5">
-          {/* Top row: badges */}
+    <>
+      <article className="surface-card overflow-hidden gsb-anim">
+        <div className="p-3">
+          {/* Meta row */}
           <div className="flex items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Target size={17} className="flex-shrink-0 opacity-90" />
-              {tip.isPremium && !isSettled && (
-                <span className="bg-pink-500 text-white px-2.5 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider rounded-full flex items-center gap-1">
-                  <Gem className="w-2.5 h-2.5 brightness-0 invert" />
-                  Premium
+            <div className="flex items-center gap-1.5 min-w-0 text-[10px] text-white/55">
+              <SportIcon sport={tip.sport} size={12} />
+              <span className="truncate">
+                {tip.sport}
+                {tip.league ? ` · ${decodeEntities(tip.league)}` : ""}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {tip.isPremium && (
+                <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide bg-pink-500/15 text-pink-300 border border-pink-500/25">
+                  <Gem className="w-2.5 h-2.5" />
+                  Pro
                 </span>
               )}
-              <Badge variant="sport" className="text-[10px] bg-white/[0.04] text-white/60 border-white/10 gap-1 inline-flex">
-                <SportIcon sport={tip.sport} size={12} />
-                {tip.sport}
-              </Badge>
-              <span className="text-[11px] text-white/55 font-medium truncate max-w-[120px]">{tip.league}</span>
-            </div>
-            <Badge variant={statusVariant[tip.status]} className="gap-1 shrink-0 text-[9px] px-2 py-0.5">
-              <StatusIcon status={tip.status} />
-              {tip.isPremium && isSettled && <Gem className="w-2.5 h-2.5" />}
-              <span className="whitespace-nowrap">{statusLabel[tip.status]}</span>
-            </Badge>
-          </div>
-
-          {/* Teams - Horizontal Layout */}
-          <div className="flex items-center justify-between gap-2 py-2">
-            {/* Home Team */}
-            <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-              <div className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
-                isWon ? "ring-2 ring-emerald-500/30 bg-emerald-500/5" :
-                tip.isPremium ? "ring-1 ring-pink-500/25 bg-pink-500/5" : "ring-1 ring-white/10 bg-white/[0.03]"
-              }`}>
-                <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={26} sport={tip.sport} />
-              </div>
-              <span className="font-display font-bold text-foreground text-xs sm:text-sm leading-tight text-center truncate w-full">{tip.homeTeam}</span>
-            </div>
-
-            {/* VS + Odds center */}
-            <div className="flex flex-col items-center gap-1 flex-shrink-0 px-2">
-              <span className="text-[10px] font-display font-semibold text-muted-foreground/50 uppercase tracking-widest">VS</span>
-              <div className={`text-xl font-black font-display tabular-nums ${
-                isWon ? "text-emerald-400" : "text-cyan-400"
-              }`}>
-                {tip.odds.toFixed(2)}
-              </div>
-            </div>
-
-            {/* Away Team */}
-            <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-              <div className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
-                isWon ? "ring-2 ring-emerald-500/30 bg-emerald-500/5" :
-                tip.isPremium ? "ring-1 ring-pink-500/25 bg-pink-500/5" : "ring-1 ring-white/10 bg-white/[0.03]"
-              }`}>
-                <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={26} sport={tip.sport} />
-              </div>
-              <span className="font-display font-bold text-foreground text-xs sm:text-sm leading-tight text-center truncate w-full">{tip.awayTeam}</span>
+              {status && (
+                <span className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase border ${status.cls}`}>
+                  <status.Icon className="w-2.5 h-2.5" />
+                  {status.label}
+                </span>
+              )}
+              <span className="text-[10px] text-white/50 tabular-nums">{formatKickoff(tip.kickoff)}</span>
             </div>
           </div>
 
+          {/* Teams */}
+          <div className="mt-2 space-y-1">
+            {teamRow(home, tip.homeTeamLogo)}
+            {teamRow(away, tip.awayTeamLogo)}
+          </div>
+
+          {/* Pick + odds / locked CTA */}
           {locked ? (
-            <Link to="/premium">
-              <motion.div
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                className="flex items-center justify-center gap-3 py-5 rounded-xl bg-pink-500/[0.06] border border-pink-500/20 cursor-pointer hover:border-pink-500/35 transition-all"
-              >
-                <div className="w-9 h-9 rounded-full bg-pink-500/10 flex items-center justify-center ring-1 ring-pink-500/20">
-                  <Shield className="w-4 h-4 text-pink-400" />
-                </div>
-                <div>
-                  <p className="font-display text-xs font-bold text-pink-400">Unlock with Premium</p>
-                  <p className="text-[11px] text-muted-foreground/70">Click to view plans</p>
-                </div>
-              </motion.div>
+            <Link
+              to="/premium"
+              className="mt-2.5 flex items-center justify-between gap-3 rounded-lg border border-pink-500/25 bg-pink-500/[0.06] px-2.5 py-2.5 min-h-[44px] active:bg-pink-500/[0.1] transition-colors"
+            >
+              <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-pink-300">
+                <Lock className="w-3.5 h-3.5" />
+                See in Premium
+              </span>
+              {!isNaN(odds) && odds > 0 && (
+                <span className="text-sm font-black text-cyan-400/80 tabular-nums">{odds.toFixed(2)}</span>
+              )}
             </Link>
           ) : (
-            <>
-              {/* Prediction box */}
-              <div className={`rounded-xl px-3 py-2.5 border ${
-                isWon ? "bg-emerald-500/5 border-emerald-500/15" :
-                tip.isPremium ? "bg-pink-500/5 border-pink-500/15" : "bg-white/[0.02] border-white/[0.06]"
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-[0.12em] mb-1 font-medium">Prediction</p>
-                    <p className="font-display font-bold text-foreground text-sm">{tip.prediction}</p>
-                  </div>
-                  <Crosshair className={`w-5 h-5 ${
-                    isWon ? "text-emerald-400" : tip.isPremium ? "text-pink-400/60" : "text-white/50"
-                  }`} />
-                </div>
+            <div className="mt-2.5 flex items-center justify-between gap-3 rounded-lg bg-white/[0.03] border border-white/[0.07] px-2.5 py-2">
+              <div className="min-w-0">
+                <p className="text-[9px] uppercase tracking-[0.14em] text-white/40 font-semibold">Pick</p>
+                <p className="font-display font-bold text-[13px] text-white leading-snug break-words line-clamp-2">
+                  {decodeEntities(tip.prediction)}
+                </p>
               </div>
-
-              {/* Analysis toggle */}
-              {tip.description && (
-                <>
-                  <button 
-                    onClick={() => setShowAnalysis(!showAnalysis)}
-                    className={`flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider transition-colors ${
-                      tip.isPremium ? "text-pink-400/80 hover:text-pink-400" : "text-white/60 hover:text-pink-400"
-                    }`}
-                  >
-                    {showAnalysis ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                    {showAnalysis ? "Hide Analysis" : "Show Analysis"}
-                  </button>
-
-                  <AnimatePresence>
-                    {showAnalysis && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.25 }}
-                        className="overflow-hidden"
-                      >
-                        <p className="text-[12px] text-white/65 leading-relaxed italic border-l-2 border-pink-500/25 pl-3 py-1">
-                          {tip.description}
-                        </p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </>
+              {!isNaN(odds) && odds > 0 && (
+                <span className="shrink-0 font-display font-black text-[17px] text-cyan-400 tabular-nums leading-none">
+                  {odds.toFixed(2)}
+                </span>
               )}
-            </>
+            </div>
           )}
 
-          {/* Footer */}
-          <div className="flex items-center gap-1.5 pt-1.5 border-t border-white/[0.04]">
-            <Timer className="w-3 h-3 text-white/45" />
-            <span className="text-[11px] text-white/55 font-medium">{formatKickoff(tip.kickoff)}</span>
-            {tip.finalScore && (
-              <span className="ml-auto text-[11px] font-display font-bold text-white/65 uppercase tracking-wider">
-                FT {tip.finalScore}
-              </span>
-            )}
+          {/* Actions */}
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              onClick={() => setSheetOpen(true)}
+              disabled={locked}
+              className={`flex-1 min-h-[44px] rounded-lg border text-[12px] font-semibold inline-flex items-center justify-center gap-1.5 transition-colors ${
+                locked
+                  ? "opacity-40 cursor-not-allowed border-white/10 text-white/40"
+                  : "border-white/[0.1] bg-white/[0.03] text-white/75 active:bg-white/[0.07]"
+              }`}
+            >
+              Analysis
+            </button>
+            <button
+              onClick={handleWatch}
+              aria-label={watched ? "Remove from watched" : "Save to watched"}
+              aria-pressed={watched}
+              className={`w-11 h-11 rounded-lg border flex items-center justify-center transition-colors ${
+                watched
+                  ? "border-pink-500/40 bg-pink-500/10 text-pink-400"
+                  : "border-white/[0.1] bg-white/[0.03] text-white/60 active:bg-white/[0.07]"
+              }`}
+            >
+              {watched ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+            </button>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </article>
+
+      <AnalysisSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        locked={locked}
+        data={{
+          homeTeam: home,
+          awayTeam: away,
+          league: decodeEntities(tip.league),
+          kickoff: tip.kickoff,
+          prediction: decodeEntities(tip.prediction),
+          odds: tip.odds,
+          description: tip.description,
+          status: tip.status,
+        }}
+      />
+    </>
   );
 };
 
