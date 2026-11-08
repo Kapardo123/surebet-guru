@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
-import { getOfferings, purchasePackage, restorePurchases } from "@/integrations/revenuecat";
+import { getOfferings, purchasePackage, restorePurchases, loginRevenueCat } from "@/integrations/revenuecat";
 import { Switch } from "@/components/ui/switch";
 import { Gem, Check, Shield, Smartphone, Loader2, Bell, LogIn } from "@/components/icons/gsb";
 
@@ -168,6 +168,18 @@ export default function Premium() {
     setLoading(true);
     try {
       if (isNative) {
+        // Never purchase while RevenueCat is still bound to a different/old
+        // Supabase account: the receipt would be attached to the wrong customer.
+        const rcCustomer = await loginRevenueCat(user.id);
+        if (!rcCustomer) {
+          toast({
+            title: t("premium.purchaseFailed"),
+            description: t("premium.purchaseFailedText"),
+            variant: "destructive",
+          });
+          return;
+        }
+
         const offerings = rcOfferings?.current ? rcOfferings : await getOfferings();
         const pkg = rcPackageFor(selectedPlan.rcKey, offerings);
         if (pkg) {
@@ -198,8 +210,13 @@ export default function Premium() {
   };
 
   const handleRestore = async () => {
+    if (!user) {
+      navigate("/auth?redirect=/premium");
+      return;
+    }
     setRestoring(true);
     try {
+      await loginRevenueCat(user.id);
       const info = await restorePurchases();
       if (info) {
         await refresh(info);
