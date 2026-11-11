@@ -82,20 +82,6 @@ export const isTipExpiredByRule = (
   return isTipExpired(tip, now);
 };
 
-/** Identyfikatory opublikowanych, już wygasłych tipów w danej paczce. */
-const expiredIdsOf = (rows: any[]): number[] =>
-  rows
-    .filter(
-      (t) =>
-        t.is_published !== false &&
-        isTipExpiredByRule({
-          kickoff: t.kickoff,
-          status: t.status,
-          wonAt: t.won_at || null,
-        }),
-    )
-    .map((t) => Number(t.id))
-    .filter(Number.isFinite);
 
 export const purgeExpiredTips = async (): Promise<number> => {
   // 1) Usun z bazy (wymaga wdrozonej migracji purge_old_tips.sql)
@@ -114,33 +100,12 @@ export const purgeExpiredTips = async (): Promise<number> => {
     console.warn("purgeExpiredTips RPC error:", e);
   }
 
-  // 2) Fallback gdy RPC nie istnieje: usuwamy wygasle wiersze klientem tym
-  //    samym uprawnieniem, ktorego uzywa przycisk Delete w panelu admina.
-  //    Published Tips znika wtedy tak samo, bez czekania na migracje.
-  if (dbDeleted < 0) {
-    try {
-      const { data: rows, error } = await supabase
-        .from("tips")
-        .select("id, kickoff, status, is_published, won_at");
-      if (!error && rows?.length) {
-        const ids = expiredIdsOf(rows);
-        if (ids.length) {
-          const { error: delError } = await supabase
-            .from("tips")
-            .delete()
-            .in("id", ids);
-          if (!delError) {
-            dbDeleted = ids.length;
-            console.log("[purge] Client-side deleted " + ids.length + " expired tips");
-          } else {
-            console.warn("[purge] Client-side delete blocked:", delError.message);
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("[purge] client-side fallback error:", e);
-    }
-  }
+  // 2) NO client-side fallback. The 2026-11-04 hardening migration revoked
+  //    DELETE for anon, so this fallback could never delete anything — it only
+  //    issued a full-table SELECT on every single loadTips() call. On a
+  //    disk-IO-throttled Free project that is pure waste. Purging is a server
+  //    concern (purge_old_tips RPC / settle cron); the client only prunes its
+  //    own cache below.
 
   // 3) Wyczysc lokalny cache z wygaslych (zawsze dziala, rowniez offline).
   //    Cache jest teraz per jezyk, wiec sprzatamy kazdy bucket.
@@ -201,10 +166,9 @@ export const loadTips = async (
   forceRefresh: boolean = false,
   locale?: string,
 ): Promise<Tip[]> => {
-  // Purge w TLE — nie blokuje renderu tipów (widoczne od razu, sprzątanie
-  // wygasłych leci asynchronicznie).
-  purgeExpiredTips().catch(() => {});
-
+  // Retention runs in the daily settle-results cron (service role). It must
+  // NOT run on the read path: the old fire-and-forget call scanned `tips` on
+  // every load and exhausted the database disk IO budget.
   // Jeśli forceRefresh - pomijamy cache całkowicie
   const cached = forceRefresh ? [] : getCachedTips(locale);
 

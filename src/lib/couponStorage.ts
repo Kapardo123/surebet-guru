@@ -146,31 +146,20 @@ export const purgeExpiredCoupons = async (): Promise<number> => {
     console.warn("[coupons] purge_old_coupons failed:", e);
   }
 
-  if (dbDeleted < 0) {
-    try {
-      const { data: rows, error } = await supabase.from("coupons").select("*");
-      if (!error && rows?.length) {
-        const now = Date.now();
-        const ids = processCouponData(rows, true)
-          .filter((c) => isCouponExpired(c, now))
-          .map((c) => c.id);
-        if (ids.length) {
-          const { error: delError } = await supabase.from("coupons").delete().in("id", ids);
-          if (!delError) dbDeleted = ids.length;
-        }
-      }
-    } catch (e) {
-      console.warn("[coupons] client purge fallback failed:", e);
-    }
-  }
+  // No client-side fallback. purge_old_coupons is granted only to
+  // `authenticated` and anon DELETE was revoked by the 2026-11-04 hardening
+  // migration, so a fallback could never delete rows — it only ran a full
+  // `select('*')` over every coupon on each loadCoupons() call. On a throttled
+  // Free-tier disk that is a guaranteed full scan with zero benefit. The daily
+  // settle cron / admin-authenticated session owns purging.
 
   return dbDeleted;
 };
 
 export const loadCoupons = async (): Promise<Coupon[]> => {
-  // Fire-and-forget cleanup of stale coupons (same 48h rule as tips).
-  purgeExpiredCoupons().catch(() => {});
-
+  // Retention runs in the daily settle-results cron (service role). Never
+  // purge on the read path: this used to scan/expand every coupon on each
+  // load and helped exhaust the database disk IO budget.
   const cached = getCachedCoupons();
 
   console.log('🎫 loadCoupons: Start - cache:', cached.length);
