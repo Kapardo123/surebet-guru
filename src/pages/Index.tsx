@@ -18,6 +18,7 @@ import CardInspector from "@/components/CardInspector";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { motion } from "framer-motion";
 
 const dayKey = new Date().toISOString().slice(0, 10);
 const readLS = <T,>(k: string, fallback: T): T => {
@@ -39,7 +40,12 @@ const writeLS = (k: string, v: unknown) => {
 const weekday = new Date().toLocaleDateString("en-GB", { weekday: "long" });
 
 const SkeletonCard = () => (
-  <div className="rounded-[16px] bg-white/[0.05] h-[300px] animate-pulse" />
+  <div className="rounded-[16px] p-[5px] bg-[hsl(232_30%_20%)] h-[300px]">
+    <div className="h-full rounded-[12px] card-back relative overflow-hidden grid place-items-center">
+      <div className="absolute inset-0 back-shimmer" />
+      <span className="font-display font-black text-[16px] foil-gold-text opacity-70">GSB</span>
+    </div>
+  </div>
 );
 
 const EmptyState = ({ title, body }: { title: string; body: string }) => (
@@ -173,12 +179,15 @@ const Index = () => {
       role="tab"
       aria-selected={activeTab === value}
       onClick={() => setActiveTab(value)}
-      className={`flex-1 h-11 rounded-full flex items-center justify-center gap-2 text-[14.5px] font-bold transition-colors ${
-        activeTab === value ? "bg-foreground text-background" : "text-foreground/70 hover:text-foreground"
+      className={`relative flex-1 h-11 rounded-full flex items-center justify-center gap-2 text-[14.5px] font-bold transition-colors ${
+        activeTab === value ? "text-background" : "text-foreground/70 hover:text-foreground"
       }`}
     >
-      {label}
-      <span className={`min-w-6 h-6 px-1.5 rounded-full grid place-items-center text-[12px] ${activeTab === value ? "bg-background/15" : "bg-white/10"}`}>
+      {activeTab === value && (
+        <motion.span layoutId="tab-pill" className="absolute inset-0 rounded-full bg-foreground" transition={{ type: "spring", stiffness: 420, damping: 34 }} />
+      )}
+      <span className="relative">{label}</span>
+      <span className={`relative min-w-6 h-6 px-1.5 rounded-full grid place-items-center text-[12px] ${activeTab === value ? "bg-background/15" : "bg-white/10"}`}>
         {count}
       </span>
     </button>
@@ -215,9 +224,35 @@ const Index = () => {
           <div>
             <p className="label">{weekday}'s pull</p>
             <h1 className="font-display font-black uppercase text-[30px] leading-[1.02] tracking-[-0.02em] mt-1.5">
-              {loading ? "Shuffling…" : <>{openCount} {openCount === 1 ? "card" : "cards"} in play</>}
+              {loading ? (
+                "Shuffling…"
+              ) : (
+                <>
+                  <span className="foil-gold-text">{openCount}</span> {openCount === 1 ? "card" : "cards"} in play
+                </>
+              )}
             </h1>
           </div>
+          {!loading && tips.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { k: "Open", v: String(openCount) },
+                { k: "Gold", v: String(tips.filter((t) => t.isPremium && t.status === "upcoming").length), gold: true },
+                {
+                  k: "Top odds",
+                  v: (() => {
+                    const free = tips.filter((t) => t.status === "upcoming" && (!t.isPremium || isPremium));
+                    return free.length ? Math.max(...free.map((t) => t.odds)).toFixed(2) : "—";
+                  })(),
+                },
+              ].map((x) => (
+                <div key={x.k} className="rounded-[16px] bg-white/[0.04] border border-white/[0.07] px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{x.k}</p>
+                  <p className={`num font-black text-[22px] leading-none mt-1.5 ${x.gold ? "foil-gold-text" : ""}`}>{x.v}</p>
+                </div>
+              ))}
+            </div>
+          )}
           {!loading && packOpen && (
             <BinderStrip tips={tips} seen={seen} userIsPremium={isPremium} onSlot={openCard} />
           )}

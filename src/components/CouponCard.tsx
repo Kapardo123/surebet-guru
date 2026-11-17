@@ -24,7 +24,7 @@ const MiniCard = ({ leg, faceDown }: { leg: Leg; faceDown: boolean }) => {
   const ko = kickoffParts(leg.kickoff);
   return (
     <div className="w-[104px] h-[146px] rounded-[10px] p-[3px] shadow-[0_8px_18px_-6px_rgba(0,0,0,.7)]" style={{ background: t.frame }}>
-      <div className="h-full rounded-[7px] bg-stock text-stock-ink overflow-hidden flex flex-col">
+      <div className="paper h-full rounded-[7px] bg-stock text-stock-ink overflow-hidden flex flex-col">
         <div className="h-[46px] flex items-center justify-center gap-1" style={{ background: t.art }}>
           {[leg.homeTeam, leg.awayTeam].map((n, i) => (
             <span key={i} className="grid place-items-center w-7 h-7 rounded-full bg-white/90">

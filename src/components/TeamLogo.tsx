@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, memo } from "react";
 import { useTeamLogo, getCachedTeamLogo, setCachedTeamLogo } from "@/hooks/useTeamLogo";
 import { MdSportsTennis } from "react-icons/md";
+import Crest from "@/components/Crest";
 
 interface TeamLogoProps {
   teamName: string;
@@ -115,6 +116,10 @@ const TeamLogo = ({
         style={{ width: size, height: size }}
       />
     );
+  }
+
+  if (!url && tone === "light") {
+    return <Crest name={teamName} size={size} />;
   }
 
   if (!url) {

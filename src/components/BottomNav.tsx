@@ -1,5 +1,6 @@
 import { Layers, Ticket, Gem, LogIn, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import type { LucideIcon } from "lucide-react";
 
@@ -11,7 +12,13 @@ const NavButton = ({ label, icon: Icon, active, onClick, to }: Item) => {
   }`;
   const inner = (
     <>
-      {active && <span className="absolute inset-1 rounded-[14px] bg-primary" />}
+      {active && (
+        <motion.span
+          layoutId="nav-pill"
+          className="absolute inset-1 rounded-[14px] bg-primary shadow-[0_6px_18px_-6px_hsl(var(--primary)/.7)]"
+          transition={{ type: "spring", stiffness: 420, damping: 34 }}
+        />
+      )}
       <Icon className="relative w-[21px] h-[21px]" strokeWidth={active ? 2.4 : 1.8} />
       <span className="relative text-[11.5px] font-semibold">{label}</span>
     </>

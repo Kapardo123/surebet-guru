@@ -84,11 +84,11 @@ const TipCard = ({ tip, userIsPremium = false, index, total, onInspect, layoutId
 
   const front = (
     <div
-      className={`flip-face [grid-area:1/1] rounded-[16px] p-[5px] shadow-[0_10px_24px_-10px_rgba(0,0,0,.7)] ${frame}`}
+      className={`flip-face [grid-area:1/1] rounded-[16px] p-[5px] bevel ${frame}`}
       style={frameStyle}
     >
       <div
-        className={`h-full rounded-[12px] text-stock-ink overflow-hidden flex flex-col ${tip.isPremium ? "bg-[linear-gradient(170deg,hsl(44_70%_92%),hsl(40_45%_88%))]" : "bg-stock"} ${isLost ? "grayscale-[.85] opacity-80" : ""}`}
+        className={`h-full rounded-[12px] text-stock-ink overflow-hidden flex flex-col shadow-[inset_0_0_0_1px_rgba(0,0,0,.06)] ${tip.isPremium ? "bg-[linear-gradient(170deg,hsl(44_70%_92%),hsl(40_45%_88%))]" : "paper bg-stock"} ${isLost ? "grayscale-[.85] opacity-80" : ""}`}
       >
         {/* Title bar */}
         <div className="flex items-center gap-1.5 px-2.5 h-8">
