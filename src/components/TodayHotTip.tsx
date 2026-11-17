@@ -1,12 +1,10 @@
 import { useState, useEffect, useMemo, memo } from "react";
-import { Play, Loader2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Play, Loader2, Sparkles } from "lucide-react";
 import { FeaturedPick, loadFeaturedPick } from "@/lib/featuredPickStorage";
 import StatusTag from "@/components/StatusTag";
+import HoloCard from "@/components/HoloCard";
+import CardArt from "@/components/CardArt";
 import { formatKickoff } from "@/lib/format";
-import SectionHead from "@/components/SectionHead";
-import PitchLines from "@/components/PitchLines";
-import { PenArrow, PenNote, PenUnderline } from "@/components/RedPen";
 import { useAdMob } from "@/hooks/useAdMob";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 
@@ -86,12 +84,10 @@ const TodayHotTip = () => {
     });
   }, [isPremium]);
 
-  const [justUnlocked, setJustUnlocked] = useState(false);
-
+  
   const handleWatchAd = () => {
     showRewardedAd().catch(() => {});
     setTimeout(() => {
-      setJustUnlocked(true);
       setIsUnlocked(true);
       localStorage.setItem("hotTipUnlocked", "true");
       if (pick) {
@@ -102,157 +98,122 @@ const TodayHotTip = () => {
   };
 
   const settled = data.status && data.status !== "upcoming";
-  const penVerdict = { High: "Banker!", Medium: "Fair price", Low: "Long shot" }[data.confidence as string];
-  const confidenceLevel = { High: 3, Medium: 2, Low: 1 }[data.confidence as string] ?? 0;
+  const stars = { High: 3, Medium: 2, Low: 1 }[data.confidence as string] ?? 0;
+  const sport = pick?.sport;
 
-  return (
-    <section>
-      <SectionHead
-        tone="red"
-        right={
-          !settled && countdown ? (
-            <span className="font-mono text-[13px] font-medium tracking-[0.02em] tabular-nums text-foreground">
-              {countdown.expired ? (
-                <span className="inline-flex items-center gap-1.5 font-semibold text-red uppercase tracking-[0.1em]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red animate-pulse" /> Live
-                </span>
-              ) : (
-                <>KO in {countdown.text}</>
-              )}
-            </span>
-          ) : undefined
-        }
-      >
-        Nap of the day
-      </SectionHead>
+  const countdownPill = !settled && countdown && (
+    <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full bg-black/40 text-white text-[11px] font-semibold tabular-nums">
+      {countdown.expired ? (
+        <><span className="w-1.5 h-1.5 rounded-full bg-red animate-pulse" /> LIVE</>
+      ) : (
+        <>Starts in {countdown.text}</>
+      )}
+    </span>
+  );
 
-      <p className="label mt-3 text-foreground">
-        {data.league} <span className="text-foreground/40">/</span> {formatKickoff(data.kickoff)}
-      </p>
+  const front = (
+    <div aria-hidden={!isUnlocked} className="flip-face [grid-area:1/1] rounded-[22px] p-[6px] bg-[conic-gradient(from_200deg,#ff6ec4,#7873f5,#4adede,#b8f15e,#ffd86e,#ff6ec4)]">
+      <div className="h-full rounded-[17px] bg-[hsl(232_42%_11%)] text-white overflow-hidden">
+        <div className="flex items-center justify-between gap-2 px-4 h-10">
+          <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em]">
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+            <span className="foil-gold-text">Holo rare</span>
+            <span className="text-white/40">·</span>
+            <span className="text-white/80">Pick of the day</span>
+          </span>
+        </div>
 
-      {/* Fixture + odds stamp */}
-      <div className="relative mt-2">
-        <PitchLines
-          sport={pick?.sport}
-          className="absolute -left-1 -top-2 h-[calc(100%+16px)] w-[calc(100%-96px)] md:w-[calc(100%-150px)] text-foreground/[0.11] -rotate-[1.2deg]"
-        />
-        <div className="relative pr-[104px] md:pr-[140px]">
-          <h3 className="font-display font-black uppercase text-foreground leading-[0.86] tracking-[-0.005em] text-[clamp(46px,14vw,88px)] break-words">
+        <div className="relative mx-2.5">
+          <CardArt sport={sport} home={data.homeTeam} away={data.awayTeam} homeLogo={data.homeTeamLogo} awayLogo={data.awayTeamLogo} size={48} className="h-[150px] rounded-[12px]" />
+          <div className="absolute left-2.5 bottom-2.5">{countdownPill}</div>
+          {settled && <StatusTag status={data.status as "won" | "lost" | "draw"} className="absolute -top-3 -right-2 scale-125" />}
+        </div>
+
+        <div className="px-4 pt-3.5">
+          <h3 className="font-display font-black uppercase text-[24px] leading-[1.02] tracking-[-0.02em]">
             {data.homeTeam}
-          </h3>
-          <p className="font-serif italic text-[22px] leading-none text-red my-1.5 pl-1">versus</p>
-          <h3 className="font-display font-black uppercase text-foreground leading-[0.86] tracking-[-0.005em] text-[clamp(46px,14vw,88px)] break-words">
+            <span className="block text-[12px] text-primary tracking-[0.1em] my-0.5">versus</span>
             {data.awayTeam}
           </h3>
+          <p className="text-[13px] text-white/60 mt-1.5">{data.league} · {formatKickoff(data.kickoff)}</p>
         </div>
 
-        <div className="halftone absolute -right-4 -top-3 w-[132px] h-[132px] md:w-[170px] md:h-[170px] rounded-full" aria-hidden />
-        <div
-          key={isUnlocked ? "on" : "off"}
-          className={`absolute right-0 top-1 w-[100px] h-[100px] md:w-[132px] md:h-[132px] rounded-full border-[3px] grid place-items-center bg-background/70 ${
-            isUnlocked ? "border-red text-red stamp-in" : "border-foreground/30 text-foreground/30 rotate-[8deg]"
-          }`}
-          style={{ maskImage: "radial-gradient(circle at 35% 35%, #000 60%, rgba(0,0,0,.8) 80%, #000)", ["--stamp-rot" as string]: "8deg" }}
-        >
-          <div className="absolute inset-[5px] rounded-full border border-current opacity-60" />
-          <div className="text-center leading-none">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em]">Price</p>
-            <p className="num font-black text-[36px] md:text-[46px] leading-[0.95] mt-0.5">{isUnlocked ? data.odds : "?.??"}</p>
+        <div className="grid grid-cols-[1.6fr_1fr_1fr] gap-1.5 mx-2.5 mt-3">
+          <div className="rounded-[10px] bg-white/[0.07] px-3 py-2.5">
+            <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/50">Pick</p>
+            <p className="text-[15px] font-semibold leading-tight mt-1">{isUnlocked ? data.prediction : "—"}</p>
+          </div>
+          <div className="rounded-[10px] bg-white/[0.07] px-3 py-2.5">
+            <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/50">Odds</p>
+            <p className="num font-black text-[24px] leading-none mt-1 foil-gold-text">{isUnlocked ? data.odds : "?.??"}</p>
+          </div>
+          <div className="rounded-[10px] bg-white/[0.07] px-3 py-2.5">
+            <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/50">Conf.</p>
+            <p className="text-[16px] leading-none mt-1.5 tracking-[0.05em]" aria-label={`Confidence ${data.confidence}`}>
+              {[1, 2, 3].map((n) => (
+                <span key={n} className={n <= stars ? "text-primary" : "text-white/20"}>★</span>
+              ))}
+            </p>
           </div>
         </div>
-        {isUnlocked && !settled && penVerdict && (
-          <div className="absolute right-0 top-[108px] md:top-[142px] w-[104px] flex flex-col items-center">
-            <PenArrow delay={0.5} className="w-10 h-7 -mb-1 -ml-8 -rotate-[20deg]" />
-            <PenNote delay={0.9} rotate={-7} className="text-[30px]">{penVerdict}</PenNote>
+
+        {data.description && isUnlocked ? (
+          <div className="px-4 pt-3 pb-4">
+            <p className={`text-[14.5px] leading-[1.5] text-white/80 ${showAnalysis ? "" : "line-clamp-3"}`}>{data.description}</p>
+            <button
+              onClick={() => setShowAnalysis(!showAnalysis)}
+              aria-expanded={showAnalysis}
+              className="mt-1.5 text-[12px] font-bold uppercase tracking-[0.1em] text-primary"
+            >
+              {showAnalysis ? "Show less" : "Read the analysis"}
+            </button>
           </div>
-        )}
-        {settled && (
-          <div className="absolute right-2 top-[104px] md:top-[140px]">
-            <StatusTag status={data.status as "won" | "lost" | "draw"} className="text-[26px]" />
-          </div>
+        ) : (
+          <div className="h-4" />
         )}
       </div>
+    </div>
+  );
 
-      <div className="mt-5 border-t border-foreground/80" />
+  const back = (
+    <div aria-hidden={isUnlocked} className="flip-face flip-back [grid-area:1/1] rounded-[22px] p-[6px] bg-[conic-gradient(from_200deg,#ff6ec4,#7873f5,#4adede,#b8f15e,#ffd86e,#ff6ec4)]">
+      <div className="h-full rounded-[17px] card-back text-white flex flex-col items-center justify-center text-center px-6 py-8">
+        <div className="relative w-28 h-28 rounded-full foil-gold grid place-items-center shadow-[0_10px_30px_rgba(0,0,0,.5)] foil-shimmer">
+          <div className="w-[96px] h-[96px] rounded-full bg-[hsl(232_45%_14%)] grid place-items-center">
+            <span className="font-display font-black text-[26px] foil-gold-text leading-none">GSB</span>
+          </div>
+        </div>
+        <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.18em] foil-gold-text">Holo rare · Face down</p>
+        <p className="font-display font-black uppercase text-[24px] leading-[1.05] mt-2">
+          Today's<br />pick of the day
+        </p>
+        <p className="text-[14px] text-white/65 mt-2">{data.league} · {formatKickoff(data.kickoff)}</p>
+        {!settled && countdown && <div className="mt-3">{countdownPill}</div>}
 
-      <AnimatePresence mode="wait" initial={false}>
-        {!isUnlocked ? (
-          <motion.div key="locked" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pt-3">
-            <p className="label">The selection</p>
-            <p className="mt-2 flex flex-wrap gap-2">
-              <span className="redact w-40 h-[1.3em]" />
-              <span className="redact w-16 h-[1.3em]" />
-            </p>
-            <div className="mt-3 space-y-1.5">
-              <span className="block redact w-full opacity-15" />
-              <span className="block redact w-[92%] opacity-15" />
-              <span className="block redact w-[70%] opacity-15" />
-            </div>
-            <button
-              onClick={handleWatchAd}
-              disabled={isLoading || !isRewardedAdReady}
-              className="mt-5 w-full h-14 bg-foreground text-background font-mono text-[13.5px] font-semibold uppercase tracking-[0.12em] flex items-center justify-center gap-2 active:translate-y-px disabled:opacity-50"
-            >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-              {!isRewardedAdReady ? "Preparing ad…" : "Watch an ad to reveal"}
-            </button>
-            {error && <p className="text-red text-xs text-center mt-2 font-mono">{error}</p>}
-            <p className="mt-2 text-center font-serif italic text-[16px] text-muted-foreground">
-              About thirty seconds. Members never see the ad.
-            </p>
-          </motion.div>
-        ) : (
-          <motion.div key="unlocked" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="pt-3">
-            <div className="flex items-end justify-between gap-4">
-              <div className="min-w-0">
-                <p className="label">The selection</p>
-                <span className="relative inline-block mt-1">
-                  <span className="block font-serif font-semibold text-[28px] leading-tight text-foreground">{data.prediction}</span>
-                  <PenUnderline delay={justUnlocked ? 0.75 : 0.3} className="-mt-0.5" />
-                  {justUnlocked && (
-                    <motion.span
-                      className="absolute left-0 right-0 top-1 h-[1.05em] text-[28px] bg-foreground origin-right"
-                      initial={{ scaleX: 1 }}
-                      animate={{ scaleX: 0 }}
-                      transition={{ duration: 0.55, delay: 0.1, ease: [0.7, 0, 0.3, 1] }}
-                      aria-hidden
-                    />
-                  )}
-                </span>
-              </div>
-              {data.confidence && (
-                <div className="shrink-0 text-right">
-                  <p className="label">Confidence</p>
-                  <div className="mt-1.5 flex justify-end gap-1" aria-label={`Confidence ${data.confidence}`}>
-                    {[1, 2, 3].map((n) => (
-                      <span key={n} className={`w-2.5 h-2.5 rounded-full border-[1.5px] border-foreground ${n <= confidenceLevel ? "bg-foreground" : ""}`} />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+        <button
+          onClick={handleWatchAd}
+          disabled={isLoading || !isRewardedAdReady || isUnlocked}
+          className="mt-6 w-full max-w-[300px] h-13 py-3.5 rounded-full bg-primary text-primary-foreground font-bold text-[15px] flex items-center justify-center gap-2 shadow-[0_8px_24px_-6px_hsl(var(--primary)/.6)] active:scale-[0.98] transition-transform disabled:opacity-60"
+        >
+          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
+          {!isRewardedAdReady ? "Preparing ad…" : "Watch an ad to flip it"}
+        </button>
+        {error && <p className="text-red text-[13px] mt-2">{error}</p>}
+        <p className="text-[13px] text-white/55 mt-3">About 30 seconds. Members' cards are always face up.</p>
+      </div>
+    </div>
+  );
 
-            {data.description && (
-              <div className="mt-3">
-                <p
-                  className={`font-serif text-[18px] leading-[1.55] text-foreground first-letter:float-left first-letter:font-display first-letter:font-black first-letter:text-[60px] first-letter:text-red first-letter:leading-[0.8] first-letter:mr-2 first-letter:mt-1 ${
-                    showAnalysis ? "" : "line-clamp-3"
-                  }`}
-                >
-                  {data.description}
-                </p>
-                <button
-                  onClick={() => setShowAnalysis(!showAnalysis)}
-                  aria-expanded={showAnalysis}
-                  className="mt-2 h-8 font-mono text-[12px] font-medium uppercase tracking-[0.06em] text-foreground underline decoration-foreground/30 underline-offset-4"
-                >
-                  {showAnalysis ? "Show less −" : "Continue reading +"}
-                </button>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+  return (
+    <section className="max-w-[440px] mx-auto">
+      <HoloCard holo={isUnlocked} maxTilt={8} innerClassName="rounded-[22px]">
+        <div className="flip-scene">
+          <div className={`flip-inner grid ${isUnlocked ? "" : "is-flipped"}`}>
+            {front}
+            {back}
+          </div>
+        </div>
+      </HoloCard>
     </section>
   );
 };

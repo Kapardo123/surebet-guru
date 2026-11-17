@@ -22,19 +22,18 @@ const Logo = ({ size = "sm" }: { size?: "sm" | "lg" }) => {
   return (
     <>
       <div
-        className="select-none cursor-pointer"
+        className="select-none cursor-pointer flex items-center gap-2.5"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTap(); }}
       >
-        {size === "lg" ? (
-          <span className="block font-display font-black uppercase text-foreground leading-[0.82] tracking-[-0.01em] text-[clamp(40px,13.2vw,96px)] whitespace-nowrap">
-            Great Sport Bets
+        <span className={`relative shrink-0 ${size === "lg" ? "w-16 h-16" : "w-8 h-8"}`} aria-hidden>
+          <span className="absolute inset-y-0 left-0 w-[64%] rounded-[22%] bg-stock -rotate-[14deg] origin-bottom shadow" />
+          <span className="absolute inset-y-0 right-0 w-[64%] rounded-[22%] foil-gold rotate-[10deg] origin-bottom shadow-[0_2px_6px_rgba(0,0,0,.4)] grid place-items-center">
+            <span className={`font-display font-black text-stock-ink ${size === "lg" ? "text-[20px]" : "text-[10px]"}`}>G</span>
           </span>
-        ) : (
-          <span className="flex items-baseline gap-1.5 font-display font-black uppercase leading-none text-foreground text-[24px] tracking-[-0.005em]">
-            Great Sport Bets
-            <span className="w-1.5 h-1.5 rounded-full bg-red translate-y-[-2px]" aria-hidden />
-          </span>
-        )}
+        </span>
+        <span className={`font-display font-black uppercase leading-[0.95] tracking-[-0.02em] text-foreground ${size === "lg" ? "text-[30px]" : "text-[14px]"}`}>
+          Great Sport<br />Bets
+        </span>
       </div>
 
       <AdminLoginDialog open={showLogin} onOpenChange={setShowLogin} />

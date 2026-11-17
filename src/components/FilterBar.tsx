@@ -11,43 +11,38 @@ interface FilterBarProps {
   accent?: "purple" | "blue";
 }
 
-const item = (active: boolean) =>
-  `shrink-0 h-9 px-3 font-mono text-[13px] uppercase tracking-[0.04em] border-[1.5px] transition-colors ${
-    active
-      ? "bg-foreground text-background border-foreground font-semibold"
-      : "border-foreground/30 text-foreground hover:border-foreground"
+const chip = (active: boolean) =>
+  `shrink-0 h-9 px-4 rounded-full text-[13.5px] font-semibold transition-colors ${
+    active ? "bg-foreground text-background" : "bg-white/[0.06] text-foreground/80 hover:bg-white/[0.1]"
   }`;
 
-const premiumLabels: Record<PremiumFilter, string> = { all: "All", free: "Free", premium: "Members" };
-
-/** Index-style text filters, like the section list on a sports page. */
 const FilterBar = ({ sports, activeSport, onSportChange, activePremium, onPremiumChange }: FilterBarProps) => {
   const showSports = !!(sports && sports.length > 1 && onSportChange);
-
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-1.5">
-        <span className="label w-14 shrink-0 text-foreground">Show</span>
-        {(["all", "free", "premium"] as PremiumFilter[]).map((t) => (
-          <span key={t} className="contents">
-            <button onClick={() => onPremiumChange(t)} className={item(activePremium === t)}>
-              {premiumLabels[t]}
-            </button>
-          </span>
-        ))}
-      </div>
+    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-4 px-4">
+      {(["all", "free", "premium"] as PremiumFilter[]).map((t) => (
+        <button
+          key={t}
+          onClick={() => onPremiumChange(t)}
+          className={
+            t === "premium" && activePremium === t
+              ? "shrink-0 h-9 px-4 rounded-full text-[13.5px] font-bold foil-gold text-stock-ink"
+              : chip(activePremium === t)
+          }
+        >
+          {t === "all" ? "All" : t === "free" ? "Common" : "Gold"}
+        </button>
+      ))}
       {showSports && (
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar -mr-4 pr-4">
-          <span className="label w-14 shrink-0 text-foreground">Sport</span>
-          <button onClick={() => onSportChange!("All")} className={item(activeSport === "All")}>All</button>
-          {sports!.map((sport) => (
-            <span key={sport} className="contents">
-              <button onClick={() => onSportChange!(sport)} className={item(activeSport === sport)}>
-                {sport}
-              </button>
-            </span>
+        <>
+          <span className="shrink-0 w-px h-6 bg-white/15 mx-1" aria-hidden />
+          <button onClick={() => onSportChange!("All")} className={chip(activeSport === "All")}>Every sport</button>
+          {sports!.map((sp) => (
+            <button key={sp} onClick={() => onSportChange!(sp)} className={chip(activeSport === sp)}>
+              {sp}
+            </button>
           ))}
-        </div>
+        </>
       )}
     </div>
   );

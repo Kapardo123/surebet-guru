@@ -1,124 +1,132 @@
 import { Coupon } from "@/lib/couponStorage";
 import { Link } from "react-router-dom";
 import { memo } from "react";
-import Barcode from "@/components/Barcode";
+import { Lock } from "lucide-react";
 import StatusTag from "@/components/StatusTag";
-import { formatKickoff, formatShortDate } from "@/lib/format";
+import TeamLogo from "@/components/TeamLogo";
+import { kickoffParts } from "@/lib/format";
+import { sportTheme } from "@/lib/sport";
+
+type Leg = Coupon["matches"][number];
+
+/** One leg as a mini card in the fan. */
+const MiniCard = ({ leg, faceDown }: { leg: Leg; faceDown: boolean }) => {
+  const t = sportTheme(leg.sport);
+  if (faceDown) {
+    return (
+      <div className="w-[104px] h-[146px] rounded-[10px] p-[3px] foil-gold shadow-[0_8px_18px_-6px_rgba(0,0,0,.7)]">
+        <div className="h-full rounded-[7px] card-back grid place-items-center">
+          <span className="font-display font-black text-[15px] foil-gold-text">GSB</span>
+        </div>
+      </div>
+    );
+  }
+  const ko = kickoffParts(leg.kickoff);
+  return (
+    <div className="w-[104px] h-[146px] rounded-[10px] p-[3px] shadow-[0_8px_18px_-6px_rgba(0,0,0,.7)]" style={{ background: t.frame }}>
+      <div className="h-full rounded-[7px] bg-stock text-stock-ink overflow-hidden flex flex-col">
+        <div className="h-[46px] flex items-center justify-center gap-1" style={{ background: t.art }}>
+          {[leg.homeTeam, leg.awayTeam].map((n, i) => (
+            <span key={i} className="grid place-items-center w-7 h-7 rounded-full bg-white/90">
+              <TeamLogo teamName={n} logoUrl={i ? leg.awayTeamLogo : leg.homeTeamLogo} size={20} sport={leg.sport} />
+            </span>
+          ))}
+        </div>
+        <div className="px-1.5 pt-1 flex-1 min-h-0">
+          <p className="font-display font-extrabold uppercase text-[8.5px] leading-[1.15] line-clamp-2">
+            {leg.homeTeam} v {leg.awayTeam}
+          </p>
+          <p className="text-[10.5px] font-semibold leading-tight mt-1 line-clamp-2">{leg.prediction}</p>
+        </div>
+        <div className="flex items-end justify-between px-1.5 pb-1.5">
+          <span className="num font-black text-[15px] leading-none">{leg.odds.toFixed(2)}</span>
+          {ko.time !== "TBD" && <span className="text-[8.5px] font-semibold opacity-60">{ko.time}</span>}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsPremium?: boolean }) => {
-  const tilt = coupon.id % 2 ? "-rotate-[0.6deg]" : "rotate-[0.5deg]";
   const isSettled = coupon.status === "won" || coupon.status === "lost";
-  const isWon = coupon.status === "won";
   const isLost = coupon.status === "lost";
   const locked = coupon.isPremium && !userIsPremium && !isSettled;
-  const legs = coupon.matches.length;
-  const ref = `GSB-${String(coupon.id).padStart(5, "0")}`;
+  const legs = coupon.matches;
+  const n = legs.length;
 
-  return (
-    <div className={`relative pt-3 ${tilt}`}>
-      {/* Strip of tape holding the slip down */}
-      <span
-        className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-24 h-6 rotate-[-3deg] bg-[hsl(48_60%_85%/0.75)] shadow-[0_1px_0_rgba(0,0,0,0.08)]"
-        style={{ maskImage: "linear-gradient(90deg, transparent 0 3px, #000 3px calc(100% - 3px), transparent calc(100% - 3px))" }}
-        aria-hidden
-      />
-    <div className="drop-shadow-[0_2px_2px_rgba(40,30,20,0.2)]">
-      <article className="relative bg-card slip-edge font-mono text-foreground">
-        {coupon.id % 2 === 1 && (
-          // A coffee ring someone left on the slip.
-          <svg className="absolute -right-6 bottom-10 w-32 h-32 pointer-events-none" viewBox="0 0 100 100" aria-hidden>
-            <circle cx="50" cy="50" r="38" fill="none" stroke="hsl(28 55% 35% / 0.14)" strokeWidth="5" strokeDasharray="180 14 40 8" />
-            <circle cx="50" cy="50" r="36" fill="none" stroke="hsl(28 55% 35% / 0.07)" strokeWidth="2" />
-          </svg>
-        )}
-        <div className="px-4 pt-4 pb-5">
-          {/* Slip header */}
-          <div className="flex items-center justify-between text-[11.5px] uppercase tracking-[0.06em] text-muted-foreground">
-            <span>{legs}-fold accumulator</span>
-            <span>{ref}</span>
-          </div>
-          <div className="mt-2 flex items-start justify-between gap-3">
-            <h3 className="font-display font-black uppercase text-[34px] leading-[0.9] tracking-[0.005em]">
-              {coupon.name}
-            </h3>
-            {coupon.isPremium && !isSettled && (
-              <span className="shrink-0 mt-1 inline-flex items-center h-[18px] px-1.5 bg-foreground text-background text-[9.5px] font-semibold uppercase tracking-[0.12em]">
-                Members
-              </span>
-            )}
-          </div>
+  // Fan the cards: spread angle shrinks as the set grows.
+  const spread = Math.min(10, 36 / Math.max(1, n - 1));
+  const overlap = n <= 2 ? -18 : n === 3 ? -34 : -52;
 
-          <div className="my-3 border-t border-dashed border-foreground/50" />
-
-          {/* Selections */}
-          <ol className={`space-y-3 ${isLost ? "opacity-55" : ""}`}>
-            {coupon.matches.map((m, i) => (
-              <li key={i} className="text-[14px] leading-snug">
-                <p className="flex gap-2 font-semibold uppercase tracking-[0.02em]">
-                  <span className="text-muted-foreground">{i + 1}.</span>
-                  <span className="truncate">
-                    {m.homeTeam} v {m.awayTeam}
-                  </span>
-                </p>
-                <div className="flex items-baseline gap-1.5 pl-5 mt-0.5">
-                  {locked ? (
-                    <>
-                      <span className="redact w-28" />
-                      <span className="leader" />
-                      <span className="redact w-8" />
-                    </>
-                  ) : (
-                    <>
-                      <span className="font-serif font-semibold text-[17px] tracking-normal">{m.prediction}</span>
-                      <span className="leader" />
-                      <span className="font-semibold text-[15px]">{m.odds.toFixed(2)}</span>
-                    </>
-                  )}
-                </div>
-                {(m.league || m.kickoff) && (
-                  <p className="pl-5 mt-0.5 text-[11.5px] uppercase tracking-[0.04em] text-muted-foreground truncate">
-                    {[m.league, m.kickoff && formatKickoff(m.kickoff)].filter(Boolean).join(" · ")}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ol>
-
-          <div className="my-3 border-t border-dashed border-foreground/50" />
-
-          {/* Total */}
-          {locked ? (
-            <Link to="/premium" className="flex items-end justify-between gap-3">
-              <span className="text-[12.5px] uppercase tracking-[0.04em] leading-snug">
-                Selections hidden<br />
-                <span className="text-red underline underline-offset-[3px]">Members only, see rates</span>
-              </span>
-              <span className="num font-black text-[40px] leading-none text-foreground/20">?.??</span>
-            </Link>
-          ) : (
-            <div className="flex items-end justify-between gap-3">
-              <div className="text-[12px] uppercase tracking-[0.04em] text-muted-foreground leading-relaxed">
-                <p>Total odds</p>
-                {coupon.stake ? <p>Stake ${coupon.stake}</p> : <p>Issued {formatShortDate(coupon.createdAt)}</p>}
-              </div>
-              <span
-                className={`num font-black text-[44px] leading-[0.85] ${
-                  isLost ? "text-muted-foreground line-through decoration-2" : isWon ? "text-success" : "text-foreground"
-                }`}
-              >
-                {coupon.totalOdds.toFixed(2)}
-              </span>
-            </div>
-          )}
-
-          <div className="mt-4 flex items-end justify-between gap-3">
-            <Barcode seed={coupon.id} className="h-7 text-foreground" />
-            {isSettled && <StatusTag status={coupon.status} className="text-[24px]" />}
-          </div>
+  const inner = (
+    <div className={`relative rounded-[20px] border p-4 overflow-hidden ${coupon.isPremium ? "border-[hsl(var(--gold)/.5)] bg-[linear-gradient(160deg,hsl(40_40%_16%),hsl(232_30%_13%)_55%)]" : "border-border bg-card"} ${isLost ? "opacity-70" : ""}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="label">
+            {n}-card set{coupon.isPremium && <span className="foil-gold-text"> · Gold</span>}
+          </p>
+          <h3 className="font-display font-black uppercase text-[19px] leading-[1.1] tracking-[-0.01em] mt-1 truncate">{coupon.name}</h3>
         </div>
-      </article>
+        {isSettled && <StatusTag status={coupon.status} className="shrink-0" />}
+      </div>
+
+      {/* The fan */}
+      <div className="relative mt-4 mb-1 h-[168px] flex justify-center items-start overflow-x-auto no-scrollbar">
+        <div className="flex pt-2 px-6">
+          {legs.map((leg, i) => {
+            const mid = (n - 1) / 2;
+            const rot = (i - mid) * spread;
+            const lift = Math.abs(i - mid) * 5;
+            return (
+              <div
+                key={i}
+                className="shrink-0 transition-transform duration-300 hover:-translate-y-2"
+                style={{ marginLeft: i ? overlap : 0, transform: `rotate(${rot}deg) translateY(${lift}px)`, zIndex: i }}
+              >
+                <MiniCard leg={leg} faceDown={locked} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Totals */}
+      {locked ? (
+        <div className="mt-2 flex items-center justify-between gap-3 rounded-full foil-gold foil-shimmer text-stock-ink px-4 h-12">
+          <span className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.08em]">
+            <Lock className="w-4 h-4" /> Sealed pack
+          </span>
+          <span className="text-[12.5px] font-bold">Members open it →</span>
+        </div>
+      ) : (
+        <div className="mt-2 flex items-center justify-between gap-3 rounded-full bg-black/30 px-4 h-12">
+          <span className="label text-foreground/70">Combined odds</span>
+          <span className={`num font-black text-[24px] ${isLost ? "line-through opacity-60" : coupon.isPremium ? "foil-gold-text" : "text-primary"}`}>
+            {coupon.totalOdds.toFixed(2)}
+          </span>
+        </div>
+      )}
+
+      {!locked && (
+        <ul className="mt-3 space-y-1.5">
+          {legs.map((leg, i) => (
+            <li key={i} className="flex items-baseline justify-between gap-3 text-[13.5px]">
+              <span className="min-w-0 truncate">
+                <span className="text-muted-foreground">{leg.homeTeam} v {leg.awayTeam}:</span>{" "}
+                <span className="font-semibold">{leg.prediction}</span>
+              </span>
+              <span className="num font-bold text-[13px] shrink-0">{leg.odds.toFixed(2)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
-    </div>
+  );
+
+  return locked ? (
+    <Link to="/premium" className="block active:scale-[0.99] transition-transform">{inner}</Link>
+  ) : (
+    inner
   );
 };
 

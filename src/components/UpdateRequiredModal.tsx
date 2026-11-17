@@ -35,15 +35,15 @@ const UpdateRequiredModal = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="w-full max-w-sm bg-card border-t-[3px] border-foreground p-6"
+            className="w-full max-w-sm rounded-[24px] bg-card border border-white/10 p-6 text-center"
           >
-            <p className="eyebrow text-red">Stop press</p>
-            <h2 className="font-display font-black uppercase text-[40px] leading-[0.85] mt-3 text-foreground">
+            <p className="label foil-gold-text">New deck available</p>
+            <h2 className="font-display font-black uppercase text-[26px] leading-[1.05] mt-2 text-foreground">
               New version ready
             </h2>
-            <p className="font-serif text-[16px] text-secondary-foreground leading-relaxed mt-3">{message}</p>
+            <p className="text-[15.5px] text-muted-foreground leading-relaxed mt-2">{message}</p>
 
-            <div className="flex items-center gap-3 mt-5 font-mono text-sm">
+            <div className="flex items-center justify-center gap-3 mt-5 text-sm font-semibold">
               <span className="text-muted-foreground line-through tabular-nums">{currentVersion}</span>
               <span className="text-muted-foreground">→</span>
               <span className="font-semibold text-foreground tabular-nums">{latestVersion}</span>
@@ -52,12 +52,12 @@ const UpdateRequiredModal = ({
             <Button
               onClick={handleUpdate}
               size="lg"
-              className="w-full gap-2 h-12 mt-6"
+              className="w-full gap-2 h-14 mt-6 text-[16px] font-bold"
             >
               <Download className="w-5 h-5" />
               Update now
             </Button>
-            <p className="mt-3 font-serif italic text-[14px] text-muted-foreground text-center">
+            <p className="mt-3 text-[13px] text-muted-foreground">
               This update is required to keep using the app.
             </p>
           </motion.div>

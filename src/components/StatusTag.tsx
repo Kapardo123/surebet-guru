@@ -1,35 +1,31 @@
 type Status = "upcoming" | "active" | "pending" | "won" | "lost" | "draw";
 
-const stamps: Record<Status, { label: string; cls: string } | null> = {
+const seals: Record<Status, { label: string; cls: string } | null> = {
   upcoming: null,
   active: null,
-  pending: { label: "Pending", cls: "text-muted-foreground border-muted-foreground" },
-  won: { label: "Won", cls: "text-success border-success" },
-  lost: { label: "Lost", cls: "text-red border-red" },
-  draw: { label: "Draw", cls: "text-draw border-draw" },
+  pending: { label: "Live", cls: "bg-secondary text-foreground ring-foreground/30" },
+  won: { label: "Win", cls: "foil-gold text-[hsl(232_40%_12%)] ring-[#fff1b8]" },
+  lost: { label: "Loss", cls: "bg-red text-white ring-white/40" },
+  draw: { label: "Push", cls: "bg-[hsl(230_15%_60%)] text-[hsl(232_40%_12%)] ring-white/40" },
 };
 
-/**
- * Rubber stamp for a settled pick. Slightly rotated and faded at the edges,
- * like it was pressed onto the paper by hand. Renders nothing while open.
- */
+/** Round seal stuck onto a settled card. Nothing while the pick is open. */
 const StatusTag = ({ status, className = "", animate = true }: { status: Status; className?: string; animate?: boolean }) => {
-  const s = stamps[status];
+  const s = seals[status];
   if (!s) return null;
   return (
     <span
-      className={`inline-block font-display font-black uppercase text-[19px] leading-none tracking-[0.06em] px-2 pt-[3px] pb-[2px] border-[2.5px] rounded-[3px] -rotate-[7deg] opacity-90 select-none ${animate ? "stamp-in" : ""} ${s.cls} ${className}`}
-      style={{ maskImage: "radial-gradient(circle at 30% 40%, #000 55%, rgba(0,0,0,.75) 75%, #000 100%)" }}
+      className={`grid place-items-center w-[52px] h-[52px] rounded-full ring-2 ring-inset shadow-[0_4px_10px_rgba(0,0,0,.35)] -rotate-12 font-display font-black uppercase text-[12px] tracking-tight ${animate ? "seal-pop" : ""} ${s.cls} ${className}`}
     >
       {s.label}
     </span>
   );
 };
 
-/** Small ink label marking members-only content. */
+/** Gold foil chip marking a members' card. */
 export const PremiumTag = ({ className = "" }: { className?: string }) => (
-  <span className={`inline-flex items-center h-5 px-1.5 bg-foreground text-background font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em] ${className}`}>
-    Members
+  <span className={`inline-flex items-center h-5 px-2 rounded-full foil-gold text-[hsl(232_40%_12%)] text-[10px] font-bold uppercase tracking-[0.1em] ${className}`}>
+    Gold
   </span>
 );
 

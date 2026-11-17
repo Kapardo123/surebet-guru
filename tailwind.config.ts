@@ -19,12 +19,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["'Big Shoulders Display'", "'Arial Narrow'", "sans-serif"],
-        body: ["'Newsreader'", "Georgia", "serif"],
-        serif: ["'Newsreader'", "Georgia", "serif"],
-        sans: ["'Newsreader'", "Georgia", "serif"],
-        mono: ["'IBM Plex Mono'", "ui-monospace", "monospace"],
-        splash: ["'Big Shoulders Display'", "sans-serif"],
+        display: ["'Unbounded'", "system-ui", "sans-serif"],
+        body: ["'Rubik'", "system-ui", "sans-serif"],
+        sans: ["'Rubik'", "system-ui", "sans-serif"],
+        splash: ["'Unbounded'", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -63,6 +61,7 @@ export default {
         success: "hsl(var(--success))",
         gold: "hsl(var(--gold))",
         red: "hsl(var(--red))",
+        stock: { DEFAULT: "hsl(var(--stock))", ink: "hsl(var(--stock-ink))" },
         loss: "hsl(var(--loss))",
         draw: "hsl(var(--draw))",
         sidebar: {

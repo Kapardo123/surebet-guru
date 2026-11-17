@@ -37,35 +37,42 @@ const SplashScreen = ({ onFinish }: { onFinish?: () => void }) => {
         transition={{ duration: 0.5 }}
         className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background"
       >
-        <div className="w-full max-w-md px-5">
-          <motion.div
-            className="h-[3px] bg-foreground origin-left"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 0.6, ease: [0.7, 0, 0.3, 1] }}
-          />
-          <motion.div
+        <div className="flex flex-col items-center">
+          <div className="relative w-[120px] h-[168px]">
+            {[
+              { r: -22, x: -64, cls: "bg-stock", d: 0.25 },
+              { r: 22, x: 64, cls: "bg-[hsl(150_55%_34%)]", d: 0.35 },
+              { r: 0, x: 0, cls: "foil-gold", d: 0.45 },
+            ].map((c, i) => (
+              <motion.div
+                key={i}
+                className={`absolute inset-0 rounded-[14px] p-[4px] shadow-[0_14px_30px_-10px_rgba(0,0,0,.8)] ${c.cls}`}
+                initial={{ x: 0, rotate: 0, y: 40, opacity: 0 }}
+                animate={{ x: c.x, rotate: c.r, y: Math.abs(c.r) / 2, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 140, damping: 14, delay: c.d }}
+                style={{ zIndex: i }}
+              >
+                <div className="h-full rounded-[10px] card-back grid place-items-center">
+                  <span className="font-display font-black text-[22px] foil-gold-text">GSB</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+          <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.35 }}
-            className="py-3 text-center font-display font-black uppercase text-foreground leading-[0.82] text-[clamp(48px,15vw,84px)]"
+            transition={{ delay: 0.8, duration: 0.4 }}
+            className="mt-12 font-display font-black uppercase text-[26px] leading-none tracking-[-0.02em] text-center"
           >
-            Great<br />Sport Bets
-          </motion.div>
-          <motion.div
-            className="h-px bg-foreground origin-right"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 0.6, delay: 0.2, ease: [0.7, 0, 0.3, 1] }}
-          />
+            Great Sport Bets
+          </motion.p>
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.9, duration: 0.4 }}
-            className="mt-2 flex justify-between font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground"
+            transition={{ delay: 1.1, duration: 0.4 }}
+            className="mt-2 label"
           >
-            <span>The daily form guide</span>
-            <span className="text-red">Going to press…</span>
+            Shuffling today's deck…
           </motion.p>
         </div>
       </motion.div>

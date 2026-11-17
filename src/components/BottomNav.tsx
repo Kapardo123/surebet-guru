@@ -1,4 +1,4 @@
-import { Crosshair, Ticket, Gem, LogIn, User } from "lucide-react";
+import { Layers, Ticket, Gem, LogIn, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import type { LucideIcon } from "lucide-react";
@@ -6,14 +6,14 @@ import type { LucideIcon } from "lucide-react";
 type Item = { label: string; icon: LucideIcon; active: boolean; onClick?: () => void; to?: string };
 
 const NavButton = ({ label, icon: Icon, active, onClick, to }: Item) => {
-  const cls = `relative flex-1 flex flex-col items-center justify-center gap-1 h-[58px] transition-colors ${
-    active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+  const cls = `relative flex-1 flex flex-col items-center justify-center gap-1 h-[56px] rounded-[18px] transition-colors ${
+    active ? "text-primary-foreground" : "text-foreground/60 hover:text-foreground"
   }`;
   const inner = (
     <>
-      {active && <span className="absolute top-[-3px] inset-x-3 h-[3px] bg-red" />}
-      <Icon className="w-[22px] h-[22px]" strokeWidth={active ? 2.2 : 1.6} />
-      <span className={`font-mono text-[11.5px] uppercase tracking-[0.06em] ${active ? "font-semibold" : ""}`}>{label}</span>
+      {active && <span className="absolute inset-1 rounded-[14px] bg-primary" />}
+      <Icon className="relative w-[21px] h-[21px]" strokeWidth={active ? 2.4 : 1.8} />
+      <span className="relative text-[11.5px] font-semibold">{label}</span>
     </>
   );
   return to ? (
@@ -34,11 +34,11 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange
   };
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-background/95 backdrop-blur-sm border-t-[3px] border-foreground pb-[env(safe-area-inset-bottom)]">
-      <div className="flex">
-        <NavButton label="Tips" icon={Crosshair} active={onHome && activeTab === "tips"} to={onHome ? undefined : "/"} onClick={() => go("tips")} />
-        <NavButton label="Coupons" icon={Ticket} active={onHome && activeTab === "coupons"} to={onHome ? undefined : "/"} onClick={() => go("coupons")} />
-        <NavButton label="Members" icon={Gem} active={pathname === "/premium"} to="/premium" />
+    <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden px-3 pb-[max(10px,env(safe-area-inset-bottom))]">
+      <div className="flex p-1 rounded-[22px] bg-[hsl(232_35%_14%/.92)] backdrop-blur-xl border border-white/10 shadow-[0_12px_30px_-8px_rgba(0,0,0,.8)]">
+        <NavButton label="Cards" icon={Layers} active={onHome && activeTab === "tips"} to={onHome ? undefined : "/"} onClick={() => go("tips")} />
+        <NavButton label="Sets" icon={Ticket} active={onHome && activeTab === "coupons"} to={onHome ? undefined : "/"} onClick={() => go("coupons")} />
+        <NavButton label="Gold" icon={Gem} active={pathname === "/premium"} to="/premium" />
         {user ? (
           <NavButton label="Account" icon={User} active={pathname === "/account"} to="/account" />
         ) : (

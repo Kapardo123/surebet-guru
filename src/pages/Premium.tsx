@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { Loader2, LogIn, ArrowLeft, User } from "lucide-react";
+import { Loader2, LogIn, ArrowLeft, User, Check } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader, { headerLink } from "@/components/AppHeader";
-import SectionHead from "@/components/SectionHead";
-import PressPass from "@/components/PressPass";
+import TipCard, { Tip } from "@/components/TipCard";
+import BoosterPack from "@/components/BoosterPack";
+import MemberCard from "@/components/MemberCard";
 import { numberFromId } from "@/components/Barcode";
-import { PenNote } from "@/components/RedPen";
 import PageTransition from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
@@ -132,62 +132,62 @@ export default function Premium() {
     );
   }
 
-  const roman = ["I", "II", "III", "IV"];
   const handle = user?.email?.split("@")[0] ?? null;
   const memberNo = user ? numberFromId(user.id) : null;
+  const tiers = ["bronze", "silver", "gold"] as const;
+  const sample: Tip = {
+    id: -1, sport: "Football", league: "La Liga", homeTeam: "Real Betis", awayTeam: "Sevilla",
+    prediction: "Betis to win", odds: 2.4, kickoff: new Date(Date.now() + 3 * 3600e3).toISOString(),
+    status: "upcoming", isPremium: true,
+  };
 
   return (
     <PageTransition>
-    <div className="min-h-screen bg-background pb-14">
+    <div className="min-h-screen pb-16">
       <AppHeader
         right={
           <>
             {user ? (
               <Link to="/account" className={headerLink}>
-                <User className="w-3.5 h-3.5" />
+                <User className="w-4 h-4" />
                 <span className="hidden sm:inline">Account</span>
               </Link>
             ) : (
               <Link to="/auth?redirect=/premium" className={headerLink}>
-                <LogIn className="w-3.5 h-3.5" />
+                <LogIn className="w-4 h-4" />
                 Sign in
               </Link>
             )}
             <button onClick={handleBack} className={headerLink}>
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Tips
+              <ArrowLeft className="w-4 h-4" />
+              Cards
             </button>
           </>
         }
       />
 
       <main className="max-w-xl mx-auto px-4 pt-7 space-y-12">
-        <section>
-          <SectionHead tone="red">Membership</SectionHead>
-          <h1 className="font-display font-black uppercase text-[clamp(56px,17vw,96px)] leading-[0.82] tracking-[-0.01em] mt-4 text-foreground">
-            {active ? <>You're<br />on the<br />inside.</> : <>Get the<br />full card.</>}
+        <section className="text-center">
+          <p className="label foil-gold-text">GSB Gold</p>
+          <h1 className="font-display font-black uppercase text-[36px] leading-[1] tracking-[-0.03em] mt-2">
+            {active ? <>Your deck is<br /><span className="foil-gold-text">all gold.</span></> : <>Turn every card<br /><span className="foil-gold-text">face up.</span></>}
           </h1>
-          <p className="font-serif text-[19px] leading-[1.5] text-secondary-foreground mt-4">
+          <p className="text-[16.5px] leading-relaxed text-muted-foreground mt-3 max-w-sm mx-auto">
             {active
-              ? "Every selection we publish is open to you, reasoning and all. Here's your pass."
-              : "Members read every selection we publish, with the reasoning behind it, and hear about each new pick the moment it goes up."}
+              ? "Every Gold card and sealed set is open to you, analysis included."
+              : "Gold members see every premium pick and sealed set the moment it lands, with the full analysis on the back."}
           </p>
         </section>
 
-        <section className="pt-6">
-          <PressPass issued={active} name={handle} memberNo={memberNo} validUntil={expiresAt} daysLeft={daysLeft} />
-          {!active && (
-            <p className="text-center mt-1">
-              <PenNote rotate={-3} delay={0.8} className="text-[28px]">yours from {getPlanPrice(plans[0])} ↓</PenNote>
-            </p>
-          )}
+        <section>
+          <MemberCard issued={active} name={handle} memberNo={memberNo} validUntil={expiresAt} daysLeft={daysLeft} />
         </section>
 
         {active && (
-          <section className="border-y-[3px] border-foreground py-4 flex items-center justify-between gap-4">
+          <section className="rounded-[20px] bg-white/[0.05] border border-white/[0.07] px-4 py-4 flex items-center justify-between gap-4">
             <div>
-              <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.06em]">Push notifications</p>
-              <p className="font-serif italic text-[16px] text-muted-foreground mt-0.5">A ping for each new members' pick</p>
+              <p className="text-[15px] font-semibold">New card alerts</p>
+              <p className="text-[13.5px] text-muted-foreground mt-0.5">A push notification for every Gold pick</p>
             </div>
             <Switch
               checked={push.enabled}
@@ -200,123 +200,84 @@ export default function Premium() {
                 }
               }}
               disabled={push.loading}
-              className="data-[state=checked]:bg-red"
             />
           </section>
         )}
 
-        {!active && (
-          <section>
-            <SectionHead>Two copies of the same page</SectionHead>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              {[false, true].map((member) => (
-                <div
-                  key={String(member)}
-                  className={`relative p-3 pt-4 ${member ? "bg-card shadow-[0_2px_0_hsl(var(--foreground))] border-[1.5px] border-foreground" : "border-[1.5px] border-dashed border-foreground/40"}`}
-                >
-                  <p className={`absolute -top-2.5 left-2 px-1.5 font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em] ${member ? "bg-foreground text-background" : "bg-background text-muted-foreground"}`}>
-                    {member ? "Member's copy" : "Free copy"}
-                  </p>
-                  <p className="font-mono text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">La Liga · 21:00</p>
-                  <p className="font-display font-extrabold uppercase text-[20px] leading-[1.02] mt-1">Real Betis<br />Sevilla</p>
-                  <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-red mt-2">Our pick</p>
-                  {member ? (
-                    <>
-                      <p className="font-serif font-semibold text-[16px] leading-tight">Betis to win</p>
-                      <p className="num font-black text-[30px] leading-none mt-1">2.40</p>
-                      <p className="font-serif text-[13px] leading-snug text-secondary-foreground mt-1.5">
-                        Betis have taken points from four of the last five derbies at home…
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <span className="redact w-[85%] h-[1.05em] mt-1" />
-                      <p className="num font-black text-[30px] leading-none mt-1 text-foreground/20">?.??</p>
-                      <span className="block redact w-full mt-2 opacity-15" />
-                      <span className="block redact w-[80%] mt-1 opacity-15" />
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-            <p className="label mt-2.5">Illustration. Not a live selection.</p>
-          </section>
-        )}
-
         <section>
-          <SectionHead>What you get</SectionHead>
-          <ol className="mt-3 divide-y divide-foreground/20">
-            {features.map((f, i) => (
-              <li key={f} className="grid grid-cols-[40px_1fr] py-3">
-                <span className="font-display font-black text-[24px] leading-none text-red">{roman[i]}</span>
-                <span className="font-serif text-[18px] leading-snug text-foreground">{f}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <section>
-          <SectionHead>{active ? "Extend your pass" : "Rates"}</SectionHead>
-          <div className="mt-4 space-y-3">
-            {plans.map((plan) => (
-              <button
+          <h2 className="font-display font-black uppercase text-[20px] tracking-[-0.02em] text-center">
+            {active ? "Top up your pass" : "Pick a pack"}
+          </h2>
+          <div className="mt-8 grid grid-cols-3 gap-2.5 items-end">
+            {[plans[0], plans[1], plans[2]].map((plan, i) => (
+              <BoosterPack
                 key={plan.duration}
-                onClick={() => handleBuy(plan.duration, plan.paymentLink)}
+                tier={tiers[i]}
+                days={plan.days}
+                price={getPlanPrice(plan)}
+                perDay={plan.perDay}
+                badge={plan.popular ? "Best value" : plan.save}
+                featured={plan.popular}
+                loading={loading === plan.duration}
                 disabled={loading !== null}
-                className={`group relative w-full text-left px-4 py-4 transition-transform active:translate-y-px disabled:opacity-60 ${
-                  plan.popular
-                    ? "bg-foreground text-background shadow-[4px_4px_0_hsl(var(--red))]"
-                    : "bg-card border-[1.5px] border-foreground shadow-[4px_4px_0_hsl(var(--foreground))]"
-                }`}
-              >
-                {plan.popular && (
-                  <span
-                    className="absolute -top-3.5 right-3 font-display font-black uppercase text-[17px] leading-none px-2 pt-1 pb-0.5 border-[2.5px] border-red text-red bg-background rotate-[6deg]"
-                  >
-                    Best value
-                  </span>
-                )}
-                <div className="flex items-baseline gap-2">
-                  <span className="font-display font-black uppercase text-[34px] leading-none shrink-0">{plan.days}</span>
-                  <span className={`leader ${plan.popular ? "!border-background/50" : ""}`} />
-                  {loading === plan.duration ? (
-                    <Loader2 className="w-6 h-6 animate-spin self-center" />
-                  ) : (
-                    <span className="num font-black text-[38px] leading-none shrink-0">{getPlanPrice(plan)}</span>
-                  )}
-                </div>
-                <div className={`mt-2 flex items-center justify-between gap-3 font-mono text-[12px] uppercase tracking-[0.05em] ${plan.popular ? "text-background/75" : "text-muted-foreground"}`}>
-                  <span>{plan.label} · {plan.perDay}</span>
-                  {plan.save && <span className={`font-semibold ${plan.popular ? "text-background" : "text-red"}`}>{plan.save}</span>}
-                </div>
-              </button>
+                onClick={() => handleBuy(plan.duration, plan.paymentLink)}
+              />
             ))}
           </div>
           {!user && (
-            <p className="mt-4 font-serif italic text-[16px] text-muted-foreground">You'll be asked to sign in before paying.</p>
+            <p className="mt-4 text-[14px] text-muted-foreground text-center">You'll be asked to sign in before paying.</p>
           )}
         </section>
 
+        {!active && (
+          <section>
+            <h2 className="font-display font-black uppercase text-[20px] tracking-[-0.02em] text-center">Same card, two sides</h2>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              {[false, true].map((member) => (
+                <div key={String(member)} className="pointer-events-none">
+                  <p className="text-center label mb-2">{member ? "Gold member" : "Free reader"}</p>
+                  <TipCard tip={member ? { ...sample, description: undefined } : sample} userIsPremium={member} />
+                </div>
+              ))}
+            </div>
+            <p className="text-center text-[12.5px] text-muted-foreground mt-3">Illustration only, not a live pick.</p>
+          </section>
+        )}
+
+        <section className="rounded-[20px] bg-white/[0.04] border border-white/[0.07] p-5">
+          <h2 className="font-display font-black uppercase text-[16px] tracking-[-0.01em]">In every pack</h2>
+          <ul className="mt-3 space-y-3">
+            {features.map((f) => (
+              <li key={f} className="flex gap-3 text-[15.5px] leading-snug">
+                <span className="shrink-0 w-6 h-6 rounded-full foil-gold grid place-items-center">
+                  <Check className="w-3.5 h-3.5 text-stock-ink" strokeWidth={3} />
+                </span>
+                {f}
+              </li>
+            ))}
+          </ul>
+        </section>
+
         {Capacitor.isNativePlatform() && (
-          <section className="flex items-center justify-between gap-4 border-t border-foreground pt-4">
-            <p className="font-serif italic text-[17px] text-secondary-foreground">Already a member?</p>
+          <section className="flex items-center justify-between gap-4">
+            <p className="text-[15px] text-muted-foreground">Already a member?</p>
             <button
               onClick={handleRestore}
               disabled={restoring}
-              className="inline-flex items-center gap-2 h-10 px-3 border-[1.5px] border-foreground font-mono text-[12px] font-semibold uppercase tracking-[0.06em] disabled:opacity-60"
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white/[0.08] text-[14px] font-semibold disabled:opacity-60"
             >
-              {restoring && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {restoring && <Loader2 className="w-4 h-4 animate-spin" />}
               Restore purchases
             </button>
           </section>
         )}
 
-        <footer className="border-t-[3px] border-foreground pt-3 space-y-2">
-          <p className="font-serif text-[15px] leading-relaxed text-secondary-foreground">
+        <footer className="space-y-2 text-center">
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
             Payments are processed securely. Access is granted straight away on every device you sign in on.
             By subscribing you agree to our <Link to="/terms" className="underline underline-offset-2">Terms of Service</Link>.
           </p>
-          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">App version 21.0.0 · Build 2100</p>
+          <p className="text-[12px] text-muted-foreground/60">App version 21.0.0 · Build 2100</p>
         </footer>
       </main>
     </div>

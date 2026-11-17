@@ -107,8 +107,8 @@ export default defineConfig(({ mode }) => ({
         name: "Great Sport Bets",
         short_name: "GreatSportBets",
         description: "Best betting tips and predictions",
-        theme_color: "#efe9dc",
-        background_color: "#efe9dc",
+        theme_color: "#0e1120",
+        background_color: "#0e1120",
         display: "standalone",
         icons: [
           {

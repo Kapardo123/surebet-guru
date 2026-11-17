@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { ArrowLeft, Loader2, Scissors } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import PageTransition from "@/components/PageTransition";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader, { headerLink } from "@/components/AppHeader";
-import SectionHead from "@/components/SectionHead";
-import { PenNote } from "@/components/RedPen";
 
 type AuthMode = "login" | "signup" | "reset" | "magic";
 
@@ -140,24 +138,24 @@ const Auth = () => {
   const isUpdatePassword = searchParams.get("mode") === "update-password";
 
   const getTitle = () => {
-    if (isUpdatePassword) return "New\npassword.";
-    if (mode === "login") return "Welcome\nback.";
-    if (mode === "signup") return "Join the\nreaders.";
-    if (mode === "reset") return "Lost your\nkey?";
-    if (mode === "magic") return "No password\nneeded.";
+    if (isUpdatePassword) return "New password";
+    if (mode === "login") return "Welcome back";
+    if (mode === "signup") return "Start your\ncollection";
+    if (mode === "reset") return "Lost your key?";
+    if (mode === "magic") return "No password\nneeded";
     return "Sign in";
   };
 
   const getSubtitle = () => {
     if (isUpdatePassword) return "Choose a new password for your account.";
     if (mode === "login") return "Sign in to pick up where you left off.";
-    if (mode === "signup") return "A free account is all it takes. Membership comes later, if you want it.";
+    if (mode === "signup") return "A free account gets you every Common card. Gold comes later, if you want it.";
     if (mode === "reset") return "We'll post a recovery link to your inbox.";
     if (mode === "magic") return "We'll email you a link that signs you straight in.";
     return "";
   };
 
-  const field = "w-full h-12 bg-transparent border-0 border-b-[2px] border-foreground px-0 font-serif text-[20px] text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-red transition-colors";
+  const field = "w-full h-13 py-3.5 px-4 rounded-[14px] bg-white/[0.06] border border-white/10 text-[16px] text-foreground placeholder:text-foreground/35 focus:outline-none focus:border-primary focus:bg-white/[0.08] transition-colors";
   const submitLabel = isUpdatePassword
     ? "Save password"
     : mode === "login"
@@ -172,132 +170,132 @@ const Auth = () => {
     <button
       type="button"
       onClick={() => setMode(m)}
-      className={`relative pb-2 font-display font-black uppercase text-[22px] leading-none transition-colors ${
-        mode === m ? "text-foreground" : "text-foreground/30 hover:text-foreground/60"
+      className={`flex-1 h-10 rounded-full text-[14.5px] font-bold transition-colors ${
+        mode === m ? "bg-foreground text-background" : "text-foreground/65 hover:text-foreground"
       }`}
     >
       {label}
-      {mode === m && <span className="absolute inset-x-0 -bottom-[2px] h-[3px] bg-red" />}
     </button>
   );
 
   return (
     <PageTransition>
-    <div className="min-h-screen bg-background pb-14">
+    <div className="min-h-screen pb-16">
       <AppHeader
         right={
           <Link to="/" className={headerLink}>
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Tips
+            <ArrowLeft className="w-4 h-4" />
+            Cards
           </Link>
         }
       />
 
-      <main className="max-w-md mx-auto px-4 pt-7">
-        <SectionHead tone="red">{isUpdatePassword ? "Account" : "Reader's desk"}</SectionHead>
-        <h1 className="font-display font-black uppercase text-[clamp(54px,16vw,84px)] leading-[0.82] tracking-[-0.01em] mt-4 whitespace-pre-line">
+      <main className="max-w-md mx-auto px-4 pt-8">
+        {/* Three face-down cards fanned out */}
+        <div className="relative h-[120px] flex justify-center" aria-hidden>
+          {[
+            { r: -16, x: -46, cls: "bg-stock" },
+            { r: 14, x: 46, cls: "bg-[hsl(150_55%_34%)]" },
+            { r: 0, x: 0, cls: "foil-gold" },
+          ].map((c, i) => (
+            <div
+              key={i}
+              className={`absolute top-0 w-[78px] h-[110px] rounded-[10px] p-[3px] shadow-[0_10px_24px_-8px_rgba(0,0,0,.8)] ${c.cls}`}
+              style={{ transform: `translateX(${c.x}px) rotate(${c.r}deg)`, zIndex: i }}
+            >
+              <div className="h-full rounded-[7px] card-back grid place-items-center">
+                <span className="font-display font-black text-[13px] foil-gold-text">GSB</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <h1 className="font-display font-black uppercase text-[30px] leading-[1.02] tracking-[-0.02em] text-center mt-6 whitespace-pre-line">
           {getTitle()}
         </h1>
-        <p className="font-serif text-[18px] leading-[1.5] text-secondary-foreground mt-3">{getSubtitle()}</p>
+        <p className="text-[16px] leading-relaxed text-muted-foreground text-center mt-2">{getSubtitle()}</p>
 
-        {/* Cut-out coupon */}
-        <div className="relative mt-8">
-          <Scissors className="absolute -top-[9px] left-5 w-[18px] h-[18px] bg-background px-0.5 text-foreground -rotate-90" aria-hidden />
-          <div className="border-[2px] border-dashed border-foreground/60 bg-card px-5 pt-6 pb-6">
-            {!isUpdatePassword && (mode === "login" || mode === "signup") && (
-              <div className="flex gap-5 border-b-[2px] border-foreground mb-6">
-                {modeTab("login", "Sign in")}
-                {modeTab("signup", "Join")}
-              </div>
-            )}
+        <div className="mt-7 rounded-[24px] bg-white/[0.04] border border-white/[0.08] p-5">
+          {!isUpdatePassword && (mode === "login" || mode === "signup") && (
+            <div className="flex p-1 rounded-full bg-black/25 mb-5">
+              {modeTab("login", "Sign in")}
+              {modeTab("signup", "Join free")}
+            </div>
+          )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {!isUpdatePassword && (
-                <label className="block">
-                  <span className="label text-foreground">Email address</span>
-                  <input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={field}
-                    required
-                    maxLength={255}
-                  />
-                </label>
-              )}
-
-              {(mode === "login" || mode === "signup" || isUpdatePassword) && (
-                <div>
-                  <div className="flex items-baseline justify-between">
-                    <label htmlFor="password" className="label text-foreground">{isUpdatePassword ? "New password" : "Password"}</label>
-                    {mode === "login" && !isUpdatePassword && (
-                      <button
-                        type="button"
-                        onClick={() => setMode("reset")}
-                        className="font-mono text-[11.5px] uppercase tracking-[0.05em] text-muted-foreground underline underline-offset-4 hover:text-foreground"
-                      >
-                        Forgot?
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    id="password"
-                    type="password"
-                    autoComplete={mode === "signup" || isUpdatePassword ? "new-password" : "current-password"}
-                    placeholder="At least 6 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={field}
-                    required
-                    minLength={6}
-                  />
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full h-14 bg-foreground text-background font-mono text-[13.5px] font-semibold uppercase tracking-[0.1em] flex items-center justify-center gap-2 shadow-[4px_4px_0_hsl(var(--red))] active:translate-y-px disabled:opacity-60"
-              >
-                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {submitLabel}
-              </button>
-            </form>
-
+          <form onSubmit={handleSubmit} className="space-y-4">
             {!isUpdatePassword && (
-              <div className="mt-6 pt-4 border-t border-dashed border-foreground/40 text-center">
-                {mode === "login" && (
-                  <button
-                    onClick={() => setMode("magic")}
-                    className="font-mono text-[12px] font-medium uppercase tracking-[0.06em] underline underline-offset-4 decoration-foreground/30 hover:decoration-foreground"
-                  >
-                    Email me a sign-in link instead
-                  </button>
-                )}
-                {mode === "signup" && (
-                  <p className="font-serif text-[15px] leading-relaxed text-muted-foreground">
-                    By joining you agree to our{" "}
-                    <Link to="/terms" className="underline underline-offset-2 text-foreground">Terms</Link> and{" "}
-                    <Link to="/privacy" className="underline underline-offset-2 text-foreground">Privacy Policy</Link>.
-                  </p>
-                )}
-                {(mode === "reset" || mode === "magic") && (
-                  <button
-                    onClick={() => setMode("login")}
-                    className="font-mono text-[12px] font-medium uppercase tracking-[0.06em] underline underline-offset-4"
-                  >
-                    ← Back to sign in
-                  </button>
-                )}
+              <label className="block">
+                <span className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Email</span>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={field}
+                  required
+                  maxLength={255}
+                />
+              </label>
+            )}
+
+            {(mode === "login" || mode === "signup" || isUpdatePassword) && (
+              <div>
+                <div className="flex items-baseline justify-between mb-1.5">
+                  <label htmlFor="password" className="text-[13px] font-semibold text-muted-foreground">
+                    {isUpdatePassword ? "New password" : "Password"}
+                  </label>
+                  {mode === "login" && !isUpdatePassword && (
+                    <button type="button" onClick={() => setMode("reset")} className="text-[13px] font-semibold text-primary">
+                      Forgot?
+                    </button>
+                  )}
+                </div>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete={mode === "signup" || isUpdatePassword ? "new-password" : "current-password"}
+                  placeholder="At least 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={field}
+                  required
+                  minLength={6}
+                />
               </div>
             )}
-          </div>
-          {mode === "signup" && !isUpdatePassword && (
-            <div className="absolute -right-1 -bottom-8">
-              <PenNote rotate={-8} delay={0.3} className="text-[28px]">it's free!</PenNote>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-14 rounded-full bg-primary text-primary-foreground text-[16px] font-bold flex items-center justify-center gap-2 shadow-[0_8px_24px_-6px_hsl(var(--primary)/.6)] active:scale-[0.99] disabled:opacity-60"
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {submitLabel}
+            </button>
+          </form>
+
+          {!isUpdatePassword && (
+            <div className="mt-5 text-center">
+              {mode === "login" && (
+                <button onClick={() => setMode("magic")} className="text-[14px] font-semibold text-foreground/80 hover:text-foreground">
+                  Email me a sign-in link instead
+                </button>
+              )}
+              {mode === "signup" && (
+                <p className="text-[13px] leading-relaxed text-muted-foreground">
+                  By joining you agree to our{" "}
+                  <Link to="/terms" className="underline underline-offset-2 text-foreground">Terms</Link> and{" "}
+                  <Link to="/privacy" className="underline underline-offset-2 text-foreground">Privacy Policy</Link>.
+                </p>
+              )}
+              {(mode === "reset" || mode === "magic") && (
+                <button onClick={() => setMode("login")} className="text-[14px] font-semibold text-primary">
+                  ← Back to sign in
+                </button>
+              )}
             </div>
           )}
         </div>

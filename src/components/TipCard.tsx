@@ -1,10 +1,10 @@
-import TeamLogo from "@/components/TeamLogo";
-import StatusTag, { PremiumTag } from "@/components/StatusTag";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { useState, memo } from "react";
+import { Lock, RotateCw } from "lucide-react";
+import StatusTag from "@/components/StatusTag";
+import CardArt from "@/components/CardArt";
 import { kickoffParts } from "@/lib/format";
-import { PenCircle, PenNote, PenTick } from "@/components/RedPen";
+import { sportTheme } from "@/lib/sport";
 
 export interface Tip {
   id: number;
@@ -25,115 +25,130 @@ export interface Tip {
   wonAt?: string | null;
 }
 
-const TeamLine = ({ name, logo, sport }: { name: string; logo?: string | null; sport: string }) => (
-  <div className="flex items-center gap-2 min-w-0">
-    <span className="print shrink-0"><TeamLogo teamName={name} logoUrl={logo} size={20} sport={sport} /></span>
-    <span className="font-display font-extrabold uppercase text-[25px] leading-[1.02] tracking-[0.005em] text-foreground truncate">
-      {name}
-    </span>
-  </div>
-);
-
-const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boolean; index?: number }) => {
-  const [showAnalysis, setShowAnalysis] = useState(false);
+/**
+ * A tip as a collector card. Free = cream stock in the sport's colour,
+ * members' = gold foil frame. Tap to flip for the analysis.
+ */
+const TipCard = ({ tip, userIsPremium = false, index }: { tip: Tip; userIsPremium?: boolean; index?: number }) => {
+  const [flipped, setFlipped] = useState(false);
 
   const isSettled = tip.status !== "upcoming";
   const isLost = tip.status === "lost";
   const locked = tip.isPremium && !userIsPremium && !isSettled;
   const ko = kickoffParts(tip.kickoff);
-  const minsToKo = (new Date(tip.kickoff).getTime() - Date.now()) / 60000;
-  const startsSoon = tip.status === "upcoming" && minsToKo > 0 && minsToKo <= 90;
+  const theme = sportTheme(tip.sport);
+  const canFlip = !locked && !!tip.description;
+  const no = index !== undefined ? String(index + 1).padStart(2, "0") : "";
 
-  return (
-    <article className="relative py-4 grid grid-cols-[52px_1fr_auto] gap-x-3">
-      {/* Kick-off, like a race card */}
-      <div className={`pt-0.5 ${isLost ? "opacity-55" : ""}`}>
-        {startsSoon ? (
-          <PenCircle delay={0.2}>
-            <p className="num font-black text-[22px] leading-none text-foreground">{ko.time}</p>
-          </PenCircle>
-        ) : (
-          <p className="num font-black text-[22px] leading-none text-foreground">{ko.time}</p>
-        )}
-        <p className="font-mono text-[11px] uppercase tracking-[0.04em] text-muted-foreground mt-1">{ko.day}</p>
-        {startsSoon && (
-          <PenNote delay={0.7} rotate={-8} className="mt-1 text-[30px]">soon!</PenNote>
-        )}
-      </div>
+  const frame = tip.isPremium ? "foil-gold" : "";
+  const frameStyle = tip.isPremium ? undefined : { background: theme.frame };
 
-      <div className={`min-w-0 ${isLost ? "opacity-55" : ""}`}>
-        <div className="flex items-center gap-2 mb-1.5 min-w-0">
-          <p className="label truncate">{tip.league || tip.sport}</p>
-          {tip.isPremium && <PremiumTag className="shrink-0" />}
+  const front = (
+    <div
+      className={`flip-face [grid-area:1/1] rounded-[16px] p-[5px] shadow-[0_10px_24px_-10px_rgba(0,0,0,.7)] ${frame}`}
+      style={frameStyle}
+    >
+      <div className={`h-full rounded-[12px] bg-stock text-stock-ink overflow-hidden flex flex-col ${isLost ? "grayscale-[.85] opacity-80" : ""}`}>
+        {/* Title bar */}
+        <div className="flex items-center justify-between gap-2 px-2.5 h-7">
+          <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] truncate">{tip.sport}</span>
+          <span className="font-display text-[10px] font-bold opacity-50 shrink-0">{tip.isPremium ? "GOLD" : "#"}{no && ` ${no}`}</span>
         </div>
-        <TeamLine name={tip.homeTeam} logo={tip.homeTeamLogo} sport={tip.sport} />
-        <TeamLine name={tip.awayTeam} logo={tip.awayTeamLogo} sport={tip.sport} />
 
-        <div className="mt-2.5 border-l-[3px] border-red pl-2.5">
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-red">Our pick</p>
+        <div className="relative mx-1.5">
+          <CardArt sport={tip.sport} home={tip.homeTeam} away={tip.awayTeam} homeLogo={tip.homeTeamLogo} awayLogo={tip.awayTeamLogo} size={30} className="h-[92px] rounded-[8px]" />
+          {isSettled && <StatusTag status={tip.status} className="absolute -top-2 -right-1" />}
+        </div>
+
+        {/* Name plate */}
+        <div className="px-2.5 pt-2">
+          <p className="font-display font-extrabold uppercase text-[12.5px] leading-[1.15] tracking-[-0.01em] line-clamp-2">
+            {tip.homeTeam} <span className="opacity-40">v</span> {tip.awayTeam}
+          </p>
+          <p className="text-[11px] font-medium opacity-60 truncate mt-0.5">{tip.league}</p>
+        </div>
+
+        {/* Pick */}
+        <div className="mx-2.5 mt-2 pt-2 border-t-[1.5px] border-dashed border-stock-ink/20 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] opacity-50">Pick</p>
           {locked ? (
-            <Link to="/premium" className="block mt-1">
-              <span className="flex items-center gap-2">
-                <span className="redact w-[62%] max-w-[200px] h-[1.15em]" />
-                <span className="redact w-7 h-[1.15em]" />
-              </span>
-              <span className="mt-1.5 inline-block font-mono text-[12px] font-semibold uppercase tracking-[0.06em] text-foreground underline decoration-red decoration-2 underline-offset-4">
-                Members only · see rates →
-              </span>
-            </Link>
+            <span className="block mt-1 redact w-[85%] h-[1.1em]" />
           ) : (
-            <p className="mt-0.5 font-serif font-semibold text-[19px] leading-snug text-foreground">{tip.prediction}</p>
+            <p className="text-[14px] font-semibold leading-snug mt-0.5">{tip.prediction}</p>
           )}
         </div>
 
-        {!locked && tip.description && (
-          <>
-            <button
-              onClick={() => setShowAnalysis((v) => !v)}
-              aria-expanded={showAnalysis}
-              className="mt-2.5 h-8 font-mono text-[12px] font-medium uppercase tracking-[0.06em] text-foreground underline decoration-foreground/30 underline-offset-4 hover:decoration-foreground"
-            >
-              {showAnalysis ? "Close analysis −" : "Read analysis +"}
-            </button>
-            <AnimatePresence initial={false}>
-              {showAnalysis && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <p className="pt-1 font-serif text-[17px] leading-[1.55] text-foreground">{tip.description}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </>
-        )}
-      </div>
+        {/* Stat bar */}
+        <div className="mt-2 flex items-end justify-between px-2.5 pb-2.5">
+          <div>
+            <p className="text-[9.5px] font-bold uppercase tracking-[0.12em] opacity-50">Odds</p>
+            <p className={`num font-black text-[26px] leading-none ${isLost ? "line-through decoration-2 opacity-60" : ""}`}>
+              {locked ? "?.??" : tip.odds.toFixed(2)}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="num font-bold text-[14px] leading-none">{ko.time}</p>
+            <p className="text-[10.5px] font-medium opacity-60 mt-0.5">{ko.day}</p>
+          </div>
+        </div>
 
-      {/* Odds column */}
-      <div className="text-right pt-[20px] min-w-[58px]">
-        <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground mb-1">Odds</p>
-        {locked ? (
-          <span className="num font-black text-[36px] leading-none text-foreground/20">?.??</span>
-        ) : (
-          <span
-            className={`num font-black text-[36px] leading-none ${
-              isLost ? "text-muted-foreground line-through decoration-2" : "text-foreground"
-            }`}
-          >
-            {tip.odds.toFixed(2)}
-          </span>
+        {canFlip && (
+          <div className="flex items-center justify-center gap-1 h-6 bg-stock-ink/[0.06] text-[10px] font-bold uppercase tracking-[0.12em] opacity-70">
+            <RotateCw className="w-3 h-3" /> Tap for analysis
+          </div>
         )}
-        {isSettled && (
-          <div className="mt-2.5 flex items-center justify-end gap-0.5">
-            {tip.status === "won" && <PenTick delay={0.45} size={26} />}
-            <StatusTag status={tip.status} />
+        {locked && (
+          <div className="flex items-center justify-center gap-1.5 h-7 foil-gold text-stock-ink text-[10.5px] font-bold uppercase tracking-[0.1em]">
+            <Lock className="w-3 h-3" /> Members' card
           </div>
         )}
       </div>
-    </article>
+    </div>
+  );
+
+  const back = canFlip ? (
+    <div
+      className={`flip-face flip-back [grid-area:1/1] rounded-[16px] p-[5px] ${frame}`}
+      style={frameStyle}
+    >
+      <div className="h-full rounded-[12px] card-back text-foreground p-3 flex flex-col">
+        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">The read</p>
+        <p className="font-display font-extrabold uppercase text-[12px] leading-tight mt-1 line-clamp-2">
+          {tip.homeTeam} v {tip.awayTeam}
+        </p>
+        <p className="mt-2 text-[13px] leading-[1.45] text-foreground/85 overflow-y-auto flex-1 pr-1">{tip.description}</p>
+        <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/50 flex items-center gap-1">
+          <RotateCw className="w-3 h-3" /> Tap to turn back
+        </p>
+      </div>
+    </div>
+  ) : null;
+
+  const body = (
+    <div className={`flip-inner grid h-full ${flipped ? "is-flipped" : ""}`}>
+      {front}
+      {back}
+    </div>
+  );
+
+  if (locked) {
+    return (
+      <Link to="/premium" className="flip-scene block active:scale-[0.98] transition-transform" aria-label={`Members' card: ${tip.homeTeam} v ${tip.awayTeam}`}>
+        <div className="foil-shimmer rounded-[16px]">{body}</div>
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => canFlip && setFlipped((f) => !f)}
+      aria-pressed={canFlip ? flipped : undefined}
+      aria-label={canFlip ? (flipped ? "Show card front" : "Show analysis") : undefined}
+      className={`flip-scene block w-full text-left ${canFlip ? "active:scale-[0.98] transition-transform" : "cursor-default"}`}
+    >
+      {body}
+    </button>
   );
 };
 

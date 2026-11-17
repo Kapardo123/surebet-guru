@@ -4,42 +4,29 @@ import CouponCard from "@/components/CouponCard";
 import TodayHotTip from "@/components/TodayHotTip";
 import BottomNav from "@/components/BottomNav";
 import AdminLoginDialog from "@/components/AdminLoginDialog";
-import Logo from "@/components/Logo";
-import SectionHead from "@/components/SectionHead";
-import { headerLink } from "@/components/AppHeader";
+import AppHeader, { headerLink, goldButton } from "@/components/AppHeader";
 import { loadTips } from "@/lib/tipsStorage";
 import { loadCoupons, Coupon } from "@/lib/couponStorage";
 import { Tip } from "@/components/TipCard";
 import { LogIn, User as UserIcon } from "lucide-react";
 import PremiumBadge from "@/components/PremiumBadge";
 import FilterBar, { PremiumFilter } from "@/components/FilterBar";
-import Ticker from "@/components/Ticker";
 import FormGuide from "@/components/FormGuide";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
-const now = new Date();
-const dateLine = now
-  .toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-const editionNo = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000);
+const weekday = new Date().toLocaleDateString("en-GB", { weekday: "long" });
 
-const SkeletonRow = () => (
-  <div className="py-4 grid grid-cols-[30px_1fr_auto] gap-x-3 animate-pulse">
-    <span className="h-4 w-5 bg-secondary" />
-    <div className="space-y-2">
-      <div className="h-3 w-32 bg-secondary" />
-      <div className="h-5 w-40 bg-secondary" />
-      <div className="h-5 w-36 bg-secondary" />
-    </div>
-    <span className="h-8 w-12 bg-secondary" />
-  </div>
+const SkeletonCard = () => (
+  <div className="rounded-[16px] bg-white/[0.05] h-[300px] animate-pulse" />
 );
 
 const EmptyState = ({ title, body }: { title: string; body: string }) => (
-  <div className="py-12 text-center md:col-span-2">
-    <p className="font-display font-black uppercase text-[28px] leading-none">{title}</p>
-    <p className="font-serif italic text-[16px] text-muted-foreground mt-2">{body}</p>
+  <div className="col-span-full rounded-[20px] border border-dashed border-white/15 px-6 py-12 text-center">
+    <div className="mx-auto w-14 h-20 rounded-[10px] card-back border border-white/10 -rotate-6" />
+    <p className="font-display font-black uppercase text-[18px] mt-5">{title}</p>
+    <p className="text-[15px] text-muted-foreground mt-1.5">{body}</p>
   </div>
 );
 
@@ -135,133 +122,118 @@ const Index = () => {
   );
 
 
+  const openCount = tips.filter((t) => t.status === "upcoming").length;
+
   const tabBtn = (value: string, label: string, count: number) => (
     <button
       role="tab"
       aria-selected={activeTab === value}
       onClick={() => setActiveTab(value)}
-      className={`relative flex items-start gap-1 pb-2 font-display font-black uppercase text-[34px] leading-[0.9] transition-colors ${
-        activeTab === value ? "text-foreground" : "text-foreground/25 hover:text-foreground/50"
+      className={`flex-1 h-11 rounded-full flex items-center justify-center gap-2 text-[14.5px] font-bold transition-colors ${
+        activeTab === value ? "bg-foreground text-background" : "text-foreground/70 hover:text-foreground"
       }`}
     >
       {label}
-      <span className="font-mono text-[11px] font-medium tracking-normal mt-0.5">{count}</span>
-      {activeTab === value && <span className="absolute left-0 right-0 -bottom-[3px] h-[3px] bg-red" />}
+      <span className={`min-w-6 h-6 px-1.5 rounded-full grid place-items-center text-[12px] ${activeTab === value ? "bg-background/15" : "bg-white/10"}`}>
+        {count}
+      </span>
     </button>
   );
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-0">
-      <div className="max-w-5xl mx-auto px-4 pt-[env(safe-area-inset-top)]">
-        {/* Ear: date + account */}
-        <div className="h-11 flex items-center justify-between gap-3">
-          <span className="font-mono text-[12px] uppercase tracking-[0.1em] text-muted-foreground truncate">{dateLine}</span>
-          <div className="flex items-center gap-1 shrink-0">
+    <div className="min-h-screen pb-28 md:pb-10">
+      <AppHeader
+        right={
+          <>
             <PremiumBadge active={isPremium} daysLeft={premiumDaysLeft} loading={premiumLoading} />
             {!isPremium && !premiumLoading && (
-              <Link to="/premium" className="inline-flex items-center h-7 px-2 bg-red text-background font-mono text-[12px] font-semibold uppercase tracking-[0.1em]">
-                Subscribe
-              </Link>
+              <Link to="/premium" className={goldButton}>Go Gold</Link>
             )}
             <span className="hidden md:inline-flex">
               {user ? (
                 <Link to="/account" className={headerLink}>
-                  <UserIcon className="w-3.5 h-3.5" />
+                  <UserIcon className="w-4 h-4" />
                   {user.email?.split("@")[0]}
                 </Link>
               ) : (
                 <Link to="/auth" className={headerLink}>
-                  <LogIn className="w-3.5 h-3.5" />
+                  <LogIn className="w-4 h-4" />
                   Sign in
                 </Link>
               )}
             </span>
-          </div>
-        </div>
+          </>
+        }
+      />
 
-        {/* Masthead */}
-        <header className="border-t-[3px] border-foreground pt-3 pb-2.5 text-center">
-          <Logo size="lg" />
-        </header>
-        <div className="border-y border-foreground py-1.5 flex items-center justify-between font-mono text-[12px] uppercase tracking-[0.1em]">
-          <span>No. {editionNo}</span>
-          <span className="hidden min-[360px]:inline font-semibold">The daily form guide</span>
-          <span>{isPremium ? "Member's copy" : "Price: Free"}</span>
-        </div>
-        <div className="mt-[2px] border-t-[3px] border-foreground" />
-        {!loading && (
-          <div className="mt-3 -mx-4 md:mx-0">
-            <Ticker tips={tips} userIsPremium={isPremium} />
+      <main className="max-w-5xl mx-auto px-4 pt-6 space-y-8">
+        <section className="space-y-4">
+          <div>
+            <p className="label">{weekday}'s pull</p>
+            <h1 className="font-display font-black uppercase text-[30px] leading-[1.02] tracking-[-0.02em] mt-1.5">
+              {loading ? "Shuffling…" : <>{openCount} {openCount === 1 ? "card" : "cards"} in play</>}
+            </h1>
           </div>
-        )}
-        {!loading && <FormGuide tips={tips} />}
-      </div>
+          {!loading && <FormGuide tips={tips} />}
+        </section>
 
-      <main className="max-w-5xl mx-auto px-4 pt-6 space-y-10">
         <TodayHotTip />
 
-        <section>
-          <div role="tablist" className="flex items-end gap-5 border-b-[3px] border-foreground">
-            {tabBtn("tips", "Tips", filteredTips.length)}
-            {tabBtn("coupons", "Coupons", filteredCoupons.length)}
+        <section className="space-y-4">
+          <div role="tablist" className="flex p-1 rounded-full bg-white/[0.05] border border-white/[0.07]">
+            {tabBtn("tips", "Cards", filteredTips.length)}
+            {tabBtn("coupons", "Sets", filteredCoupons.length)}
           </div>
 
           {activeTab === "tips" ? (
             <>
               {tips.length > 0 && (
-                <div className="py-3 border-b border-foreground/80">
-                  <FilterBar
-                    sports={tipSports}
-                    activeSport={tipSport}
-                    onSportChange={setTipSport}
-                    activePremium={tipPremium}
-                    onPremiumChange={setTipPremium}
-                  />
-                </div>
+                <FilterBar
+                  sports={tipSports}
+                  activeSport={tipSport}
+                  onSportChange={setTipSport}
+                  activePremium={tipPremium}
+                  onPremiumChange={setTipPremium}
+                />
               )}
-              <div className="md:grid md:grid-cols-2 md:gap-x-10 divide-y divide-foreground/25 md:divide-y-0 md:[&>*]:border-b md:[&>*]:border-foreground/25">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                 {loading
-                  ? Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
+                  ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
                   : filteredTips.length === 0
-                  ? <EmptyState title="Nothing on the card" body="New selections usually go up by midday." />
-                  : filteredTips.map((tip) => <TipCard key={tip.id} tip={tip} userIsPremium={isPremium} />)}
+                  ? <EmptyState title="Deck's empty" body="New cards usually land by midday." />
+                  : filteredTips.map((tip, i) => <TipCard key={tip.id} tip={tip} index={i} userIsPremium={isPremium} />)}
               </div>
             </>
           ) : (
             <>
               {coupons.length > 0 && (
-                <div className="py-3 border-b border-foreground/80">
-                  <FilterBar activePremium={couponPremium} onPremiumChange={setCouponPremium} />
-                </div>
+                <FilterBar activePremium={couponPremium} onPremiumChange={setCouponPremium} />
               )}
-              <div className="pt-5 grid gap-6 md:grid-cols-2 items-start">
+              <div className="grid gap-4 md:grid-cols-2 items-start">
                 {loading
-                  ? <SkeletonRow />
+                  ? <SkeletonCard />
                   : filteredCoupons.length === 0
-                  ? <EmptyState title="No slips today" body="Accumulators go up before the evening fixtures." />
+                  ? <EmptyState title="No sets yet" body="Accumulators go up before the evening fixtures." />
                   : filteredCoupons.map((c) => <CouponCard key={c.id} coupon={c} userIsPremium={isPremium} />)}
               </div>
             </>
           )}
         </section>
 
-        <section className="border-t-[3px] border-foreground pt-3">
-          <SectionHead>Small print</SectionHead>
-          <p className="mt-2 font-serif text-[14.5px] leading-relaxed text-secondary-foreground">
-            Our tips are opinions, not guarantees. Odds move, form dips, referees happen. Bet only what you can afford to lose. 18+.
-          </p>
-        </section>
+        <p className="text-[13.5px] leading-relaxed text-muted-foreground rounded-[16px] bg-white/[0.04] px-4 py-3.5">
+          Cards are opinions, not guarantees. Bet only what you can afford to lose. 18+.
+        </p>
       </main>
 
-      <footer className="max-w-5xl mx-auto px-4 pt-8 pb-10 md:pb-12">
-        <nav className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-[12px] uppercase tracking-[0.1em] text-muted-foreground">
+      <footer className="max-w-5xl mx-auto px-4 pt-6 pb-8">
+        <nav className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] font-medium text-muted-foreground">
           <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
           <Link to="/terms" className="hover:text-foreground">Terms</Link>
           <Link to="/deletion" className="hover:text-foreground">Delete account</Link>
           <a href="mailto:greatsportbets@gmail.com" className="hover:text-foreground">Contact</a>
         </nav>
-        <p className="mt-4 font-mono text-[12px] uppercase tracking-[0.1em] text-muted-foreground/70 select-none cursor-pointer w-fit" onClick={handleFooterTap}>
-          © 2026 Great Sport Bets · Printed daily
+        <p className="mt-3 text-[12.5px] text-muted-foreground/70 select-none cursor-pointer w-fit" onClick={handleFooterTap}>
+          © 2026 Great Sport Bets
         </p>
       </footer>
 
