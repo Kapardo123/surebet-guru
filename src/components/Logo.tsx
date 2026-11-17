@@ -22,17 +22,22 @@ const Logo = () => {
   return (
     <>
       <div
-        className="select-none cursor-pointer flex items-baseline gap-0.5 group"
+        className="select-none cursor-pointer flex items-center gap-2.5"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTap(); }}
       >
-        <span className="text-xl font-black tracking-tighter bg-gradient-to-r from-primary via-[hsl(280,80%,65%)] to-accent bg-clip-text text-transparent transition-all group-hover:scale-105 duration-300 drop-shadow-[0_0_8px_rgba(155,135,245,0.3)]">
-          GREAT
+        <span
+          aria-hidden
+          className="grid place-items-center w-8 h-8 rounded-md bg-primary text-primary-foreground font-display font-bold text-[15px] leading-none tracking-tight"
+        >
+          GSB
         </span>
-        <span className="text-xl font-extralight tracking-[0.15em] text-foreground/80">
-          SPORT
-        </span>
-        <span className="text-[9px] font-semibold uppercase tracking-[0.35em] text-accent/70 ml-1 mb-px">
-          BETS
+        <span className="flex flex-col leading-none">
+          <span className="font-display font-bold text-[19px] tracking-[0.01em] text-foreground uppercase">
+            Great Sport Bets
+          </span>
+          <span className="text-[10px] text-muted-foreground tracking-[0.04em] mt-1">
+            Daily picks &amp; accumulators
+          </span>
         </span>
       </div>
 

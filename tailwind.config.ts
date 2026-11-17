@@ -19,9 +19,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["'Plus Jakarta Sans'", "sans-serif"],
-        body: ["'DM Sans'", "sans-serif"],
-        splash: ["'Bebas Neue'", "sans-serif"],
+        display: ["'Barlow Condensed'", "sans-serif"],
+        body: ["'Archivo'", "sans-serif"],
+        sans: ["'Archivo'", "system-ui", "sans-serif"],
+        splash: ["'Barlow Condensed'", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -58,6 +59,7 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         success: "hsl(var(--success))",
+        gold: "hsl(var(--gold))",
         loss: "hsl(var(--loss))",
         draw: "hsl(var(--draw))",
         sidebar: {

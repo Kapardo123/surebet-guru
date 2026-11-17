@@ -1,5 +1,3 @@
-import { Gem, SlidersHorizontal, Award } from "lucide-react";
-
 export type PremiumFilter = "all" | "premium" | "free";
 
 interface FilterBarProps {
@@ -8,118 +6,55 @@ interface FilterBarProps {
   onSportChange?: (sport: string) => void;
   activePremium: PremiumFilter;
   onPremiumChange: (value: PremiumFilter) => void;
-  totalItems: number;
-  filteredItems: number;
+  totalItems?: number;
+  filteredItems?: number;
   accent?: "purple" | "blue";
 }
 
-const FilterBar = ({
-  sports,
-  activeSport,
-  onSportChange,
-  activePremium,
-  onPremiumChange,
-  totalItems,
-  filteredItems,
-  accent = "purple",
-}: FilterBarProps) => {
-  const accentGradients = {
-    purple: {
-      active: "from-pink-500 via-purple-500 to-fuchsia-500",
-      borderActive: "border-white/20",
-      border: "border-white/[0.08]",
-      bg: "bg-white/[0.04]",
-      text: "text-white/50",
-      borderActive2: "border-white/20",
-    },
-    blue: {
-      active: "from-blue-500 via-cyan-500 to-teal-500",
-      borderActive: "border-white/20",
-      border: "border-white/[0.08]",
-      bg: "bg-white/[0.04]",
-      text: "text-white/50",
-      borderActive2: "border-white/20",
-    },
-  };
-  const c = accentGradients[accent];
+const chip = (active: boolean) =>
+  `shrink-0 h-8 px-3 rounded-full text-[13px] font-medium transition-colors whitespace-nowrap ${
+    active
+      ? "bg-foreground text-background"
+      : "bg-secondary text-secondary-foreground hover:text-foreground"
+  }`;
+
+const premiumLabels: Record<PremiumFilter, string> = { all: "All", free: "Free", premium: "Premium" };
+
+const FilterBar = ({ sports, activeSport, onSportChange, activePremium, onPremiumChange }: FilterBarProps) => {
+  const showSports = !!(sports && sports.length > 1 && onSportChange);
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <SlidersHorizontal className="w-4 h-4" />
-          <span className="text-xs font-medium uppercase tracking-wider">
-            Filter
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60 font-medium">
-          <span className="font-display">
-            Showing {filteredItems} of {totalItems}
-          </span>
-        </div>
+    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-4 px-4">
+      <div className="shrink-0 flex items-center h-8 p-0.5 rounded-full bg-secondary">
+        {(["all", "free", "premium"] as PremiumFilter[]).map((type) => (
+          <button
+            key={type}
+            onClick={() => onPremiumChange(type)}
+            className={`h-7 px-3 rounded-full text-[13px] font-medium transition-colors ${
+              activePremium === type
+                ? type === "premium"
+                  ? "bg-gold text-accent-foreground"
+                  : "bg-foreground text-background"
+                : "text-secondary-foreground hover:text-foreground"
+            }`}
+          >
+            {premiumLabels[type]}
+          </button>
+        ))}
       </div>
-
-      <div className="flex flex-col gap-3">
-        {sports && sports.length > 0 && onSportChange && (
-          <div className="flex items-center gap-2">
-            <div className="flex flex-wrap gap-1.5 flex-1">
-              <button
-                onClick={() => onSportChange("All")}
-                className={`text-xs px-2.5 py-1.5 rounded-full border font-medium transition-all ${
-                  activeSport === "All"
-                    ? `bg-gradient-to-r ${c.active} text-white border-transparent shadow-md shadow-black/30`
-                    : `border ${c.border} ${c.text} hover:${c.borderActive} hover:bg-white/5`
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <Award className="w-3 h-3" />
-                  All
-                </span>
-              </button>
-              {sports.map((sport) => (
-                <button
-                  key={sport}
-                  onClick={() => onSportChange(sport)}
-                  className={`text-xs px-2.5 py-1.5 rounded-full border font-medium transition-all ${
-                    activeSport === sport
-                      ? `bg-gradient-to-r ${c.active} text-white border-transparent shadow-md shadow-black/30`
-                      : `border ${c.border} ${c.text} hover:${c.borderActive} hover:bg-white/5`
-                  }`}
-                >
-                  {sport}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className={`flex items-center gap-1.5 ${sports && sports.length > 0 && onSportChange ? "pt-1 border-t border-border/20" : ""}`}>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-bold mr-1">
-            TYPE
-          </span>
-          {(["all", "premium", "free"] as PremiumFilter[]).map((type) => (
-            <button
-              key={type}
-              onClick={() => onPremiumChange(type)}
-              className={`text-[10px] px-2.5 py-1 rounded-full border font-medium uppercase tracking-wider transition-all ${
-                activePremium === type
-                  ? `bg-gradient-to-r ${c.active} text-white border-transparent shadow-md shadow-black/30`
-                  : `border ${c.border} ${c.text} hover:${c.borderActive} hover:bg-white/5`
-              }`}
-            >
-              {type === "all" && <span>All</span>}
-              {type === "premium" && (
-                <span className="flex items-center gap-1">
-                  <Gem className="w-2.5 h-2.5" />
-                  Premium
-                </span>
-              )}
-              {type === "free" && <span>Free</span>}
+      {showSports && (
+        <>
+          <span className="shrink-0 w-px h-5 bg-border mx-1" aria-hidden />
+          <button onClick={() => onSportChange!("All")} className={chip(activeSport === "All")}>
+            All sports
+          </button>
+          {sports!.map((sport) => (
+            <button key={sport} onClick={() => onSportChange!(sport)} className={chip(activeSport === sport)}>
+              {sport}
             </button>
           ))}
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

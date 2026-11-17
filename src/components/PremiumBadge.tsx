@@ -1,4 +1,3 @@
-import { Gem, Timer } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface PremiumBadgeProps {
@@ -11,14 +10,12 @@ const PremiumBadge = ({ active, daysLeft, loading = false }: PremiumBadgeProps) 
   if (loading || !active) return null;
 
   return (
-    <Link to="/premium">
-      <div className="flex items-center gap-1.5 bg-gradient-to-r from-accent/20 to-accent/10 border border-accent/30 rounded-full px-3 py-1.5 cursor-pointer hover:border-accent/50 transition-colors">
-        <Gem className="w-3.5 h-3.5 text-accent" />
-        <span className="text-[11px] font-display font-bold text-accent">
-          {daysLeft}d
-        </span>
-        <Timer className="w-3 h-3 text-accent/60" />
-      </div>
+    <Link
+      to="/premium"
+      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-gold/30 text-gold text-xs font-semibold"
+    >
+      Premium
+      <span className="text-gold/70 font-medium tabular-nums">{daysLeft}d</span>
     </Link>
   );
 };
