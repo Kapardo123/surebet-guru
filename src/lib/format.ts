@@ -32,3 +32,22 @@ export const formatShortDate = (value?: string | null): string => {
   if (!d) return "";
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 };
+
+/** Split kickoff into a day word and a clock time for listing-style layouts. */
+export const kickoffParts = (value?: string | null): { day: string; time: string } => {
+  const d = parse(value);
+  if (!d) return { day: "", time: "TBD" };
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const day = sameDay(d, now)
+    ? "Today"
+    : sameDay(d, tomorrow)
+    ? "Tmrw"
+    : sameDay(d, yesterday)
+    ? "Yday"
+    : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return { day, time: time(d) };
+};

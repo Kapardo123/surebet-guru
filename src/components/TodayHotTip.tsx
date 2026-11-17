@@ -105,7 +105,7 @@ const TodayHotTip = () => {
         tone="red"
         right={
           !settled && countdown ? (
-            <span className="font-mono text-[11px] tracking-[0.04em] tabular-nums text-foreground">
+            <span className="font-mono text-[13px] font-medium tracking-[0.02em] tabular-nums text-foreground">
               {countdown.expired ? (
                 <span className="inline-flex items-center gap-1.5 font-semibold text-red uppercase tracking-[0.1em]">
                   <span className="w-1.5 h-1.5 rounded-full bg-red animate-pulse" /> Live
@@ -120,7 +120,7 @@ const TodayHotTip = () => {
         Nap of the day
       </SectionHead>
 
-      <p className="label mt-3">
+      <p className="label mt-3 text-foreground">
         {data.league} <span className="text-foreground/40">/</span> {formatKickoff(data.kickoff)}
       </p>
 
@@ -130,21 +130,23 @@ const TodayHotTip = () => {
           <h3 className="font-display font-black uppercase text-foreground leading-[0.86] tracking-[-0.005em] text-[clamp(46px,14vw,88px)] break-words">
             {data.homeTeam}
           </h3>
-          <p className="font-serif italic text-[22px] leading-none text-muted-foreground my-1 pl-1">versus</p>
+          <p className="font-serif italic text-[22px] leading-none text-red my-1.5 pl-1">versus</p>
           <h3 className="font-display font-black uppercase text-foreground leading-[0.86] tracking-[-0.005em] text-[clamp(46px,14vw,88px)] break-words">
             {data.awayTeam}
           </h3>
         </div>
 
+        <div className="halftone absolute -right-4 -top-3 w-[132px] h-[132px] md:w-[170px] md:h-[170px] rounded-full" aria-hidden />
         <div
-          className={`absolute right-0 top-1 w-[96px] h-[96px] md:w-[128px] md:h-[128px] rounded-full border-[3px] grid place-items-center rotate-[8deg] ${
-            isUnlocked ? "border-red text-red" : "border-foreground/25 text-foreground/25"
+          key={isUnlocked ? "on" : "off"}
+          className={`absolute right-0 top-1 w-[100px] h-[100px] md:w-[132px] md:h-[132px] rounded-full border-[3px] grid place-items-center bg-background/70 ${
+            isUnlocked ? "border-red text-red stamp-in" : "border-foreground/30 text-foreground/30 rotate-[8deg]"
           }`}
-          style={{ maskImage: "radial-gradient(circle at 35% 35%, #000 60%, rgba(0,0,0,.8) 80%, #000)" }}
+          style={{ maskImage: "radial-gradient(circle at 35% 35%, #000 60%, rgba(0,0,0,.8) 80%, #000)", ["--stamp-rot" as string]: "8deg" }}
         >
           <div className="absolute inset-[5px] rounded-full border border-current opacity-60" />
           <div className="text-center leading-none">
-            <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.18em]">Price</p>
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em]">Price</p>
             <p className="num font-black text-[36px] md:text-[46px] leading-[0.95] mt-0.5">{isUnlocked ? data.odds : "?.??"}</p>
           </div>
         </div>
@@ -173,13 +175,13 @@ const TodayHotTip = () => {
             <button
               onClick={handleWatchAd}
               disabled={isLoading || !isRewardedAdReady}
-              className="mt-5 w-full h-12 bg-foreground text-background font-mono text-[12px] font-semibold uppercase tracking-[0.12em] flex items-center justify-center gap-2 active:translate-y-px disabled:opacity-50"
+              className="mt-5 w-full h-14 bg-foreground text-background font-mono text-[13.5px] font-semibold uppercase tracking-[0.12em] flex items-center justify-center gap-2 active:translate-y-px disabled:opacity-50"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
               {!isRewardedAdReady ? "Preparing ad…" : "Watch an ad to reveal"}
             </button>
             {error && <p className="text-red text-xs text-center mt-2 font-mono">{error}</p>}
-            <p className="mt-2 text-center font-serif italic text-[14px] text-muted-foreground">
+            <p className="mt-2 text-center font-serif italic text-[16px] text-muted-foreground">
               About thirty seconds. Members never see the ad.
             </p>
           </motion.div>
@@ -188,7 +190,7 @@ const TodayHotTip = () => {
             <div className="flex items-end justify-between gap-4">
               <div className="min-w-0">
                 <p className="label">The selection</p>
-                <p className="mt-1 font-serif italic text-[26px] leading-tight text-foreground">{data.prediction}</p>
+                <p className="mt-1 font-serif font-semibold text-[28px] leading-tight text-foreground">{data.prediction}</p>
               </div>
               {data.confidence && (
                 <div className="shrink-0 text-right">
@@ -205,7 +207,7 @@ const TodayHotTip = () => {
             {data.description && (
               <div className="mt-3">
                 <p
-                  className={`font-serif text-[16.5px] leading-[1.55] text-foreground first-letter:float-left first-letter:font-display first-letter:font-black first-letter:text-[54px] first-letter:leading-[0.8] first-letter:mr-2 first-letter:mt-1 ${
+                  className={`font-serif text-[18px] leading-[1.55] text-foreground first-letter:float-left first-letter:font-display first-letter:font-black first-letter:text-[60px] first-letter:text-red first-letter:leading-[0.8] first-letter:mr-2 first-letter:mt-1 ${
                     showAnalysis ? "" : "line-clamp-3"
                   }`}
                 >
@@ -214,7 +216,7 @@ const TodayHotTip = () => {
                 <button
                   onClick={() => setShowAnalysis(!showAnalysis)}
                   aria-expanded={showAnalysis}
-                  className="mt-2 font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground hover:text-foreground"
+                  className="mt-2 h-8 font-mono text-[12px] font-medium uppercase tracking-[0.06em] text-foreground underline decoration-foreground/30 underline-offset-4"
                 >
                   {showAnalysis ? "Show less −" : "Continue reading +"}
                 </button>

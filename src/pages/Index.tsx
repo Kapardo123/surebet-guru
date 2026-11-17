@@ -13,6 +13,8 @@ import { Tip } from "@/components/TipCard";
 import { LogIn, LogOut } from "lucide-react";
 import PremiumBadge from "@/components/PremiumBadge";
 import FilterBar, { PremiumFilter } from "@/components/FilterBar";
+import Ticker from "@/components/Ticker";
+import FormGuide from "@/components/FormGuide";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -154,11 +156,11 @@ const Index = () => {
       <div className="max-w-5xl mx-auto px-4 pt-[env(safe-area-inset-top)]">
         {/* Ear: date + account */}
         <div className="h-11 flex items-center justify-between gap-3">
-          <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground truncate">{dateLine}</span>
+          <span className="font-mono text-[12px] uppercase tracking-[0.1em] text-muted-foreground truncate">{dateLine}</span>
           <div className="flex items-center gap-1 shrink-0">
             <PremiumBadge active={isPremium} daysLeft={premiumDaysLeft} loading={premiumLoading} />
             {!isPremium && !premiumLoading && (
-              <Link to="/premium" className="inline-flex items-center h-7 px-2 bg-red text-background font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em]">
+              <Link to="/premium" className="inline-flex items-center h-7 px-2 bg-red text-background font-mono text-[12px] font-semibold uppercase tracking-[0.1em]">
                 Subscribe
               </Link>
             )}
@@ -182,12 +184,18 @@ const Index = () => {
         <header className="border-t-[3px] border-foreground pt-3 pb-2.5 text-center">
           <Logo size="lg" />
         </header>
-        <div className="border-y border-foreground py-1.5 flex items-center justify-between font-mono text-[10.5px] uppercase tracking-[0.1em]">
+        <div className="border-y border-foreground py-1.5 flex items-center justify-between font-mono text-[12px] uppercase tracking-[0.1em]">
           <span>No. {editionNo}</span>
-          <span className="hidden min-[360px]:inline">The daily form guide</span>
+          <span className="hidden min-[360px]:inline font-semibold">The daily form guide</span>
           <span>{loading ? "—" : `${upcomingCount} open`}</span>
         </div>
         <div className="mt-[2px] border-t-[3px] border-foreground" />
+        {!loading && (
+          <div className="mt-3 -mx-4 md:mx-0">
+            <Ticker tips={tips} userIsPremium={isPremium} />
+          </div>
+        )}
+        {!loading && <FormGuide tips={tips} />}
       </div>
 
       <main className="max-w-5xl mx-auto px-4 pt-6 space-y-10">
@@ -217,7 +225,7 @@ const Index = () => {
                   ? Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
                   : filteredTips.length === 0
                   ? <EmptyState title="Nothing on the card" body="New selections usually go up by midday." />
-                  : filteredTips.map((tip, i) => <TipCard key={tip.id} tip={tip} index={i} userIsPremium={isPremium} />)}
+                  : filteredTips.map((tip) => <TipCard key={tip.id} tip={tip} userIsPremium={isPremium} />)}
               </div>
             </>
           ) : (
@@ -247,13 +255,13 @@ const Index = () => {
       </main>
 
       <footer className="max-w-5xl mx-auto px-4 pt-8 pb-10 md:pb-12">
-        <nav className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground">
+        <nav className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-[12px] uppercase tracking-[0.1em] text-muted-foreground">
           <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
           <Link to="/terms" className="hover:text-foreground">Terms</Link>
           <Link to="/deletion" className="hover:text-foreground">Delete account</Link>
           <a href="mailto:greatsportbets@gmail.com" className="hover:text-foreground">Contact</a>
         </nav>
-        <p className="mt-4 font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground/70 select-none cursor-pointer w-fit" onClick={handleFooterTap}>
+        <p className="mt-4 font-mono text-[12px] uppercase tracking-[0.1em] text-muted-foreground/70 select-none cursor-pointer w-fit" onClick={handleFooterTap}>
           © 2026 Great Sport Bets · Printed daily
         </p>
       </footer>

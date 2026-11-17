@@ -23,6 +23,7 @@ const Barcode = ({ seed }: { seed: number }) => {
 };
 
 const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsPremium?: boolean }) => {
+  const tilt = coupon.id % 2 ? "-rotate-[0.6deg]" : "rotate-[0.5deg]";
   const isSettled = coupon.status === "won" || coupon.status === "lost";
   const isWon = coupon.status === "won";
   const isLost = coupon.status === "lost";
@@ -31,16 +32,23 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
   const ref = `GSB-${String(coupon.id).padStart(5, "0")}`;
 
   return (
-    <div className="drop-shadow-[0_1px_1px_rgba(40,30,20,0.18)]">
+    <div className={`relative pt-3 ${tilt}`}>
+      {/* Strip of tape holding the slip down */}
+      <span
+        className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-24 h-6 rotate-[-3deg] bg-[hsl(48_60%_85%/0.75)] shadow-[0_1px_0_rgba(0,0,0,0.08)]"
+        style={{ maskImage: "linear-gradient(90deg, transparent 0 3px, #000 3px calc(100% - 3px), transparent calc(100% - 3px))" }}
+        aria-hidden
+      />
+    <div className="drop-shadow-[0_2px_2px_rgba(40,30,20,0.2)]">
       <article className="relative bg-card slip-edge font-mono text-foreground">
         <div className="px-4 pt-4 pb-5">
           {/* Slip header */}
-          <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+          <div className="flex items-center justify-between text-[11.5px] uppercase tracking-[0.06em] text-muted-foreground">
             <span>{legs}-fold accumulator</span>
             <span>{ref}</span>
           </div>
           <div className="mt-2 flex items-start justify-between gap-3">
-            <h3 className="font-display font-black uppercase text-[30px] leading-[0.9] tracking-[0.005em]">
+            <h3 className="font-display font-black uppercase text-[34px] leading-[0.9] tracking-[0.005em]">
               {coupon.name}
             </h3>
             {coupon.isPremium && !isSettled && (
@@ -55,7 +63,7 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
           {/* Selections */}
           <ol className={`space-y-3 ${isLost ? "opacity-55" : ""}`}>
             {coupon.matches.map((m, i) => (
-              <li key={i} className="text-[12.5px] leading-snug">
+              <li key={i} className="text-[14px] leading-snug">
                 <p className="flex gap-2 font-semibold uppercase tracking-[0.02em]">
                   <span className="text-muted-foreground">{i + 1}.</span>
                   <span className="truncate">
@@ -71,14 +79,14 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
                     </>
                   ) : (
                     <>
-                      <span className="font-serif italic text-[15px] tracking-normal">{m.prediction}</span>
+                      <span className="font-serif font-semibold text-[17px] tracking-normal">{m.prediction}</span>
                       <span className="leader" />
-                      <span className="font-semibold">{m.odds.toFixed(2)}</span>
+                      <span className="font-semibold text-[15px]">{m.odds.toFixed(2)}</span>
                     </>
                   )}
                 </div>
                 {(m.league || m.kickoff) && (
-                  <p className="pl-5 mt-0.5 text-[10px] uppercase tracking-[0.08em] text-muted-foreground truncate">
+                  <p className="pl-5 mt-0.5 text-[11.5px] uppercase tracking-[0.04em] text-muted-foreground truncate">
                     {[m.league, m.kickoff && formatKickoff(m.kickoff)].filter(Boolean).join(" · ")}
                   </p>
                 )}
@@ -91,7 +99,7 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
           {/* Total */}
           {locked ? (
             <Link to="/premium" className="flex items-end justify-between gap-3">
-              <span className="text-[11px] uppercase tracking-[0.08em] leading-snug">
+              <span className="text-[12.5px] uppercase tracking-[0.04em] leading-snug">
                 Selections hidden<br />
                 <span className="text-red underline underline-offset-[3px]">Members only, see rates</span>
               </span>
@@ -99,7 +107,7 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
             </Link>
           ) : (
             <div className="flex items-end justify-between gap-3">
-              <div className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground leading-relaxed">
+              <div className="text-[12px] uppercase tracking-[0.04em] text-muted-foreground leading-relaxed">
                 <p>Total odds</p>
                 {coupon.stake ? <p>Stake ${coupon.stake}</p> : <p>Issued {formatShortDate(coupon.createdAt)}</p>}
               </div>
@@ -119,6 +127,7 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
           </div>
         </div>
       </article>
+    </div>
     </div>
   );
 };

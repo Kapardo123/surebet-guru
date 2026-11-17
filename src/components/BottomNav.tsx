@@ -12,8 +12,8 @@ const NavButton = ({ label, icon: Icon, active, onClick, to }: Item) => {
   const inner = (
     <>
       {active && <span className="absolute top-[-3px] inset-x-3 h-[3px] bg-red" />}
-      <Icon className="w-5 h-5" strokeWidth={active ? 2.2 : 1.6} />
-      <span className={`font-mono text-[10px] uppercase tracking-[0.1em] ${active ? "font-semibold" : ""}`}>{label}</span>
+      <Icon className="w-[22px] h-[22px]" strokeWidth={active ? 2.2 : 1.6} />
+      <span className={`font-mono text-[11.5px] uppercase tracking-[0.06em] ${active ? "font-semibold" : ""}`}>{label}</span>
     </>
   );
   return to ? (

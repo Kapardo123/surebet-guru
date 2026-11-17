@@ -23,7 +23,7 @@
     --secondary-foreground: 30 10% 22%;
 
     --muted: 40 22% 86%;
-    --muted-foreground: 34 8% 38%;
+    --muted-foreground: 30 9% 30%;
 
     --accent: 40 22% 84%;
     --accent-foreground: 30 12% 8%;
@@ -31,7 +31,7 @@
     --destructive: 3 74% 44%;
     --destructive-foreground: 41 33% 95%;
 
-    --border: 36 14% 74%;
+    --border: 36 14% 68%;
     --input: 36 14% 70%;
     --ring: 30 12% 8%;
 
@@ -93,10 +93,10 @@
   }
   .eyebrow, .label {
     font-family: var(--font-mono);
-    font-size: 10.5px;
-    line-height: 1.2;
+    font-size: 12px;
+    line-height: 1.25;
     font-weight: 500;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: hsl(var(--muted-foreground));
   }
@@ -175,4 +175,30 @@
 @keyframes shimmer {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
+}
+
+/* Rubber stamp landing on the page. */
+@keyframes stamp-in {
+  0% { opacity: 0; transform: scale(1.9) rotate(var(--stamp-rot, -7deg)); }
+  60% { opacity: 1; transform: scale(0.94) rotate(var(--stamp-rot, -7deg)); }
+  100% { opacity: 0.9; transform: scale(1) rotate(var(--stamp-rot, -7deg)); }
+}
+.stamp-in { animation: stamp-in 0.42s cubic-bezier(.2,.7,.3,1.2) both; }
+
+/* News ticker. */
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ticker-track { animation: ticker var(--ticker-duration, 40s) linear infinite; }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+
+/* Halftone dots, as printed on newsprint. */
+.halftone {
+  background-image: radial-gradient(hsl(var(--foreground) / 0.16) 1.2px, transparent 1.6px);
+  background-size: 7px 7px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp-in, .ticker-track { animation: none; }
 }
