@@ -112,7 +112,7 @@ const TodayHotTip = () => {
   );
 
   const front = (
-    <div aria-hidden={!isUnlocked} className="flip-face [grid-area:1/1] rounded-[22px] p-[6px] bg-[conic-gradient(from_200deg,#ff6ec4,#7873f5,#4adede,#b8f15e,#ffd86e,#ff6ec4)]">
+    <div aria-hidden={!isUnlocked} className="flip-face [grid-area:1/1] rounded-[22px] p-[6px] holo-frame">
       <div className="h-full rounded-[17px] bg-[hsl(232_42%_11%)] text-white overflow-hidden">
         <div className="flex items-center justify-between gap-2 px-4 h-10">
           <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em]">
@@ -124,12 +124,20 @@ const TodayHotTip = () => {
         </div>
 
         <div className="relative mx-2.5">
-          <CardArt sport={sport} home={data.homeTeam} away={data.awayTeam} homeLogo={data.homeTeamLogo} awayLogo={data.awayTeamLogo} size={48} className="h-[150px] rounded-[12px]" />
-          <div className="absolute left-2.5 bottom-2.5">{countdownPill}</div>
+          <CardArt sport={sport} home={data.homeTeam} away={data.awayTeam} homeLogo={data.homeTeamLogo} awayLogo={data.awayTeamLogo} size={46} holo sparkles className="h-[156px] rounded-[12px]" />
+          <div className="absolute left-2.5 bottom-2.5 z-10">{countdownPill}</div>
+          <span className="absolute -bottom-8 right-3 z-10 grid place-items-center w-[76px] h-[76px] rounded-full p-[4px] foil-gold shadow-[0_10px_24px_rgba(0,0,0,.55)]">
+            <span className="w-full h-full rounded-full bg-[hsl(232_45%_10%)] grid place-items-center text-center leading-none">
+              <span>
+                <span className="block num font-black text-[21px] foil-gold-text">{isUnlocked ? data.odds : "?.??"}</span>
+                <span className="block text-[8.5px] font-bold uppercase tracking-[0.16em] text-white/55 mt-1">Odds</span>
+              </span>
+            </span>
+          </span>
           {settled && <StatusTag status={data.status as "won" | "lost" | "draw"} className="absolute -top-3 -right-2 scale-125" />}
         </div>
 
-        <div className="px-4 pt-3.5">
+        <div className="px-4 pt-3.5 pr-[96px]">
           <h3 className="font-display font-black uppercase text-[24px] leading-[1.02] tracking-[-0.02em]">
             {data.homeTeam}
             <span className="block text-[12px] text-primary tracking-[0.1em] my-0.5">versus</span>
@@ -138,14 +146,10 @@ const TodayHotTip = () => {
           <p className="text-[13px] text-white/60 mt-1.5">{data.league} · {formatKickoff(data.kickoff)}</p>
         </div>
 
-        <div className="grid grid-cols-[1.6fr_1fr_1fr] gap-1.5 mx-2.5 mt-3">
+        <div className="grid grid-cols-[1.7fr_1fr] gap-1.5 mx-2.5 mt-3">
           <div className="rounded-[10px] bg-white/[0.07] px-3 py-2.5">
             <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/50">Pick</p>
             <p className="text-[15px] font-semibold leading-tight mt-1">{isUnlocked ? data.prediction : "—"}</p>
-          </div>
-          <div className="rounded-[10px] bg-white/[0.07] px-3 py-2.5">
-            <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/50">Odds</p>
-            <p className="num font-black text-[24px] leading-none mt-1 foil-gold-text">{isUnlocked ? data.odds : "?.??"}</p>
           </div>
           <div className="rounded-[10px] bg-white/[0.07] px-3 py-2.5">
             <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/50">Conf.</p>
@@ -176,7 +180,7 @@ const TodayHotTip = () => {
   );
 
   const back = (
-    <div aria-hidden={isUnlocked} className="flip-face flip-back [grid-area:1/1] rounded-[22px] p-[6px] bg-[conic-gradient(from_200deg,#ff6ec4,#7873f5,#4adede,#b8f15e,#ffd86e,#ff6ec4)]">
+    <div aria-hidden={isUnlocked} className="flip-face flip-back [grid-area:1/1] rounded-[22px] p-[6px] holo-frame">
       <div className="h-full rounded-[17px] card-back text-white flex flex-col items-center justify-center text-center px-6 py-8">
         <div className="relative w-28 h-28 rounded-full foil-gold grid place-items-center shadow-[0_10px_30px_rgba(0,0,0,.5)] foil-shimmer">
           <div className="w-[96px] h-[96px] rounded-full bg-[hsl(232_45%_14%)] grid place-items-center">
@@ -206,9 +210,9 @@ const TodayHotTip = () => {
 
   return (
     <section className="max-w-[440px] mx-auto">
-      <HoloCard holo={isUnlocked} maxTilt={8} innerClassName="rounded-[22px]">
+      <HoloCard holo={false} maxTilt={8} innerClassName="rounded-[22px]">
         <div className="flip-scene">
-          <div className={`flip-inner grid ${isUnlocked ? "" : "is-flipped"}`}>
+          <div className={`flip-inner grid grid-cols-[minmax(0,1fr)] ${isUnlocked ? "" : "is-flipped"}`}>
             {front}
             {back}
           </div>

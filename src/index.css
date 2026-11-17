@@ -258,3 +258,28 @@
   .holo-idle::after, .foil-shimmer::before, .seal-pop { animation: none; }
   .flip-inner { transition: none; }
 }
+
+/* Four-point twinkle on holo art. */
+.sparkle {
+  background: #fff;
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  filter: drop-shadow(0 0 4px rgba(255,255,255,.9));
+  opacity: 0;
+  animation: twinkle 2.6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 4;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0; transform: scale(.4) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(45deg); }
+}
+@media (prefers-reduced-motion: reduce) { .sparkle { animation: none; opacity: .6; } }
+
+/* Rainbow foil frame that slowly turns. */
+@property --frame-angle { syntax: "<angle>"; inherits: false; initial-value: 200deg; }
+.holo-frame {
+  background: conic-gradient(from var(--frame-angle), #ff6ec4, #7873f5, #4adede, #b8f15e, #ffd86e, #ff6ec4);
+  animation: frame-turn 8s linear infinite;
+}
+@keyframes frame-turn { to { --frame-angle: 560deg; } }
+@media (prefers-reduced-motion: reduce) { .holo-frame { animation: none; } }

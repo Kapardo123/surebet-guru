@@ -234,7 +234,7 @@ export default function Premium() {
             <h2 className="font-display font-black uppercase text-[20px] tracking-[-0.02em] text-center">Same card, two sides</h2>
             <div className="mt-5 grid grid-cols-2 gap-3">
               {[false, true].map((member) => (
-                <div key={String(member)} className="pointer-events-none">
+                <div key={String(member)} className="pointer-events-none min-w-0">
                   <p className="text-center label mb-2">{member ? "Gold member" : "Free reader"}</p>
                   <TipCard tip={member ? { ...sample, description: undefined } : sample} userIsPremium={member} />
                 </div>

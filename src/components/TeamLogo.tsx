@@ -7,6 +7,8 @@ interface TeamLogoProps {
   size?: number;
   logoUrl?: string | null;
   sport?: string;
+  /** Initials colour scheme when no crest is found: "light" = for a light chip. */
+  tone?: "dark" | "light";
 }
 
 export const SportIcon = ({ sport, size = 12 }: { sport: string; size?: number }) => {
@@ -65,6 +67,7 @@ const TeamLogo = ({
   size = 28,
   logoUrl: propLogoUrl,
   sport,
+  tone = "dark",
 }: TeamLogoProps) => {
   // The hook always resolves by name, so a broken stored URL can fall back to
   // a freshly found one instead of dropping straight to initials.
@@ -94,12 +97,12 @@ const TeamLogo = ({
   if (isTennis) {
     return (
       <div
-        className="rounded-full bg-secondary flex items-center justify-center flex-shrink-0"
+        className={`rounded-full flex items-center justify-center flex-shrink-0 ${tone === "light" ? "text-stock-ink/70" : "bg-secondary text-muted-foreground"}`}
         style={{ width: size, height: size }}
       >
         <MdSportsTennis
-          size={size * 0.62}
-          className="text-muted-foreground"
+          size={size * 0.7}
+          className="text-current"
         />
       </div>
     );
@@ -117,8 +120,10 @@ const TeamLogo = ({
   if (!url) {
     return (
       <div
-        className="rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-display font-semibold flex-shrink-0 overflow-hidden"
-        style={{ width: size, height: size, fontSize: size * 0.42 }}
+        className={`rounded-full flex items-center justify-center font-display font-black flex-shrink-0 overflow-hidden tracking-[-0.04em] ${
+          tone === "light" ? "text-stock-ink" : "bg-secondary text-secondary-foreground"
+        }`}
+        style={{ width: size, height: size, fontSize: size * (tone === "light" ? 0.5 : 0.42) }}
       >
         {getInitials(teamName)}
       </div>

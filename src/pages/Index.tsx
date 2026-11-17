@@ -196,12 +196,12 @@ const Index = () => {
                   onPremiumChange={setTipPremium}
                 />
               )}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 [&>*]:min-w-0">
                 {loading
                   ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
                   : filteredTips.length === 0
                   ? <EmptyState title="Deck's empty" body="New cards usually land by midday." />
-                  : filteredTips.map((tip, i) => <TipCard key={tip.id} tip={tip} index={i} userIsPremium={isPremium} />)}
+                  : filteredTips.map((tip, i) => <TipCard key={tip.id} tip={tip} index={i} total={filteredTips.length} userIsPremium={isPremium} />)}
               </div>
             </>
           ) : (

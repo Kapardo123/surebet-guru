@@ -28,7 +28,7 @@ const MiniCard = ({ leg, faceDown }: { leg: Leg; faceDown: boolean }) => {
         <div className="h-[46px] flex items-center justify-center gap-1" style={{ background: t.art }}>
           {[leg.homeTeam, leg.awayTeam].map((n, i) => (
             <span key={i} className="grid place-items-center w-7 h-7 rounded-full bg-white/90">
-              <TeamLogo teamName={n} logoUrl={i ? leg.awayTeamLogo : leg.homeTeamLogo} size={20} sport={leg.sport} />
+              <TeamLogo teamName={n} logoUrl={i ? leg.awayTeamLogo : leg.homeTeamLogo} size={20} sport={leg.sport} tone="light" />
             </span>
           ))}
         </div>
