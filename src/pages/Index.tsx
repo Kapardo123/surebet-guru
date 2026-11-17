@@ -16,7 +16,11 @@ import DailyPack from "@/components/DailyPack";
 import BinderStrip from "@/components/BinderStrip";
 import CardInspector from "@/components/CardInspector";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import UnlockSheet from "@/components/UnlockSheet";
+import { loadTipUnlocks, verifyCheckout, nativeSingleTipPrice } from "@/lib/tipUnlocks";
+import { SINGLE_TIP_CENTS, usd } from "@/lib/pricing";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 
@@ -68,11 +72,19 @@ const Index = () => {
   const [seen, setSeen] = useState<number[]>(() => readLS(`gsb_seen_${dayKey}`, []));
   const [packOpen, setPackOpen] = useState<boolean>(() => readLS(`gsb_pack_${dayKey}`, false));
 
-  const openCard = useCallback((tip: Tip) => {
-    if (tip.isPremium && !isPremiumRef.current && tip.status === "upcoming") {
-      window.location.hash = "#/premium";
+  const [unlocks, setUnlocks] = useState<number[]>([]);
+  const unlocksRef = useRef<number[]>([]);
+  unlocksRef.current = unlocks;
+  const [sheetTip, setSheetTip] = useState<Tip | null>(null);
+  const [celebrate, setCelebrate] = useState(false);
+  const [unlockPrice, setUnlockPrice] = useState(usd(SINGLE_TIP_CENTS));
+
+  const openCard = useCallback((tip: Tip, fresh = false) => {
+    if (tip.isPremium && !isPremiumRef.current && tip.status === "upcoming" && !unlocksRef.current.includes(tip.id)) {
+      setSheetTip(tip);
       return;
     }
+    setCelebrate(fresh);
     setInspect(tip);
     setSeen((prev) => {
       if (prev.includes(tip.id)) return prev;
@@ -81,7 +93,10 @@ const Index = () => {
       return next;
     });
   }, []);
-  const closeCard = useCallback(() => setInspect(null), []);
+  const closeCard = useCallback(() => {
+    setInspect(null);
+    setCelebrate(false);
+  }, []);
   const openPack = useCallback(() => {
     setPackOpen(true);
     writeLS(`gsb_pack_${dayKey}`, true);
@@ -90,6 +105,56 @@ const Index = () => {
   const { user } = useAuth();
   const isPremiumRef = useRef(isPremium);
   isPremiumRef.current = isPremium;
+  const { toast } = useToast();
+  const [params, setParams] = useSearchParams();
+
+  useEffect(() => {
+    nativeSingleTipPrice().then((p) => p && setUnlockPrice(p));
+  }, []);
+
+  // Cards this user bought one at a time.
+  useEffect(() => {
+    if (!user) {
+      setUnlocks([]);
+      return;
+    }
+    loadTipUnlocks(user.id).then(setUnlocks);
+  }, [user]);
+
+  // Back from Stripe Checkout after buying a single card.
+  const pendingUnlock = useRef<number | null>(null);
+  useEffect(() => {
+    const sessionId = params.get("session_id");
+    const tipId = Number(params.get("unlocked"));
+    if (!sessionId || !tipId || !user) return;
+    setParams({}, { replace: true });
+    verifyCheckout(sessionId)
+      .then(async () => {
+        setUnlocks(await loadTipUnlocks(user.id));
+        pendingUnlock.current = tipId;
+        toast({ title: "Card unlocked", description: "It's yours. Flip it for the analysis." });
+      })
+      .catch((e) => toast({ title: "Payment not confirmed yet", description: e.message, variant: "destructive" }));
+  }, [params, user, setParams, toast]);
+
+  // Open the freshly bought card once both the tips and the unlock are in.
+  useEffect(() => {
+    const id = pendingUnlock.current;
+    if (!id || tips.length === 0 || !unlocks.includes(id)) return;
+    pendingUnlock.current = null;
+    const t = tips.find((x) => x.id === id);
+    if (t) {
+      setPackOpen(true);
+      openCard(t, true);
+    }
+  }, [tips, unlocks, openCard]);
+
+  const handleUnlocked = useCallback(async (tip: Tip) => {
+    setSheetTip(null);
+    if (user) setUnlocks(await loadTipUnlocks(user.id));
+    unlocksRef.current = [...unlocksRef.current, tip.id];
+    openCard(tip, true);
+  }, [user]);
 
   // 3 taps on the footer copyright opens the admin login dialog
   const [footerTaps, setFooterTaps] = useState(0);
@@ -241,7 +306,7 @@ const Index = () => {
                 {
                   k: "Top odds",
                   v: (() => {
-                    const free = tips.filter((t) => t.status === "upcoming" && (!t.isPremium || isPremium));
+                    const free = tips.filter((t) => t.status === "upcoming" && (!t.isPremium || isPremium || unlocks.includes(t.id)));
                     return free.length ? Math.max(...free.map((t) => t.odds)).toFixed(2) : "—";
                   })(),
                 },
@@ -294,6 +359,9 @@ const Index = () => {
                         total={filteredTips.length}
                         userIsPremium={isPremium}
                         onInspect={openCard}
+                        unlocked={unlocks.includes(tip.id)}
+                        onLockedTap={setSheetTip}
+                        unlockPrice={unlockPrice}
                         layoutId={`card-${tip.id}`}
                         ghost={inspect?.id === tip.id}
                       />
@@ -336,7 +404,8 @@ const Index = () => {
 
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <CardInspector tip={inspect} userIsPremium={isPremium} onClose={closeCard} />
+      <CardInspector tip={inspect} userIsPremium={isPremium || (!!inspect && unlocks.includes(inspect.id))} celebrate={celebrate} onClose={closeCard} />
+      <UnlockSheet tip={sheetTip} signedIn={!!user} onClose={() => setSheetTip(null)} onUnlocked={handleUnlocked} />
 
       {/* Admin login dialog - opened by 3 taps on the footer copyright */}
       <AdminLoginDialog open={adminLoginOpen} onOpenChange={setAdminLoginOpen} />

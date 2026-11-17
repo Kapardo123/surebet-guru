@@ -14,6 +14,8 @@ import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Capacitor } from "@capacitor/core";
 import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from "@/integrations/revenuecat";
+import { PLANS, usd, perDay, saving, SINGLE_TIP_CENTS } from "@/lib/pricing";
+import { startPlanCheckout, verifyCheckout } from "@/lib/tipUnlocks";
 
 export default function Premium() {
   // v1.9.5
@@ -45,6 +47,25 @@ export default function Premium() {
     }
   }, [refresh]);
 
+  // Back from Stripe Checkout: confirm the session and grant the pass.
+  const [confirming, setConfirming] = useState(false);
+  useEffect(() => {
+    const sessionId = searchParams.get("session_id");
+    if (!sessionId || searchParams.get("success") !== "true" || !user) return;
+    setConfirming(true);
+    verifyCheckout(sessionId)
+      .then(async () => {
+        await refresh();
+        toast({ title: "Welcome to Gold", description: "Every card is face up now." });
+      })
+      .catch((e) => toast({ title: "Payment not confirmed yet", description: e.message, variant: "destructive" }))
+      .finally(() => {
+        setConfirming(false);
+        navigate("/premium", { replace: true });
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, user]);
+
   const handleRestore = async () => {
     setRestoring(true);
     try {
@@ -62,7 +83,7 @@ export default function Premium() {
     }
   };
 
-  const handleBuy = async (duration: number, paymentLink?: string) => {
+  const handleBuy = async (duration: number) => {
     if (!user) {
       navigate("/auth?redirect=/premium");
       return;
@@ -85,11 +106,14 @@ export default function Premium() {
             if (dInfo) await refresh(dInfo, duration);
           }
         }
-      } else if (paymentLink) {
-        window.location.href = `${paymentLink}?client_reference_id=${user.id}&customer_email=${encodeURIComponent(user.email || "")}`;
+      } else {
+        // Web: Stripe Checkout created server-side, so the charged amount
+        // always matches PLAN_CENTS in the create-payment function.
+        await startPlanCheckout(duration);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Purchase error", e);
+      toast({ title: "Checkout unavailable", description: e?.message, variant: "destructive" });
     } finally {
       setLoading(null);
     }
@@ -102,11 +126,7 @@ export default function Premium() {
     "Full written analysis behind every selection",
   ];
 
-  const plans = [
-    { duration: 7, label: "Weekly Pass", days: "7 Days", price: "$3.99", paymentLink: "https://buy.stripe.com/aFafZg6dW6kP3Ga5TX6EU03", perDay: "$0.57/day" },
-    { duration: 15, label: "Pro Access", days: "15 Days", price: "$6.99", popular: true, paymentLink: "https://buy.stripe.com/4gM3cu59SdNh4Ke0zD6EU04", perDay: "$0.46/day", save: "15% OFF" },
-    { duration: 30, label: "Monthly VIP", days: "30 Days", price: "$9.99", paymentLink: "https://buy.stripe.com/aFa28q59S10v0tYgyB6EU05", perDay: "$0.33/day", save: "40% OFF" },
-  ];
+  const plans = PLANS.map((p) => ({ ...p, price: usd(p.cents), perDay: perDay(p), save: saving(p) }));
 
   // Helper to get localized price from RC
   const getPlanPrice = (plan: any) => {
@@ -166,6 +186,14 @@ export default function Premium() {
         }
       />
 
+      {confirming && (
+        <div className="fixed inset-x-0 top-20 z-50 flex justify-center px-4">
+          <div className="flex items-center gap-2 h-11 px-4 rounded-full bg-card border border-white/10 shadow-xl text-[14px] font-semibold">
+            <Loader2 className="w-4 h-4 animate-spin" /> Confirming your payment…
+          </div>
+        </div>
+      )}
+
       <main className="max-w-xl mx-auto px-4 pt-7 space-y-12">
         <section className="text-center">
           <p className="label foil-gold-text">GSB Gold</p>
@@ -216,17 +244,36 @@ export default function Premium() {
                 days={plan.days}
                 price={getPlanPrice(plan)}
                 perDay={plan.perDay}
-                badge={plan.popular ? "Best value" : plan.save}
+                badge={plan.popular ? "Most popular" : plan.save}
                 featured={plan.popular}
                 loading={loading === plan.duration}
                 disabled={loading !== null}
-                onClick={() => handleBuy(plan.duration, plan.paymentLink)}
+                onClick={() => handleBuy(plan.duration)}
               />
             ))}
           </div>
           {!user && (
             <p className="mt-4 text-[14px] text-muted-foreground text-center">You'll be asked to sign in before paying.</p>
           )}
+
+          {/* Single-card option */}
+          <Link
+            to="/"
+            className="mt-6 flex items-center gap-4 rounded-[20px] border border-dashed border-white/15 bg-white/[0.03] p-4 active:scale-[0.99] transition-transform"
+          >
+            <span className="relative shrink-0 w-12 h-16 rounded-[8px] p-[3px] foil-gold -rotate-6 shadow-[0_8px_16px_-6px_rgba(0,0,0,.7)]">
+              <span className="block h-full rounded-[5px] card-back" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-bold">Just one card?</span>
+              <span className="block text-[13.5px] text-muted-foreground leading-snug mt-0.5">
+                Tap any locked Gold card to unlock it on its own.
+              </span>
+            </span>
+            <span className="shrink-0 h-9 px-3 rounded-full bg-primary text-primary-foreground grid place-items-center num font-black text-[14px]">
+              {usd(SINGLE_TIP_CENTS)}
+            </span>
+          </Link>
         </section>
 
         {!active && (

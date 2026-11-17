@@ -103,6 +103,33 @@ e-sport), gdzie start zależy od końca poprzedniego meczu.
 Klucz `ODDS_API_KEY` można ustawić jako sekret funkcji; bez niego używany jest
 klucz zaszyty w kliencie.
 
+### Ceny i pojedyncze typy ($0.99)
+
+Cennik jest w dwóch miejscach, które muszą się zgadzać:
+
+- `src/lib/pricing.ts` — to, co widzi użytkownik na webie,
+- `supabase/functions/create-payment/index.ts` (`PLAN_CENTS`, `SINGLE_TIP_CENTS`) — to, co faktycznie pobiera Stripe.
+
+Na webie płatność idzie przez Stripe Checkout tworzony po stronie serwera z ceną
+podaną w kodzie (`price_data`), więc nie trzeba tworzyć cen ani Payment Linków w panelu
+Stripe. Po powrocie z Checkoutu aplikacja wywołuje `verify-payment`, które nadaje
+Premium albo odblokowuje kupiony typ.
+
+Pojedynczy typ Gold (`tip_unlocks`):
+
+1. Wykonaj migrację `supabase/migrations/20261117_tip_unlocks.sql`.
+2. Wdróż funkcje:
+   ```sh
+   supabase functions deploy create-payment
+   supabase functions deploy verify-payment
+   supabase functions deploy unlock-tip-native
+   ```
+3. Android: w Google Play Console utwórz produkt jednorazowy (konsumpcyjny)
+   o ID `gsb_single_tip` za $0.99 i dodaj go w RevenueCat. Ustaw sekret funkcji
+   `REVENUECAT_SECRET_KEY` (RevenueCat → API keys → secret). `unlock-tip-native`
+   sprawdza zakup w RevenueCat, zanim zapisze odblokowanie.
+4. Ceny subskrypcji w aplikacji Android pochodzą z Google Play — zmień je w Play Console.
+
 ### 2. Wdrożenie na Vercel
 
 1. Połącz swoje repozytorium GitHub z [Vercel](https://vercel.com/).

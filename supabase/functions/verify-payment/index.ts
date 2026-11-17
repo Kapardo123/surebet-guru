@@ -77,6 +77,25 @@ serve(async (req: Request) => {
       throw new Error("Session does not belong to this user");
     }
 
+    // Single members' tip bought for $0.99.
+    if (session.metadata?.kind === "tip") {
+      const tipId = Number(session.metadata.tip_id);
+      if (!Number.isInteger(tipId) || tipId <= 0) throw new Error("Invalid tip in session");
+
+      const { error: unlockError } = await serviceClient
+        .from("tip_unlocks")
+        .upsert(
+          { user_id: userData.user.id, tip_id: tipId, source: "stripe", payment_ref: sessionId },
+          { onConflict: "payment_ref", ignoreDuplicates: true }
+        );
+      if (unlockError) throw unlockError;
+
+      return new Response(JSON.stringify({ kind: "tip", tipId }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let durationDays = Number(session.metadata?.duration_days ?? 0);
 
     if (!Number.isInteger(durationDays) || durationDays <= 0) {

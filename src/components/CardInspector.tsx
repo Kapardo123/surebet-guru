@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { RotateCw, X } from "lucide-react";
 import TipCard, { Tip } from "@/components/TipCard";
 import HoloCard from "@/components/HoloCard";
+import GoldBurst from "@/components/GoldBurst";
 
 const BASE_WIDTH = 190;
 
@@ -11,7 +12,7 @@ const BASE_WIDTH = 190;
  * layoutId), grows to fill the screen, tilts under the finger and flips to
  * show the analysis on its back.
  */
-const CardInspector = ({ tip, userIsPremium, onClose }: { tip: Tip | null; userIsPremium: boolean; onClose: () => void }) => {
+const CardInspector = ({ tip, userIsPremium, onClose, celebrate = false }: { tip: Tip | null; userIsPremium: boolean; onClose: () => void; celebrate?: boolean }) => {
   const [flipped, setFlipped] = useState(false);
   const [zoom, setZoom] = useState(1.7);
 
@@ -63,6 +64,16 @@ const CardInspector = ({ tip, userIsPremium, onClose }: { tip: Tip | null; userI
           />
 
           <motion.div layoutId={`card-${tip.id}`} className="relative" transition={{ type: "spring", stiffness: 220, damping: 26 }}>
+            {celebrate && <GoldBurst radius={170} delay={0.45} />}
+            {celebrate && (
+              <motion.p
+                className="absolute -top-12 inset-x-0 text-center text-[12px] font-black uppercase tracking-[0.2em] foil-gold-text"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0, transition: { delay: 0.5 } }}
+              >
+                ◆ Card unlocked ◆
+              </motion.p>
+            )}
             <HoloCard holo={false} maxTilt={12}>
               <div style={{ width: BASE_WIDTH, zoom }} onClick={() => canFlip && setFlipped((f) => !f)}>
                 <TipCard tip={tip} userIsPremium={userIsPremium} still flipped={flipped} />

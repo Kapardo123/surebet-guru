@@ -61,16 +61,26 @@ interface TipCardProps {
   still?: boolean;
   /** Controlled flip (inspector). */
   flipped?: boolean;
+  /** Bought individually for $0.99. */
+  unlocked?: boolean;
+  /** Called when a locked Gold card is tapped (offer the single unlock). */
+  onLockedTap?: (tip: Tip) => void;
+  /** Price label for the single unlock, e.g. "$0.99". */
+  unlockPrice?: string;
 }
 
-const TipCard = ({ tip, userIsPremium = false, index, total, onInspect, layoutId, ghost, still, flipped: flippedProp }: TipCardProps) => {
+const TipCard = ({
+  tip, userIsPremium = false, index, total, onInspect, layoutId, ghost, still, flipped: flippedProp,
+  unlocked = false, onLockedTap, unlockPrice = "$0.99",
+}: TipCardProps) => {
   const [flippedState, setFlipped] = useState(false);
   const flipped = flippedProp ?? flippedState;
   const reduce = useReducedMotion();
 
   const isSettled = tip.status !== "upcoming";
   const isLost = tip.status === "lost";
-  const locked = tip.isPremium && !userIsPremium && !isSettled;
+  const locked = tip.isPremium && !userIsPremium && !unlocked && !isSettled;
+  const owned = tip.isPremium && !userIsPremium && unlocked;
   const ko = kickoffParts(tip.kickoff);
   const theme = sportTheme(tip.sport);
   const canFlip = !locked && !!tip.description;
@@ -116,6 +126,11 @@ const TipCard = ({ tip, userIsPremium = false, index, total, onInspect, layoutId
             <OddsMedal value={locked ? "?.??" : tip.odds.toFixed(2)} gold={!!tip.isPremium} struck={isLost} />
           </span>
           {isSettled && <StatusTag status={tip.status} className="absolute -top-2 -left-1 z-10" />}
+          {owned && !isSettled && (
+            <span className="absolute top-1.5 left-1.5 z-10 h-5 px-2 rounded-full foil-gold text-stock-ink text-[9.5px] font-black uppercase tracking-[0.12em] grid place-items-center shadow">
+              Owned
+            </span>
+          )}
         </div>
 
         {/* Name plate */}
@@ -159,8 +174,15 @@ const TipCard = ({ tip, userIsPremium = false, index, total, onInspect, layoutId
           </div>
         )}
         {locked && (
-          <div className="flex items-center justify-center gap-1.5 h-7 foil-gold text-stock-ink text-[10.5px] font-bold uppercase tracking-[0.1em]">
-            <Lock className="w-3 h-3" /> Members' card
+          <div className="relative flex items-center justify-between h-8 pl-2.5 pr-1 foil-gold text-stock-ink">
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em]">
+              <Lock className="w-3 h-3" /> Unlock
+            </span>
+            {/* Price sticker */}
+            <span className="relative h-6 pl-3 pr-2 rounded-[6px] bg-[hsl(232_42%_12%)] text-white num font-black text-[12px] grid place-items-center -rotate-3 shadow-[0_3px_8px_rgba(0,0,0,.35)]">
+              <span className="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[hsl(42_45%_90%)]" />
+              {unlockPrice}
+            </span>
           </div>
         )}
       </div>
@@ -212,12 +234,22 @@ const TipCard = ({ tip, userIsPremium = false, index, total, onInspect, layoutId
     );
 
   if (locked) {
+    const inner = (
+      <HoloCard holo={false} maxTilt={6}>
+        <div className="foil-shimmer rounded-[16px]">{body}</div>
+      </HoloCard>
+    );
+    const label = `Gold card: ${tip.homeTeam} v ${tip.awayTeam}. Unlock for ${unlockPrice}`;
     return deal(
-      <Link to="/premium" className="flip-scene block active:scale-[0.98] transition-transform" aria-label={`Members' card: ${tip.homeTeam} v ${tip.awayTeam}`}>
-        <HoloCard holo={false} maxTilt={6}>
-          <div className="foil-shimmer rounded-[16px]">{body}</div>
-        </HoloCard>
-      </Link>
+      onLockedTap ? (
+        <button type="button" onClick={() => onLockedTap(tip)} aria-label={label} className="flip-scene block w-full text-left active:scale-[0.98] transition-transform">
+          {inner}
+        </button>
+      ) : (
+        <Link to="/premium" aria-label={label} className="flip-scene block active:scale-[0.98] transition-transform">
+          {inner}
+        </Link>
+      )
     );
   }
 
