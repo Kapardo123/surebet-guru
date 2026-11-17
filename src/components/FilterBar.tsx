@@ -11,49 +11,47 @@ interface FilterBarProps {
   accent?: "purple" | "blue";
 }
 
-const chip = (active: boolean) =>
-  `shrink-0 h-8 px-3 rounded-full text-[13px] font-medium transition-colors whitespace-nowrap ${
+const item = (active: boolean) =>
+  `shrink-0 py-1 font-mono text-[11.5px] uppercase tracking-[0.06em] transition-colors ${
     active
-      ? "bg-foreground text-background"
-      : "bg-secondary text-secondary-foreground hover:text-foreground"
+      ? "text-foreground font-semibold underline decoration-red decoration-2 underline-offset-[5px]"
+      : "text-muted-foreground hover:text-foreground"
   }`;
 
-const premiumLabels: Record<PremiumFilter, string> = { all: "All", free: "Free", premium: "Premium" };
+const Slash = () => <span className="shrink-0 font-mono text-[11.5px] text-foreground/25" aria-hidden>/</span>;
 
+const premiumLabels: Record<PremiumFilter, string> = { all: "All", free: "Free", premium: "Members" };
+
+/** Index-style text filters, like the section list on a sports page. */
 const FilterBar = ({ sports, activeSport, onSportChange, activePremium, onPremiumChange }: FilterBarProps) => {
   const showSports = !!(sports && sports.length > 1 && onSportChange);
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-4 px-4">
-      <div className="shrink-0 flex items-center h-8 p-0.5 rounded-full bg-secondary">
-        {(["all", "free", "premium"] as PremiumFilter[]).map((type) => (
-          <button
-            key={type}
-            onClick={() => onPremiumChange(type)}
-            className={`h-7 px-3 rounded-full text-[13px] font-medium transition-colors ${
-              activePremium === type
-                ? type === "premium"
-                  ? "bg-gold text-accent-foreground"
-                  : "bg-foreground text-background"
-                : "text-secondary-foreground hover:text-foreground"
-            }`}
-          >
-            {premiumLabels[type]}
-          </button>
+    <div className="space-y-1">
+      <div className="flex items-center gap-2.5">
+        <span className="label w-12 shrink-0">Show</span>
+        {(["all", "free", "premium"] as PremiumFilter[]).map((t, i) => (
+          <span key={t} className="contents">
+            {i > 0 && <Slash />}
+            <button onClick={() => onPremiumChange(t)} className={item(activePremium === t)}>
+              {premiumLabels[t]}
+            </button>
+          </span>
         ))}
       </div>
       {showSports && (
-        <>
-          <span className="shrink-0 w-px h-5 bg-border mx-1" aria-hidden />
-          <button onClick={() => onSportChange!("All")} className={chip(activeSport === "All")}>
-            All sports
-          </button>
+        <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar -mr-4 pr-4">
+          <span className="label w-12 shrink-0">Sport</span>
+          <button onClick={() => onSportChange!("All")} className={item(activeSport === "All")}>All</button>
           {sports!.map((sport) => (
-            <button key={sport} onClick={() => onSportChange!(sport)} className={chip(activeSport === sport)}>
-              {sport}
-            </button>
+            <span key={sport} className="contents">
+              <Slash />
+              <button onClick={() => onSportChange!(sport)} className={item(activeSport === sport)}>
+                {sport}
+              </button>
+            </span>
           ))}
-        </>
+        </div>
       )}
     </div>
   );

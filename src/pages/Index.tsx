@@ -4,7 +4,9 @@ import CouponCard from "@/components/CouponCard";
 import TodayHotTip from "@/components/TodayHotTip";
 import BottomNav from "@/components/BottomNav";
 import AdminLoginDialog from "@/components/AdminLoginDialog";
-import AppHeader from "@/components/AppHeader";
+import Logo from "@/components/Logo";
+import SectionHead from "@/components/SectionHead";
+import { headerLink } from "@/components/AppHeader";
 import { loadTips } from "@/lib/tipsStorage";
 import { loadCoupons, Coupon } from "@/lib/couponStorage";
 import { Tip } from "@/components/TipCard";
@@ -15,22 +17,27 @@ import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
-const todayLabel = () =>
-  new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+const now = new Date();
+const dateLine = now
+  .toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+const editionNo = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000);
 
-const SkeletonCard = () => (
-  <div className="rounded-xl border border-border bg-card p-4 space-y-3 animate-pulse">
-    <div className="h-3 w-32 rounded bg-secondary" />
-    <div className="h-4 w-40 rounded bg-secondary" />
-    <div className="h-4 w-36 rounded bg-secondary" />
-    <div className="h-12 rounded-lg bg-secondary" />
+const SkeletonRow = () => (
+  <div className="py-4 grid grid-cols-[30px_1fr_auto] gap-x-3 animate-pulse">
+    <span className="h-4 w-5 bg-secondary" />
+    <div className="space-y-2">
+      <div className="h-3 w-32 bg-secondary" />
+      <div className="h-5 w-40 bg-secondary" />
+      <div className="h-5 w-36 bg-secondary" />
+    </div>
+    <span className="h-8 w-12 bg-secondary" />
   </div>
 );
 
 const EmptyState = ({ title, body }: { title: string; body: string }) => (
-  <div className="rounded-xl border border-dashed border-border px-6 py-14 text-center md:col-span-2">
-    <p className="text-[15px] font-semibold text-foreground">{title}</p>
-    <p className="text-sm text-muted-foreground mt-1">{body}</p>
+  <div className="py-12 text-center md:col-span-2">
+    <p className="font-display font-black uppercase text-[28px] leading-none">{title}</p>
+    <p className="font-serif italic text-[16px] text-muted-foreground mt-2">{body}</p>
   </div>
 );
 
@@ -132,61 +139,62 @@ const Index = () => {
       role="tab"
       aria-selected={activeTab === value}
       onClick={() => setActiveTab(value)}
-      className={`relative pb-3 font-display font-semibold uppercase text-[22px] leading-none tracking-[0.01em] transition-colors ${
-        activeTab === value ? "text-foreground" : "text-muted-foreground hover:text-secondary-foreground"
+      className={`relative flex items-start gap-1 pb-2 font-display font-black uppercase text-[34px] leading-[0.9] transition-colors ${
+        activeTab === value ? "text-foreground" : "text-foreground/25 hover:text-foreground/50"
       }`}
     >
       {label}
-      <span className="num ml-1.5 text-[15px] align-top text-muted-foreground">{count}</span>
-      {activeTab === value && <span className="absolute left-0 right-0 -bottom-px h-[2px] bg-primary" />}
+      <span className="font-mono text-[11px] font-medium tracking-normal mt-0.5">{count}</span>
+      {activeTab === value && <span className="absolute left-0 right-0 -bottom-[3px] h-[3px] bg-red" />}
     </button>
   );
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-0">
-      <AppHeader
-        right={
-          <>
+      <div className="max-w-5xl mx-auto px-4 pt-[env(safe-area-inset-top)]">
+        {/* Ear: date + account */}
+        <div className="h-11 flex items-center justify-between gap-3">
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground truncate">{dateLine}</span>
+          <div className="flex items-center gap-1 shrink-0">
             <PremiumBadge active={isPremium} daysLeft={premiumDaysLeft} loading={premiumLoading} />
             {!isPremium && !premiumLoading && (
-              <Link
-                to="/premium"
-                className="inline-flex items-center h-8 px-3 rounded-full bg-gold text-accent-foreground text-xs font-semibold"
-              >
-                Go Premium
+              <Link to="/premium" className="inline-flex items-center h-7 px-2 bg-red text-background font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em]">
+                Subscribe
               </Link>
             )}
             <span className="hidden md:inline-flex">
               {user ? (
-                <button onClick={signOut} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium text-secondary-foreground hover:text-foreground hover:bg-secondary">
-                  <LogOut className="w-4 h-4" />
+                <button onClick={signOut} className={headerLink}>
+                  <LogOut className="w-3.5 h-3.5" />
                   {user.email?.split("@")[0]}
                 </button>
               ) : (
-                <Link to="/auth" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium text-secondary-foreground hover:text-foreground hover:bg-secondary">
-                  <LogIn className="w-4 h-4" />
+                <Link to="/auth" className={headerLink}>
+                  <LogIn className="w-3.5 h-3.5" />
                   Sign in
                 </Link>
               )}
             </span>
-          </>
-        }
-      />
-
-      <main className="max-w-5xl mx-auto px-4 pt-5 md:pt-8 space-y-8">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="text-sm text-secondary-foreground">{todayLabel()}</p>
-          {!loading && (
-            <p className="text-sm text-muted-foreground">
-              {upcomingCount} open {upcomingCount === 1 ? "pick" : "picks"}
-            </p>
-          )}
+          </div>
         </div>
 
+        {/* Masthead */}
+        <header className="border-t-[3px] border-foreground pt-3 pb-2.5 text-center">
+          <Logo size="lg" />
+        </header>
+        <div className="border-y border-foreground py-1.5 flex items-center justify-between font-mono text-[10.5px] uppercase tracking-[0.1em]">
+          <span>No. {editionNo}</span>
+          <span className="hidden min-[360px]:inline">The daily form guide</span>
+          <span>{loading ? "—" : `${upcomingCount} open`}</span>
+        </div>
+        <div className="mt-[2px] border-t-[3px] border-foreground" />
+      </div>
+
+      <main className="max-w-5xl mx-auto px-4 pt-6 space-y-10">
         <TodayHotTip />
 
-        <section className="space-y-4">
-          <div role="tablist" className="flex items-end gap-6 border-b border-border">
+        <section>
+          <div role="tablist" className="flex items-end gap-5 border-b-[3px] border-foreground">
             {tabBtn("tips", "Tips", filteredTips.length)}
             {tabBtn("coupons", "Coupons", filteredCoupons.length)}
           </div>
@@ -194,52 +202,59 @@ const Index = () => {
           {activeTab === "tips" ? (
             <>
               {tips.length > 0 && (
-                <FilterBar
-                  sports={tipSports}
-                  activeSport={tipSport}
-                  onSportChange={setTipSport}
-                  activePremium={tipPremium}
-                  onPremiumChange={setTipPremium}
-                />
+                <div className="py-3 border-b border-foreground/80">
+                  <FilterBar
+                    sports={tipSports}
+                    activeSport={tipSport}
+                    onSportChange={setTipSport}
+                    activePremium={tipPremium}
+                    onPremiumChange={setTipPremium}
+                  />
+                </div>
               )}
-              <div className="grid gap-3 md:grid-cols-2 md:gap-4">
+              <div className="md:grid md:grid-cols-2 md:gap-x-10 divide-y divide-foreground/25 md:divide-y-0 md:[&>*]:border-b md:[&>*]:border-foreground/25">
                 {loading
-                  ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+                  ? Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
                   : filteredTips.length === 0
-                  ? <EmptyState title="No tips right now" body="New picks are usually posted by midday. Check back soon." />
-                  : filteredTips.map((tip) => <TipCard key={tip.id} tip={tip} userIsPremium={isPremium} />)}
+                  ? <EmptyState title="Nothing on the card" body="New selections usually go up by midday." />
+                  : filteredTips.map((tip, i) => <TipCard key={tip.id} tip={tip} index={i} userIsPremium={isPremium} />)}
               </div>
             </>
           ) : (
             <>
               {coupons.length > 0 && (
-                <FilterBar activePremium={couponPremium} onPremiumChange={setCouponPremium} />
+                <div className="py-3 border-b border-foreground/80">
+                  <FilterBar activePremium={couponPremium} onPremiumChange={setCouponPremium} />
+                </div>
               )}
-              <div className="grid gap-3 md:grid-cols-2 md:gap-4 items-start">
+              <div className="pt-5 grid gap-6 md:grid-cols-2 items-start">
                 {loading
-                  ? Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} />)
+                  ? <SkeletonRow />
                   : filteredCoupons.length === 0
-                  ? <EmptyState title="No coupons right now" body="Accumulators go up before the evening fixtures." />
+                  ? <EmptyState title="No slips today" body="Accumulators go up before the evening fixtures." />
                   : filteredCoupons.map((c) => <CouponCard key={c.id} coupon={c} userIsPremium={isPremium} />)}
               </div>
             </>
           )}
         </section>
 
-        <p className="text-xs leading-relaxed text-muted-foreground border-t border-border pt-5">
-          Tips are opinions, not guarantees. Bet only what you can afford to lose. 18+.
-        </p>
+        <section className="border-t-[3px] border-foreground pt-3">
+          <SectionHead>Small print</SectionHead>
+          <p className="mt-2 font-serif text-[14.5px] leading-relaxed text-secondary-foreground">
+            Our tips are opinions, not guarantees. Odds move, form dips, referees happen. Bet only what you can afford to lose. 18+.
+          </p>
+        </section>
       </main>
 
-      <footer className="max-w-5xl mx-auto px-4 pt-6 pb-10 md:pb-12">
-        <nav className="flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
+      <footer className="max-w-5xl mx-auto px-4 pt-8 pb-10 md:pb-12">
+        <nav className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground">
           <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
           <Link to="/terms" className="hover:text-foreground">Terms</Link>
           <Link to="/deletion" className="hover:text-foreground">Delete account</Link>
           <a href="mailto:greatsportbets@gmail.com" className="hover:text-foreground">Contact</a>
         </nav>
-        <p className="mt-4 text-xs text-muted-foreground/70 select-none cursor-pointer w-fit" onClick={handleFooterTap}>
-          © 2026 Great Sport Bets
+        <p className="mt-4 font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground/70 select-none cursor-pointer w-fit" onClick={handleFooterTap}>
+          © 2026 Great Sport Bets · Printed daily
         </p>
       </footer>
 

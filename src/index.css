@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,60 +6,62 @@
 
 @layer base {
   :root {
-    /* Graphite + one signal colour. Premium is gold, results are green/red. */
-    --background: 220 14% 6%;
-    --foreground: 40 18% 93%;
+    /* Newsprint: warm paper, black ink, one tabloid red. */
+    --background: 41 33% 91%;
+    --foreground: 30 12% 8%;
 
-    --card: 220 13% 9%;
-    --card-foreground: 40 18% 93%;
+    --card: 43 45% 96%;
+    --card-foreground: 30 12% 8%;
 
-    --popover: 220 13% 10%;
-    --popover-foreground: 40 18% 93%;
+    --popover: 43 45% 96%;
+    --popover-foreground: 30 12% 8%;
 
-    --primary: 74 82% 60%;
-    --primary-foreground: 220 20% 8%;
+    --primary: 30 12% 8%;
+    --primary-foreground: 41 33% 93%;
 
-    --secondary: 220 11% 13%;
-    --secondary-foreground: 40 10% 80%;
+    --secondary: 40 22% 85%;
+    --secondary-foreground: 30 10% 22%;
 
-    --muted: 220 11% 12%;
-    --muted-foreground: 220 7% 56%;
+    --muted: 40 22% 86%;
+    --muted-foreground: 34 8% 38%;
 
-    --accent: 41 68% 60%;
-    --accent-foreground: 220 20% 8%;
+    --accent: 40 22% 84%;
+    --accent-foreground: 30 12% 8%;
 
-    --destructive: 2 70% 58%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 3 74% 44%;
+    --destructive-foreground: 41 33% 95%;
 
-    --border: 220 10% 16%;
-    --input: 220 10% 18%;
-    --ring: 74 82% 60%;
+    --border: 36 14% 74%;
+    --input: 36 14% 70%;
+    --ring: 30 12% 8%;
 
-    --radius: 0.625rem;
+    --radius: 0.125rem;
 
-    --sidebar-background: 220 13% 9%;
-    --sidebar-foreground: 40 10% 80%;
-    --sidebar-primary: 74 82% 60%;
-    --sidebar-primary-foreground: 220 20% 8%;
-    --sidebar-accent: 220 11% 13%;
-    --sidebar-accent-foreground: 40 10% 80%;
-    --sidebar-border: 220 10% 16%;
-    --sidebar-ring: 74 82% 60%;
+    --sidebar-background: 43 45% 96%;
+    --sidebar-foreground: 30 10% 22%;
+    --sidebar-primary: 30 12% 8%;
+    --sidebar-primary-foreground: 41 33% 93%;
+    --sidebar-accent: 40 22% 85%;
+    --sidebar-accent-foreground: 30 12% 8%;
+    --sidebar-border: 36 14% 74%;
+    --sidebar-ring: 30 12% 8%;
 
-    --success: 145 55% 50%;
-    --loss: 2 70% 60%;
-    --draw: 41 68% 60%;
-    --gold: 41 68% 60%;
-    --confidence-high: 145 55% 50%;
-    --confidence-medium: 41 68% 60%;
-    --confidence-low: 2 70% 60%;
+    --red: 3 74% 44%;
+    --success: 148 52% 27%;
+    --loss: 3 74% 44%;
+    --draw: 34 70% 34%;
+    --gold: 36 72% 33%;
+    --confidence-high: 148 52% 27%;
+    --confidence-medium: 34 70% 34%;
+    --confidence-low: 3 74% 44%;
 
-    --font-display: 'Barlow Condensed', sans-serif;
-    --font-body: 'Archivo', sans-serif;
+    --font-display: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
+    --font-body: 'Newsreader', Georgia, serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
     --glow-primary: none;
     --glow-accent: none;
-    --card-shadow: 0 1px 0 hsl(0 0% 100% / 0.03) inset;
+    --card-shadow: none;
   }
 }
 
@@ -71,12 +73,12 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
-    font-feature-settings: "ss01", "cv11";
     -webkit-tap-highlight-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.15 0 0 0 0 0.1 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
   ::selection {
-    background: hsl(var(--primary) / 0.35);
+    background: hsl(var(--red) / 0.25);
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -88,15 +90,40 @@
   .num {
     font-family: var(--font-display);
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.01em;
   }
-  .eyebrow {
-    font-size: 11px;
-    line-height: 1;
-    font-weight: 600;
+  .eyebrow, .label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    line-height: 1.2;
+    font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: hsl(var(--muted-foreground));
+  }
+  /* Blacked-out text, like a redacted document. */
+  .redact {
+    display: inline-block;
+    background: hsl(var(--foreground));
+    height: 0.95em;
+    vertical-align: -0.1em;
+    border-radius: 1px;
+  }
+  /* Printed team crests: newspaper halftone feel. */
+  .print img {
+    filter: grayscale(1) contrast(1.15);
+    mix-blend-mode: multiply;
+  }
+  /* Torn-off bottom edge of a betting slip. */
+  .slip-edge {
+    -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%;
+    mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%;
+    padding-bottom: 7px;
+  }
+  .leader {
+    flex: 1;
+    min-width: 12px;
+    border-bottom: 1.5px dotted hsl(var(--foreground) / 0.45);
+    transform: translateY(-0.3em);
   }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }

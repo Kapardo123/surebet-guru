@@ -1,28 +1,35 @@
 type Status = "upcoming" | "active" | "pending" | "won" | "lost" | "draw";
 
-const styles: Record<Status, { label: string; cls: string } | null> = {
+const stamps: Record<Status, { label: string; cls: string } | null> = {
   upcoming: null,
   active: null,
-  pending: { label: "Pending", cls: "text-muted-foreground bg-secondary" },
-  won: { label: "Won", cls: "text-success bg-success/10" },
-  lost: { label: "Lost", cls: "text-loss bg-loss/10" },
-  draw: { label: "Draw", cls: "text-gold bg-gold/10" },
+  pending: { label: "Pending", cls: "text-muted-foreground border-muted-foreground" },
+  won: { label: "Won", cls: "text-success border-success" },
+  lost: { label: "Lost", cls: "text-red border-red" },
+  draw: { label: "Draw", cls: "text-draw border-draw" },
 };
 
-/** Settlement label. Renders nothing while a pick is still open. */
-const StatusTag = ({ status }: { status: Status }) => {
-  const s = styles[status];
+/**
+ * Rubber stamp for a settled pick. Slightly rotated and faded at the edges,
+ * like it was pressed onto the paper by hand. Renders nothing while open.
+ */
+const StatusTag = ({ status, className = "" }: { status: Status; className?: string }) => {
+  const s = stamps[status];
   if (!s) return null;
   return (
-    <span className={`inline-flex items-center h-5 px-1.5 rounded text-[11px] font-semibold uppercase tracking-[0.06em] ${s.cls}`}>
+    <span
+      className={`inline-block font-display font-black uppercase text-[19px] leading-none tracking-[0.06em] px-2 pt-[3px] pb-[2px] border-[2.5px] rounded-[3px] -rotate-[7deg] opacity-[0.88] select-none ${s.cls} ${className}`}
+      style={{ maskImage: "radial-gradient(circle at 30% 40%, #000 55%, rgba(0,0,0,.75) 75%, #000 100%)" }}
+    >
       {s.label}
     </span>
   );
 };
 
-export const PremiumTag = () => (
-  <span className="inline-flex items-center h-5 px-1.5 rounded text-[11px] font-semibold uppercase tracking-[0.06em] text-gold bg-gold/10">
-    Premium
+/** Small ink label marking members-only content. */
+export const PremiumTag = ({ className = "" }: { className?: string }) => (
+  <span className={`inline-flex items-center h-[18px] px-1.5 bg-foreground text-background font-mono text-[9.5px] font-semibold uppercase tracking-[0.12em] ${className}`}>
+    Members
   </span>
 );
 

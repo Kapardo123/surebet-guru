@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Check, Loader2, LogIn, LogOut, ArrowLeft } from "lucide-react";
+import { Loader2, LogIn, LogOut, ArrowLeft } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import AppHeader from "@/components/AppHeader";
+import AppHeader, { headerLink } from "@/components/AppHeader";
+import SectionHead from "@/components/SectionHead";
 import PageTransition from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
@@ -128,7 +129,7 @@ export default function Premium() {
     );
   }
 
-  const linkBtn = "inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium text-secondary-foreground hover:text-foreground hover:bg-secondary";
+  const roman = ["I", "II", "III", "IV"];
 
   return (
     <PageTransition>
@@ -137,50 +138,51 @@ export default function Premium() {
         right={
           <>
             {user ? (
-              <button onClick={signOut} className={linkBtn}>
-                <LogOut className="w-4 h-4" />
+              <button onClick={signOut} className={headerLink}>
+                <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Sign out</span>
               </button>
             ) : (
-              <Link to="/auth?redirect=/premium" className={linkBtn}>
-                <LogIn className="w-4 h-4" />
+              <Link to="/auth?redirect=/premium" className={headerLink}>
+                <LogIn className="w-3.5 h-3.5" />
                 Sign in
               </Link>
             )}
-            <button onClick={handleBack} className={linkBtn}>
-              <ArrowLeft className="w-4 h-4" />
+            <button onClick={handleBack} className={headerLink}>
+              <ArrowLeft className="w-3.5 h-3.5" />
               Tips
             </button>
           </>
         }
       />
 
-      <main className="max-w-xl mx-auto px-4 pt-8 space-y-10">
+      <main className="max-w-xl mx-auto px-4 pt-7 space-y-10">
         <section>
-          <p className="eyebrow text-gold">GSB Premium</p>
-          <h1 className="font-display font-semibold uppercase text-[44px] leading-[0.95] tracking-[0.005em] mt-3 text-foreground">
-            Every pick.<br />No ads.
+          <SectionHead tone="red">Membership</SectionHead>
+          <h1 className="font-display font-black uppercase text-[clamp(52px,16vw,88px)] leading-[0.84] tracking-[-0.01em] mt-4 text-foreground">
+            Get the<br />full card.
           </h1>
-          <p className="text-[15px] leading-relaxed text-secondary-foreground mt-4">
-            Unlock the premium tips and accumulators, read the reasoning behind each one and get a ping as soon as a new pick goes up.
+          <p className="font-serif text-[18px] leading-[1.5] text-secondary-foreground mt-4">
+            Members read every selection we publish, with the reasoning behind it, and hear about each new pick the moment it goes up.
           </p>
         </section>
 
         {active && (
-          <section className="rounded-xl border border-gold/30 bg-card divide-y divide-border">
-            <div className="flex items-end justify-between px-4 py-4">
+          <section className="bg-foreground text-background p-5">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="eyebrow text-gold">Active</p>
-                <p className="text-sm text-secondary-foreground mt-2">Your membership runs for</p>
+                <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] opacity-70">Membership card</p>
+                <p className="font-display font-black uppercase text-[30px] leading-none mt-2">Active</p>
               </div>
-              <p className="num text-[40px] font-semibold leading-none text-foreground">
-                {daysLeft}<span className="text-lg text-muted-foreground ml-1">days</span>
-              </p>
+              <div className="text-right">
+                <p className="num font-black text-[56px] leading-[0.8]">{daysLeft}</p>
+                <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] opacity-70 mt-1">days left</p>
+              </div>
             </div>
-            <div className="flex items-center justify-between gap-4 px-4 py-3.5">
+            <div className="mt-5 pt-4 border-t border-background/25 flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-foreground">Push notifications</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Get new premium picks instantly</p>
+                <p className="font-mono text-[11px] uppercase tracking-[0.1em]">Push notifications</p>
+                <p className="font-serif italic text-[14px] opacity-70 mt-0.5">A ping for each new members' pick</p>
               </div>
               <Switch
                 checked={push.enabled}
@@ -193,85 +195,82 @@ export default function Premium() {
                   }
                 }}
                 disabled={push.loading}
+                className="data-[state=unchecked]:bg-background/30 data-[state=checked]:bg-red"
               />
             </div>
           </section>
         )}
 
         <section>
-          <ul className="space-y-3">
-            {features.map((f) => (
-              <li key={f} className="flex gap-3 text-[15px] text-foreground">
-                <Check className="w-5 h-5 text-primary shrink-0 mt-px" strokeWidth={2.5} />
-                {f}
+          <SectionHead>What you get</SectionHead>
+          <ol className="mt-3 divide-y divide-foreground/20">
+            {features.map((f, i) => (
+              <li key={f} className="grid grid-cols-[36px_1fr] py-2.5">
+                <span className="font-serif italic text-[17px] text-red">{roman[i]}.</span>
+                <span className="font-serif text-[17px] leading-snug text-foreground">{f}</span>
               </li>
             ))}
-          </ul>
+          </ol>
         </section>
 
-        <section className="space-y-3">
-          <h2 className="font-display font-semibold uppercase text-2xl tracking-[0.01em]">
-            {active ? "Extend your access" : "Choose a pass"}
-          </h2>
-          {plans.map((plan) => (
-            <button
-              key={plan.duration}
-              onClick={() => handleBuy(plan.duration, plan.paymentLink)}
-              disabled={loading !== null}
-              className={`w-full text-left rounded-xl border bg-card px-4 py-4 flex items-center justify-between gap-4 transition-colors disabled:opacity-60 ${
-                plan.popular ? "border-gold/60" : "border-border hover:border-muted-foreground/40"
-              }`}
-            >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[15px] font-semibold text-foreground">{plan.days}</span>
-                  {plan.popular && (
-                    <span className="h-5 px-1.5 rounded text-[11px] font-semibold uppercase tracking-[0.06em] bg-gold text-accent-foreground inline-flex items-center">
-                      Most popular
-                    </span>
-                  )}
-                  {plan.save && !plan.popular && (
-                    <span className="h-5 px-1.5 rounded text-[11px] font-semibold uppercase tracking-[0.06em] text-success bg-success/10 inline-flex items-center">
-                      {plan.save}
-                    </span>
+        <section>
+          <SectionHead>{active ? "Extend" : "Rates"}</SectionHead>
+          <div className="mt-2">
+            {plans.map((plan) => (
+              <button
+                key={plan.duration}
+                onClick={() => handleBuy(plan.duration, plan.paymentLink)}
+                disabled={loading !== null}
+                className={`w-full text-left px-3 -mx-3 py-4 border-b border-foreground/25 transition-colors disabled:opacity-60 ${
+                  plan.popular ? "bg-foreground text-background" : "hover:bg-secondary/60"
+                }`}
+                style={{ width: "calc(100% + 1.5rem)" }}
+              >
+                <div className="flex items-baseline gap-2">
+                  <span className="font-display font-black uppercase text-[28px] leading-none shrink-0">{plan.days}</span>
+                  <span className={`leader ${plan.popular ? "!border-background/50" : ""}`} />
+                  {loading === plan.duration ? (
+                    <Loader2 className="w-5 h-5 animate-spin self-center" />
+                  ) : (
+                    <span className="num font-black text-[32px] leading-none shrink-0">{getPlanPrice(plan)}</span>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{plan.label} · {plan.perDay}</p>
-              </div>
-              <span className="flex items-center gap-3 shrink-0">
-                {loading === plan.duration ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                ) : (
-                  <span className="num text-[28px] font-semibold leading-none text-foreground">{getPlanPrice(plan)}</span>
-                )}
-              </span>
-            </button>
-          ))}
+                <div className={`mt-1.5 flex items-center justify-between gap-3 font-mono text-[10.5px] uppercase tracking-[0.1em] ${plan.popular ? "text-background/70" : "text-muted-foreground"}`}>
+                  <span>{plan.label} · {plan.perDay}</span>
+                  {plan.popular ? (
+                    <span className="text-background font-semibold">Readers' choice</span>
+                  ) : plan.save ? (
+                    <span className="text-red font-semibold">{plan.save}</span>
+                  ) : null}
+                </div>
+              </button>
+            ))}
+          </div>
           {!user && (
-            <p className="text-xs text-muted-foreground">You will be asked to sign in before paying.</p>
+            <p className="mt-3 font-serif italic text-[15px] text-muted-foreground">You'll be asked to sign in before paying.</p>
           )}
         </section>
 
         {Capacitor.isNativePlatform() && (
-          <section className="flex items-center justify-between gap-4 border-t border-border pt-5">
-            <p className="text-sm text-secondary-foreground">Already subscribed?</p>
+          <section className="flex items-center justify-between gap-4 border-t border-foreground pt-4">
+            <p className="font-serif italic text-[16px] text-secondary-foreground">Already a member?</p>
             <button
               onClick={handleRestore}
               disabled={restoring}
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-full border border-border text-sm font-medium text-foreground disabled:opacity-60"
+              className="inline-flex items-center gap-2 h-9 px-3 border-[1.5px] border-foreground font-mono text-[11px] font-semibold uppercase tracking-[0.1em] disabled:opacity-60"
             >
-              {restoring && <Loader2 className="w-4 h-4 animate-spin" />}
+              {restoring && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               Restore purchases
             </button>
           </section>
         )}
 
-        <footer className="text-xs leading-relaxed text-muted-foreground border-t border-border pt-5 space-y-2">
-          <p>
+        <footer className="border-t-[3px] border-foreground pt-3 space-y-2">
+          <p className="font-serif text-[14px] leading-relaxed text-secondary-foreground">
             Payments are processed securely. Access is granted straight away on every device you sign in on.
             By subscribing you agree to our <Link to="/terms" className="underline underline-offset-2">Terms of Service</Link>.
           </p>
-          <p className="text-muted-foreground/60">App version 21.0.0 · Build 2100</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">App version 21.0.0 · Build 2100</p>
         </footer>
       </main>
     </div>

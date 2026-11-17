@@ -1,9 +1,26 @@
 import { Coupon } from "@/lib/couponStorage";
-import { Lock } from "lucide-react";
 import { Link } from "react-router-dom";
-import { memo } from "react";
-import StatusTag, { PremiumTag } from "@/components/StatusTag";
+import { memo, useMemo } from "react";
+import StatusTag from "@/components/StatusTag";
 import { formatKickoff, formatShortDate } from "@/lib/format";
+
+/** Decorative barcode derived from the coupon id, so each slip has its own. */
+const Barcode = ({ seed }: { seed: number }) => {
+  const bars = useMemo(() => {
+    let x = (seed * 9301 + 49297) % 233280 || 7;
+    return Array.from({ length: 34 }, () => {
+      x = (x * 9301 + 49297) % 233280;
+      return 1 + (x % 3);
+    });
+  }, [seed]);
+  return (
+    <div className="flex items-stretch gap-[2px] h-7" aria-hidden>
+      {bars.map((w, i) => (
+        <span key={i} className={i % 2 ? "bg-transparent" : "bg-foreground"} style={{ width: w }} />
+      ))}
+    </div>
+  );
+};
 
 const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsPremium?: boolean }) => {
   const isSettled = coupon.status === "won" || coupon.status === "lost";
@@ -11,85 +28,98 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
   const isLost = coupon.status === "lost";
   const locked = coupon.isPremium && !userIsPremium && !isSettled;
   const legs = coupon.matches.length;
+  const ref = `GSB-${String(coupon.id).padStart(5, "0")}`;
 
   return (
-    <article
-      className={`relative overflow-hidden rounded-xl border bg-card ${
-        coupon.isPremium && !isSettled ? "border-gold/25" : "border-border"
-      } ${isLost ? "opacity-60" : ""}`}
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 px-4 pt-3.5 pb-3">
-        <div className="min-w-0">
-          <h3 className="text-[15px] font-semibold text-foreground truncate">{coupon.name}</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {legs} {legs === 1 ? "selection" : "selections"} · {formatShortDate(coupon.createdAt)}
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {coupon.isPremium && <PremiumTag />}
-          <StatusTag status={coupon.status} />
-        </div>
-      </div>
-
-      {/* Legs */}
-      <ol className="border-t border-border">
-        {coupon.matches.map((match, i) => (
-          <li key={i} className="flex items-center gap-3 px-4 py-2.5 border-b border-border/70 last:border-b-0">
-            <span className="num text-sm text-muted-foreground w-4 shrink-0">{i + 1}</span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm text-foreground truncate">
-                {match.homeTeam} <span className="text-muted-foreground">v</span> {match.awayTeam}
-              </p>
-              <p className="text-xs text-muted-foreground truncate mt-0.5">
-                {locked ? (
-                  <span className="inline-flex items-center gap-1"><Lock className="w-3 h-3" /> Hidden</span>
-                ) : (
-                  <span className="text-secondary-foreground font-medium">{match.prediction}</span>
-                )}
-                {match.kickoff && <> · {formatKickoff(match.kickoff)}</>}
-              </p>
-            </div>
-            {!locked && (
-              <span className="num text-[17px] font-semibold text-foreground shrink-0">{match.odds.toFixed(2)}</span>
-            )}
-          </li>
-        ))}
-      </ol>
-
-      {/* Perforation */}
-      <div className="relative h-0 border-t border-dashed border-border mx-4" aria-hidden>
-        <span className="absolute -left-[23px] -top-[7px] w-3.5 h-3.5 rounded-full bg-background border border-border" />
-        <span className="absolute -right-[23px] -top-[7px] w-3.5 h-3.5 rounded-full bg-background border border-border" />
-      </div>
-
-      {/* Total */}
-      {locked ? (
-        <Link to="/premium" className="flex items-center justify-between gap-3 px-4 py-3.5">
-          <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Lock className="w-4 h-4 text-gold" />
-            Premium coupon
-          </span>
-          <span className="text-xs font-semibold text-gold">See plans</span>
-        </Link>
-      ) : (
-        <div className="flex items-end justify-between gap-3 px-4 py-3.5">
-          <div>
-            <p className="text-[11px] text-muted-foreground">Total odds</p>
-            {coupon.stake ? (
-              <p className="text-xs text-secondary-foreground mt-0.5">Stake ${coupon.stake}</p>
-            ) : null}
+    <div className="drop-shadow-[0_1px_1px_rgba(40,30,20,0.18)]">
+      <article className="relative bg-card slip-edge font-mono text-foreground">
+        <div className="px-4 pt-4 pb-5">
+          {/* Slip header */}
+          <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+            <span>{legs}-fold accumulator</span>
+            <span>{ref}</span>
           </div>
-          <p
-            className={`num text-[30px] font-semibold leading-none ${
-              isWon ? "text-success" : isLost ? "text-muted-foreground line-through decoration-1" : "text-primary"
-            }`}
-          >
-            {coupon.totalOdds.toFixed(2)}
-          </p>
+          <div className="mt-2 flex items-start justify-between gap-3">
+            <h3 className="font-display font-black uppercase text-[30px] leading-[0.9] tracking-[0.005em]">
+              {coupon.name}
+            </h3>
+            {coupon.isPremium && !isSettled && (
+              <span className="shrink-0 mt-1 inline-flex items-center h-[18px] px-1.5 bg-foreground text-background text-[9.5px] font-semibold uppercase tracking-[0.12em]">
+                Members
+              </span>
+            )}
+          </div>
+
+          <div className="my-3 border-t border-dashed border-foreground/50" />
+
+          {/* Selections */}
+          <ol className={`space-y-3 ${isLost ? "opacity-55" : ""}`}>
+            {coupon.matches.map((m, i) => (
+              <li key={i} className="text-[12.5px] leading-snug">
+                <p className="flex gap-2 font-semibold uppercase tracking-[0.02em]">
+                  <span className="text-muted-foreground">{i + 1}.</span>
+                  <span className="truncate">
+                    {m.homeTeam} v {m.awayTeam}
+                  </span>
+                </p>
+                <div className="flex items-baseline gap-1.5 pl-5 mt-0.5">
+                  {locked ? (
+                    <>
+                      <span className="redact w-28" />
+                      <span className="leader" />
+                      <span className="redact w-8" />
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-serif italic text-[15px] tracking-normal">{m.prediction}</span>
+                      <span className="leader" />
+                      <span className="font-semibold">{m.odds.toFixed(2)}</span>
+                    </>
+                  )}
+                </div>
+                {(m.league || m.kickoff) && (
+                  <p className="pl-5 mt-0.5 text-[10px] uppercase tracking-[0.08em] text-muted-foreground truncate">
+                    {[m.league, m.kickoff && formatKickoff(m.kickoff)].filter(Boolean).join(" · ")}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ol>
+
+          <div className="my-3 border-t border-dashed border-foreground/50" />
+
+          {/* Total */}
+          {locked ? (
+            <Link to="/premium" className="flex items-end justify-between gap-3">
+              <span className="text-[11px] uppercase tracking-[0.08em] leading-snug">
+                Selections hidden<br />
+                <span className="text-red underline underline-offset-[3px]">Members only, see rates</span>
+              </span>
+              <span className="num font-black text-[40px] leading-none text-foreground/20">?.??</span>
+            </Link>
+          ) : (
+            <div className="flex items-end justify-between gap-3">
+              <div className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground leading-relaxed">
+                <p>Total odds</p>
+                {coupon.stake ? <p>Stake ${coupon.stake}</p> : <p>Issued {formatShortDate(coupon.createdAt)}</p>}
+              </div>
+              <span
+                className={`num font-black text-[44px] leading-[0.85] ${
+                  isLost ? "text-muted-foreground line-through decoration-2" : isWon ? "text-success" : "text-foreground"
+                }`}
+              >
+                {coupon.totalOdds.toFixed(2)}
+              </span>
+            </div>
+          )}
+
+          <div className="mt-4 flex items-end justify-between gap-3">
+            <Barcode seed={coupon.id} />
+            {isSettled && <StatusTag status={coupon.status} className="text-[24px]" />}
+          </div>
         </div>
-      )}
-    </article>
+      </article>
+    </div>
   );
 };
 

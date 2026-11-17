@@ -37,27 +37,37 @@ const SplashScreen = ({ onFinish }: { onFinish?: () => void }) => {
         transition={{ duration: 0.5 }}
         className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background"
       >
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="flex flex-col items-center gap-5 px-6 text-center"
-        >
-          <span className="grid place-items-center w-16 h-16 rounded-xl bg-primary text-primary-foreground font-display font-bold text-3xl leading-none">
-            GSB
-          </span>
-          <div className="font-display font-semibold uppercase text-foreground text-[40px] leading-[0.95] tracking-[0.01em]">
-            Great Sport Bets
-          </div>
-          <div className="w-28 h-[2px] bg-border overflow-hidden rounded-full">
-            <motion.div
-              className="h-full bg-primary"
-              initial={{ width: "0%" }}
-              animate={{ width: "100%" }}
-              transition={{ duration: 2.6, ease: "easeInOut" }}
-            />
-          </div>
-        </motion.div>
+        <div className="w-full max-w-md px-5">
+          <motion.div
+            className="h-[3px] bg-foreground origin-left"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.6, ease: [0.7, 0, 0.3, 1] }}
+          />
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.35 }}
+            className="py-3 text-center font-display font-black uppercase text-foreground leading-[0.82] text-[clamp(48px,15vw,84px)]"
+          >
+            Great<br />Sport Bets
+          </motion.div>
+          <motion.div
+            className="h-px bg-foreground origin-right"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.6, delay: 0.2, ease: [0.7, 0, 0.3, 1] }}
+          />
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9, duration: 0.4 }}
+            className="mt-2 flex justify-between font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground"
+          >
+            <span>The daily form guide</span>
+            <span className="text-red">Going to press…</span>
+          </motion.p>
+        </div>
       </motion.div>
     </AnimatePresence>
   );

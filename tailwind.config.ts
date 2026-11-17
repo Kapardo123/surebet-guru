@@ -19,10 +19,12 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["'Barlow Condensed'", "sans-serif"],
-        body: ["'Archivo'", "sans-serif"],
-        sans: ["'Archivo'", "system-ui", "sans-serif"],
-        splash: ["'Barlow Condensed'", "sans-serif"],
+        display: ["'Big Shoulders Display'", "'Arial Narrow'", "sans-serif"],
+        body: ["'Newsreader'", "Georgia", "serif"],
+        serif: ["'Newsreader'", "Georgia", "serif"],
+        sans: ["'Newsreader'", "Georgia", "serif"],
+        mono: ["'IBM Plex Mono'", "ui-monospace", "monospace"],
+        splash: ["'Big Shoulders Display'", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -60,6 +62,7 @@ export default {
         },
         success: "hsl(var(--success))",
         gold: "hsl(var(--gold))",
+        red: "hsl(var(--red))",
         loss: "hsl(var(--loss))",
         draw: "hsl(var(--draw))",
         sidebar: {

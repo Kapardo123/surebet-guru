@@ -12,10 +12,10 @@ const PremiumBadge = ({ active, daysLeft, loading = false }: PremiumBadgeProps) 
   return (
     <Link
       to="/premium"
-      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-gold/30 text-gold text-xs font-semibold"
+      className="inline-flex items-center gap-1.5 h-7 px-2 bg-foreground text-background font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em]"
     >
-      Premium
-      <span className="text-gold/70 font-medium tabular-nums">{daysLeft}d</span>
+      Member
+      <span className="opacity-70 tabular-nums">{daysLeft}d</span>
     </Link>
   );
 };

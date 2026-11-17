@@ -6,14 +6,14 @@ import type { LucideIcon } from "lucide-react";
 type Item = { label: string; icon: LucideIcon; active: boolean; onClick?: () => void; to?: string };
 
 const NavButton = ({ label, icon: Icon, active, onClick, to }: Item) => {
-  const cls = `relative flex-1 flex flex-col items-center justify-center gap-1 h-14 transition-colors ${
-    active ? "text-foreground" : "text-muted-foreground hover:text-secondary-foreground"
+  const cls = `relative flex-1 flex flex-col items-center justify-center gap-1 h-[58px] transition-colors ${
+    active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
   }`;
   const inner = (
     <>
-      {active && <span className="absolute top-0 h-[2px] w-8 rounded-b bg-primary" />}
-      <Icon className="w-[22px] h-[22px]" strokeWidth={active ? 2.2 : 1.8} />
-      <span className="text-[11px] font-medium">{label}</span>
+      {active && <span className="absolute top-[-3px] inset-x-3 h-[3px] bg-red" />}
+      <Icon className="w-5 h-5" strokeWidth={active ? 2.2 : 1.6} />
+      <span className={`font-mono text-[10px] uppercase tracking-[0.1em] ${active ? "font-semibold" : ""}`}>{label}</span>
     </>
   );
   return to ? (
@@ -34,11 +34,11 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange
   };
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-background/95 backdrop-blur-md border-t border-border pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-background/95 backdrop-blur-sm border-t-[3px] border-foreground pb-[env(safe-area-inset-bottom)]">
       <div className="flex">
         <NavButton label="Tips" icon={Crosshair} active={onHome && activeTab === "tips"} to={onHome ? undefined : "/"} onClick={() => go("tips")} />
         <NavButton label="Coupons" icon={Ticket} active={onHome && activeTab === "coupons"} to={onHome ? undefined : "/"} onClick={() => go("coupons")} />
-        <NavButton label="Premium" icon={Gem} active={pathname === "/premium"} to="/premium" />
+        <NavButton label="Members" icon={Gem} active={pathname === "/premium"} to="/premium" />
         {user ? (
           <NavButton label="Sign out" icon={LogOut} active={false} onClick={signOut} />
         ) : (

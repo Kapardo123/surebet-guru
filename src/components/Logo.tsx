@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import AdminLoginDialog from "@/components/AdminLoginDialog";
 
-const Logo = () => {
+const Logo = ({ size = "sm" }: { size?: "sm" | "lg" }) => {
   const [tapCount, setTapCount] = useState(0);
   const [showLogin, setShowLogin] = useState(false);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -22,23 +22,19 @@ const Logo = () => {
   return (
     <>
       <div
-        className="select-none cursor-pointer flex items-center gap-2.5"
+        className="select-none cursor-pointer"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTap(); }}
       >
-        <span
-          aria-hidden
-          className="grid place-items-center w-8 h-8 rounded-md bg-primary text-primary-foreground font-display font-bold text-[15px] leading-none tracking-tight"
-        >
-          GSB
-        </span>
-        <span className="flex flex-col leading-none">
-          <span className="font-display font-bold text-[19px] tracking-[0.01em] text-foreground uppercase">
+        {size === "lg" ? (
+          <span className="block font-display font-black uppercase text-foreground leading-[0.82] tracking-[-0.01em] text-[clamp(40px,13.2vw,96px)] whitespace-nowrap">
             Great Sport Bets
           </span>
-          <span className="text-[10px] text-muted-foreground tracking-[0.04em] mt-1">
-            Daily picks &amp; accumulators
+        ) : (
+          <span className="flex items-baseline gap-1.5 font-display font-black uppercase leading-none text-foreground text-[24px] tracking-[-0.005em]">
+            Great Sport Bets
+            <span className="w-1.5 h-1.5 rounded-full bg-red translate-y-[-2px]" aria-hidden />
           </span>
-        </span>
+        )}
       </div>
 
       <AdminLoginDialog open={showLogin} onOpenChange={setShowLogin} />
