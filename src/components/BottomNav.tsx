@@ -1,4 +1,4 @@
-import { Crosshair, Ticket, Gem, LogIn, LogOut } from "lucide-react";
+import { Crosshair, Ticket, Gem, LogIn, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import type { LucideIcon } from "lucide-react";
@@ -24,7 +24,7 @@ const NavButton = ({ label, icon: Icon, active, onClick, to }: Item) => {
 };
 
 const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange?: (tab: string) => void }) => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { pathname } = useLocation();
   const onHome = pathname === "/";
 
@@ -40,7 +40,7 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange
         <NavButton label="Coupons" icon={Ticket} active={onHome && activeTab === "coupons"} to={onHome ? undefined : "/"} onClick={() => go("coupons")} />
         <NavButton label="Members" icon={Gem} active={pathname === "/premium"} to="/premium" />
         {user ? (
-          <NavButton label="Sign out" icon={LogOut} active={false} onClick={signOut} />
+          <NavButton label="Account" icon={User} active={pathname === "/account"} to="/account" />
         ) : (
           <NavButton label="Sign in" icon={LogIn} active={pathname === "/auth"} to="/auth" />
         )}

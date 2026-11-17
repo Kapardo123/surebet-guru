@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import { Loader2, LogIn, LogOut, ArrowLeft } from "lucide-react";
+import { Loader2, LogIn, ArrowLeft, User } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader, { headerLink } from "@/components/AppHeader";
 import SectionHead from "@/components/SectionHead";
+import PressPass from "@/components/PressPass";
+import { numberFromId } from "@/components/Barcode";
+import { PenNote } from "@/components/RedPen";
 import PageTransition from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
@@ -14,10 +17,10 @@ import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from 
 
 export default function Premium() {
   // v1.9.5
-  const { user, signOut, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { active, daysLeft, refresh } = usePremiumStatus();
+  const { active, daysLeft, refresh, expiresAt } = usePremiumStatus();
   const [loading, setLoading] = useState<number | null>(null);
   const [restoring, setRestoring] = useState(false);
   const [rcOfferings, setRcOfferings] = useState<any>(null);
@@ -130,18 +133,20 @@ export default function Premium() {
   }
 
   const roman = ["I", "II", "III", "IV"];
+  const handle = user?.email?.split("@")[0] ?? null;
+  const memberNo = user ? numberFromId(user.id) : null;
 
   return (
     <PageTransition>
-    <div className="min-h-screen bg-background pb-12">
+    <div className="min-h-screen bg-background pb-14">
       <AppHeader
         right={
           <>
             {user ? (
-              <button onClick={signOut} className={headerLink}>
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Sign out</span>
-              </button>
+              <Link to="/account" className={headerLink}>
+                <User className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Account</span>
+              </Link>
             ) : (
               <Link to="/auth?redirect=/premium" className={headerLink}>
                 <LogIn className="w-3.5 h-3.5" />
@@ -156,48 +161,85 @@ export default function Premium() {
         }
       />
 
-      <main className="max-w-xl mx-auto px-4 pt-7 space-y-10">
+      <main className="max-w-xl mx-auto px-4 pt-7 space-y-12">
         <section>
           <SectionHead tone="red">Membership</SectionHead>
-          <h1 className="font-display font-black uppercase text-[clamp(52px,16vw,88px)] leading-[0.84] tracking-[-0.01em] mt-4 text-foreground">
-            Get the<br />full card.
+          <h1 className="font-display font-black uppercase text-[clamp(56px,17vw,96px)] leading-[0.82] tracking-[-0.01em] mt-4 text-foreground">
+            {active ? <>You're<br />on the<br />inside.</> : <>Get the<br />full card.</>}
           </h1>
-          <p className="font-serif text-[18px] leading-[1.5] text-secondary-foreground mt-4">
-            Members read every selection we publish, with the reasoning behind it, and hear about each new pick the moment it goes up.
+          <p className="font-serif text-[19px] leading-[1.5] text-secondary-foreground mt-4">
+            {active
+              ? "Every selection we publish is open to you, reasoning and all. Here's your pass."
+              : "Members read every selection we publish, with the reasoning behind it, and hear about each new pick the moment it goes up."}
           </p>
         </section>
 
+        <section className="pt-6">
+          <PressPass issued={active} name={handle} memberNo={memberNo} validUntil={expiresAt} daysLeft={daysLeft} />
+          {!active && (
+            <p className="text-center mt-1">
+              <PenNote rotate={-3} delay={0.8} className="text-[28px]">yours from {getPlanPrice(plans[0])} ↓</PenNote>
+            </p>
+          )}
+        </section>
+
         {active && (
-          <section className="bg-foreground text-background p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] opacity-70">Membership card</p>
-                <p className="font-display font-black uppercase text-[30px] leading-none mt-2">Active</p>
-              </div>
-              <div className="text-right">
-                <p className="num font-black text-[56px] leading-[0.8]">{daysLeft}</p>
-                <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] opacity-70 mt-1">days left</p>
-              </div>
+          <section className="border-y-[3px] border-foreground py-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="font-mono text-[12px] font-semibold uppercase tracking-[0.06em]">Push notifications</p>
+              <p className="font-serif italic text-[16px] text-muted-foreground mt-0.5">A ping for each new members' pick</p>
             </div>
-            <div className="mt-5 pt-4 border-t border-background/25 flex items-center justify-between gap-4">
-              <div>
-                <p className="font-mono text-[11px] uppercase tracking-[0.1em]">Push notifications</p>
-                <p className="font-serif italic text-[14px] opacity-70 mt-0.5">A ping for each new members' pick</p>
-              </div>
-              <Switch
-                checked={push.enabled}
-                onCheckedChange={async (val) => {
-                  try {
-                    await push.setPushEnabled(val);
-                    toast({ title: val ? "Notifications on" : "Notifications off" });
-                  } catch (e: any) {
-                    toast({ title: "Error", description: e.message, variant: "destructive" });
-                  }
-                }}
-                disabled={push.loading}
-                className="data-[state=unchecked]:bg-background/30 data-[state=checked]:bg-red"
-              />
+            <Switch
+              checked={push.enabled}
+              onCheckedChange={async (val) => {
+                try {
+                  await push.setPushEnabled(val);
+                  toast({ title: val ? "Notifications on" : "Notifications off" });
+                } catch (e: any) {
+                  toast({ title: "Error", description: e.message, variant: "destructive" });
+                }
+              }}
+              disabled={push.loading}
+              className="data-[state=checked]:bg-red"
+            />
+          </section>
+        )}
+
+        {!active && (
+          <section>
+            <SectionHead>Two copies of the same page</SectionHead>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {[false, true].map((member) => (
+                <div
+                  key={String(member)}
+                  className={`relative p-3 pt-4 ${member ? "bg-card shadow-[0_2px_0_hsl(var(--foreground))] border-[1.5px] border-foreground" : "border-[1.5px] border-dashed border-foreground/40"}`}
+                >
+                  <p className={`absolute -top-2.5 left-2 px-1.5 font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em] ${member ? "bg-foreground text-background" : "bg-background text-muted-foreground"}`}>
+                    {member ? "Member's copy" : "Free copy"}
+                  </p>
+                  <p className="font-mono text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">La Liga · 21:00</p>
+                  <p className="font-display font-extrabold uppercase text-[20px] leading-[1.02] mt-1">Real Betis<br />Sevilla</p>
+                  <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-red mt-2">Our pick</p>
+                  {member ? (
+                    <>
+                      <p className="font-serif font-semibold text-[16px] leading-tight">Betis to win</p>
+                      <p className="num font-black text-[30px] leading-none mt-1">2.40</p>
+                      <p className="font-serif text-[13px] leading-snug text-secondary-foreground mt-1.5">
+                        Betis have taken points from four of the last five derbies at home…
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <span className="redact w-[85%] h-[1.05em] mt-1" />
+                      <p className="num font-black text-[30px] leading-none mt-1 text-foreground/20">?.??</p>
+                      <span className="block redact w-full mt-2 opacity-15" />
+                      <span className="block redact w-[80%] mt-1 opacity-15" />
+                    </>
+                  )}
+                </div>
+              ))}
             </div>
+            <p className="label mt-2.5">Illustration. Not a live selection.</p>
           </section>
         )}
 
@@ -205,59 +247,63 @@ export default function Premium() {
           <SectionHead>What you get</SectionHead>
           <ol className="mt-3 divide-y divide-foreground/20">
             {features.map((f, i) => (
-              <li key={f} className="grid grid-cols-[36px_1fr] py-2.5">
-                <span className="font-serif italic text-[17px] text-red">{roman[i]}.</span>
-                <span className="font-serif text-[17px] leading-snug text-foreground">{f}</span>
+              <li key={f} className="grid grid-cols-[40px_1fr] py-3">
+                <span className="font-display font-black text-[24px] leading-none text-red">{roman[i]}</span>
+                <span className="font-serif text-[18px] leading-snug text-foreground">{f}</span>
               </li>
             ))}
           </ol>
         </section>
 
         <section>
-          <SectionHead>{active ? "Extend" : "Rates"}</SectionHead>
-          <div className="mt-2">
+          <SectionHead>{active ? "Extend your pass" : "Rates"}</SectionHead>
+          <div className="mt-4 space-y-3">
             {plans.map((plan) => (
               <button
                 key={plan.duration}
                 onClick={() => handleBuy(plan.duration, plan.paymentLink)}
                 disabled={loading !== null}
-                className={`w-full text-left px-3 -mx-3 py-4 border-b border-foreground/25 transition-colors disabled:opacity-60 ${
-                  plan.popular ? "bg-foreground text-background" : "hover:bg-secondary/60"
+                className={`group relative w-full text-left px-4 py-4 transition-transform active:translate-y-px disabled:opacity-60 ${
+                  plan.popular
+                    ? "bg-foreground text-background shadow-[4px_4px_0_hsl(var(--red))]"
+                    : "bg-card border-[1.5px] border-foreground shadow-[4px_4px_0_hsl(var(--foreground))]"
                 }`}
-                style={{ width: "calc(100% + 1.5rem)" }}
               >
+                {plan.popular && (
+                  <span
+                    className="absolute -top-3.5 right-3 font-display font-black uppercase text-[17px] leading-none px-2 pt-1 pb-0.5 border-[2.5px] border-red text-red bg-background rotate-[6deg]"
+                  >
+                    Best value
+                  </span>
+                )}
                 <div className="flex items-baseline gap-2">
-                  <span className="font-display font-black uppercase text-[28px] leading-none shrink-0">{plan.days}</span>
+                  <span className="font-display font-black uppercase text-[34px] leading-none shrink-0">{plan.days}</span>
                   <span className={`leader ${plan.popular ? "!border-background/50" : ""}`} />
                   {loading === plan.duration ? (
-                    <Loader2 className="w-5 h-5 animate-spin self-center" />
+                    <Loader2 className="w-6 h-6 animate-spin self-center" />
                   ) : (
-                    <span className="num font-black text-[32px] leading-none shrink-0">{getPlanPrice(plan)}</span>
+                    <span className="num font-black text-[38px] leading-none shrink-0">{getPlanPrice(plan)}</span>
                   )}
                 </div>
-                <div className={`mt-1.5 flex items-center justify-between gap-3 font-mono text-[10.5px] uppercase tracking-[0.1em] ${plan.popular ? "text-background/70" : "text-muted-foreground"}`}>
+                <div className={`mt-2 flex items-center justify-between gap-3 font-mono text-[12px] uppercase tracking-[0.05em] ${plan.popular ? "text-background/75" : "text-muted-foreground"}`}>
                   <span>{plan.label} · {plan.perDay}</span>
-                  {plan.popular ? (
-                    <span className="text-background font-semibold">Readers' choice</span>
-                  ) : plan.save ? (
-                    <span className="text-red font-semibold">{plan.save}</span>
-                  ) : null}
+                  {plan.save && <span className={`font-semibold ${plan.popular ? "text-background" : "text-red"}`}>{plan.save}</span>}
                 </div>
               </button>
             ))}
           </div>
           {!user && (
-            <p className="mt-3 font-serif italic text-[15px] text-muted-foreground">You'll be asked to sign in before paying.</p>
+            <p className="mt-4 font-serif italic text-[16px] text-muted-foreground">You'll be asked to sign in before paying.</p>
           )}
         </section>
 
         {Capacitor.isNativePlatform() && (
           <section className="flex items-center justify-between gap-4 border-t border-foreground pt-4">
-            <p className="font-serif italic text-[16px] text-secondary-foreground">Already a member?</p>
+            <p className="font-serif italic text-[17px] text-secondary-foreground">Already a member?</p>
             <button
               onClick={handleRestore}
               disabled={restoring}
-              className="inline-flex items-center gap-2 h-9 px-3 border-[1.5px] border-foreground font-mono text-[11px] font-semibold uppercase tracking-[0.1em] disabled:opacity-60"
+              className="inline-flex items-center gap-2 h-10 px-3 border-[1.5px] border-foreground font-mono text-[12px] font-semibold uppercase tracking-[0.06em] disabled:opacity-60"
             >
               {restoring && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               Restore purchases
@@ -266,11 +312,11 @@ export default function Premium() {
         )}
 
         <footer className="border-t-[3px] border-foreground pt-3 space-y-2">
-          <p className="font-serif text-[14px] leading-relaxed text-secondary-foreground">
+          <p className="font-serif text-[15px] leading-relaxed text-secondary-foreground">
             Payments are processed securely. Access is granted straight away on every device you sign in on.
             By subscribing you agree to our <Link to="/terms" className="underline underline-offset-2">Terms of Service</Link>.
           </p>
-          <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">App version 21.0.0 · Build 2100</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">App version 21.0.0 · Build 2100</p>
         </footer>
       </main>
     </div>

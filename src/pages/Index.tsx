@@ -10,7 +10,7 @@ import { headerLink } from "@/components/AppHeader";
 import { loadTips } from "@/lib/tipsStorage";
 import { loadCoupons, Coupon } from "@/lib/couponStorage";
 import { Tip } from "@/components/TipCard";
-import { LogIn, LogOut } from "lucide-react";
+import { LogIn, User as UserIcon } from "lucide-react";
 import PremiumBadge from "@/components/PremiumBadge";
 import FilterBar, { PremiumFilter } from "@/components/FilterBar";
 import Ticker from "@/components/Ticker";
@@ -52,7 +52,7 @@ const Index = () => {
   const [couponPremium, setCouponPremium] = useState<PremiumFilter>("all");
   const [loading, setLoading] = useState(true);
   const { active: isPremium, daysLeft: premiumDaysLeft, loading: premiumLoading } = usePremiumStatus();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
 
   // 3 taps on the footer copyright opens the admin login dialog
   const [footerTaps, setFooterTaps] = useState(0);
@@ -165,10 +165,10 @@ const Index = () => {
             )}
             <span className="hidden md:inline-flex">
               {user ? (
-                <button onClick={signOut} className={headerLink}>
-                  <LogOut className="w-3.5 h-3.5" />
+                <Link to="/account" className={headerLink}>
+                  <UserIcon className="w-3.5 h-3.5" />
                   {user.email?.split("@")[0]}
-                </button>
+                </Link>
               ) : (
                 <Link to="/auth" className={headerLink}>
                   <LogIn className="w-3.5 h-3.5" />

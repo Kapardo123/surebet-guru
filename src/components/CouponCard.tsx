@@ -1,26 +1,9 @@
 import { Coupon } from "@/lib/couponStorage";
 import { Link } from "react-router-dom";
-import { memo, useMemo } from "react";
+import { memo } from "react";
+import Barcode from "@/components/Barcode";
 import StatusTag from "@/components/StatusTag";
 import { formatKickoff, formatShortDate } from "@/lib/format";
-
-/** Decorative barcode derived from the coupon id, so each slip has its own. */
-const Barcode = ({ seed }: { seed: number }) => {
-  const bars = useMemo(() => {
-    let x = (seed * 9301 + 49297) % 233280 || 7;
-    return Array.from({ length: 34 }, () => {
-      x = (x * 9301 + 49297) % 233280;
-      return 1 + (x % 3);
-    });
-  }, [seed]);
-  return (
-    <div className="flex items-stretch gap-[2px] h-7" aria-hidden>
-      {bars.map((w, i) => (
-        <span key={i} className={i % 2 ? "bg-transparent" : "bg-foreground"} style={{ width: w }} />
-      ))}
-    </div>
-  );
-};
 
 const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsPremium?: boolean }) => {
   const tilt = coupon.id % 2 ? "-rotate-[0.6deg]" : "rotate-[0.5deg]";
@@ -129,7 +112,7 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
           )}
 
           <div className="mt-4 flex items-end justify-between gap-3">
-            <Barcode seed={coupon.id} />
+            <Barcode seed={coupon.id} className="h-7 text-foreground" />
             {isSettled && <StatusTag status={coupon.status} className="text-[24px]" />}
           </div>
         </div>
