@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, memo } from "react";
 import { kickoffParts } from "@/lib/format";
+import { PenCircle, PenNote, PenTick } from "@/components/RedPen";
 
 export interface Tip {
   id: number;
@@ -40,13 +41,24 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
   const isLost = tip.status === "lost";
   const locked = tip.isPremium && !userIsPremium && !isSettled;
   const ko = kickoffParts(tip.kickoff);
+  const minsToKo = (new Date(tip.kickoff).getTime() - Date.now()) / 60000;
+  const startsSoon = tip.status === "upcoming" && minsToKo > 0 && minsToKo <= 90;
 
   return (
     <article className="relative py-4 grid grid-cols-[52px_1fr_auto] gap-x-3">
       {/* Kick-off, like a race card */}
       <div className={`pt-0.5 ${isLost ? "opacity-55" : ""}`}>
-        <p className="num font-black text-[22px] leading-none text-foreground">{ko.time}</p>
+        {startsSoon ? (
+          <PenCircle delay={0.2}>
+            <p className="num font-black text-[22px] leading-none text-foreground">{ko.time}</p>
+          </PenCircle>
+        ) : (
+          <p className="num font-black text-[22px] leading-none text-foreground">{ko.time}</p>
+        )}
         <p className="font-mono text-[11px] uppercase tracking-[0.04em] text-muted-foreground mt-1">{ko.day}</p>
+        {startsSoon && (
+          <PenNote delay={0.7} rotate={-8} className="mt-1 text-[30px]">soon!</PenNote>
+        )}
       </div>
 
       <div className={`min-w-0 ${isLost ? "opacity-55" : ""}`}>
@@ -115,7 +127,8 @@ const TipCard = ({ tip, userIsPremium = false }: { tip: Tip; userIsPremium?: boo
           </span>
         )}
         {isSettled && (
-          <div className="mt-2.5 flex justify-end">
+          <div className="mt-2.5 flex items-center justify-end gap-0.5">
+            {tip.status === "won" && <PenTick delay={0.45} size={26} />}
             <StatusTag status={tip.status} />
           </div>
         )}

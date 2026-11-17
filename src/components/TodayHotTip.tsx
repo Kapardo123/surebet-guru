@@ -5,6 +5,8 @@ import { FeaturedPick, loadFeaturedPick } from "@/lib/featuredPickStorage";
 import StatusTag from "@/components/StatusTag";
 import { formatKickoff } from "@/lib/format";
 import SectionHead from "@/components/SectionHead";
+import PitchLines from "@/components/PitchLines";
+import { PenArrow, PenNote, PenUnderline } from "@/components/RedPen";
 import { useAdMob } from "@/hooks/useAdMob";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 
@@ -84,9 +86,12 @@ const TodayHotTip = () => {
     });
   }, [isPremium]);
 
+  const [justUnlocked, setJustUnlocked] = useState(false);
+
   const handleWatchAd = () => {
     showRewardedAd().catch(() => {});
     setTimeout(() => {
+      setJustUnlocked(true);
       setIsUnlocked(true);
       localStorage.setItem("hotTipUnlocked", "true");
       if (pick) {
@@ -97,6 +102,7 @@ const TodayHotTip = () => {
   };
 
   const settled = data.status && data.status !== "upcoming";
+  const penVerdict = { High: "Banker!", Medium: "Fair price", Low: "Long shot" }[data.confidence as string];
   const confidenceLevel = { High: 3, Medium: 2, Low: 1 }[data.confidence as string] ?? 0;
 
   return (
@@ -126,7 +132,11 @@ const TodayHotTip = () => {
 
       {/* Fixture + odds stamp */}
       <div className="relative mt-2">
-        <div className="pr-[104px] md:pr-[140px]">
+        <PitchLines
+          sport={pick?.sport}
+          className="absolute -left-1 -top-2 h-[calc(100%+16px)] w-[calc(100%-96px)] md:w-[calc(100%-150px)] text-foreground/[0.11] -rotate-[1.2deg]"
+        />
+        <div className="relative pr-[104px] md:pr-[140px]">
           <h3 className="font-display font-black uppercase text-foreground leading-[0.86] tracking-[-0.005em] text-[clamp(46px,14vw,88px)] break-words">
             {data.homeTeam}
           </h3>
@@ -150,6 +160,12 @@ const TodayHotTip = () => {
             <p className="num font-black text-[36px] md:text-[46px] leading-[0.95] mt-0.5">{isUnlocked ? data.odds : "?.??"}</p>
           </div>
         </div>
+        {isUnlocked && !settled && penVerdict && (
+          <div className="absolute right-0 top-[108px] md:top-[142px] w-[104px] flex flex-col items-center">
+            <PenArrow delay={0.5} className="w-10 h-7 -mb-1 -ml-8 -rotate-[20deg]" />
+            <PenNote delay={0.9} rotate={-7} className="text-[30px]">{penVerdict}</PenNote>
+          </div>
+        )}
         {settled && (
           <div className="absolute right-2 top-[104px] md:top-[140px]">
             <StatusTag status={data.status as "won" | "lost" | "draw"} className="text-[26px]" />
@@ -190,7 +206,19 @@ const TodayHotTip = () => {
             <div className="flex items-end justify-between gap-4">
               <div className="min-w-0">
                 <p className="label">The selection</p>
-                <p className="mt-1 font-serif font-semibold text-[28px] leading-tight text-foreground">{data.prediction}</p>
+                <span className="relative inline-block mt-1">
+                  <span className="block font-serif font-semibold text-[28px] leading-tight text-foreground">{data.prediction}</span>
+                  <PenUnderline delay={justUnlocked ? 0.75 : 0.3} className="-mt-0.5" />
+                  {justUnlocked && (
+                    <motion.span
+                      className="absolute left-0 right-0 top-1 h-[1.05em] text-[28px] bg-foreground origin-right"
+                      initial={{ scaleX: 1 }}
+                      animate={{ scaleX: 0 }}
+                      transition={{ duration: 0.55, delay: 0.1, ease: [0.7, 0, 0.3, 1] }}
+                      aria-hidden
+                    />
+                  )}
+                </span>
               </div>
               {data.confidence && (
                 <div className="shrink-0 text-right">

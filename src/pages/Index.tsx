@@ -134,7 +134,6 @@ const Index = () => {
     [coupons, couponPremium]
   );
 
-  const upcomingCount = tips.filter((t) => t.status === "upcoming").length;
 
   const tabBtn = (value: string, label: string, count: number) => (
     <button
@@ -187,7 +186,7 @@ const Index = () => {
         <div className="border-y border-foreground py-1.5 flex items-center justify-between font-mono text-[12px] uppercase tracking-[0.1em]">
           <span>No. {editionNo}</span>
           <span className="hidden min-[360px]:inline font-semibold">The daily form guide</span>
-          <span>{loading ? "—" : `${upcomingCount} open`}</span>
+          <span>{isPremium ? "Member's copy" : "Price: Free"}</span>
         </div>
         <div className="mt-[2px] border-t-[3px] border-foreground" />
         {!loading && (

@@ -41,6 +41,13 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
       />
     <div className="drop-shadow-[0_2px_2px_rgba(40,30,20,0.2)]">
       <article className="relative bg-card slip-edge font-mono text-foreground">
+        {coupon.id % 2 === 1 && (
+          // A coffee ring someone left on the slip.
+          <svg className="absolute -right-6 bottom-10 w-32 h-32 pointer-events-none" viewBox="0 0 100 100" aria-hidden>
+            <circle cx="50" cy="50" r="38" fill="none" stroke="hsl(28 55% 35% / 0.14)" strokeWidth="5" strokeDasharray="180 14 40 8" />
+            <circle cx="50" cy="50" r="36" fill="none" stroke="hsl(28 55% 35% / 0.07)" strokeWidth="2" />
+          </svg>
+        )}
         <div className="px-4 pt-4 pb-5">
           {/* Slip header */}
           <div className="flex items-center justify-between text-[11.5px] uppercase tracking-[0.06em] text-muted-foreground">

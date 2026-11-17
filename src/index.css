@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Reenie+Beanie&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -201,4 +201,23 @@
 
 @media (prefers-reduced-motion: reduce) {
   .stamp-in, .ticker-track { animation: none; }
+}
+
+/* Red-pen marks drawn on by hand. Paths use pathLength="1". */
+@keyframes pen-draw { to { stroke-dashoffset: 0; } }
+.pen-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: pen-draw var(--pen-dur, 0.7s) cubic-bezier(.6,.1,.3,1) var(--pen-delay, 0s) forwards;
+}
+@keyframes pen-fade { from { opacity: 0; transform: translateY(2px) rotate(var(--pen-rot, -6deg)); } to { opacity: 1; transform: rotate(var(--pen-rot, -6deg)); } }
+.pen-note {
+  font-family: 'Reenie Beanie', cursive;
+  color: hsl(var(--red));
+  transform: rotate(var(--pen-rot, -6deg));
+  animation: pen-fade 0.4s ease var(--pen-delay, 0s) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pen-draw { animation: none; stroke-dashoffset: 0; }
+  .pen-note { animation: none; }
 }
