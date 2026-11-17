@@ -12,9 +12,29 @@ import { LogIn, User as UserIcon } from "lucide-react";
 import PremiumBadge from "@/components/PremiumBadge";
 import FilterBar, { PremiumFilter } from "@/components/FilterBar";
 import FormGuide from "@/components/FormGuide";
+import DailyPack from "@/components/DailyPack";
+import BinderStrip from "@/components/BinderStrip";
+import CardInspector from "@/components/CardInspector";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+
+const dayKey = new Date().toISOString().slice(0, 10);
+const readLS = <T,>(k: string, fallback: T): T => {
+  try {
+    const v = localStorage.getItem(k);
+    return v ? (JSON.parse(v) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+const writeLS = (k: string, v: unknown) => {
+  try {
+    localStorage.setItem(k, JSON.stringify(v));
+  } catch {
+    /* storage unavailable */
+  }
+};
 
 const weekday = new Date().toLocaleDateString("en-GB", { weekday: "long" });
 
@@ -38,8 +58,32 @@ const Index = () => {
   const [tipPremium, setTipPremium] = useState<PremiumFilter>("all");
   const [couponPremium, setCouponPremium] = useState<PremiumFilter>("all");
   const [loading, setLoading] = useState(true);
+  const [inspect, setInspect] = useState<Tip | null>(null);
+  const [seen, setSeen] = useState<number[]>(() => readLS(`gsb_seen_${dayKey}`, []));
+  const [packOpen, setPackOpen] = useState<boolean>(() => readLS(`gsb_pack_${dayKey}`, false));
+
+  const openCard = useCallback((tip: Tip) => {
+    if (tip.isPremium && !isPremiumRef.current && tip.status === "upcoming") {
+      window.location.hash = "#/premium";
+      return;
+    }
+    setInspect(tip);
+    setSeen((prev) => {
+      if (prev.includes(tip.id)) return prev;
+      const next = [...prev, tip.id];
+      writeLS(`gsb_seen_${dayKey}`, next);
+      return next;
+    });
+  }, []);
+  const closeCard = useCallback(() => setInspect(null), []);
+  const openPack = useCallback(() => {
+    setPackOpen(true);
+    writeLS(`gsb_pack_${dayKey}`, true);
+  }, []);
   const { active: isPremium, daysLeft: premiumDaysLeft, loading: premiumLoading } = usePremiumStatus();
   const { user } = useAuth();
+  const isPremiumRef = useRef(isPremium);
+  isPremiumRef.current = isPremium;
 
   // 3 taps on the footer copyright opens the admin login dialog
   const [footerTaps, setFooterTaps] = useState(0);
@@ -174,6 +218,9 @@ const Index = () => {
               {loading ? "Shuffling…" : <>{openCount} {openCount === 1 ? "card" : "cards"} in play</>}
             </h1>
           </div>
+          {!loading && packOpen && (
+            <BinderStrip tips={tips} seen={seen} userIsPremium={isPremium} onSlot={openCard} />
+          )}
           {!loading && <FormGuide tips={tips} />}
         </section>
 
@@ -196,13 +243,28 @@ const Index = () => {
                   onPremiumChange={setTipPremium}
                 />
               )}
+              {!loading && !packOpen && tips.length > 0 ? (
+                <DailyPack count={tips.length} goldCount={tips.filter((t) => t.isPremium).length} onOpen={openPack} />
+              ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 [&>*]:min-w-0">
                 {loading
                   ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
                   : filteredTips.length === 0
                   ? <EmptyState title="Deck's empty" body="New cards usually land by midday." />
-                  : filteredTips.map((tip, i) => <TipCard key={tip.id} tip={tip} index={i} total={filteredTips.length} userIsPremium={isPremium} />)}
+                  : filteredTips.map((tip, i) => (
+                      <TipCard
+                        key={tip.id}
+                        tip={tip}
+                        index={i}
+                        total={filteredTips.length}
+                        userIsPremium={isPremium}
+                        onInspect={openCard}
+                        layoutId={`card-${tip.id}`}
+                        ghost={inspect?.id === tip.id}
+                      />
+                    ))}
               </div>
+              )}
             </>
           ) : (
             <>
@@ -238,6 +300,8 @@ const Index = () => {
       </footer>
 
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+      <CardInspector tip={inspect} userIsPremium={isPremium} onClose={closeCard} />
 
       {/* Admin login dialog - opened by 3 taps on the footer copyright */}
       <AdminLoginDialog open={adminLoginOpen} onOpenChange={setAdminLoginOpen} />

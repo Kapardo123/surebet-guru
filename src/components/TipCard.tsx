@@ -46,8 +46,26 @@ const OddsMedal = ({ value, gold, struck }: { value: string; gold: boolean; stru
   </span>
 );
 
-const TipCard = ({ tip, userIsPremium = false, index, total }: { tip: Tip; userIsPremium?: boolean; index?: number; total?: number }) => {
-  const [flipped, setFlipped] = useState(false);
+interface TipCardProps {
+  tip: Tip;
+  userIsPremium?: boolean;
+  index?: number;
+  total?: number;
+  /** Open the full-screen inspector instead of flipping in place. */
+  onInspect?: (tip: Tip) => void;
+  /** Shared-element id so the card can fly into the inspector. */
+  layoutId?: string;
+  /** Keep the slot but hide the card (it is open in the inspector). */
+  ghost?: boolean;
+  /** Skip the deal-in animation. */
+  still?: boolean;
+  /** Controlled flip (inspector). */
+  flipped?: boolean;
+}
+
+const TipCard = ({ tip, userIsPremium = false, index, total, onInspect, layoutId, ghost, still, flipped: flippedProp }: TipCardProps) => {
+  const [flippedState, setFlipped] = useState(false);
+  const flipped = flippedProp ?? flippedState;
   const reduce = useReducedMotion();
 
   const isSettled = tip.status !== "upcoming";
@@ -137,7 +155,7 @@ const TipCard = ({ tip, userIsPremium = false, index, total }: { tip: Tip; userI
 
         {canFlip && (
           <div className="flex items-center justify-center gap-1 h-6 bg-stock-ink/[0.06] text-[10px] font-bold uppercase tracking-[0.12em] opacity-70">
-            <RotateCw className="w-3 h-3" /> Tap for analysis
+            <RotateCw className="w-3 h-3" /> {onInspect ? "Tap to inspect" : "Tap for analysis"}
           </div>
         )}
         {locked && (
@@ -174,16 +192,22 @@ const TipCard = ({ tip, userIsPremium = false, index, total }: { tip: Tip; userI
     </div>
   );
 
+  const wrap = (node: React.ReactNode) => (
+    <motion.div layoutId={ghost ? undefined : layoutId} className={ghost ? "invisible" : ""}>
+      {node}
+    </motion.div>
+  );
+
   const deal = (node: React.ReactNode) =>
-    reduce ? (
-      node
+    reduce || still ? (
+      wrap(node)
     ) : (
       <motion.div
         initial={{ opacity: 0, y: 36, rotate: (index ?? 0) % 2 ? 5 : -5, scale: 0.94 }}
         animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 170, damping: 18, delay: Math.min(index ?? 0, 8) * 0.06 }}
       >
-        {node}
+        {wrap(node)}
       </motion.div>
     );
 
@@ -200,10 +224,10 @@ const TipCard = ({ tip, userIsPremium = false, index, total }: { tip: Tip; userI
   return deal(
     <button
       type="button"
-      onClick={() => canFlip && setFlipped((f) => !f)}
-      aria-pressed={canFlip ? flipped : undefined}
-      aria-label={canFlip ? (flipped ? "Show card front" : "Show analysis") : undefined}
-      className={`flip-scene block w-full text-left ${canFlip ? "active:scale-[0.98] transition-transform" : "cursor-default"}`}
+      onClick={() => (onInspect ? onInspect(tip) : canFlip && setFlipped((f) => !f))}
+      aria-pressed={!onInspect && canFlip ? flipped : undefined}
+      aria-label={onInspect ? `Open card: ${tip.homeTeam} v ${tip.awayTeam}` : canFlip ? (flipped ? "Show card front" : "Show analysis") : undefined}
+      className={`flip-scene block w-full text-left ${onInspect || canFlip ? "active:scale-[0.98] transition-transform" : "cursor-default"}`}
     >
       <HoloCard holo={false} maxTilt={6}>{body}</HoloCard>
     </button>
