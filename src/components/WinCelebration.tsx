@@ -3,7 +3,6 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Share2, Loader2 } from "lucide-react";
 import TipCard, { Tip } from "@/components/TipCard";
 import { play } from "@/lib/sfx";
-import { shareCard } from "@/lib/shareCard";
 import { track } from "@/lib/analytics";
 
 const COLORS = ["#f6dc8a", "#fff1b8", "#b98a2a", "#ffffff", "#ff7a45", "#3fbf74"];
@@ -82,7 +81,7 @@ const WinCelebration = ({ wins, onDone }: { wins: Tip[]; onDone: () => void }) =
     setSharing(true);
     track("card_shared", { tip: tip.id, from: "win" });
     try {
-      await shareCard(tip, true);
+      await (await import("@/lib/shareCard")).shareCard(tip, true);
     } finally {
       setSharing(false);
     }

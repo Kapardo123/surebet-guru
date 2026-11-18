@@ -7,7 +7,6 @@ import SportGlyph from "@/components/SportGlyph";
 import StatusTag from "@/components/StatusTag";
 import CardArt from "@/components/CardArt";
 import { kickoffParts } from "@/lib/format";
-import { liveMinute, useNow } from "@/hooks/useNow";
 import { sportTheme } from "@/lib/sport";
 
 export interface Tip {
@@ -71,9 +70,7 @@ const TipCard = ({
   const locked = (tip.isPremium && !userIsPremium && !unlocked && !isSettled) || !!tip.masked;
   const owned = tip.isPremium && !userIsPremium && unlocked;
   const ko = kickoffParts(tip.kickoff);
-  const now = useNow(30000);
-  const minute = tip.status === "upcoming" ? liveMinute(tip.kickoff, now) : null;
-  const live = minute !== null;
+
   const theme = sportTheme(tip.sport);
   const canFlip = !locked && !!tip.description;
   const no = index !== undefined ? String(index + 1).padStart(2, "0") : "";
@@ -94,7 +91,7 @@ const TipCard = ({
 
   const front = (
     <div
-      className={`card-sheen flip-face [grid-area:1/1] rounded-[16px] p-[5px] bevel ${live ? "live-ring" : ""} ${gold ? "foil-gold foil-weave" : ""} ${
+      className={`card-sheen flip-face [grid-area:1/1] rounded-[16px] p-[5px] bevel ${gold ? "foil-gold foil-weave" : ""} ${
         tip.status === "won" ? "shadow-[0_0_0_1px_hsl(var(--gold)/.6),0_0_26px_-4px_hsl(var(--gold)/.75),0_12px_26px_-12px_rgba(0,0,0,.75)]" : ""
       }`}
       style={frameStyle}
@@ -184,20 +181,10 @@ const TipCard = ({
 
         {/* Footer: kick-off, set symbol, card number */}
         <div className="mt-1.5 flex items-center justify-between px-2.5 pb-2 text-[10.5px]">
-          {live ? (
-            <span className="flex items-center gap-1.5 font-black tabular-nums whitespace-nowrap text-[#e5322d]">
-              <span className="relative flex w-2 h-2">
-                <span className="absolute inset-0 rounded-full bg-[#e5322d] animate-ping opacity-75" />
-                <span className="relative w-2 h-2 rounded-full bg-[#e5322d]" />
-              </span>
-              LIVE <span className="font-bold">{Math.min(minute!, 90)}'</span>
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 font-semibold tabular-nums whitespace-nowrap min-w-0">
-              <Clock3 className="w-3 h-3 opacity-50" />
-              {ko.time} <span className="font-medium opacity-55">{ko.day}</span>
-            </span>
-          )}
+          <span className="flex items-center gap-1 font-semibold tabular-nums whitespace-nowrap min-w-0">
+            <Clock3 className="w-3 h-3 opacity-50" />
+            {ko.time} <span className="font-medium opacity-55">{ko.day}</span>
+          </span>
           <span className="flex items-center gap-1 font-display font-bold text-[9px] opacity-55 whitespace-nowrap">
             <span
               className="w-2 h-2 rotate-45 rounded-[1px]"
@@ -231,18 +218,45 @@ const TipCard = ({
 
   const back = canFlip ? (
     <div
-      className={`flip-face flip-back [grid-area:1/1] rounded-[16px] p-[5px] ${frame}`}
+      className={`flip-face flip-back [grid-area:1/1] rounded-[16px] p-[5px] bevel ${gold ? "foil-gold foil-weave" : ""}`}
       style={frameStyle}
     >
-      <div className="h-full rounded-[12px] card-back text-foreground p-3 flex flex-col">
-        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">The read</p>
-        <p className="font-display font-extrabold uppercase text-[12px] leading-tight mt-1 line-clamp-2">
-          {tip.homeTeam} v {tip.awayTeam}
-        </p>
-        <p className="mt-2 text-[13px] leading-[1.45] text-foreground/85 overflow-y-auto flex-1 pr-1">{tip.description}</p>
-        <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/50 flex items-center gap-1">
-          <RotateCw className="w-3 h-3" /> Tap to turn back
-        </p>
+      <div className="relative h-full rounded-[12px] card-back text-foreground overflow-hidden flex flex-col">
+        <span className={`pointer-events-none absolute inset-[3px] rounded-[9px] border ${gold ? "border-[hsl(var(--gold)/.45)]" : "border-white/10"}`} aria-hidden />
+
+        {/* Header: same anatomy as the front so the flip feels like one card */}
+        <div className="relative flex items-center gap-1.5 pl-2.5 pr-2 h-9">
+          <span
+            className="grid place-items-center w-5 h-5 rounded-full text-white shrink-0"
+            style={{ background: gold ? "linear-gradient(135deg,#b98a2a,#f6dc8a)" : theme.frame }}
+          >
+            <SportGlyph sport={tip.sport} size={12} />
+          </span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary flex-1">The read</span>
+          <span className={`num font-black text-[19px] leading-none ${gold ? "foil-gold-text" : ""}`}>{oddsText}</span>
+        </div>
+
+        <div className="relative mx-2.5 rounded-[8px] bg-black/30 border border-white/[0.07] px-2.5 py-2">
+          <p className="font-display font-extrabold uppercase text-[11px] leading-[1.2] truncate">{tip.homeTeam}</p>
+          <p className="font-display font-extrabold uppercase text-[11px] leading-[1.2] truncate text-foreground/55">{tip.awayTeam}</p>
+          <p className="mt-1.5 text-[12.5px] font-semibold leading-snug text-primary">{tip.prediction}</p>
+        </div>
+
+        {/* Analysis with a fade at the bottom when it scrolls */}
+        <div className="relative flex-1 min-h-0 mt-2">
+          <p className="h-full overflow-y-auto px-3 pb-4 text-[13px] leading-[1.5] text-foreground/85 [scrollbar-width:none]">
+            <span className="float-left font-display font-black text-[30px] leading-[0.85] mr-1.5 mt-0.5 foil-gold-text">
+              {tip.description?.charAt(0)}
+            </span>
+            {tip.description?.slice(1)}
+          </p>
+          <span className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-[hsl(232_45%_16%)] to-transparent" aria-hidden />
+        </div>
+
+        <div className="relative flex items-center justify-between gap-2 px-3 pb-2.5 pt-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-foreground/50 whitespace-nowrap">
+          <span className="flex items-center gap-1 shrink-0"><RotateCw className="w-3 h-3" /> Turn back</span>
+          <span className="truncate min-w-0">{tip.league}</span>
+        </div>
       </div>
     </div>
   ) : null;

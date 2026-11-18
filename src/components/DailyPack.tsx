@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import HoloCard from "@/components/HoloCard";
 import PackArt from "@/components/PackArt";
-import PackOpening from "@/components/PackOpening";
 import { Tip } from "@/components/TipCard";
+
+const PackOpening = lazy(() => import("@/components/PackOpening"));
 
 /**
  * Today's sealed pack on the table. Tapping it starts the full-screen
@@ -47,7 +48,9 @@ const DailyPack = ({ tips, onOpen }: { tips: Tip[]; onOpen: () => void }) => {
       </motion.p>
 
       {createPortal(
-        <AnimatePresence>{opening && <PackOpening key="opening" tips={tips} date={date} onDone={onOpen} />}</AnimatePresence>,
+        <Suspense fallback={null}>
+          <AnimatePresence>{opening && <PackOpening key="opening" tips={tips} date={date} onDone={onOpen} />}</AnimatePresence>
+        </Suspense>,
         document.body,
       )}
     </div>

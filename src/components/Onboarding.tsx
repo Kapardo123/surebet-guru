@@ -4,16 +4,7 @@ import PackArt from "@/components/PackArt";
 import MiniCard, { MiniCardData } from "@/components/MiniCard";
 import StreakBar from "@/components/StreakBar";
 import { track } from "@/lib/analytics";
-
-const KEY = "gsb_onboarded";
-
-export const needsOnboarding = () => {
-  try {
-    return localStorage.getItem(KEY) !== "1";
-  } catch {
-    return false;
-  }
-};
+import { markOnboarded } from "@/lib/onboarding";
 
 const sample = (over: Partial<MiniCardData>): MiniCardData => ({
   sport: "Football", homeTeam: "Arsenal", awayTeam: "Chelsea", prediction: "Over 2.5 goals", odds: 1.85,
@@ -62,11 +53,7 @@ const Onboarding = ({ onDone }: { onDone: () => void }) => {
   const last = i === SLIDES.length - 1;
 
   const finish = (skipped: boolean) => {
-    try {
-      localStorage.setItem(KEY, "1");
-    } catch {
-      /* storage unavailable */
-    }
+    markOnboarded();
     track(skipped ? "onboarding_skipped" : "onboarding_completed", { slide: i + 1 });
     onDone();
   };

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, RotateCw, Share2, X, Loader2 } from "lucide-react";
-import { shareCard } from "@/lib/shareCard";
 import { track } from "@/lib/analytics";
 import TipCard, { Tip } from "@/components/TipCard";
 import HoloCard from "@/components/HoloCard";
@@ -70,7 +69,7 @@ const CardInspector = ({
     setSharing(true);
     try {
       track("card_shared", { tip: tip.id });
-      await shareCard(tip, userIsPremium || !tip.isPremium || tip.status !== "upcoming");
+      await (await import("@/lib/shareCard")).shareCard(tip, userIsPremium || !tip.isPremium || tip.status !== "upcoming");
     } finally {
       setSharing(false);
     }

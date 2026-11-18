@@ -1,4 +1,9 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
+
+// Overlays that most visits never open load on demand.
+const UnlockSheet = lazy(() => import("@/components/UnlockSheet"));
+const Onboarding = lazy(() => import("@/components/Onboarding"));
+const WinCelebration = lazy(() => import("@/components/WinCelebration"));
 import TipCard from "@/components/TipCard";
 import CouponCard from "@/components/CouponCard";
 import TodayHotTip from "@/components/TodayHotTip";
@@ -16,16 +21,14 @@ import DailyPack from "@/components/DailyPack";
 import CardInspector from "@/components/CardInspector";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Link, useSearchParams } from "react-router-dom";
-import UnlockSheet from "@/components/UnlockSheet";
 import { loadTipUnlocks, verifyCheckout, nativeSingleTipPrice } from "@/lib/tipUnlocks";
 import { SINGLE_TIP_CENTS, usd } from "@/lib/pricing";
 import { useToast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
-import Onboarding, { needsOnboarding } from "@/components/Onboarding";
+import { needsOnboarding } from "@/lib/onboarding";
 import { AnimatePresence } from "framer-motion";
 import TodayPanel from "@/components/TodayPanel";
 import PullToShuffle from "@/components/PullToShuffle";
-import WinCelebration from "@/components/WinCelebration";
 import { isNativeApp, PLAY_STORE_URL } from "@/lib/platform";
 import mark from "@/assets/brand/mark.svg";
 import { Smartphone } from "lucide-react";
@@ -485,10 +488,12 @@ const Index = () => {
       <PullToShuffle onRefresh={refreshFeed} />
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
 
+      <Suspense fallback={null}>
       <AnimatePresence>{onboarding && <Onboarding key="onboarding" onDone={() => setOnboarding(false)} />}</AnimatePresence>
       <AnimatePresence>
         {!onboarding && wins.length > 0 && <WinCelebration key="wins" wins={wins} onDone={() => setWins([])} />}
       </AnimatePresence>
+      </Suspense>
 
       <CardInspector
         tip={inspect}
@@ -498,13 +503,15 @@ const Index = () => {
         onPrev={stepCard(-1)}
         onNext={stepCard(1)}
       />
-      <UnlockSheet
-        tip={sheetTip}
-        signedIn={!!user}
-        credits={credits}
-        onClose={() => setSheetTip(null)}
-        onUnlocked={handleUnlocked}
-      />
+      <Suspense fallback={null}>
+        <UnlockSheet
+          tip={sheetTip}
+          signedIn={!!user}
+          credits={credits}
+          onClose={() => setSheetTip(null)}
+          onUnlocked={handleUnlocked}
+        />
+      </Suspense>
 
       {/* Admin login dialog - opened by 3 taps on the footer copyright */}
       <AdminLoginDialog open={adminLoginOpen} onOpenChange={setAdminLoginOpen} />
