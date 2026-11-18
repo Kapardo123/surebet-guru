@@ -29,7 +29,7 @@ export const initRevenueCat = async () => {
 export const loginRevenueCat = async (appUserId: string) => {
   if (Capacitor.getPlatform() === 'web') return;
   try {
-    const { customerInfo } = await Purchases.logIn({ appUserId });
+    const { customerInfo } = await Purchases.logIn({ appUserID: appUserId });
     console.log('Użytkownik zalogowany w RevenueCat:', appUserId);
     return customerInfo;
   } catch (error) {
@@ -93,14 +93,9 @@ export const getCustomerInfo = async () => {
   }
 };
 
-export const presentPaywall = async () => {
-  try {
-    const { customerInfo } = await Purchases.presentPaywall();
-    return customerInfo;
-  } catch (error: any) {
-    if (!error.userCancelled) {
-      console.error('Błąd wyświetlania Paywall:', error);
-    }
-    return null;
-  }
-};
+/**
+ * RevenueCat's hosted paywall lives in a separate plugin
+ * (@revenuecat/purchases-capacitor-ui) which isn't installed, so the app
+ * buys packages directly. Kept as a no-op for callers.
+ */
+export const presentPaywall = async (): Promise<null> => null;

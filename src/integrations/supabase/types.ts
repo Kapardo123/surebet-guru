@@ -6,6 +6,14 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+/** Compact table shape for tables added after the last generated types. */
+type Table<R> = {
+  Row: R
+  Insert: Partial<R>
+  Update: Partial<R>
+  Relationships: []
+}
+
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -106,6 +114,11 @@ export type Database = {
           status: string
           is_premium: boolean | null
           is_published: boolean | null
+          home_team_logo?: string | null
+          away_team_logo?: string | null
+          description?: string | null
+          likes_count?: number | null
+          won_at?: string | null
         }
         Insert: {
           id?: number
@@ -120,6 +133,11 @@ export type Database = {
           status: string
           is_premium?: boolean | null
           is_published?: boolean | null
+          home_team_logo?: string | null
+          away_team_logo?: string | null
+          description?: string | null
+          likes_count?: number | null
+          won_at?: string | null
         }
         Update: {
           id?: number
@@ -134,6 +152,11 @@ export type Database = {
           status?: string
           is_premium?: boolean | null
           is_published?: boolean | null
+          home_team_logo?: string | null
+          away_team_logo?: string | null
+          description?: string | null
+          likes_count?: number | null
+          won_at?: string | null
         }
         Relationships: []
       }
@@ -184,6 +207,13 @@ export type Database = {
           prediction: string
           odds: string
           confidence: string
+          status?: string | null
+          home_team_logo?: string | null
+          away_team_logo?: string | null
+          description?: string | null
+          won_at?: string | null
+          sport?: string | null
+          unlock_free?: boolean | null
         }
         Insert: {
           id?: number
@@ -195,6 +225,13 @@ export type Database = {
           prediction: string
           odds: string
           confidence: string
+          status?: string | null
+          home_team_logo?: string | null
+          away_team_logo?: string | null
+          description?: string | null
+          won_at?: string | null
+          sport?: string | null
+          unlock_free?: boolean | null
         }
         Update: {
           id?: number
@@ -206,9 +243,31 @@ export type Database = {
           prediction?: string
           odds?: string
           confidence?: string
+          status?: string | null
+          home_team_logo?: string | null
+          away_team_logo?: string | null
+          description?: string | null
+          won_at?: string | null
+          sport?: string | null
+          unlock_free?: boolean | null
         }
         Relationships: []
       }
+      tip_unlocks: Table<{ id: string; user_id: string; tip_id: number; source: string; payment_ref: string; created_at: string }>
+      weekend_passes: Table<{ id: string; user_id: string; starts_at: string; ends_at: string; source: string; payment_ref: string; created_at: string }>
+      admins: Table<{ user_id: string; created_at: string }>
+      tips_archive: Table<{
+        id: number; sport: string | null; league: string | null; home_team: string | null; away_team: string | null
+        prediction: string | null; odds: number | null; kickoff: string | null; status: string; is_premium: boolean | null
+        home_team_logo: string | null; away_team_logo: string | null; won_at: string | null; archived_at: string
+      }>
+      collected_cards: Table<{ user_id: string; tip_id: number; collected_at: string }>
+      daily_opens: Table<{ user_id: string; day: string }>
+      unlock_credits: Table<{ user_id: string; credits: number; updated_at: string }>
+      events: Table<{ id: number; created_at: string; name: string; user_id: string | null; anon_id: string | null; props: Json | null }>
+      team_logos_cache: Table<{ team_name: string; logo_url: string | null; updated_at: string | null }>
+      imported_matches: Table<{ source_id: string; home_team: string | null; away_team: string | null; target: string | null; imported_at: string }>
+      push_tokens: Table<{ user_id: string; token: string; platform: string; enabled: boolean; updated_at: string | null }>
     }
     Views: {
       [_ in never]: never

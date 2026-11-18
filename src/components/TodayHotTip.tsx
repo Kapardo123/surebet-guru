@@ -90,18 +90,24 @@ const TodayHotTip = () => {
   
   const [burst, setBurst] = useState(false);
 
-  const handleWatchAd = () => {
-    showRewardedAd().catch(() => {});
-    setTimeout(() => {
-      setBurst(true);
-      window.setTimeout(() => setBurst(false), 1600);
-      setIsUnlocked(true);
-      localStorage.setItem("hotTipUnlocked", "true");
-      if (pick) {
-        const currentTipId = `${pick.homeTeam}-${pick.awayTeam}-${pick.kickoff}`;
-        localStorage.setItem("lastUnlockedTipId", currentTipId);
-      }
-    }, 5000);
+  const [adFailed, setAdFailed] = useState(false);
+
+  const handleWatchAd = async () => {
+    setAdFailed(false);
+    // Only reveal when the ad network confirms the reward (web: always true).
+    const rewarded = await showRewardedAd().catch(() => false);
+    if (!rewarded) {
+      setAdFailed(true);
+      return;
+    }
+    setBurst(true);
+    window.setTimeout(() => setBurst(false), 1600);
+    setIsUnlocked(true);
+    localStorage.setItem("hotTipUnlocked", "true");
+    if (pick) {
+      const currentTipId = `${pick.homeTeam}-${pick.awayTeam}-${pick.kickoff}`;
+      localStorage.setItem("lastUnlockedTipId", currentTipId);
+    }
   };
 
   const settled = data.status && data.status !== "upcoming";
@@ -209,7 +215,9 @@ const TodayHotTip = () => {
           {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
           {!isRewardedAdReady ? "Preparing ad…" : "Watch an ad to flip it"}
         </button>
-        {error && <p className="text-red text-[13px] mt-2">{error}</p>}
+        {(error || adFailed) && (
+          <p className="text-red text-[13px] mt-2">{error ?? "The ad didn't finish, so the card stays face down. Try again."}</p>
+        )}
         <p className="text-[13px] text-white/55 mt-3">About 30 seconds. Members' cards are always face up.</p>
       </div>
     </div>

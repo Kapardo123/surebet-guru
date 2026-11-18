@@ -43,7 +43,7 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
     prediction: data.prediction,
     odds: data.odds,
     confidence: data.confidence,
-    status: data.status || "upcoming",
+    status: (["won", "lost", "draw"].includes(data.status ?? "") ? data.status : "upcoming") as FeaturedPick["status"],
     homeTeamLogo: data.home_team_logo,
     awayTeamLogo: data.away_team_logo,
     description: data.description,

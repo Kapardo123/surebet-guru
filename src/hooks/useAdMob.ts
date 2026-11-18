@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AdMob, AdLoadOptions } from '@capacitor-community/admob';
+import { AdMob, AdOptions, RewardAdPluginEvents } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
 
 export const isNativePlatform = Capacitor.isNativePlatform();
@@ -34,7 +34,7 @@ export const useAdMob = () => {
     setError(null);
 
     try {
-      const options: AdLoadOptions = {
+      const options: AdOptions = {
         adId: adUnitId || (Capacitor.getPlatform() === 'android'
           ? 'ca-app-pub-1532874051579555/1810109997'
           : 'ca-app-pub-3940256099942544/1712485313'
@@ -78,16 +78,18 @@ export const useAdMob = () => {
       const rewardPromise = new Promise<boolean>((resolve) => {
         let resolved = false;
 
-        const cleanup = async () => {
-          try {
-            await handler.remove();
-          } catch (e) {}
-        };
-
-        const handler = AdMob.addListener('onUserEarnedReward', (info: any) => {
+        // addListener resolves to a handle; the reward event in this plugin
+        // version is RewardAdPluginEvents.Rewarded ("onRewardedVideoAdReward").
+        const handlerPromise = AdMob.addListener(RewardAdPluginEvents.Rewarded, (info) => {
           console.log('🎁 AdMob: EVENT - Nagroda odebrana!', info);
           didReceiveReward = true;
         });
+
+        const cleanup = async () => {
+          try {
+            await (await handlerPromise).remove();
+          } catch (e) {}
+        };
 
         const finalize = async () => {
           if (resolved) return;
@@ -160,13 +162,7 @@ export const useAdMob = () => {
       setIsRewardedAdReady(true);
     }
 
-    // Cleanup listeners przy unmount
-    return () => {
-      if (isNativePlatform) {
-        console.log('🧹 AdMob: Cleanup listeners');
-        AdMob.removeAllListeners().catch(() => {});
-      }
-    };
+    // Reward listeners are removed one by one when each ad finishes.
   }, [initialize, loadRewardedAd]);
 
   return {

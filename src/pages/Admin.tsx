@@ -1577,7 +1577,7 @@ const AdminPanel = () => {
                 <form onSubmit={handleGrantPremium} className="space-y-3">
                   <Input className="h-9 text-xs" placeholder="User Email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} />
                   <div className="flex gap-2">
-                    <Select value={premiumDays} onValueChange={premiumDays}>
+                    <Select value={premiumDays} onValueChange={setPremiumDays}>
                       <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="7">7 Days</SelectItem>
@@ -1628,7 +1628,7 @@ const AdminPanel = () => {
                     </Button>
                   )}
                 </div>
-                <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v)} className="mb-4">
+                <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v)}>
                   <SelectTrigger className="h-8 text-xs w-28"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
@@ -1640,7 +1640,7 @@ const AdminPanel = () => {
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {filteredTips.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">No published tips found.</p>}
                   {filteredTips.map((tip) => {
-                    const status = tip.status === 'won' ? 'win' : tip.status === 'lost' ? 'lost' : 'default';
+                    const status = tip.status === 'won' ? 'win' : tip.status === 'lost' ? 'loss' : 'default';
                     return (
                       <div key={tip.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-xl hover:bg-muted/40 group">
                         <div className="flex items-center gap-2">
@@ -1674,7 +1674,7 @@ const AdminPanel = () => {
                   </h2>
                   <div className="space-y-2 max-h-[400px] overflow-y-auto">
                     {draftTips.map((tip) => {
-                      const status = tip.status === 'won' ? 'win' : tip.status === 'lost' ? 'lost' : 'default';
+                      const status = tip.status === 'won' ? 'win' : tip.status === 'lost' ? 'loss' : 'default';
                       return (
                         <div key={tip.id} className="flex items-center justify-between p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-xl hover:bg-yellow-500/10 group">
                           <div className="flex items-center gap-2">
@@ -2051,7 +2051,7 @@ const AdminPanel = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Badge variant={c.status === 'won' ? 'win' : c.status === 'lost' ? 'lost' : 'default'} className="text-[9px]">{c.status}</Badge>
+                        <Badge variant={c.status === 'won' ? 'win' : c.status === 'lost' ? 'loss' : 'default'} className="text-[9px]">{c.status}</Badge>
                         {c.isPremium && <Crown className="w-3.5 h-3.5 text-accent" />}
                         <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEditCoupon(c)}>
                           <Pencil className="w-3.5 h-3.5" />
@@ -2078,7 +2078,7 @@ const AdminPanel = () => {
           >
             <Trash2 className="w-3 h-3 mr-1" /> Clear Logos
           </Button>
-          <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={refreshData}>
+          <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={() => refreshData()}>
             <RefreshCw className="w-3 h-3 mr-1" /> Sync
           </Button>
         </div>
