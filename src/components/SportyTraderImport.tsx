@@ -1,21 +1,6 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Download,
-  Loader2,
-  TrendingUp,
-  Zap,
-  Receipt,
-  Clock,
-  ChevronDown,
-  ChevronUp,
-  RefreshCw,
-  Trash2,
-  ArrowRight,
-} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import TeamLogo from "@/components/TeamLogo";
+import { CouponBar, ImportEmpty, ImportGrid, ImportMatchCard, ImportToolbar, OddsValue } from "@/components/import/ImportKit";
 import {
   fetchSportyList,
   fetchSportyMatch,
@@ -75,11 +60,9 @@ const SportyTraderImport = ({ onImport, couponCount = 0, onGoToCoupon }: Props) 
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [matches, setMatches] = useState<MatchCard[]>([]);
-  const [expanded, setExpanded] = useState<string | null>(null);
   const [fetched, setFetched] = useState(false);
   const [fetchedAt, setFetchedAt] = useState<number | null>(null);
   const [resetting, setResetting] = useState(false);
-  const [editingOdds, setEditingOdds] = useState<string>("");
   const [importedIds, setImportedIds] = useState<Set<string>>(new Set());
 
   const handleOddsChange = (id: string, value: string) => {
@@ -90,7 +73,6 @@ const SportyTraderImport = ({ onImport, couponCount = 0, onGoToCoupon }: Props) 
       writeMatchesCache(next, fetchedAt ?? Date.now());
       return next;
     });
-    setEditingOdds("");
   };
 
 const IMPORTED_IDS_KEY = "gsb_sporty_imported_ids";
@@ -247,7 +229,7 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
         description: sofaFilled > 0
           ? `${newCount > 0 ? `${newCount} new · ` : ""}${sofaFilled} odds auto-filled from SofaScore`
           : noOdds
-            ? "Brak kursów — wpisz ręcznie lub ustaw darmowy klucz corsproxy.io (localStorage: gsb_corsproxy_key)"
+            ? "No odds found: type them on the cards, or set a free corsproxy.io key (localStorage: gsb_corsproxy_key)"
             : newCount > 0
               ? `${newCount} new since last visit`
               : undefined,
@@ -265,15 +247,15 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
   };
 
   const handleResetImported = async () => {
-    if (!window.confirm("Usunąć historię zaimportowanych meczy? Po tym wszystkie mecze będą dostępne do ponownego importu.")) return;
+    if (!window.confirm("Clear the SportyTrader import history? Every match can then be imported again.")) return;
     setResetting(true);
     try {
       await clearImportedIds();
       setImportedIds(new Set());
       try { localStorage.removeItem(IMPORTED_IDS_KEY); } catch { /* ignore */ }
-      toast({ title: "Historia importu wyczyszczona ✅" });
+      toast({ title: "Import history cleared ✅" });
     } catch {
-      toast({ title: "Błąd czyszczenia historii", variant: "destructive" });
+      toast({ title: "Could not clear the history", variant: "destructive" });
     } finally {
       setResetting(false);
     }
@@ -312,214 +294,66 @@ const SEEN_IDS_KEY = "gsb_sporty_seen_ids";
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <Download className="w-4 h-4 text-accent" />
-          <h3 className="font-display text-sm font-bold">SportyTrader Import</h3>
-          {matches.length > 0 && (
-            <Badge variant="outline" className="text-[9px]">
-              {matches.length} matches
-            </Badge>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {matches.length > 0 && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-9 px-2 text-muted-foreground hover:text-loss"
-              onClick={handleClear}
-              title="Clear fetched list"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-          )}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-9 px-2 text-muted-foreground hover:text-amber-400"
-            onClick={handleResetImported}
-            disabled={resetting}
-            title="Reset import history — allows re-importing matches"
-          >
-            {resetting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-          </Button>
-          <Button
-            size="sm"
-            className="h-9 gap-2 bg-accent hover:bg-accent/90"
-            onClick={handleFetch}
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                {progress ? `${progress.done}/${progress.total}` : "Loading..."}
-              </>
-            ) : (
-              <>
-                {fetched ? <RefreshCw className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
-                Pobierz mecze
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
+      <ImportToolbar
+        title="SportyTrader"
+        count={matches.length > 0 ? `${matches.length} matches` : null}
+        subtitle="Picks with odds and an analysis rewritten by AI. Already imported matches are skipped."
+        fetched={fetched}
+        loading={loading}
+        loadingText={progress ? `${progress.done}/${progress.total}` : "Fetching…"}
+        onFetch={handleFetch}
+        onClear={matches.length > 0 ? handleClear : undefined}
+        onReset={handleResetImported}
+        resetting={resetting}
+      />
 
-      {/* Coupon builder indicator */}
-      {couponCount > 0 && (
-        <div className="flex items-center justify-between gap-3 bg-blue-500/10 border border-blue-500/25 rounded-xl px-3 py-2">
-          <div className="flex items-center gap-2 text-xs">
-            <Receipt className="w-3.5 h-3.5 text-blue-400" />
-            <span className="font-semibold text-blue-300">
-              Coupon builder: {couponCount} {couponCount === 1 ? "match" : "matches"}
-            </span>
-          </div>
-          {onGoToCoupon && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 gap-1 text-[10px] border-blue-500/40 text-blue-300 hover:bg-blue-500/10"
-              onClick={onGoToCoupon}
-            >
-              Open Coupons <ArrowRight className="w-3 h-3" />
-            </Button>
-          )}
-        </div>
-      )}
+      <CouponBar count={couponCount} onOpen={onGoToCoupon} />
 
       {fetched && !loading && matches.length === 0 && (
-        <div className="text-center py-6 bg-muted/20 rounded-xl border border-dashed border-border/50">
-          <p className="text-xs text-muted-foreground">
-            No matches with odds. Already-imported matches are skipped. Hit "Pobierz mecze" to refresh.
-          </p>
-        </div>
+        <ImportEmpty>No matches with odds. Already imported matches are skipped. Fetch again to refresh.</ImportEmpty>
       )}
 
-      <div className="grid grid-cols-1 gap-3 max-h-[560px] overflow-y-auto pr-1 custom-scrollbar">
+      <ImportGrid>
         {matches.map((m) => {
           const isImported = importedIds.has(m.id);
           const isNew = !seenIds.has(m.id);
           return (
-          <div
-            key={m.id}
-            className={`rounded-xl p-3 space-y-2.5 border transition-colors ${
-              isImported
-                ? "bg-emerald-500/10 border-emerald-500/40"
-                : isNew
-                  ? "bg-amber-500/5 border-amber-500/30"
-                  : "bg-card border-border/50"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <Badge variant="outline" className="text-[9px] uppercase">
-                    {m.sport}
-                  </Badge>
-                  <span className="text-[10px] text-muted-foreground truncate">{m.league}</span>
-                </div>
-                <div className="flex items-center gap-1.5 mt-1 text-sm font-bold min-w-0">
-                  <TeamLogo teamName={m.homeTeam} logoUrl={m.homeTeamLogo || undefined} size={18} />
-                  <span className="truncate">{m.homeTeam}</span>
-                  <span className="text-muted-foreground font-normal px-0.5">vs</span>
-                  <TeamLogo teamName={m.awayTeam} logoUrl={m.awayTeamLogo || undefined} size={18} />
-                  <span className="truncate">{m.awayTeam}</span>
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                <div className="flex items-center gap-1 text-[10px] text-primary justify-end">
-                  <Clock className="w-3 h-3" />
-                  {m.date} {m.time}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-2 bg-muted/30 rounded-lg px-3 py-2">
-              <span className="text-xs font-semibold truncate">{m.prediction || "—"}</span>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {m.odds > 0 ? (
-                  <span className="text-sm font-black text-accent">@ {m.odds.toFixed(2)}</span>
+            <ImportMatchCard
+              key={m.id}
+              sport={m.sport}
+              league={m.league}
+              homeTeam={m.homeTeam}
+              awayTeam={m.awayTeam}
+              homeLogo={m.homeTeamLogo}
+              awayLogo={m.awayTeamLogo}
+              kickoff={m.kickoff}
+              prediction={m.prediction || "—"}
+              state={isImported ? "imported" : isNew ? "new" : "idle"}
+              odds={
+                m.odds > 0 ? (
+                  <OddsValue value={m.odds} />
                 ) : (
-                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                    <span className="text-[10px] text-muted-foreground/50">Odds:</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="1.01"
-                      placeholder="—"
-                      className="w-16 h-7 text-xs font-bold text-center bg-muted/50 border border-border/50 rounded-md outline-none focus:border-accent"
-                      value={editingOdds === m.id ? undefined : ""}
-                      onFocus={() => setEditingOdds(m.id)}
-                      onBlur={() => setTimeout(() => setEditingOdds(""), 200)}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val) handleOddsChange(m.id, val);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          const val = (e.target as HTMLInputElement).value;
-                          if (val) handleOddsChange(m.id, val);
-                          (e.target as HTMLInputElement).blur();
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {m.analysis && (
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setExpanded(expanded === m.id ? null : m.id)}
-                  className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary"
-                >
-                  {expanded === m.id ? (
-                    <ChevronUp className="w-3 h-3" />
-                  ) : (
-                    <ChevronDown className="w-3 h-3" />
-                  )}
-                  {expanded === m.id ? "Hide" : "Show"} rewritten analysis
-                </button>
-                {expanded === m.id && (
-                  <p className="text-[11px] text-muted-foreground leading-relaxed mt-1.5 whitespace-pre-line">
-                    {m.analysis}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="grid grid-cols-3 gap-2 pt-1">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1 text-[10px]"
-                onClick={() => handleRoute(m, "tip")}
-              >
-                <TrendingUp className="w-3 h-3" /> Tip
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1 text-[10px] border-accent/40 text-accent hover:bg-accent/10"
-                onClick={() => handleRoute(m, "hero")}
-              >
-                <Zap className="w-3 h-3" /> Hero
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1 text-[10px] border-blue-500/40 text-blue-300 hover:bg-blue-500/10"
-                onClick={() => handleRoute(m, "coupon")}
-              >
-                <Receipt className="w-3 h-3" /> Coupon
-              </Button>
-            </div>
-          </div>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="1.01"
+                    placeholder="add"
+                    aria-label="Odds"
+                    className="w-16 h-7 rounded-md bg-white border border-stock-ink/20 text-center num font-black text-[14px] outline-none focus:border-primary"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    }}
+                    onBlur={(e) => e.target.value && handleOddsChange(m.id, e.target.value)}
+                  />
+                )
+              }
+              analysis={m.analysis ? <p className="whitespace-pre-line opacity-80">{m.analysis}</p> : undefined}
+              analysisLabel="rewritten analysis"
+              onRoute={(t) => handleRoute(m, t)}
+            />
           );
         })}
-      </div>
+      </ImportGrid>
     </div>
   );
 };

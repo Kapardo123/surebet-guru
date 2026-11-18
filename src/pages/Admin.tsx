@@ -934,16 +934,16 @@ const AdminPanel = () => {
         {activeTab === 'import' && (
           <Card className="bg-card border-accent/20 shadow-md overflow-hidden border">
             <CardContent className="p-3 sm:p-4 space-y-4">
-              {/* Source switcher: both scrapers feed the same import pipeline */}
-              <div className="flex items-center gap-1.5 bg-muted/30 border border-border/50 rounded-xl p-1 w-fit">
+              {/* Source switcher: every scraper feeds the same import pipeline and UI */}
+              <div className="flex p-1 rounded-full bg-black/25 w-fit" role="tablist" aria-label="Source">
                 {importSources.map((src) => (
                   <button
                     key={src.id}
+                    role="tab"
+                    aria-selected={importSource === src.id}
                     onClick={() => setImportSource(src.id)}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
-                      importSource === src.id
-                        ? "bg-accent text-accent-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
+                    className={`h-9 px-4 rounded-full text-[13px] font-bold transition-colors ${
+                      importSource === src.id ? "bg-foreground text-background" : "text-foreground/70 hover:text-foreground"
                     }`}
                   >
                     {src.label}
