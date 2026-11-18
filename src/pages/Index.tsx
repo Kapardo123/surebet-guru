@@ -346,7 +346,7 @@ const Index = () => {
                 />
               )}
               {!loading && !packOpen && tips.length > 0 ? (
-                <DailyPack count={tips.length} goldCount={tips.filter((t) => t.isPremium).length} onOpen={openPack} />
+                <DailyPack tips={tips} onOpen={openPack} />
               ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 [&>*]:min-w-0">
                 {loading
