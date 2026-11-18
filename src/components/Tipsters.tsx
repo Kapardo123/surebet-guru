@@ -99,13 +99,13 @@ const WeekStrip = ({ line, color }: { line: WeekLine | null; color: string }) =>
   );
 };
 
-/** "Meet the tipsters": the two people who deal the cards, with this week's stats. */
-const Tipsters = ({ className = "" }: { className?: string }) => {
-  // undefined while loading (strip hidden), null when the stats RPC isn't deployed.
+/** "Meet the tipsters": the two people who deal the cards; `showWeek` adds this week's stats. */
+const Tipsters = ({ className = "", showWeek = false }: { className?: string; showWeek?: boolean }) => {
+  // undefined while loading or hidden (no strip), null when the stats RPC isn't deployed.
   const [week, setWeek] = useState<WeekRecord | null | undefined>(undefined);
   useEffect(() => {
-    loadWeekRecord().then(setWeek);
-  }, []);
+    if (showWeek) loadWeekRecord().then(setWeek);
+  }, [showWeek]);
   return (
   <section className={className} aria-labelledby="tipsters-title">
     <p className="label">Who deals the cards</p>

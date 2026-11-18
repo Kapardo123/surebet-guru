@@ -338,7 +338,7 @@ export default function Premium() {
           </section>
         )}
 
-        <Tipsters />
+        <Tipsters showWeek />
 
         <section className="rounded-[20px] bg-white/[0.04] border border-white/[0.07] p-5">
           <h2 className="font-display font-black uppercase text-[16px] tracking-[-0.01em]">In every pack</h2>
