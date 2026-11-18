@@ -96,7 +96,7 @@ export default defineConfig(({ mode }) => ({
       includeAssets: ["favicon.ico", "logo.png", "splash.png", "icon-192.png", "icon-512-maskable.png", "apple-touch-icon.png"],
       workbox: {
         navigateFallback: "/index.html",
-        navigateFallbackAllowlist: [/^\/(?!api|app-ads\.txt|google.*\.html|\.well-known).*/],
+        navigateFallbackAllowlist: [/^\/(?!api|google.*\.html|\.well-known).*/],
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [
