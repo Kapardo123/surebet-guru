@@ -25,6 +25,7 @@ import Onboarding, { needsOnboarding } from "@/components/Onboarding";
 import { AnimatePresence } from "framer-motion";
 import TodayPanel from "@/components/TodayPanel";
 import PullToShuffle from "@/components/PullToShuffle";
+import WinCelebration from "@/components/WinCelebration";
 import { isNativeApp, PLAY_STORE_URL } from "@/lib/platform";
 import mark from "@/assets/brand/mark.svg";
 import { Smartphone } from "lucide-react";
@@ -86,6 +87,7 @@ const Index = () => {
     return new Promise((r) => setTimeout(r, 700));
   }, []);
   const [onboarding, setOnboarding] = useState(needsOnboarding);
+  const [wins, setWins] = useState<Tip[]>([]);
   const [inspect, setInspect] = useState<Tip | null>(null);
   const [seen, setSeen] = useState<number[]>(() => readLS(`gsb_seen_${dayKey}`, []));
   const [packOpen, setPackOpen] = useState<boolean>(() => readLS(`gsb_pack_${dayKey}`, false));
@@ -283,14 +285,9 @@ const Index = () => {
       });
 
       setTips(visibleTips);
-      // Cards that won since the last visit get a toast (their seal animates in).
+      // Cards that won since the last visit get their own moment.
       const won = newlySettled(visibleTips).filter((t) => t.status === "won");
-      if (won.length) {
-        toast({
-          title: won.length === 1 ? "Your card won!" : `${won.length} cards won!`,
-          description: won.map((t) => `${t.homeTeam} v ${t.awayTeam}: ${t.prediction || "Gold pick"}`).join(" · "),
-        });
-      }
+      if (won.length) setWins(won);
       setCoupons(visibleCoupons);
       setLoading(false);
     };
@@ -489,6 +486,9 @@ const Index = () => {
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       <AnimatePresence>{onboarding && <Onboarding key="onboarding" onDone={() => setOnboarding(false)} />}</AnimatePresence>
+      <AnimatePresence>
+        {!onboarding && wins.length > 0 && <WinCelebration key="wins" wins={wins} onDone={() => setWins([])} />}
+      </AnimatePresence>
 
       <CardInspector
         tip={inspect}

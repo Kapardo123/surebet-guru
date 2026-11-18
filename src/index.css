@@ -212,8 +212,6 @@
 /* Holographic foil. Position follows --mx/--my (0..1), set from the pointer;
    on touch devices it drifts on its own. */
 .holo {
-  --mx: 0.5;
-  --my: 0.5;
   position: relative;
   isolation: isolate;
 }
@@ -234,9 +232,9 @@
       hsl(55 100% 60% / .55) 24%,
       hsl(0 100% 70% / .0) 30%
     ),
-    radial-gradient(circle at calc(var(--mx) * 100%) calc(var(--my) * 100%), hsl(0 0% 100% / .55), transparent 45%);
+    radial-gradient(circle at calc(var(--mx, .5) * 100%) calc(var(--my, .5) * 100%), hsl(0 0% 100% / .55), transparent 45%);
   background-size: 260% 260%, 100% 100%;
-  background-position: calc(var(--mx) * 100%) calc(var(--my) * 100%), 0 0;
+  background-position: calc(var(--mx, .5) * 100%) calc(var(--my, .5) * 100%), 0 0;
   mix-blend-mode: color-dodge;
   opacity: .32;
   transition: opacity .3s;
@@ -391,3 +389,15 @@
   transform: perspective(1000px) rotateY(calc((var(--gx, .5) - .5) * 14deg)) rotateX(calc((.5 - var(--gy, .5)) * 10deg));
   transition: transform .12s linear;
 }
+
+/* Depth in the card art: crests float above the pitch and drift against it
+   as the card tilts (pointer on desktop, phone tilt on mobile). */
+.parallax-near, .parallax-far { transition: transform .15s ease-out; will-change: transform; }
+.parallax-near {
+  transform: translate3d(calc((var(--mx, var(--gx, .5)) - .5) * -12px), calc((var(--my, var(--gy, .5)) - .5) * -8px), 0);
+}
+.parallax-far {
+  transform: translate3d(calc((var(--mx, var(--gx, .5)) - .5) * 6px), calc((var(--my, var(--gy, .5)) - .5) * 4px), 0) scale(1.06);
+}
+.parallax-near > span { filter: drop-shadow(0 10px 10px rgba(0,0,0,.35)); }
+@media (prefers-reduced-motion: reduce) { .parallax-near, .parallax-far { transform: none; } }
