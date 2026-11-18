@@ -124,7 +124,22 @@ const CardInspector = ({
             ) : null,
           )}
 
-          <motion.div layoutId={`card-${tip.id}`} className="relative" transition={{ type: "spring", stiffness: 220, damping: 26 }}>
+          <motion.div
+            layoutId={`card-${tip.id}`}
+            className="relative touch-none"
+            transition={{ type: "spring", stiffness: 220, damping: 26 }}
+            // Phone gestures: swipe sideways for the next card, down to close.
+            drag
+            dragSnapToOrigin
+            dragElastic={0.55}
+            dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+            onDragEnd={(_, i) => {
+              const { x, y } = i.offset;
+              if (y > 120 && Math.abs(y) > Math.abs(x)) onClose();
+              else if (x < -80) navRef.current.next?.();
+              else if (x > 80) navRef.current.prev?.();
+            }}
+          >
             {celebrate && <GoldBurst radius={170} delay={0.45} />}
             {celebrate && (
               <motion.p
@@ -146,8 +161,18 @@ const CardInspector = ({
             </HoloCard>
           </motion.div>
 
+          {(onPrev || onNext) && (
+            <motion.p
+              className="md:hidden relative mt-4 text-[12px] font-semibold text-white/45"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { delay: 0.6 } }}
+              exit={{ opacity: 0 }}
+            >
+              ← Swipe for more cards →
+            </motion.p>
+          )}
           <motion.div
-            className="relative mt-6 flex items-center gap-2.5"
+            className="relative mt-4 flex items-center gap-2.5"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0, transition: { delay: 0.2 } }}
             exit={{ opacity: 0, y: 16 }}

@@ -24,6 +24,7 @@ import { track } from "@/lib/analytics";
 import Onboarding, { needsOnboarding } from "@/components/Onboarding";
 import { AnimatePresence } from "framer-motion";
 import TodayPanel from "@/components/TodayPanel";
+import PullToShuffle from "@/components/PullToShuffle";
 import { isNativeApp, PLAY_STORE_URL } from "@/lib/platform";
 import mark from "@/assets/brand/mark.svg";
 import { Smartphone } from "lucide-react";
@@ -80,6 +81,10 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   // Bump to refetch the feed (e.g. after a card is unlocked server-side).
   const [reloadKey, setReloadKey] = useState(0);
+  const refreshFeed = useCallback(() => {
+    setReloadKey((k) => k + 1);
+    return new Promise((r) => setTimeout(r, 700));
+  }, []);
   const [onboarding, setOnboarding] = useState(needsOnboarding);
   const [inspect, setInspect] = useState<Tip | null>(null);
   const [seen, setSeen] = useState<number[]>(() => readLS(`gsb_seen_${dayKey}`, []));
@@ -480,6 +485,7 @@ const Index = () => {
         </div>
       </footer>
 
+      <PullToShuffle onRefresh={refreshFeed} />
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       <AnimatePresence>{onboarding && <Onboarding key="onboarding" onDone={() => setOnboarding(false)} />}</AnimatePresence>

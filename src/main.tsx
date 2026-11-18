@@ -1,12 +1,14 @@
 import { createRoot } from "react-dom/client";
 import { applyTable, getTable } from "@/lib/theme";
 import { track } from "@/lib/analytics";
+import { startGyro } from "@/lib/gyro";
 import { ErrorBoundary, initMonitoring } from "@/lib/monitoring";
 import App from "./App.tsx";
 import "./index.css";
 
 initMonitoring();
 applyTable(getTable());
+startGyro();
 track("app_open", { version: __APP_VERSION__ });
 const Crashed = () => (
   <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, textAlign: "center", color: "#f6f2e8", background: "#0e1120", fontFamily: "Rubik, sans-serif" }}>

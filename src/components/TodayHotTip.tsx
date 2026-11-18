@@ -261,6 +261,7 @@ const TodayHotTip = () => {
       </AnimatePresence>
       {/* Aura in the frame's colours */}
       <div className="pointer-events-none absolute -inset-3 rounded-[30px] holo-frame blur-2xl opacity-35" aria-hidden />
+      <div className="gyro-tilt">
       <HoloCard holo={false} maxTilt={8} innerClassName="rounded-[22px]">
         <div className="flip-scene">
           <div className={`flip-inner grid grid-cols-[minmax(0,1fr)] ${isUnlocked ? "" : "is-flipped"}`}>
@@ -269,6 +270,7 @@ const TodayHotTip = () => {
           </div>
         </div>
       </HoloCard>
+      </div>
     </section>
   );
 };

@@ -361,7 +361,7 @@
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: radial-gradient(circle at calc(var(--mx, .3) * 100%) calc(var(--my, .2) * 100%), rgba(255,255,255,.22), transparent 45%);
+  background: radial-gradient(circle at calc(var(--mx, var(--gx, .3)) * 100%) calc(var(--my, var(--gy, .2)) * 100%), rgba(255,255,255,.22), transparent 45%);
   mix-blend-mode: soft-light;
   z-index: 2;
 }
@@ -378,4 +378,16 @@
   outline: 2px solid hsl(var(--primary));
   outline-offset: 3px;
   border-radius: 12px;
+}
+
+/* Phone tilt (src/lib/gyro.ts): idle holo foil follows the device instead
+   of drifting on a timer, and the pick of the day leans with the phone. */
+:root[data-gyro="1"] .holo-idle::after {
+  animation: none;
+  background-position: calc(var(--gx, .5) * 100%) calc(var(--gy, .5) * 100%), 0 0;
+  opacity: .42;
+}
+:root[data-gyro="1"] .gyro-tilt {
+  transform: perspective(1000px) rotateY(calc((var(--gx, .5) - .5) * 14deg)) rotateX(calc((.5 - var(--gy, .5)) * 10deg));
+  transition: transform .12s linear;
 }
