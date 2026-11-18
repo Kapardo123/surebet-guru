@@ -457,6 +457,8 @@ const AdminPanel = () => {
     }
 
     if (editingTipId !== null) {
+      const before = tips.find((t) => t.id === editingTipId) ?? draftTips.find((t) => t.id === editingTipId);
+      const justWon = before?.status !== "won" && form.status === "won";
       await updateTip({
         id: editingTipId,
         sport: form.sport,
@@ -472,6 +474,17 @@ const AdminPanel = () => {
         awayTeamLogo: form.awayTeamLogo,
         description: form.description,
       });
+      // A Gold pick just won: tell the members who hold it.
+      if (justWon && form.isPremium) {
+        try {
+          await supabase.functions.invoke("send-premium-push", {
+            body: {
+              title: "Your Gold card won!",
+              message: `${form.homeTeam} v ${form.awayTeam}: ${form.prediction} @ ${parseFloat(form.odds).toFixed(2)}`,
+            },
+          });
+        } catch (pushError) {}
+      }
       await refreshData(true); // Force refresh after update
       resetTipForm();
       toast({ title: "Tip updated! ✅" });

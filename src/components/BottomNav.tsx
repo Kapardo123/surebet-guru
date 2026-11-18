@@ -1,4 +1,4 @@
-import { Layers, Ticket, Gem, LogIn, User } from "lucide-react";
+import { Layers, BookOpen, Gem, LogIn, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,7 +44,7 @@ const BottomNav = ({ activeTab, onTabChange }: { activeTab?: string; onTabChange
     <nav className="fixed bottom-0 inset-x-0 z-40 md:hidden px-3 pb-[max(10px,env(safe-area-inset-bottom))]">
       <div className="flex p-1 rounded-[22px] bg-[hsl(232_35%_14%/.92)] backdrop-blur-xl border border-white/10 shadow-[0_12px_30px_-8px_rgba(0,0,0,.8)]">
         <NavButton label="Cards" icon={Layers} active={onHome && activeTab === "tips"} to={onHome ? undefined : "/"} onClick={() => go("tips")} />
-        <NavButton label="Sets" icon={Ticket} active={onHome && activeTab === "coupons"} to={onHome ? undefined : "/"} onClick={() => go("coupons")} />
+        <NavButton label="Album" icon={BookOpen} active={pathname === "/album"} to="/album" />
         <NavButton label="Gold" icon={Gem} active={pathname === "/premium"} to="/premium" />
         {user ? (
           <NavButton label="Account" icon={User} active={pathname === "/account"} to="/account" />

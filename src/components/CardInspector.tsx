@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { RotateCw, X } from "lucide-react";
+import { RotateCw, Share2, X, Loader2 } from "lucide-react";
+import { shareCard } from "@/lib/shareCard";
 import TipCard, { Tip } from "@/components/TipCard";
 import HoloCard from "@/components/HoloCard";
 import GoldBurst from "@/components/GoldBurst";
+import { play } from "@/lib/sfx";
 
 const BASE_WIDTH = 190;
 
@@ -19,6 +21,7 @@ const CardInspector = ({ tip, userIsPremium, onClose, celebrate = false }: { tip
   useEffect(() => {
     setFlipped(false);
     if (!tip) return;
+    play(celebrate ? "chime" : "whoosh");
     const fit = () => setZoom(Math.max(1.2, Math.min(1.9, (window.innerWidth - 56) / BASE_WIDTH, (window.innerHeight - 210) / 320)));
     fit();
     window.addEventListener("resize", fit);
@@ -31,9 +34,20 @@ const CardInspector = ({ tip, userIsPremium, onClose, celebrate = false }: { tip
       window.removeEventListener("keydown", esc);
       document.body.style.overflow = prev;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tip, onClose]);
 
   const canFlip = !!tip?.description;
+  const [sharing, setSharing] = useState(false);
+  const share = async () => {
+    if (!tip || sharing) return;
+    setSharing(true);
+    try {
+      await shareCard(tip, userIsPremium || !tip.isPremium || tip.status !== "upcoming");
+    } finally {
+      setSharing(false);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -75,7 +89,11 @@ const CardInspector = ({ tip, userIsPremium, onClose, celebrate = false }: { tip
               </motion.p>
             )}
             <HoloCard holo={false} maxTilt={12}>
-              <div style={{ width: BASE_WIDTH, zoom }} onClick={() => canFlip && setFlipped((f) => !f)}>
+              <div style={{ width: BASE_WIDTH, zoom }} onClick={() => {
+                  if (!canFlip) return;
+                  play("flip");
+                  setFlipped((f) => !f);
+                }}>
                 <TipCard tip={tip} userIsPremium={userIsPremium} still flipped={flipped} />
               </div>
             </HoloCard>
@@ -89,13 +107,23 @@ const CardInspector = ({ tip, userIsPremium, onClose, celebrate = false }: { tip
           >
             {canFlip && (
               <button
-                onClick={() => setFlipped((f) => !f)}
+                onClick={() => {
+                  play("flip");
+                  setFlipped((f) => !f);
+                }}
                 className="h-12 px-6 rounded-full bg-primary text-primary-foreground font-bold text-[15px] flex items-center gap-2 shadow-[0_8px_24px_-6px_hsl(var(--primary)/.6)] active:scale-[0.97] transition-transform"
               >
                 <RotateCw className="w-4 h-4" />
                 {flipped ? "Front" : "Flip for analysis"}
               </button>
             )}
+            <button
+              onClick={share}
+              aria-label="Share card"
+              className="h-12 w-12 rounded-full bg-white/10 border border-white/15 grid place-items-center active:scale-[0.95] transition-transform"
+            >
+              {sharing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Share2 className="w-5 h-5" />}
+            </button>
             <button
               onClick={onClose}
               aria-label="Close"

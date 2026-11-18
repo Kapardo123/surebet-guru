@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import crinkle from "@/assets/textures/pack-crinkle.webp";
 import crimp from "@/assets/textures/pack-crimp.webp";
+import { season } from "@/lib/theme";
 
 export type PackStage = "sealed" | "leak" | "torn";
 
@@ -18,6 +19,7 @@ const TEETH_TOP =
   "conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / 12px 8px repeat-x";
 
 const FOIL = "linear-gradient(150deg,#1d2a6b 0%,#4b2a86 30%,#16466f 55%,#2a1a5e 80%,#122050)";
+const FOIL_WINTER = "linear-gradient(150deg,#0e4d32 0%,#9e1b24 34%,#0f5a3a 62%,#7a1420 86%,#0b3f29)";
 const GOLD = "linear-gradient(135deg,#8a6416,#f6dc8a 22%,#b98a2a 40%,#fff1b8 55%,#a8781f 72%,#f2cf6a)";
 
 // A ragged line across the seam: the edge left behind once the strip is off.
@@ -46,7 +48,8 @@ const PackArt = ({ date, count, goldCount, stage = "sealed" }: { date: string; c
       // .holo sets position: relative, so pin the body explicitly.
       style={{ position: "absolute", inset: 0, WebkitMask: TEETH, mask: TEETH, clipPath: stage === "torn" ? TORN_BODY : undefined }}
     >
-      <div className="absolute inset-0" style={{ background: FOIL }} />
+      <div className="absolute inset-0" style={{ background: season() === "winter" ? FOIL_WINTER : FOIL }} />
+      {season() === "winter" && <div className="absolute inset-0 snow" aria-hidden />}
       <div
         className="absolute inset-x-0 bottom-0 h-[20px] mix-blend-overlay"
         style={{ backgroundImage: `url(${crimp})`, backgroundSize: "auto 100%", backgroundRepeat: "repeat-x" }}

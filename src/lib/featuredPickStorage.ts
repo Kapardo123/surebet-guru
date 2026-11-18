@@ -31,6 +31,9 @@ export const loadFeaturedPick = async (): Promise<FeaturedPick | null> => {
     return null;
   }
 
+  // No usable row (empty table or a malformed record): no pick of the day.
+  if (!data || Array.isArray(data) || !data.home_team || !data.away_team) return null;
+
   return {
     id: data.id,
     league: data.league,

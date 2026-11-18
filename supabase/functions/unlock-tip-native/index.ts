@@ -9,8 +9,10 @@
 // Secrets: REVENUECAT_SECRET_KEY (RevenueCat > Project > API keys > secret).
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { weekendWindow } from "../_shared/weekend.ts";
 
 const SINGLE_TIP_PRODUCT = "gsb_single_tip";
+const WEEKEND_PACK_PRODUCT = "gsb_weekend_pack";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,20 +36,22 @@ serve(async (req: Request) => {
     if (userError || !userData.user) return json({ error: "Not authenticated" }, 401);
     const userId = userData.user.id;
 
-    const { tipId } = await req.json();
+    const { tipId, kind } = await req.json();
+    const weekend = kind === "weekend";
     const id = Number(tipId);
-    if (!Number.isInteger(id) || id <= 0) return json({ error: "Invalid tipId" }, 400);
+    if (!weekend && (!Number.isInteger(id) || id <= 0)) return json({ error: "Invalid tipId" }, 400);
 
     const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
       auth: { persistSession: false },
     });
 
-    const { data: tip } = await service.from("tips").select("id, is_premium").eq("id", id).maybeSingle();
-    if (!tip) return json({ error: "Tip not found" }, 404);
-
-    const { data: owned } = await service
-      .from("tip_unlocks").select("id").eq("user_id", userId).eq("tip_id", id).maybeSingle();
-    if (owned) return json({ kind: "tip", tipId: id, already: true });
+    if (!weekend) {
+      const { data: tip } = await service.from("tips").select("id, is_premium").eq("id", id).maybeSingle();
+      if (!tip) return json({ error: "Tip not found" }, 404);
+      const { data: owned } = await service
+        .from("tip_unlocks").select("id").eq("user_id", userId).eq("tip_id", id).maybeSingle();
+      if (owned) return json({ kind: "tip", tipId: id, already: true });
+    }
 
     const rcKey = Deno.env.get("REVENUECAT_SECRET_KEY");
     if (!rcKey) throw new Error("REVENUECAT_SECRET_KEY is not set");
@@ -59,14 +63,25 @@ serve(async (req: Request) => {
     if (!rc.ok) throw new Error(`RevenueCat lookup failed (${rc.status})`);
     const info = await rc.json();
     const purchases: Array<{ id?: string; store_transaction_id?: string }> =
-      info?.subscriber?.non_subscriptions?.[SINGLE_TIP_PRODUCT] ?? [];
+      info?.subscriber?.non_subscriptions?.[weekend ? WEEKEND_PACK_PRODUCT : SINGLE_TIP_PRODUCT] ?? [];
     const refs = purchases.map((p) => p.store_transaction_id || p.id).filter(Boolean) as string[];
     if (refs.length === 0) return json({ error: "No purchase found" }, 402);
 
-    const { data: spent } = await service.from("tip_unlocks").select("payment_ref").in("payment_ref", refs);
+    // A store transaction can be spent once, on one card or one weekend.
+    const table = weekend ? "weekend_passes" : "tip_unlocks";
+    const { data: spent } = await service.from(table).select("payment_ref").in("payment_ref", refs);
     const used = new Set((spent ?? []).map((r: { payment_ref: string }) => r.payment_ref));
     const free = refs.find((r) => !used.has(r));
     if (!free) return json({ error: "Every purchase has already been used" }, 402);
+
+    if (weekend) {
+      const w = weekendWindow();
+      const { error: passError } = await service.from("weekend_passes").insert({
+        user_id: userId, starts_at: w.start.toISOString(), ends_at: w.end.toISOString(), source: "revenuecat", payment_ref: free,
+      });
+      if (passError) throw passError;
+      return json({ kind: "weekend", startsAt: w.start, endsAt: w.end });
+    }
 
     const { error: insertError } = await service
       .from("tip_unlocks")

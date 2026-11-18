@@ -21,6 +21,10 @@ export const SINGLE_TIP_CENTS = 99;
 /** Google Play / RevenueCat product id of the $0.99 consumable. */
 export const SINGLE_TIP_PRODUCT = "gsb_single_tip";
 
+export const WEEKEND_PACK_CENTS = 299;
+/** Google Play / RevenueCat product id of the weekend pack. */
+export const WEEKEND_PACK_PRODUCT = "gsb_weekend_pack";
+
 export const usd = (cents: number) => "$" + (cents / 100).toFixed(2);
 
 export const perDay = (p: Plan) => usd(Math.round(p.cents / p.duration)) + "/day";

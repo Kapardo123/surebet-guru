@@ -57,6 +57,9 @@
     --confidence-medium: 43 90% 58%;
     --confidence-low: 2 85% 62%;
 
+    --table-glow: 250 60% 32%;
+    --table-shade: 232 50% 3%;
+
     --font-display: 'Unbounded', system-ui, sans-serif;
     --font-body: 'Rubik', system-ui, sans-serif;
 
@@ -64,6 +67,32 @@
     --glow-accent: none;
     --card-shadow: none;
   }
+}
+
+/* Table colours (Account > Settings). */
+:root[data-table="green"] {
+  --background: 154 40% 8%;
+  --card: 154 30% 12%;
+  --popover: 154 30% 12%;
+  --secondary: 154 22% 17%;
+  --muted: 154 22% 15%;
+  --accent: 154 22% 19%;
+  --border: 154 20% 21%;
+  --input: 154 20% 23%;
+  --table-glow: 140 55% 30%;
+  --table-shade: 160 50% 3%;
+}
+:root[data-table="burgundy"] {
+  --background: 340 45% 8%;
+  --card: 340 32% 12%;
+  --popover: 340 32% 12%;
+  --secondary: 340 24% 17%;
+  --muted: 340 24% 15%;
+  --accent: 340 24% 19%;
+  --border: 340 20% 22%;
+  --input: 340 20% 24%;
+  --table-glow: 350 60% 30%;
+  --table-shade: 340 50% 3%;
 }
 
 @layer base {
@@ -77,11 +106,21 @@
     -webkit-tap-highlight-color: transparent;
     background-color: hsl(var(--background));
     background-image:
-      radial-gradient(900px 520px at 50% -160px, hsl(250 60% 32% / 0.42), transparent 70%),
-      radial-gradient(140% 100% at 50% 40%, transparent 55%, hsl(232 50% 3% / 0.75)),
-      url("./assets/textures/felt.webp");
-    background-size: 100% 100%, 100% 100%, 320px 320px;
+      radial-gradient(900px 520px at 50% -160px, hsl(var(--table-glow) / 0.42), transparent 70%),
+      radial-gradient(140% 100% at 50% 40%, transparent 55%, hsl(var(--table-shade) / 0.75));
     background-attachment: fixed;
+  }
+  /* Felt fibres: the texture lends only its light and shade (luminosity),
+     so the same image works on every table colour. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: url("./assets/textures/felt.webp") 0 0 / 320px 320px;
+    mix-blend-mode: luminosity;
+    opacity: 0.55;
   }
 
   ::selection {
@@ -300,3 +339,16 @@
   background-size: 200% 100%;
   animation: back-shimmer 1.6s linear infinite;
 }
+
+/* December pack: falling snow on the wrapper. */
+@keyframes snow-fall { from { background-position: 0 0, 0 0, 0 0; } to { background-position: 0 320px, 20px 320px, -15px 320px; } }
+.snow {
+  background-image:
+    radial-gradient(1.6px 1.6px at 20px 30px, rgba(255,255,255,.9), transparent),
+    radial-gradient(1.2px 1.2px at 80px 120px, rgba(255,255,255,.8), transparent),
+    radial-gradient(2px 2px at 150px 60px, rgba(255,255,255,.85), transparent);
+  background-size: 180px 160px, 140px 200px, 200px 180px;
+  animation: snow-fall 9s linear infinite;
+  opacity: .8;
+}
+@media (prefers-reduced-motion: reduce) { .snow { animation: none; } }

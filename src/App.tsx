@@ -17,6 +17,7 @@ const Premium = lazy(() => import("./pages/Premium"));
 const Coupons = lazy(() => import("./pages/Coupons"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Account = lazy(() => import("./pages/Account"));
+const Album = lazy(() => import("./pages/Album"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const DataDeletion = lazy(() => import("./pages/DataDeletion"));
@@ -50,6 +51,7 @@ const AnimatedRoutes = () => {
         <Route path="/coupons" element={<Coupons />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/account" element={<Account />} />
+        <Route path="/album" element={<Album />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/deletion" element={<DataDeletion />} />

@@ -248,6 +248,7 @@ RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
   ON CONFLICT (user_id) DO UPDATE SET credits = public.unlock_credits.credits + n, updated_at = now();
 $$;
 REVOKE ALL ON FUNCTION public.add_unlock_credit(uuid, integer) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.add_unlock_credit(uuid, integer) TO service_role;
 
 -- Call when the user opens today's pack. Every 7th consecutive day = +1 free card.
 CREATE OR REPLACE FUNCTION public.record_daily_open()

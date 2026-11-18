@@ -77,20 +77,10 @@ serve(async (req) => {
     const isEmailVerified = user.email_confirmed_at !== null;
 
     if (action === "get-code") {
-      // ONLY Premium users can generate referral codes to prevent "referral farms"
-      const { data: premium } = await supabase
-        .from("premium_access")
-        .select("expires_at")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      const now = new Date();
-      const hasPremium = premium?.expires_at && new Date(premium.expires_at) > now;
-
-      if (!hasPremium) {
-        throw new Error("Only Premium users can generate referral codes.");
+      // Any verified account can invite friends; rewards are capped below.
+      if (!isEmailVerified) {
+        throw new Error("Please verify your email address before inviting friends.");
       }
-
       const { data: existing } = await supabase
         .from("referrals")
         .select("referral_code")
@@ -183,12 +173,15 @@ serve(async (req) => {
       });
 
       // Reward BOTH users
-      await addPremiumDays(supabase, userId, 3); // Referred user gets 3 days
-      await addPremiumDays(supabase, referral.referrer_id, 3); // Referrer gets 3 days
+      await addPremiumDays(supabase, userId, 3); // Referred user gets 3 days of Gold
+      // Referrer gets a free Gold card to spend on any pick.
+      const { error: creditError } = await supabase.rpc("add_unlock_credit", { uid: referral.referrer_id, n: 1 });
+      if (creditError) throw creditError;
 
       return new Response(JSON.stringify({
         success: true,
         reward_days: 3,
+        referrer_reward: "1 free Gold card",
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -203,7 +196,7 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({
         total_referrals: referrals?.length || 0,
-        total_reward_days: (referrals?.length || 0) * 3,
+        total_free_cards: referrals?.length || 0,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

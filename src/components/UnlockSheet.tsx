@@ -4,8 +4,9 @@ import { Link } from "react-router-dom";
 import { Loader2, Lock, X } from "lucide-react";
 import { Tip } from "@/components/TipCard";
 import { kickoffParts } from "@/lib/format";
-import { buySingleTip, nativeSingleTipPrice } from "@/lib/tipUnlocks";
-import { PLANS, SINGLE_TIP_CENTS, usd } from "@/lib/pricing";
+import { buySingleTip, buyWeekendPack, nativeSingleTipPrice } from "@/lib/tipUnlocks";
+import { PLANS, SINGLE_TIP_CENTS, WEEKEND_PACK_CENTS, usd } from "@/lib/pricing";
+import { isWeekendTip, redeemCredit } from "@/lib/engagement";
 
 /**
  * Bottom sheet shown when a locked Gold card is tapped: buy just this card
@@ -14,11 +15,13 @@ import { PLANS, SINGLE_TIP_CENTS, usd } from "@/lib/pricing";
 const UnlockSheet = ({
   tip,
   signedIn,
+  credits = 0,
   onClose,
   onUnlocked,
 }: {
   tip: Tip | null;
   signedIn: boolean;
+  credits?: number;
   onClose: () => void;
   onUnlocked: (tip: Tip) => void;
 }) => {
@@ -34,6 +37,32 @@ const UnlockSheet = ({
 
   const price = storePrice ?? usd(SINGLE_TIP_CENTS);
   const ko = tip ? kickoffParts(tip.kickoff) : null;
+
+  const weekend = tip ? isWeekendTip(tip) : false;
+
+  const useCredit = async () => {
+    if (!tip) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await redeemCredit(tip.id);
+      onUnlocked(tip);
+    } catch (e: any) {
+      setError(e?.message || "Couldn't use the free card");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const buyWeekend = async () => {
+    if (!tip) return;
+    setBusy(true);
+    setError(null);
+    const res = await buyWeekendPack();
+    if (res.status === "unlocked") onUnlocked(tip);
+    else if (res.status === "error") setError(res.message);
+    if (res.status !== "redirect") setBusy(false);
+  };
 
   const buy = async () => {
     if (!tip) return;
@@ -107,11 +136,26 @@ const UnlockSheet = ({
               ))}
             </ul>
 
+            {signedIn && credits > 0 && (
+              <button
+                onClick={useCredit}
+                disabled={busy}
+                className="mt-5 w-full h-[60px] rounded-full foil-gold foil-shimmer text-stock-ink pl-6 pr-2 flex items-center justify-between gap-3 shadow-[0_10px_28px_-8px_hsl(var(--gold)/.7)] active:scale-[0.99] transition-transform disabled:opacity-70"
+              >
+                <span className="text-[16px] font-bold flex items-center gap-2">
+                  {busy && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Use a free card
+                </span>
+                <span className="h-11 px-4 rounded-full bg-stock-ink text-[hsl(var(--gold))] grid place-items-center text-[13px] font-bold">
+                  {credits} left
+                </span>
+              </button>
+            )}
             {signedIn ? (
               <button
                 onClick={buy}
                 disabled={busy}
-                className="mt-5 w-full h-[60px] rounded-full bg-primary text-primary-foreground pl-6 pr-2 flex items-center justify-between gap-3 shadow-[0_10px_28px_-8px_hsl(var(--primary)/.7)] active:scale-[0.99] transition-transform disabled:opacity-70"
+                className={`${credits > 0 ? "mt-3" : "mt-5"} w-full h-[60px] rounded-full bg-primary text-primary-foreground pl-6 pr-2 flex items-center justify-between gap-3 shadow-[0_10px_28px_-8px_hsl(var(--primary)/.7)] active:scale-[0.99] transition-transform disabled:opacity-70`}
               >
                 <span className="text-[16px] font-bold flex items-center gap-2">
                   {busy && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -136,6 +180,19 @@ const UnlockSheet = ({
               <span className="h-px flex-1 bg-white/10" /> or every card <span className="h-px flex-1 bg-white/10" />
             </div>
 
+            {weekend && signedIn && (
+              <button
+                onClick={buyWeekend}
+                disabled={busy}
+                className="mb-2.5 w-full h-14 rounded-full border border-white/15 bg-white/[0.05] px-5 flex items-center justify-between disabled:opacity-60"
+              >
+                <span className="text-left">
+                  <span className="block text-[15px] font-bold">Weekend pack</span>
+                  <span className="block text-[11.5px] text-muted-foreground -mt-0.5">Every Gold card, Friday to Sunday</span>
+                </span>
+                <span className="num font-black text-[16px]">{usd(WEEKEND_PACK_CENTS)}</span>
+              </button>
+            )}
             <Link
               to="/premium"
               className="w-full h-14 rounded-full border border-[hsl(var(--gold)/.5)] bg-[hsl(var(--gold)/.08)] px-5 flex items-center justify-between"

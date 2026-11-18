@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import PageTransition from "@/components/PageTransition";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { setPendingCode } from "@/lib/referral";
 import AppHeader, { headerLink } from "@/components/AppHeader";
 import StadiumBackdrop from "@/components/StadiumBackdrop";
 
@@ -13,6 +14,7 @@ const Auth = () => {
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [invite, setInvite] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -114,6 +116,7 @@ const Auth = () => {
         toast({ title: "Signed in! 🎉" });
         navigate(redirect);
       } else if (mode === "signup") {
+        setPendingCode(invite);
         const { error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -150,7 +153,7 @@ const Auth = () => {
   const getSubtitle = () => {
     if (isUpdatePassword) return "Choose a new password for your account.";
     if (mode === "login") return "Sign in to pick up where you left off.";
-    if (mode === "signup") return "A free account gets you every Common card. Gold comes later, if you want it.";
+    if (mode === "signup") return "A free account gets you every Common card and 3 days of Gold on the house.";
     if (mode === "reset") return "We'll post a recovery link to your inbox.";
     if (mode === "magic") return "We'll email you a link that signs you straight in.";
     return "";
@@ -267,6 +270,20 @@ const Auth = () => {
                   minLength={6}
                 />
               </div>
+            )}
+
+            {mode === "signup" && !isUpdatePassword && (
+              <label className="block">
+                <span className="block text-[13px] font-semibold text-muted-foreground mb-1.5">Invite code <span className="font-normal">(optional)</span></span>
+                <input
+                  value={invite}
+                  onChange={(e) => setInvite(e.target.value.toUpperCase())}
+                  placeholder="GSB-XXXXXX"
+                  autoCapitalize="characters"
+                  className={field}
+                  maxLength={20}
+                />
+              </label>
             )}
 
             <button

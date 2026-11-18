@@ -22,6 +22,11 @@ import UnlockSheet from "@/components/UnlockSheet";
 import { loadTipUnlocks, verifyCheckout, nativeSingleTipPrice } from "@/lib/tipUnlocks";
 import { SINGLE_TIP_CENTS, usd } from "@/lib/pricing";
 import { useToast } from "@/hooks/use-toast";
+import StreakBar from "@/components/StreakBar";
+import { play } from "@/lib/sfx";
+import {
+  StreakState, TimeWindow, collectCard, coveredByPass, loadCredits, loadWeekendPasses, newlySettled, recordDailyOpen,
+} from "@/lib/engagement";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 
@@ -81,14 +86,26 @@ const Index = () => {
   const [sheetTip, setSheetTip] = useState<Tip | null>(null);
   const [celebrate, setCelebrate] = useState(false);
   const [unlockPrice, setUnlockPrice] = useState(usd(SINGLE_TIP_CENTS));
+  const [passes, setPasses] = useState<TimeWindow[]>([]);
+  const passesRef = useRef<TimeWindow[]>([]);
+  passesRef.current = passes;
+  const [credits, setCredits] = useState(0);
+  const [streak, setStreak] = useState<StreakState | null>(null);
+  const userRef = useRef<string | null>(null);
+  const owns = useCallback(
+    (t: Tip) => unlocks.includes(t.id) || coveredByPass(t, passes),
+    [unlocks, passes],
+  );
 
   const openCard = useCallback((tip: Tip, fresh = false) => {
-    if (tip.isPremium && !isPremiumRef.current && tip.status === "upcoming" && !unlocksRef.current.includes(tip.id)) {
+    const owned = unlocksRef.current.includes(tip.id) || coveredByPass(tip, passesRef.current);
+    if ((tip.isPremium && !isPremiumRef.current && tip.status === "upcoming" && !owned) || (tip.masked && !owned)) {
       setSheetTip(tip);
       return;
     }
     setCelebrate(fresh);
     setInspect(tip);
+    if (userRef.current) collectCard(userRef.current, tip.id).catch(() => {});
     setSeen((prev) => {
       if (prev.includes(tip.id)) return prev;
       const next = [...prev, tip.id];
@@ -106,6 +123,7 @@ const Index = () => {
   }, []);
   const { active: isPremium, daysLeft: premiumDaysLeft, loading: premiumLoading } = usePremiumStatus();
   const { user } = useAuth();
+  userRef.current = user?.id ?? null;
   const isPremiumRef = useRef(isPremium);
   isPremiumRef.current = isPremium;
   const { toast } = useToast();
@@ -119,24 +137,50 @@ const Index = () => {
   useEffect(() => {
     if (!user) {
       setUnlocks([]);
+      setPasses([]);
+      setCredits(0);
       return;
     }
     loadTipUnlocks(user.id).then(setUnlocks);
-  }, [user]);
+    loadWeekendPasses(user.id).then(setPasses);
+    loadCredits(user.id).then(setCredits);
+  }, [user, reloadKey]);
+
+  // Daily streak: counted once the day's pack has been opened.
+  const streakFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!packOpen) return;
+    const key = `${user?.id ?? "anon"}:${dayKey}`;
+    if (streakFor.current === key) return;
+    streakFor.current = key;
+    recordDailyOpen(!!user).then((st) => {
+      setStreak(st);
+      if (!st.local) setCredits(st.credits);
+      if (st.rewarded) {
+        play("coin");
+        toast({ title: "Free Gold card earned!", description: `${st.streak} days in a row. Tap any Gold card to use it.` });
+      }
+    });
+  }, [packOpen, user, toast]);
 
   // Back from Stripe Checkout after buying a single card.
   const pendingUnlock = useRef<number | null>(null);
   useEffect(() => {
     const sessionId = params.get("session_id");
     const tipId = Number(params.get("unlocked"));
-    if (!sessionId || !tipId || !user) return;
+    const weekend = params.get("weekend") === "1";
+    if (!sessionId || (!tipId && !weekend) || !user) return;
     setParams({}, { replace: true });
     verifyCheckout(sessionId)
       .then(async () => {
         setUnlocks(await loadTipUnlocks(user.id));
         setReloadKey((k) => k + 1);
-        pendingUnlock.current = tipId;
-        toast({ title: "Card unlocked", description: "It's yours. Flip it for the analysis." });
+        if (tipId) pendingUnlock.current = tipId;
+        toast(
+          weekend
+            ? { title: "Weekend pack unlocked", description: "Every Gold card from Friday to Sunday is yours." }
+            : { title: "Card unlocked", description: "It's yours. Flip it for the analysis." },
+        );
       })
       .catch((e) => toast({ title: "Payment not confirmed yet", description: e.message, variant: "destructive" }));
   }, [params, user, setParams, toast]);
@@ -215,6 +259,14 @@ const Index = () => {
       });
 
       setTips(visibleTips);
+      // Cards that won since the last visit get a toast (their seal animates in).
+      const won = newlySettled(visibleTips).filter((t) => t.status === "won");
+      if (won.length) {
+        toast({
+          title: won.length === 1 ? "Your card won!" : `${won.length} cards won!`,
+          description: won.map((t) => `${t.homeTeam} v ${t.awayTeam}: ${t.prediction || "Gold pick"}`).join(" · "),
+        });
+      }
       setCoupons(visibleCoupons);
       setLoading(false);
     };
@@ -317,7 +369,7 @@ const Index = () => {
                 {
                   k: "Top odds",
                   v: (() => {
-                    const free = tips.filter((t) => t.status === "upcoming" && (!t.isPremium || isPremium || unlocks.includes(t.id)));
+                    const free = tips.filter((t) => t.status === "upcoming" && (!t.isPremium || isPremium || owns(t)));
                     return free.length ? Math.max(...free.map((t) => t.odds)).toFixed(2) : "—";
                   })(),
                 },
@@ -332,6 +384,7 @@ const Index = () => {
           {!loading && packOpen && (
             <BinderStrip tips={tips} seen={seen} userIsPremium={isPremium} onSlot={openCard} />
           )}
+          {streak && packOpen && <StreakBar streak={streak.streak} credits={credits} local={streak.local} />}
           {!loading && <FormGuide tips={tips} />}
         </section>
 
@@ -370,7 +423,7 @@ const Index = () => {
                         total={filteredTips.length}
                         userIsPremium={isPremium}
                         onInspect={openCard}
-                        unlocked={unlocks.includes(tip.id)}
+                        unlocked={owns(tip)}
                         onLockedTap={setSheetTip}
                         unlockPrice={unlockPrice}
                         layoutId={`card-${tip.id}`}
@@ -415,8 +468,14 @@ const Index = () => {
 
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <CardInspector tip={inspect} userIsPremium={isPremium || (!!inspect && unlocks.includes(inspect.id))} celebrate={celebrate} onClose={closeCard} />
-      <UnlockSheet tip={sheetTip} signedIn={!!user} onClose={() => setSheetTip(null)} onUnlocked={handleUnlocked} />
+      <CardInspector tip={inspect} userIsPremium={isPremium || (!!inspect && owns(inspect))} celebrate={celebrate} onClose={closeCard} />
+      <UnlockSheet
+        tip={sheetTip}
+        signedIn={!!user}
+        credits={credits}
+        onClose={() => setSheetTip(null)}
+        onUnlocked={handleUnlocked}
+      />
 
       {/* Admin login dialog - opened by 3 taps on the footer copyright */}
       <AdminLoginDialog open={adminLoginOpen} onOpenChange={setAdminLoginOpen} />

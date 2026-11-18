@@ -3,6 +3,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { loginRevenueCat, logoutRevenueCat } from "@/integrations/revenuecat";
+import { redeemPendingCode } from "@/lib/referral";
 
 
 interface AuthContextType {
@@ -38,6 +39,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (session?.user) {
           // Logowanie w RevenueCat po zalogowaniu w Supabase
           await loginRevenueCat(session.user.id);
+          // Invite code typed at sign-up: redeem once the email is verified.
+          if (event === "SIGNED_IN") redeemPendingCode().catch(() => {});
         } else if (event === 'SIGNED_OUT') {
           // Wylogowanie z RevenueCat
           await logoutRevenueCat();

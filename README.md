@@ -130,6 +130,28 @@ Pojedynczy typ Gold (`tip_unlocks`):
    sprawdza zakup w RevenueCat, zanim zapisze odblokowanie.
 4. Ceny subskrypcji w aplikacji Android pochodzą z Google Play — zmień je w Play Console.
 
+### Zaangażowanie, historia i zabezpieczenia (listopad 2026)
+
+1. Wykonaj `supabase/migrations/20261118_engagement.sql`. Dodaje:
+   - masowanie typów Gold po stronie serwera (`get_feed_tips`, `get_feed_coupons`),
+   - archiwum rozliczonych typów (`tips_archive`, trigger przed usunięciem) i statystyki (`get_track_record`),
+   - album (`collected_cards`, `get_my_album`), serię dni i darmowe karty (`record_daily_open`, `redeem_credit`),
+   - przepustki weekendowe (`weekend_passes`) i 3 dni Gold dla każdego nowego konta (trigger na `auth.users`),
+   - tabelę `admins` i funkcję `is_admin()`.
+2. Załóż w aplikacji konto admina, potwierdź e‑mail i dodaj je:
+   ```sql
+   INSERT INTO public.admins (user_id) SELECT id FROM auth.users WHERE email = 'ty@example.com';
+   ```
+   Panel admina otwiera się potrójnym tapnięciem w stopkę i wymaga tego konta
+   (stary login „123/321” został usunięty — był widoczny w kodzie aplikacji).
+3. Dopiero potem wykonaj `supabase/migrations/20261118b_lockdown.sql` — odcina
+   bezpośredni odczyt/zapis `tips` i `coupons` dla wszystkich poza adminami.
+4. Wdróż ponownie funkcje: `create-payment`, `verify-payment`, `unlock-tip-native`, `referral`.
+5. Google Play / RevenueCat: dodaj produkt jednorazowy `gsb_weekend_pack` ($2.99).
+
+Wersja aplikacji jest teraz brana z `package.json` (`__APP_VERSION__`); przy wydaniu
+podbij `package.json`, `android/app/build.gradle` (versionName/versionCode) i `api/app-version.ts`.
+
 ### 2. Wdrożenie na Vercel
 
 1. Połącz swoje repozytorium GitHub z [Vercel](https://vercel.com/).

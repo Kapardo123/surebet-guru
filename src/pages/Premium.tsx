@@ -15,9 +15,9 @@ import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Capacitor } from "@capacitor/core";
 import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from "@/integrations/revenuecat";
-import { PLANS, usd, perDay, saving, SINGLE_TIP_CENTS } from "@/lib/pricing";
+import { PLANS, usd, perDay, saving, SINGLE_TIP_CENTS, WEEKEND_PACK_CENTS } from "@/lib/pricing";
 import { APP_VERSION, APP_BUILD } from "@/lib/version";
-import { startPlanCheckout, verifyCheckout } from "@/lib/tipUnlocks";
+import { buyWeekendPack, startPlanCheckout, verifyCheckout } from "@/lib/tipUnlocks";
 
 export default function Premium() {
   // v1.9.5
@@ -208,6 +208,14 @@ export default function Premium() {
               ? "Every Gold card and sealed set is open to you, analysis included."
               : "Gold members see every premium pick and sealed set the moment it lands, with the full analysis on the back."}
           </p>
+          {!user && (
+            <Link
+              to="/auth?redirect=/premium"
+              className="mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-full border border-[hsl(var(--gold)/.5)] bg-[hsl(var(--gold)/.1)] text-[14px] font-bold"
+            >
+              <span className="foil-gold-text">New here?</span> Join free and get 3 days of Gold
+            </Link>
+          )}
         </section>
 
         <section>
@@ -277,6 +285,30 @@ export default function Premium() {
               {usd(SINGLE_TIP_CENTS)}
             </span>
           </Link>
+          <button
+            onClick={async () => {
+              if (!user) return navigate("/auth?redirect=/premium");
+              const r = await buyWeekendPack();
+              if (r.status === "unlocked") toast({ title: "Weekend pack unlocked", description: "Every Gold card from Friday to Sunday is yours." });
+              else if (r.status === "error") toast({ title: "Weekend pack unavailable", description: r.message, variant: "destructive" });
+            }}
+            className="mt-3 w-full text-left flex items-center gap-4 rounded-[20px] border border-dashed border-white/15 bg-white/[0.03] p-4 active:scale-[0.99] transition-transform"
+          >
+            <span className="relative shrink-0 w-12 h-16">
+              {[-10, 0, 10].map((r, k) => (
+                <span key={k} className="absolute inset-0 rounded-[8px] p-[3px] foil-gold shadow-[0_6px_12px_-6px_rgba(0,0,0,.7)]" style={{ transform: `rotate(${r}deg) translateX(${r / 2}px)` }}>
+                  <span className="block h-full rounded-[5px] card-back" />
+                </span>
+              ))}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-bold">Weekend pack</span>
+              <span className="block text-[13.5px] text-muted-foreground leading-snug mt-0.5">Every Gold card from Friday to Sunday.</span>
+            </span>
+            <span className="shrink-0 h-9 px-3 rounded-full bg-primary text-primary-foreground grid place-items-center num font-black text-[14px]">
+              {usd(WEEKEND_PACK_CENTS)}
+            </span>
+          </button>
         </section>
 
         {!active && (

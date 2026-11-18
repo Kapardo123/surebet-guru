@@ -6,6 +6,7 @@ import GoldBurst from "@/components/GoldBurst";
 import SportGlyph from "@/components/SportGlyph";
 import { Tip } from "@/components/TipCard";
 import { sportTheme } from "@/lib/sport";
+import { play } from "@/lib/sfx";
 
 const CARD_W = 92;
 const CARD_H = 128;
@@ -84,7 +85,11 @@ const PackOpening = ({
 
   useEffect(() => {
     const at = (ms: number, fn: () => void) => timers.current.push(window.setTimeout(fn, ms));
-    at(T.shake, () => setPhase("shake"));
+    play("rustle");
+    at(T.shake, () => {
+      setPhase("shake");
+      play("rustle");
+    });
     at(T.leak, () => {
       setPhase("leak");
       buzz(12);
@@ -92,14 +97,22 @@ const PackOpening = ({
     at(T.torn, () => {
       setPhase("torn");
       buzz([30, 40, 20]);
+      play("rip");
     });
-    at(T.rise, () => setPhase("rise"));
-    at(T.fan, () => setPhase("fan"));
+    at(T.rise, () => {
+      setPhase("rise");
+      play("whoosh");
+    });
+    at(T.fan, () => {
+      setPhase("fan");
+      play("whoosh");
+    });
     at(T.reveal, () => setPhase("reveal"));
     shown.forEach((tip, i) =>
       at(T.reveal + i * T.flipGap, () => {
         setFlipped(i + 1);
         buzz(tip.isPremium ? [20, 30, 40] : 8);
+        play(tip.isPremium ? "chime" : "flip");
       }),
     );
     at(T.reveal + n * T.flipGap + 500, () => setPhase("done"));
@@ -114,6 +127,7 @@ const PackOpening = ({
   }, []);
 
   const finish = () => {
+    play("whoosh");
     setPhase("away");
     window.setTimeout(onDone, 480);
   };

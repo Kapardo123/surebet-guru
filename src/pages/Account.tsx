@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowUpRight, Loader2, LogIn } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
@@ -8,6 +8,10 @@ import MemberCard from "@/components/MemberCard";
 import PageTransition from "@/components/PageTransition";
 import { numberFromId } from "@/components/Barcode";
 import { Switch } from "@/components/ui/switch";
+import { Copy, Gift, Volume2 } from "lucide-react";
+import { getInviteCode, getReferralStats, redeemCode, shareInvite } from "@/lib/referral";
+import { setSoundEnabled, soundEnabled, play } from "@/lib/sfx";
+import { TABLES, TableTheme, getTable, setTable } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -56,6 +60,37 @@ const Account = () => {
       setRestoring(false);
     }
   };
+
+  // Invite friends
+  const [code, setCode] = useState<string | null>(null);
+  const [refStats, setRefStats] = useState<{ friends: number; cards: number } | null>(null);
+  const [refError, setRefError] = useState<string | null>(null);
+  const [theirCode, setTheirCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    getInviteCode().then(setCode).catch((e) => setRefError(e.message));
+    getReferralStats().then(setRefStats).catch(() => {});
+  }, [user]);
+  const redeem = async () => {
+    if (!theirCode.trim()) return;
+    setRedeeming(true);
+    try {
+      await redeemCode(theirCode);
+      await refresh();
+      toast({ title: "Code accepted", description: "3 days of Gold added. Your friend gets a free card." });
+      setTheirCode("");
+    } catch (e: any) {
+      toast({ title: "Couldn't use that code", description: e.message, variant: "destructive" });
+    } finally {
+      setRedeeming(false);
+    }
+  };
+
+  // Device settings
+  const [sound, setSound] = useState(soundEnabled());
+  const [table, setTableState] = useState<TableTheme>(getTable());
+  const accountAgeDays = user ? (Date.now() - Date.parse(user.created_at)) / 86400000 : 99;
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -153,6 +188,92 @@ const Account = () => {
               </Row>
               {active && expiresAt && <Row label="Ends">{longDate(expiresAt)}</Row>}
             </dl>
+          </section>
+
+          <section>
+            <h2 className="label px-1 mb-2">Invite friends</h2>
+            <div className={`${panel} p-4`}>
+              <div className="flex items-start gap-3">
+                <span className="shrink-0 w-11 h-11 rounded-full foil-gold grid place-items-center">
+                  <Gift className="w-5 h-5 text-stock-ink" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[15px] font-semibold">A free Gold card for every friend</p>
+                  <p className="text-[13px] text-muted-foreground mt-0.5">They get 3 days of Gold when they sign up with your code.</p>
+                </div>
+              </div>
+              {code ? (
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="flex-1 h-12 rounded-[14px] bg-black/30 border border-dashed border-[hsl(var(--gold)/.5)] grid place-items-center num font-black text-[18px] tracking-[0.06em] foil-gold-text">
+                    {code}
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const r = await shareInvite(code);
+                      if (r === "copied") toast({ title: "Invite copied", description: "Paste it to a friend." });
+                    }}
+                    className="h-12 px-4 rounded-full bg-primary text-primary-foreground font-bold text-[14px] flex items-center gap-1.5"
+                  >
+                    <Copy className="w-4 h-4" /> Share
+                  </button>
+                </div>
+              ) : (
+                <p className="mt-3 text-[13px] text-muted-foreground">{refError ?? "Getting your code…"}</p>
+              )}
+              {refStats && refStats.friends > 0 && (
+                <p className="mt-3 text-[13px] text-muted-foreground">
+                  {refStats.friends} {refStats.friends === 1 ? "friend" : "friends"} joined · {refStats.cards} free {refStats.cards === 1 ? "card" : "cards"} earned
+                </p>
+              )}
+              {accountAgeDays <= 7 && (
+                <div className="mt-4 pt-4 border-t border-white/[0.06] flex items-center gap-2">
+                  <input
+                    value={theirCode}
+                    onChange={(e) => setTheirCode(e.target.value.toUpperCase())}
+                    placeholder="Friend's code"
+                    className="flex-1 h-11 px-4 rounded-full bg-white/[0.06] border border-white/10 text-[15px] focus:outline-none focus:border-primary"
+                  />
+                  <button onClick={redeem} disabled={redeeming} className="h-11 px-4 rounded-full bg-white/10 font-semibold text-[14px] disabled:opacity-60">
+                    {redeeming ? <Loader2 className="w-4 h-4 animate-spin" /> : "Redeem"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section>
+            <h2 className="label px-1 mb-2">Table</h2>
+            <div className={`${panel} p-4`}>
+              <div className="grid grid-cols-3 gap-2">
+                {TABLES.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      setTable(t.id);
+                      setTableState(t.id);
+                    }}
+                    aria-pressed={table === t.id}
+                    className={`rounded-[14px] p-2 border text-center transition-colors ${table === t.id ? "border-primary bg-white/[0.06]" : "border-white/10"}`}
+                  >
+                    <span className="block h-12 rounded-[10px] border border-white/10" style={{ background: `radial-gradient(circle at 50% 30%, ${t.swatch}, #05060c)` }} />
+                    <span className="block text-[12.5px] font-semibold mt-1.5">{t.name}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-white/[0.06]">
+                <span className="flex items-center gap-2 text-[15px] font-medium">
+                  <Volume2 className="w-4 h-4 text-muted-foreground" /> Sound effects
+                </span>
+                <Switch
+                  checked={sound}
+                  onCheckedChange={(v) => {
+                    setSoundEnabled(v);
+                    setSound(v);
+                    if (v) play("chime");
+                  }}
+                />
+              </div>
+            </div>
           </section>
 
           <section>

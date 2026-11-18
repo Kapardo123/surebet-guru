@@ -1,7 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { Purchases, PRODUCT_CATEGORY } from "@revenuecat/purchases-capacitor";
 import { supabase } from "@/integrations/supabase/client";
-import { SINGLE_TIP_PRODUCT } from "@/lib/pricing";
+import { SINGLE_TIP_PRODUCT, WEEKEND_PACK_PRODUCT } from "@/lib/pricing";
 
 /** Ids of tips this user has bought individually. */
 export const loadTipUnlocks = async (userId: string): Promise<number[]> => {
@@ -82,4 +82,38 @@ export const startPlanCheckout = async (duration: number) => {
   });
   if (error || !data?.url) throw new Error(data?.error || error?.message || "Checkout unavailable");
   window.location.href = data.url;
+};
+
+/**
+ * Weekend pack: every Gold card kicking off Fri 00:00 - Mon 06:00 UTC.
+ * Android buys the consumable through RevenueCat; web goes to Stripe Checkout.
+ */
+export const buyWeekendPack = async (): Promise<UnlockResult> => {
+  try {
+    if (Capacitor.isNativePlatform()) {
+      const { products } = await Purchases.getProducts({
+        productIdentifiers: [WEEKEND_PACK_PRODUCT],
+        type: PRODUCT_CATEGORY.NON_SUBSCRIPTION,
+      });
+      const product = products[0];
+      if (!product) return { status: "error", message: "The weekend pack isn't available in the store yet." };
+      try {
+        await Purchases.purchaseStoreProduct({ product });
+      } catch (e: any) {
+        if (e?.userCancelled) return { status: "cancelled" };
+        throw e;
+      }
+      const { data, error } = await supabase.functions.invoke("unlock-tip-native", { body: { kind: "weekend" } });
+      if (error || data?.error) throw new Error(data?.error || error?.message || "Unlock failed");
+      return { status: "unlocked" };
+    }
+    const { data, error } = await supabase.functions.invoke("create-payment", {
+      body: { bundle: "weekend", origin: window.location.origin },
+    });
+    if (error || !data?.url) throw new Error(data?.error || error?.message || "Checkout unavailable");
+    window.location.href = data.url;
+    return { status: "redirect" };
+  } catch (e: any) {
+    return { status: "error", message: e?.message || "Something went wrong" };
+  }
 };

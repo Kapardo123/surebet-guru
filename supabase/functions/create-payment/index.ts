@@ -16,6 +16,7 @@ const PLAN_CENTS: Record<number, { cents: number; name: string }> = {
   30: { cents: 1999, name: "GSB Gold - 30 days" },
 };
 const SINGLE_TIP_CENTS = 99;
+const WEEKEND_PACK_CENTS = 299;
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -35,7 +36,7 @@ serve(async (req: Request) => {
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated");
 
-    const { duration, tipId, origin: clientOrigin } = await req.json();
+    const { duration, tipId, bundle, origin: clientOrigin } = await req.json();
     const origin = clientOrigin || req.headers.get("origin") || "https://greatsportbets.com";
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -50,7 +51,19 @@ serve(async (req: Request) => {
     let successPath: string;
     let cancelPath: string;
 
-    if (tipId !== undefined && tipId !== null) {
+    if (bundle === "weekend") {
+      lineItem = {
+        quantity: 1,
+        price_data: {
+          currency: "usd",
+          unit_amount: WEEKEND_PACK_CENTS,
+          product_data: { name: "GSB Weekend pack: every Gold card, Friday to Sunday" },
+        },
+      };
+      metadata = { user_id: user.id, kind: "weekend" };
+      successPath = "/#/?weekend=1&session_id={CHECKOUT_SESSION_ID}";
+      cancelPath = "/#/";
+    } else if (tipId !== undefined && tipId !== null) {
       // Single members' tip. Check it exists, is a members' tip and is still open.
       const id = Number(tipId);
       if (!Number.isInteger(id) || id <= 0) throw new Error("Invalid tipId");

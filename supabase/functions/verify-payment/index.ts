@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { weekendWindow } from "../_shared/weekend.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,6 +76,22 @@ serve(async (req: Request) => {
     const metadataUserId = session.metadata?.user_id;
     if (!metadataUserId || metadataUserId !== userData.user.id) {
       throw new Error("Session does not belong to this user");
+    }
+
+    // Weekend pack ($2.99): every Gold card for the weekend it was bought in.
+    if (session.metadata?.kind === "weekend") {
+      const w = weekendWindow(new Date(session.created * 1000));
+      const { error: passError } = await serviceClient
+        .from("weekend_passes")
+        .upsert(
+          { user_id: userData.user.id, starts_at: w.start.toISOString(), ends_at: w.end.toISOString(), source: "stripe", payment_ref: sessionId },
+          { onConflict: "payment_ref", ignoreDuplicates: true }
+        );
+      if (passError) throw passError;
+      return new Response(JSON.stringify({ kind: "weekend", startsAt: w.start, endsAt: w.end }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Single members' tip bought for $0.99.

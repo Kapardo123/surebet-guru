@@ -15,7 +15,7 @@ const hash = (s: string) => {
 };
 
 const initials = (name: string) =>
-  name
+  (name || "")
     .replace(/[^\p{L}\s]/gu, " ")
     .split(/\s+/)
     .filter((w) => w.length > 1 || /\p{Lu}/u.test(w))
