@@ -1,7 +1,9 @@
 import { ReactNode, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
+import { Smartphone } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useAuth } from "@/contexts/AuthContext";
+import { isNativeApp, PLAY_STORE_URL } from "@/lib/platform";
 
 /** Desktop navigation (the bottom bar takes over on phones). */
 const DesktopNav = () => {
@@ -58,7 +60,19 @@ const AppHeader = ({ right }: { right?: ReactNode }) => {
           <Logo />
         </div>
         <DesktopNav />
-        <div className="flex items-center gap-1.5">{right}</div>
+        <div className="flex items-center gap-1.5">
+          {!isNativeApp && (
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden lg:inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold text-foreground/85 bg-white/[0.07] hover:bg-white/[0.12]"
+            >
+              <Smartphone className="w-4 h-4" /> Get the app
+            </a>
+          )}
+          {right}
+        </div>
       </div>
       <div
         className={`absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,hsl(var(--gold)/.45),transparent)] transition-opacity duration-300 ${scrolled ? "opacity-100" : "opacity-0"}`}

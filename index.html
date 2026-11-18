@@ -35,6 +35,17 @@
 </head>
 
   <body>
+    <script>
+      // Web uses clean URLs (/premium). Old hash links (/#/premium?...) from
+      // emails, Stripe or bookmarks are rewritten before the app boots.
+      // The native app (Capacitor) keeps hash routing, so it's left alone.
+      (function () {
+        var cap = window.Capacitor;
+        if (cap && cap.isNativePlatform && cap.isNativePlatform()) return;
+        var h = window.location.hash;
+        if (h.indexOf("#/") === 0) history.replaceState(null, "", h.slice(1));
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -24,6 +24,9 @@ import { track } from "@/lib/analytics";
 import Onboarding, { needsOnboarding } from "@/components/Onboarding";
 import { AnimatePresence } from "framer-motion";
 import TodayPanel from "@/components/TodayPanel";
+import { isNativeApp, PLAY_STORE_URL } from "@/lib/platform";
+import mark from "@/assets/brand/mark.svg";
+import { Smartphone } from "lucide-react";
 import { play } from "@/lib/sfx";
 import {
   StreakState, TimeWindow, collectCard, coveredByPass, loadCredits, loadWeekendPasses, newlySettled, recordDailyOpen,
@@ -203,6 +206,15 @@ const Index = () => {
     openCard(t, true);
   }, [tips, unlocks, openCard]);
 
+  // Neighbouring cards the viewer can open (locked Gold cards are skipped).
+  const stepCard = (dir: 1 | -1) => {
+    if (!inspect) return undefined;
+    const viewable = filteredTips.filter((t) => !t.masked && (!t.isPremium || isPremium || t.status !== "upcoming" || owns(t)));
+    const i = viewable.findIndex((t) => t.id === inspect.id);
+    const next = viewable[i + dir];
+    return i >= 0 && next ? () => openCard(next) : undefined;
+  };
+
   const handleUnlocked = useCallback(async (tip: Tip) => {
     track("unlock_succeeded", { tip: tip.id });
     setSheetTip(null);
@@ -343,7 +355,7 @@ const Index = () => {
       />
 
       {/* Phone: one column. Desktop: content on the left, pick of the day pinned on the right. */}
-      <main className="max-w-6xl mx-auto px-4 lg:px-8 pt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-x-10 items-start">
+      <main className="max-w-6xl mx-auto px-4 lg:px-8 pt-6 grid gap-8 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-x-10 items-start">
         <div className="lg:col-start-1 lg:row-start-1">
         <TodayPanel
           weekday={weekday}
@@ -430,23 +442,56 @@ const Index = () => {
         </p>
       </main>
 
-      <footer className="max-w-6xl mx-auto px-4 lg:px-8 pt-6 pb-8">
-        <nav className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] font-medium text-muted-foreground">
-          <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
-          <Link to="/terms" className="hover:text-foreground">Terms</Link>
-          <Link to="/deletion" className="hover:text-foreground">Delete account</Link>
-          <a href="mailto:greatsportbets@gmail.com" className="hover:text-foreground">Contact</a>
-        </nav>
-        <p className="mt-3 text-[12.5px] text-muted-foreground/70 select-none cursor-pointer w-fit" onClick={handleFooterTap}>
-          © 2026 Great Sport Bets
-        </p>
+      <footer className="max-w-6xl mx-auto px-4 lg:px-8 pt-6 pb-8 md:pt-14 md:pb-12">
+        {/* Web only: invite browser visitors to the app */}
+        {!isNativeApp && (
+          <div className="hidden md:flex items-center justify-between gap-6 rounded-[24px] border border-white/[0.08] bg-[linear-gradient(120deg,hsl(var(--card)/.9),hsl(var(--background)/.4))] px-8 py-6 mb-10">
+            <div className="flex items-center gap-5">
+              <img src={mark} alt="" className="w-16 h-16 drop-shadow-[0_8px_16px_rgba(0,0,0,.5)]" />
+              <div>
+                <p className="font-display font-black uppercase text-[20px] tracking-[-0.02em]">Take the table with you</p>
+                <p className="text-[14.5px] text-muted-foreground mt-1">Pack openings, streak reminders and Gold alerts on your phone.</p>
+              </div>
+            </div>
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 h-14 px-6 rounded-[16px] bg-foreground text-background flex items-center gap-3 hover:opacity-90"
+            >
+              <Smartphone className="w-6 h-6" />
+              <span className="leading-tight text-left">
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.08em] opacity-70">Get it on</span>
+                <span className="block text-[17px] font-bold">Google Play</span>
+              </span>
+            </a>
+          </div>
+        )}
+        <div className="md:flex md:items-center md:justify-between md:gap-6">
+          <nav className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] font-medium text-muted-foreground">
+            <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
+            <Link to="/terms" className="hover:text-foreground">Terms</Link>
+            <Link to="/deletion" className="hover:text-foreground">Delete account</Link>
+            <a href="mailto:greatsportbets@gmail.com" className="hover:text-foreground">Contact</a>
+          </nav>
+          <p className="mt-3 md:mt-0 text-[12.5px] text-muted-foreground/70 select-none cursor-pointer w-fit" onClick={handleFooterTap}>
+            © 2026 Great Sport Bets · 18+
+          </p>
+        </div>
       </footer>
 
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       <AnimatePresence>{onboarding && <Onboarding key="onboarding" onDone={() => setOnboarding(false)} />}</AnimatePresence>
 
-      <CardInspector tip={inspect} userIsPremium={isPremium || (!!inspect && owns(inspect))} celebrate={celebrate} onClose={closeCard} />
+      <CardInspector
+        tip={inspect}
+        userIsPremium={isPremium || (!!inspect && owns(inspect))}
+        celebrate={celebrate}
+        onClose={closeCard}
+        onPrev={stepCard(-1)}
+        onNext={stepCard(1)}
+      />
       <UnlockSheet
         tip={sheetTip}
         signedIn={!!user}

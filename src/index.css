@@ -372,3 +372,10 @@
     repeating-linear-gradient(-45deg, rgba(90,60,10,.12) 0 1px, transparent 1px 5px),
     linear-gradient(135deg, #8a6416 0%, #f6dc8a 22%, #b98a2a 40%, #fff1b8 55%, #a8781f 72%, #f2cf6a 100%);
 }
+
+/* Keyboard users get a clear focus ring; mouse and touch don't. */
+:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 3px;
+  border-radius: 12px;
+}

@@ -268,7 +268,7 @@ const TipCard = ({
     const label = `Gold card: ${tip.homeTeam} v ${tip.awayTeam}. Unlock for ${unlockPrice}`;
     return deal(
       onLockedTap ? (
-        <button type="button" onClick={() => onLockedTap(tip)} aria-label={label} className="flip-scene block w-full text-left active:scale-[0.98] transition-transform">
+        <button type="button" onClick={() => onLockedTap(tip)} aria-label={label} className="flip-scene block w-full text-left rounded-[16px] active:scale-[0.98] transition-transform duration-200 md:hover:-translate-y-1.5 md:hover:drop-shadow-[0_18px_24px_hsl(var(--gold)/.35)]">
           {inner}
         </button>
       ) : (
@@ -285,7 +285,7 @@ const TipCard = ({
       onClick={() => (onInspect ? onInspect(tip) : canFlip && setFlipped((f) => !f))}
       aria-pressed={!onInspect && canFlip ? flipped : undefined}
       aria-label={onInspect ? `Open card: ${tip.homeTeam} v ${tip.awayTeam}` : canFlip ? (flipped ? "Show card front" : "Show analysis") : undefined}
-      className={`flip-scene block w-full text-left ${onInspect || canFlip ? "active:scale-[0.98] transition-transform" : "cursor-default"}`}
+      className={`flip-scene block w-full text-left rounded-[16px] ${onInspect || canFlip ? "active:scale-[0.98] transition-transform duration-200 md:hover:-translate-y-1.5 md:hover:drop-shadow-[0_18px_24px_rgba(0,0,0,.45)]" : "cursor-default"}`}
     >
       <HoloCard holo={false} maxTilt={6}>{body}</HoloCard>
     </button>

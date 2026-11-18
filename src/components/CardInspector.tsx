@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { RotateCw, Share2, X, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCw, Share2, X, Loader2 } from "lucide-react";
 import { shareCard } from "@/lib/shareCard";
 import { track } from "@/lib/analytics";
 import TipCard, { Tip } from "@/components/TipCard";
@@ -15,9 +15,26 @@ const BASE_WIDTH = 190;
  * layoutId), grows to fill the screen, tilts under the finger and flips to
  * show the analysis on its back.
  */
-const CardInspector = ({ tip, userIsPremium, onClose, celebrate = false }: { tip: Tip | null; userIsPremium: boolean; onClose: () => void; celebrate?: boolean }) => {
+const CardInspector = ({
+  tip,
+  userIsPremium,
+  onClose,
+  celebrate = false,
+  onPrev,
+  onNext,
+}: {
+  tip: Tip | null;
+  userIsPremium: boolean;
+  onClose: () => void;
+  celebrate?: boolean;
+  /** Step through the table (arrow keys / side buttons on desktop). */
+  onPrev?: () => void;
+  onNext?: () => void;
+}) => {
   const [flipped, setFlipped] = useState(false);
   const [zoom, setZoom] = useState(1.7);
+  const navRef = useRef<{ prev?: () => void; next?: () => void }>({});
+  navRef.current = { prev: onPrev, next: onNext };
 
   useEffect(() => {
     setFlipped(false);
@@ -26,7 +43,15 @@ const CardInspector = ({ tip, userIsPremium, onClose, celebrate = false }: { tip
     const fit = () => setZoom(Math.max(1.2, Math.min(1.9, (window.innerWidth - 56) / BASE_WIDTH, (window.innerHeight - 210) / 320)));
     fit();
     window.addEventListener("resize", fit);
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft") navRef.current.prev?.();
+      else if (e.key === "ArrowRight") navRef.current.next?.();
+      else if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        setFlipped((f) => !f);
+      }
+    };
     window.addEventListener("keydown", esc);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -78,6 +103,26 @@ const CardInspector = ({ tip, userIsPremium, onClose, celebrate = false }: { tip
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
           />
+
+          {/* Desktop: step through the table */}
+          {[
+            { fn: onPrev, label: "Previous card", side: "left-[max(24px,calc(50%-380px))]", Icon: ChevronLeft },
+            { fn: onNext, label: "Next card", side: "right-[max(24px,calc(50%-380px))]", Icon: ChevronRight },
+          ].map(({ fn, label, side, Icon }) =>
+            fn ? (
+              <motion.button
+                key={label}
+                onClick={fn}
+                aria-label={label}
+                className={`hidden md:grid absolute top-1/2 -translate-y-1/2 ${side} w-14 h-14 rounded-full place-items-center bg-white/10 border border-white/15 hover:bg-white/20 transition-colors z-10`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, transition: { delay: 0.25 } }}
+                exit={{ opacity: 0 }}
+              >
+                <Icon className="w-6 h-6" />
+              </motion.button>
+            ) : null,
+          )}
 
           <motion.div layoutId={`card-${tip.id}`} className="relative" transition={{ type: "spring", stiffness: 220, damping: 26 }}>
             {celebrate && <GoldBurst radius={170} delay={0.45} />}

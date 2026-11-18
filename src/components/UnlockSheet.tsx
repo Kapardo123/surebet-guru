@@ -37,6 +37,14 @@ const UnlockSheet = ({
   }, [tip]);
 
   const price = storePrice ?? usd(SINGLE_TIP_CENTS);
+  const wide = typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
+
+  useEffect(() => {
+    if (!tip) return;
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [tip, onClose]);
   const ko = tip ? kickoffParts(tip.kickoff) : null;
 
   const weekend = tip ? isWeekendTip(tip) : false;
@@ -81,7 +89,7 @@ const UnlockSheet = ({
   return (
     <AnimatePresence>
       {tip && (
-        <motion.div key="sheet" className="fixed inset-0 z-[70] flex items-end justify-center" role="dialog" aria-modal="true" aria-label="Unlock this card">
+        <motion.div key="sheet" className="fixed inset-0 z-[70] flex items-end md:items-center justify-center md:p-6" role="dialog" aria-modal="true" aria-label="Unlock this card">
           <motion.button
             aria-label="Close"
             onClick={onClose}
@@ -91,18 +99,19 @@ const UnlockSheet = ({
             exit={{ opacity: 0 }}
           />
           <motion.div
-            className="relative w-full max-w-md rounded-t-[28px] bg-card border-t border-x border-white/10 px-5 pt-3 pb-[max(20px,env(safe-area-inset-bottom))] shadow-[0_-20px_50px_-10px_rgba(0,0,0,.7)]"
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
+            className="relative w-full max-w-md rounded-t-[28px] md:rounded-[28px] bg-card border-t border-x md:border border-white/10 px-5 pt-3 md:pt-6 pb-[max(20px,env(safe-area-inset-bottom))] md:pb-6 shadow-[0_-20px_50px_-10px_rgba(0,0,0,.7)] md:shadow-[0_40px_90px_-20px_rgba(0,0,0,.9)]"
+            // Bottom sheet on phones, centred dialog on wide screens.
+            initial={wide ? { y: 24, opacity: 0, scale: 0.96 } : { y: "100%" }}
+            animate={wide ? { y: 0, opacity: 1, scale: 1 } : { y: 0 }}
+            exit={wide ? { y: 24, opacity: 0, scale: 0.96 } : { y: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 32 }}
-            drag="y"
+            drag={wide ? false : "y"}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.6 }}
             onDragEnd={(_, i) => i.offset.y > 120 && onClose()}
           >
             <div className="absolute inset-x-0 top-0 h-px foil-gold opacity-70" />
-            <div className="mx-auto w-10 h-1.5 rounded-full bg-white/20" />
+            <div className="mx-auto w-10 h-1.5 rounded-full bg-white/20 md:hidden" />
             <button onClick={onClose} aria-label="Close" className="absolute right-4 top-4 w-9 h-9 rounded-full bg-white/[0.07] grid place-items-center">
               <X className="w-4 h-4" />
             </button>

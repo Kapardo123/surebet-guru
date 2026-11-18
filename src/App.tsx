@@ -2,7 +2,49 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { isNativeApp } from "@/lib/platform";
+
+// Hash routing inside the native app, clean URLs on the web.
+const Router = isNativeApp ? HashRouter : BrowserRouter;
+
+const TITLES: Record<string, string> = {
+  "/": "Today's cards",
+  "/album": "Your album",
+  "/premium": "Go Gold",
+  "/account": "Account",
+  "/auth": "Sign in",
+  "/coupons": "Card sets",
+  "/privacy": "Privacy policy",
+  "/terms": "Terms of service",
+  "/deletion": "Delete account",
+  "/admin": "Admin",
+};
+
+/** Web: an old "#/path" link followed while the page is open becomes "/path". */
+const LegacyHashLinks = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (isNativeApp) return;
+    const onHash = () => {
+      const h = window.location.hash;
+      if (h.startsWith("#/")) navigate(h.slice(1), { replace: true });
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [navigate]);
+  return null;
+};
+
+/** Browser tab title per page. */
+const DocumentTitle = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const t = TITLES[pathname];
+    document.title = t ? `${t} · Great Sport Bets` : "Great Sport Bets";
+  }, [pathname]);
+  return null;
+};
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -63,7 +105,8 @@ const AnimatedRoutes = () => {
 
 const AppContent = () => {
   const [error, setError] = useState<string | null>(globalError);
-  const [splashDone, setSplashDone] = useState(sessionStorage.getItem("splash_shown") === "true");
+  // The splash is an app-launch moment; on the web the page opens straight away.
+  const [splashDone, setSplashDone] = useState(!isNativeApp || sessionStorage.getItem("splash_shown") === "true");
   const {
     needsUpdate,
     forceUpdate,
@@ -111,7 +154,7 @@ const AppContent = () => {
 
   return (
     <AuthProvider>
-      <SplashScreen onFinish={() => setSplashDone(true)} />
+      {isNativeApp && <SplashScreen onFinish={() => setSplashDone(true)} />}
       {splashDone && (
         <>
           <Toaster />
@@ -137,9 +180,11 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <HashRouter>
+      <Router>
+        <DocumentTitle />
+        <LegacyHashLinks />
         <AppContent />
-      </HashRouter>
+      </Router>
     </TooltipProvider>
   </QueryClientProvider>
 );
