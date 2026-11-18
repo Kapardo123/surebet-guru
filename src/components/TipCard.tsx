@@ -101,6 +101,14 @@ const TipCard = ({
       >
         {/* Thin printed keyline inside the frame */}
         <span className={`pointer-events-none absolute inset-[3px] rounded-[9px] border ${gold ? "border-[#b98a2a]/45" : "border-stock-ink/12"}`} aria-hidden />
+        {gold &&
+          ["left-[1px] top-[1px]", "right-[1px] top-[1px]", "left-[1px] bottom-[1px]", "right-[1px] bottom-[1px]"].map((pos) => (
+            <span
+              key={pos}
+              className={`pointer-events-none absolute ${pos} w-[7px] h-[7px] rotate-45 rounded-[1px] bg-[linear-gradient(135deg,#8a6416,#fff1b8,#b98a2a)] shadow-[0_0_0_1px_rgba(255,241,184,.6)] z-[2]`}
+              aria-hidden
+            />
+          ))}
 
         {/* Title bar: sport on the left, odds as the headline stat */}
         <div className="relative flex items-center gap-1.5 pl-2.5 pr-2 h-9">
@@ -161,11 +169,16 @@ const TipCard = ({
             </p>
           </div>
         </div>
-        <p className="px-2.5 text-[10.5px] font-medium opacity-60 truncate mt-1.5 text-center">{tip.league}</p>
+        <div className="flex justify-center px-2.5 mt-1.5">
+          <span className="inline-flex items-center gap-1.5 max-w-full h-5 px-2 rounded-full bg-stock-ink/[0.06] text-[10px] font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: gold ? "#b98a2a" : theme.frame }} />
+            <span className="truncate opacity-75">{tip.league}</span>
+          </span>
+        </div>
 
         {/* Pick, set like an ability box */}
         <div
-          className="relative mx-2 mt-1.5 rounded-[8px] pl-3 pr-2 py-1.5 flex-1 overflow-hidden"
+          className="relative mx-2 mt-1.5 rounded-[8px] pl-3 pr-2 py-1.5 overflow-hidden"
           style={{ background: gold ? "hsl(40 60% 50% / .14)" : `hsl(${theme.hue} 50% 40% / .10)` }}
         >
           <span className="absolute left-0 inset-y-0 w-[3px]" style={{ background: gold ? "linear-gradient(#b98a2a,#f6dc8a)" : theme.frame }} aria-hidden />
@@ -179,7 +192,8 @@ const TipCard = ({
           )}
         </div>
 
-        {/* Footer: kick-off, set symbol, card number */}
+        <div className="flex-1" />
+        {/* Footer: kick-off, set symbol, card number (and a flip hint) */}
         <div className="mt-1.5 flex items-center justify-between px-2.5 pb-2 text-[10.5px]">
           <span className="flex items-center gap-1 font-semibold tabular-nums whitespace-nowrap min-w-0">
             <Clock3 className="w-3 h-3 opacity-50" />
@@ -195,11 +209,14 @@ const TipCard = ({
           </span>
         </div>
 
-        {canFlip && (
-          <div className="flex items-center justify-center gap-1 h-6 bg-stock-ink/[0.06] text-[10px] font-bold uppercase tracking-[0.12em] opacity-70">
-            <RotateCw className="w-3 h-3" /> {onInspect ? "Tap to inspect" : "Tap for analysis"}
+        {/* Same height as the Unlock bar on Gold cards, so a row lines up */}
+        {!locked && (onInspect || canFlip) && (
+          <div className="relative flex items-center justify-center gap-1.5 h-8 border-t border-stock-ink/[0.08] bg-stock-ink/[0.035] text-[10px] font-bold uppercase tracking-[0.14em] opacity-75">
+            <RotateCw className="w-3 h-3" /> {onInspect ? "Inspect" : "Flip for analysis"}
           </div>
         )}
+
+
         {locked && (
           <div className="relative flex items-center justify-between h-8 pl-2.5 pr-1 foil-gold text-stock-ink">
             <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em]">

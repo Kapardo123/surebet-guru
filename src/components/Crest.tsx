@@ -14,6 +14,9 @@ const hash = (s: string) => {
   return h >>> 0;
 };
 
+/** The two club colours a team is drawn in (stable per name). */
+export const teamColors = (name: string): [string, string] => PAIRS[hash(name || "?") % PAIRS.length];
+
 const initials = (name: string) =>
   (name || "")
     .replace(/[^\p{L}\s]/gu, " ")
