@@ -8,6 +8,7 @@ import PageTransition from "@/components/PageTransition";
 import BottomNav from "@/components/BottomNav";
 import StatusTag from "@/components/StatusTag";
 import MiniCard from "@/components/MiniCard";
+import CountUp from "@/components/CountUp";
 import { useAuth } from "@/contexts/AuthContext";
 import { AlbumCard, TrackRecord, loadAlbum, loadTrackRecord } from "@/lib/engagement";
 
@@ -156,13 +157,13 @@ const Album = () => {
                 <div className="grid grid-cols-3 gap-2 mt-4">
                   <div className="rounded-[14px] bg-white/[0.05] px-3 py-2.5">
                     <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Win rate</p>
-                    <p className="num font-black text-[22px] mt-1">{rate ?? "—"}%</p>
+                    <p className="num font-black text-[22px] mt-1">{rate == null ? "—" : <CountUp value={rate} />}%</p>
                   </div>
                   <div className="rounded-[14px] bg-white/[0.05] px-3 py-2.5">
                     <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Units</p>
                     <p className={`num font-black text-[22px] mt-1 ${record.units >= 0 ? "foil-gold-text" : "text-red"}`}>
                       {record.units > 0 ? "+" : ""}
-                      {record.units.toFixed(1)}
+                      <CountUp value={record.units} decimals={1} />
                     </p>
                   </div>
                   <div className="rounded-[14px] bg-white/[0.05] px-3 py-2.5">

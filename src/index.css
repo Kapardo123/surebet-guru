@@ -401,3 +401,56 @@
 }
 .parallax-near > span { filter: drop-shadow(0 10px 10px rgba(0,0,0,.35)); }
 @media (prefers-reduced-motion: reduce) { .parallax-near, .parallax-far { transform: none; } }
+
+/* Match in play: a red light runs round the card's frame. */
+@property --live-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.live-ring { position: relative; }
+.live-ring::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 19px;
+  padding: 3px;
+  background: conic-gradient(from var(--live-angle), transparent 0 55%, #ff3b30 75%, #ffb3ad 82%, transparent 92%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: live-spin 2.4s linear infinite;
+  pointer-events: none;
+  z-index: 3;
+  filter: drop-shadow(0 0 6px rgba(255, 59, 48, .8));
+}
+@keyframes live-spin { to { --live-angle: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .live-ring::before { animation: none; background: #ff3b30; } }
+
+/* Stadium ambience (StadiumBackdrop): sweeping floodlight beams and dust. */
+.beam {
+  position: absolute;
+  top: -10%;
+  width: 70%;
+  height: 140%;
+  background: conic-gradient(from 180deg at 50% 0%, transparent 0deg, rgba(200, 210, 255, .22) 11deg, rgba(255, 255, 255, .34) 17deg, rgba(200, 210, 255, .22) 23deg, transparent 34deg);
+  mix-blend-mode: screen;
+  filter: blur(6px);
+  transform-origin: 50% 0%;
+}
+.beam-l { left: -2%; animation: beam-sway-l 11s ease-in-out infinite alternate; }
+.beam-r { right: -2%; animation: beam-sway-r 13s ease-in-out infinite alternate; }
+@keyframes beam-sway-l { from { transform: rotate(-26deg); } to { transform: rotate(4deg); } }
+@keyframes beam-sway-r { from { transform: rotate(26deg); } to { transform: rotate(-6deg); } }
+.dust {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.2px 1.2px at 12% 80%, rgba(255,255,255,.55), transparent),
+    radial-gradient(1px 1px at 34% 60%, rgba(255,240,200,.5), transparent),
+    radial-gradient(1.4px 1.4px at 58% 90%, rgba(255,255,255,.45), transparent),
+    radial-gradient(1px 1px at 76% 70%, rgba(255,240,200,.55), transparent),
+    radial-gradient(1.2px 1.2px at 90% 85%, rgba(255,255,255,.4), transparent);
+  background-size: 260px 220px;
+  animation: dust-rise 26s linear infinite;
+  opacity: .7;
+}
+.dust-2 { background-size: 340px 300px; animation-duration: 38s; opacity: .45; }
+@keyframes dust-rise { from { background-position: 0 0; } to { background-position: 40px -440px; } }
+@media (prefers-reduced-motion: reduce) { .beam, .dust { animation: none; } }

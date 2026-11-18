@@ -3,6 +3,7 @@ import { Flame } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Tip } from "@/components/TipCard";
 import SportGlyph from "@/components/SportGlyph";
+import CountUp from "@/components/CountUp";
 import { sportTheme } from "@/lib/sport";
 import type { StreakState } from "@/lib/engagement";
 
@@ -59,7 +60,7 @@ const TodayPanel = ({
               "Shuffling…"
             ) : (
               <>
-                <span className="foil-gold-text">{open.length}</span> {open.length === 1 ? "card" : "cards"}
+                <CountUp value={open.length} className="foil-gold-text" /> {open.length === 1 ? "card" : "cards"}
                 <span className="block text-foreground/45">in play</span>
               </>
             )}
@@ -93,7 +94,9 @@ const TodayPanel = ({
           ].map(([k, v, gold]) => (
             <div key={k as string} className="px-3 first:pl-0 last:pr-0">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{k}</p>
-              <p className={`num font-black text-[22px] leading-none mt-1.5 ${gold ? "foil-gold-text" : ""}`}>{v}</p>
+              <p className={`num font-black text-[22px] leading-none mt-1.5 ${gold ? "foil-gold-text" : ""}`}>
+                <CountUp value={v as string} />
+              </p>
             </div>
           ))}
         </div>

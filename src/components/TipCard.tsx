@@ -7,6 +7,7 @@ import SportGlyph from "@/components/SportGlyph";
 import StatusTag from "@/components/StatusTag";
 import CardArt from "@/components/CardArt";
 import { kickoffParts } from "@/lib/format";
+import { liveMinute, useNow } from "@/hooks/useNow";
 import { sportTheme } from "@/lib/sport";
 
 export interface Tip {
@@ -70,6 +71,9 @@ const TipCard = ({
   const locked = (tip.isPremium && !userIsPremium && !unlocked && !isSettled) || !!tip.masked;
   const owned = tip.isPremium && !userIsPremium && unlocked;
   const ko = kickoffParts(tip.kickoff);
+  const now = useNow(30000);
+  const minute = tip.status === "upcoming" ? liveMinute(tip.kickoff, now) : null;
+  const live = minute !== null;
   const theme = sportTheme(tip.sport);
   const canFlip = !locked && !!tip.description;
   const no = index !== undefined ? String(index + 1).padStart(2, "0") : "";
@@ -90,7 +94,7 @@ const TipCard = ({
 
   const front = (
     <div
-      className={`card-sheen flip-face [grid-area:1/1] rounded-[16px] p-[5px] bevel ${gold ? "foil-gold foil-weave" : ""} ${
+      className={`card-sheen flip-face [grid-area:1/1] rounded-[16px] p-[5px] bevel ${live ? "live-ring" : ""} ${gold ? "foil-gold foil-weave" : ""} ${
         tip.status === "won" ? "shadow-[0_0_0_1px_hsl(var(--gold)/.6),0_0_26px_-4px_hsl(var(--gold)/.75),0_12px_26px_-12px_rgba(0,0,0,.75)]" : ""
       }`}
       style={frameStyle}
@@ -180,10 +184,20 @@ const TipCard = ({
 
         {/* Footer: kick-off, set symbol, card number */}
         <div className="mt-1.5 flex items-center justify-between px-2.5 pb-2 text-[10.5px]">
-          <span className="flex items-center gap-1 font-semibold tabular-nums whitespace-nowrap min-w-0">
-            <Clock3 className="w-3 h-3 opacity-50" />
-            {ko.time} <span className="font-medium opacity-55">{ko.day}</span>
-          </span>
+          {live ? (
+            <span className="flex items-center gap-1.5 font-black tabular-nums whitespace-nowrap text-[#e5322d]">
+              <span className="relative flex w-2 h-2">
+                <span className="absolute inset-0 rounded-full bg-[#e5322d] animate-ping opacity-75" />
+                <span className="relative w-2 h-2 rounded-full bg-[#e5322d]" />
+              </span>
+              LIVE <span className="font-bold">{Math.min(minute!, 90)}'</span>
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 font-semibold tabular-nums whitespace-nowrap min-w-0">
+              <Clock3 className="w-3 h-3 opacity-50" />
+              {ko.time} <span className="font-medium opacity-55">{ko.day}</span>
+            </span>
+          )}
           <span className="flex items-center gap-1 font-display font-bold text-[9px] opacity-55 whitespace-nowrap">
             <span
               className="w-2 h-2 rotate-45 rounded-[1px]"
