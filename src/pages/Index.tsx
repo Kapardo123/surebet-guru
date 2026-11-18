@@ -69,6 +69,8 @@ const Index = () => {
   const [tipPremium, setTipPremium] = useState<PremiumFilter>("all");
   const [couponPremium, setCouponPremium] = useState<PremiumFilter>("all");
   const [loading, setLoading] = useState(true);
+  // Bump to refetch the feed (e.g. after a card is unlocked server-side).
+  const [reloadKey, setReloadKey] = useState(0);
   const [inspect, setInspect] = useState<Tip | null>(null);
   const [seen, setSeen] = useState<number[]>(() => readLS(`gsb_seen_${dayKey}`, []));
   const [packOpen, setPackOpen] = useState<boolean>(() => readLS(`gsb_pack_${dayKey}`, false));
@@ -132,6 +134,7 @@ const Index = () => {
     verifyCheckout(sessionId)
       .then(async () => {
         setUnlocks(await loadTipUnlocks(user.id));
+        setReloadKey((k) => k + 1);
         pendingUnlock.current = tipId;
         toast({ title: "Card unlocked", description: "It's yours. Flip it for the analysis." });
       })
@@ -142,19 +145,25 @@ const Index = () => {
   useEffect(() => {
     const id = pendingUnlock.current;
     if (!id || tips.length === 0 || !unlocks.includes(id)) return;
-    pendingUnlock.current = null;
     const t = tips.find((x) => x.id === id);
-    if (t) {
-      setPackOpen(true);
-      openCard(t, true);
-    }
+    // Wait for the refetched feed: the old copy still has the pick masked.
+    if (!t || t.masked) return;
+    pendingUnlock.current = null;
+    setPackOpen(true);
+    openCard(t, true);
   }, [tips, unlocks, openCard]);
 
   const handleUnlocked = useCallback(async (tip: Tip) => {
     setSheetTip(null);
-    if (user) setUnlocks(await loadTipUnlocks(user.id));
     unlocksRef.current = [...unlocksRef.current, tip.id];
-    openCard(tip, true);
+    pendingUnlock.current = tip.id;
+    if (user) setUnlocks(await loadTipUnlocks(user.id));
+    setReloadKey((k) => k + 1);
+    // Feed without server masking (migration not run yet): open straight away.
+    if (!tip.masked) {
+      pendingUnlock.current = null;
+      openCard(tip, true);
+    }
   }, [user]);
 
   // 3 taps on the footer copyright opens the admin login dialog
@@ -211,7 +220,7 @@ const Index = () => {
     };
 
     fetchData();
-  }, [isPremium]);
+  }, [isPremium, user, reloadKey]);
 
   const tipSports = useMemo(() =>
     Array.from(new Set(tips.map((t) => t.sport).filter(Boolean) as string[])).sort(),

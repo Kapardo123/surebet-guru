@@ -170,7 +170,19 @@ export const loadTips = async (publishedOnly: boolean = true, forceRefresh: bool
     query = query.eq('is_published', true);
   }
   
-  const { data, error } = await query;
+  // Public feed goes through get_feed_tips(), which strips Gold picks the
+  // viewer hasn't paid for. Falls back to the table if the RPC isn't deployed.
+  let data: any[] | null = null;
+  let error: any = null;
+  if (publishedOnly) {
+    const feed = await (supabase as any).rpc("get_feed_tips");
+    if (!feed.error && Array.isArray(feed.data)) data = feed.data;
+  }
+  if (!data) {
+    const res = await query;
+    data = res.data;
+    error = res.error;
+  }
   
   if (error) {
     console.error("Error loading tips:", error);
@@ -230,8 +242,8 @@ export const loadTips = async (publishedOnly: boolean = true, forceRefresh: bool
     league: tip.league,
     homeTeam: tip.home_team,
     awayTeam: tip.away_team,
-    prediction: tip.prediction,
-    odds: Number(tip.odds),
+    prediction: tip.prediction ?? "",
+    odds: tip.odds == null ? 0 : Number(tip.odds),
     kickoff: tip.kickoff,
     status: isTipStatus(tip.status) ? tip.status : "upcoming",
     isPremium: tip.is_premium ?? undefined,
@@ -241,6 +253,7 @@ export const loadTips = async (publishedOnly: boolean = true, forceRefresh: bool
     likesCount: tip.likes_count || 0,
     isPublished: tip.is_published ?? true,
     wonAt: tip.won_at || null,
+    masked: !!tip.masked,
   }));
 
   if (publishedOnly) {

@@ -41,6 +41,7 @@ const TodayHotTip = () => {
   const { isLoading, isRewardedAdReady, error, showRewardedAd } = useAdMob();
   const { active: isPremium } = usePremiumStatus();
 
+  const [loaded, setLoaded] = useState(false);
   const data = pick || {
     league: "UEFA Champions League",
     kickoff: new Date(Date.now() + 3600000 * 3).toISOString(),
@@ -58,6 +59,7 @@ const TodayHotTip = () => {
     if (isPremium) setIsUnlocked(true);
 
     loadFeaturedPick().then((featured) => {
+      setLoaded(true);
       if (featured) {
         setPick(featured);
         if (isPremium) return;
@@ -212,6 +214,11 @@ const TodayHotTip = () => {
       </div>
     </div>
   );
+
+  // No pick of the day in the database: show nothing rather than a placeholder match.
+  if (!pick) {
+    return loaded ? null : <div className="max-w-[440px] mx-auto h-[520px] rounded-[22px] bg-white/[0.04] animate-pulse" />;
+  }
 
   return (
     <section className="relative max-w-[440px] mx-auto">

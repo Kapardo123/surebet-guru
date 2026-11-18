@@ -50,7 +50,7 @@ const MiniCard = ({ leg, faceDown }: { leg: Leg; faceDown: boolean }) => {
 const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsPremium?: boolean }) => {
   const isSettled = coupon.status === "won" || coupon.status === "lost";
   const isLost = coupon.status === "lost";
-  const locked = coupon.isPremium && !userIsPremium && !isSettled;
+  const locked = (coupon.isPremium && !userIsPremium && !isSettled) || !!coupon.masked;
   const legs = coupon.matches;
   const n = legs.length;
 

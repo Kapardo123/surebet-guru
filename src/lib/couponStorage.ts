@@ -41,6 +41,8 @@ export interface Coupon {
   createdAt: string;
   isPremium?: boolean;
   wonAt?: string | null; // ISO timestamp kiedy kupon wygrał
+  /** Server withheld picks and odds (viewer isn't entitled). */
+  masked?: boolean;
   // Display helper (derived from the first match) used by card headers.
   sport?: string;
 }
@@ -77,9 +79,10 @@ const deserializeMatches = (value: Json): CouponMatch[] => {
         const kickoff = typeof obj.kickoff === "string" ? obj.kickoff : "";
         const homeTeamLogo = typeof obj.homeTeamLogo === "string" ? obj.homeTeamLogo : null;
         const awayTeamLogo = typeof obj.awayTeamLogo === "string" ? obj.awayTeamLogo : null;
-        if (!homeTeam || !awayTeam || !prediction || !Number.isFinite(odds)) return null;
+        // Masked (members-only) legs come without prediction/odds.
+        if (!homeTeam || !awayTeam) return null;
         return { 
-          homeTeam, awayTeam, prediction, odds, league, sport, kickoff,
+          homeTeam, awayTeam, prediction, odds: Number.isFinite(odds) ? odds : 0, league, sport, kickoff,
           homeTeamLogo, awayTeamLogo 
         } satisfies CouponMatch;
       }
@@ -99,11 +102,15 @@ export const loadCoupons = async (): Promise<Coupon[]> => {
   console.log('🎫 loadCoupons: Start - cache:', cached.length);
 
   try {
-    const { data, error } = await supabase
-      .from('coupons')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(30);
+    // Masked feed first (Gold picks stripped server-side), then the table.
+    const feed = await (supabase as any).rpc('get_feed_coupons');
+    const { data, error } = !feed.error && Array.isArray(feed.data)
+      ? { data: feed.data as any[], error: null }
+      : await supabase
+          .from('coupons')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(30);
 
     console.log('🎫 loadCoupons: Supabase response:', { data: data?.length || 0, error: error?.message || 'none' });
 
@@ -176,6 +183,7 @@ const processCouponData = (data: any[]): Coupon[] => {
       status,
       createdAt: coupon.created_at || new Date().toISOString(),
       isPremium: coupon.is_premium ?? false,
+      masked: !!coupon.masked,
       wonAt: coupon.won_at || null,
       sport: matches[0]?.sport,
     };

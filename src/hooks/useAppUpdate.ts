@@ -1,3 +1,4 @@
+import { APP_VERSION } from "@/lib/version";
 import { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 
@@ -21,7 +22,7 @@ interface UpdateStatus {
   loading: boolean;
 }
 
-const CURRENT_VERSION = "22.0.0";
+const CURRENT_VERSION = APP_VERSION;
 
 export const useAppUpdate = (): UpdateStatus => {
   const [status, setStatus] = useState<UpdateStatus>({

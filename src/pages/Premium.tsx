@@ -16,6 +16,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Capacitor } from "@capacitor/core";
 import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from "@/integrations/revenuecat";
 import { PLANS, usd, perDay, saving, SINGLE_TIP_CENTS } from "@/lib/pricing";
+import { APP_VERSION, APP_BUILD } from "@/lib/version";
 import { startPlanCheckout, verifyCheckout } from "@/lib/tipUnlocks";
 
 export default function Premium() {
@@ -326,7 +327,7 @@ export default function Premium() {
             Payments are processed securely. Access is granted straight away on every device you sign in on.
             By subscribing you agree to our <Link to="/terms" className="underline underline-offset-2">Terms of Service</Link>.
           </p>
-          <p className="text-[12px] text-muted-foreground/60">App version 21.0.0 · Build 2100</p>
+          <p className="text-[12px] text-muted-foreground/60">App version {APP_VERSION} · Build {APP_BUILD}</p>
         </footer>
       </main>
     </div>

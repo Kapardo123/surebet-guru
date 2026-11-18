@@ -1,3 +1,4 @@
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ import { ScrapedMatch, ImportTarget } from "@/lib/sportyTrader";
 import Logo from "@/components/Logo";
 import { supabase } from "@/integrations/supabase/client";
 
-const Admin = () => {
+const AdminPanel = () => {
   const { toast } = useToast();
   const [tips, setTips] = useState<Tip[]>([]);
   const [draftTips, setDraftTips] = useState<Tip[]>([]);
@@ -2072,6 +2073,30 @@ const Admin = () => {
       </main>
     </div>
   );
+};
+
+/** Only accounts listed in `admins` get past this. */
+const Admin = () => {
+  const isAdmin = useIsAdmin();
+  if (isAdmin === undefined) {
+    return (
+      <div className="min-h-screen grid place-items-center">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen grid place-items-center px-6 text-center">
+        <div>
+          <p className="font-display font-black uppercase text-[22px]">Admins only</p>
+          <p className="text-muted-foreground mt-2">Sign in with an admin account (triple-tap the footer on the home screen).</p>
+          <Link to="/" className="inline-block mt-5 underline">Back to the app</Link>
+        </div>
+      </div>
+    );
+  }
+  return <AdminPanel />;
 };
 
 export default Admin;

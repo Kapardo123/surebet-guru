@@ -26,6 +26,8 @@ export interface Tip {
   description?: string | null;
   likesCount?: number;
   wonAt?: string | null;
+  /** Server withheld the pick/odds (viewer isn't entitled). */
+  masked?: boolean;
 }
 
 /**
@@ -79,7 +81,7 @@ const TipCard = ({
 
   const isSettled = tip.status !== "upcoming";
   const isLost = tip.status === "lost";
-  const locked = tip.isPremium && !userIsPremium && !unlocked && !isSettled;
+  const locked = (tip.isPremium && !userIsPremium && !unlocked && !isSettled) || !!tip.masked;
   const owned = tip.isPremium && !userIsPremium && unlocked;
   const ko = kickoffParts(tip.kickoff);
   const theme = sportTheme(tip.sport);
