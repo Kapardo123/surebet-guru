@@ -5,6 +5,7 @@ import TodayHotTip from "@/components/TodayHotTip";
 import BottomNav from "@/components/BottomNav";
 import AdminLoginDialog from "@/components/AdminLoginDialog";
 import AppHeader, { headerLink, goldButton } from "@/components/AppHeader";
+import StadiumBackdrop from "@/components/StadiumBackdrop";
 import { loadTips } from "@/lib/tipsStorage";
 import { loadCoupons, Coupon } from "@/lib/couponStorage";
 import { Tip } from "@/components/TipCard";
@@ -259,7 +260,8 @@ const Index = () => {
   );
 
   return (
-    <div className="min-h-screen pb-28 md:pb-10">
+    <div className="relative isolate min-h-screen pb-28 md:pb-10">
+      <StadiumBackdrop height={460} />
       <AppHeader
         right={
           <>

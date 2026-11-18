@@ -50,11 +50,11 @@ const Basketball = () => (
   </g>
 );
 
-const PitchLines = ({ sport, className = "" }: { sport?: string | null; className?: string }) => {
+const PitchLines = ({ sport, className = "", style }: { sport?: string | null; className?: string; style?: React.CSSProperties }) => {
   const s = (sport || "").toLowerCase();
   const Surface = s.includes("tennis") ? Tennis : s.includes("basket") ? Basketball : Football;
   return (
-    <svg viewBox="0 0 200 130" preserveAspectRatio="none" className={className} aria-hidden>
+    <svg viewBox="0 0 200 130" preserveAspectRatio="none" className={className} style={style} aria-hidden>
       <Surface />
     </svg>
   );

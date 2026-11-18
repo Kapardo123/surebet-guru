@@ -3,6 +3,7 @@ import { Loader2, LogIn, ArrowLeft, User, Check } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import AppHeader, { headerLink } from "@/components/AppHeader";
+import StadiumBackdrop from "@/components/StadiumBackdrop";
 import TipCard, { Tip } from "@/components/TipCard";
 import BoosterPack from "@/components/BoosterPack";
 import MemberCard from "@/components/MemberCard";
@@ -163,7 +164,8 @@ export default function Premium() {
 
   return (
     <PageTransition>
-    <div className="min-h-screen pb-16">
+    <div className="relative isolate min-h-screen pb-16">
+      <StadiumBackdrop height={520} />
       <AppHeader
         right={
           <>

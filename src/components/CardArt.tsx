@@ -37,9 +37,13 @@ const CardArt = ({
     </span>
   );
   return (
-    <div className={`relative overflow-hidden ${holo ? "holo holo-idle" : ""} ${className}`} style={{ background: t.art }}>
-      <PitchLines sport={sport} className="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)] text-white/25" />
-      <div className="absolute inset-0 bg-[radial-gradient(hsl(0_0%_100%/.12)_1px,transparent_1.4px)] [background-size:6px_6px] mix-blend-overlay" />
+    <div
+      className={`relative overflow-hidden ${holo ? "holo holo-idle" : ""} ${className}`}
+      style={{ backgroundColor: t.frame, backgroundImage: `url(${t.texture})`, backgroundSize: "cover", backgroundPosition: "center" }}
+    >
+      <PitchLines sport={sport} className="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)]" style={{ color: t.lines }} />
+      {/* Top light, as if the surface were lit from the stands */}
+      <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_0%,rgba(255,255,255,.18),transparent_60%)]" />
       <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/25 to-transparent" />
       <div className="relative h-full flex items-center justify-center gap-2.5">
         {crest(home, homeLogo)}

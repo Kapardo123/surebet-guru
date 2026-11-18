@@ -5,6 +5,7 @@ import PageTransition from "@/components/PageTransition";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader, { headerLink } from "@/components/AppHeader";
+import StadiumBackdrop from "@/components/StadiumBackdrop";
 
 type AuthMode = "login" | "signup" | "reset" | "magic";
 
@@ -180,7 +181,8 @@ const Auth = () => {
 
   return (
     <PageTransition>
-    <div className="min-h-screen pb-16">
+    <div className="relative isolate min-h-screen pb-16">
+      <StadiumBackdrop height={460} />
       <AppHeader
         right={
           <Link to="/" className={headerLink}>

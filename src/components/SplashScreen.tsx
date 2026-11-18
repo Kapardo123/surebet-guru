@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import stadium from "@/assets/textures/stadium-night.webp";
 
 const SplashScreen = ({ onFinish }: { onFinish?: () => void }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -35,9 +36,19 @@ const SplashScreen = ({ onFinish }: { onFinish?: () => void }) => {
         animate={{ opacity: isFadingOut ? 0 : 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
-        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background"
+        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background overflow-hidden"
       >
-        <div className="flex flex-col items-center">
+        <motion.img
+          src={stadium}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 w-full h-full object-cover"
+          initial={{ scale: 1.15, opacity: 0 }}
+          animate={{ scale: 1, opacity: 0.75 }}
+          transition={{ duration: 2.4, ease: "easeOut" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[hsl(232_36%_8%/.2)] via-[hsl(232_36%_8%/.5)] to-[hsl(232_36%_8%/.95)]" />
+        <div className="relative flex flex-col items-center">
           <div className="relative w-[120px] h-[168px]">
             {[
               { r: -22, x: -64, cls: "bg-stock", d: 0.25 },

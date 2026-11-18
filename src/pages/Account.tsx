@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowUpRight, Loader2, LogIn } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import AppHeader, { headerLink, goldButton } from "@/components/AppHeader";
+import StadiumBackdrop from "@/components/StadiumBackdrop";
 import MemberCard from "@/components/MemberCard";
 import PageTransition from "@/components/PageTransition";
 import { numberFromId } from "@/components/Barcode";
@@ -89,7 +90,8 @@ const Account = () => {
   if (!user) {
     return (
       <PageTransition>
-        <div className="min-h-screen pb-16">
+        <div className="relative isolate min-h-screen pb-16">
+          <StadiumBackdrop height={460} />
           {header}
           <main className="max-w-xl mx-auto px-4 pt-7 space-y-8 text-center">
             <MemberCard issued={false} />
@@ -117,7 +119,8 @@ const Account = () => {
 
   return (
     <PageTransition>
-      <div className="min-h-screen pb-16">
+      <div className="relative isolate min-h-screen pb-16">
+          <StadiumBackdrop height={460} />
         {header}
         <main className="max-w-xl mx-auto px-4 pt-7 space-y-8">
           <section className="text-center">
