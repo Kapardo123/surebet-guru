@@ -130,6 +130,63 @@ export interface TrackRecord {
   series: { day: string; units: number }[];
 }
 
+export interface WeekLine {
+  total: number;
+  won: number;
+  lost: number;
+  draw: number;
+  units: number;
+}
+
+/** This week's results (Monday to Sunday, UTC; resets every Monday). */
+export interface WeekRecord extends WeekLine {
+  weekStart: string;
+  series: { day: string; units: number }[];
+  tipsters: Record<string, WeekLine>;
+}
+
+const line = (d: any): WeekLine => ({
+  total: Number(d?.total ?? 0),
+  won: Number(d?.won ?? 0),
+  lost: Number(d?.lost ?? 0),
+  draw: Number(d?.draw ?? 0),
+  units: Number(d?.units ?? 0),
+});
+
+let weekPromise: Promise<WeekRecord | null> | null = null;
+
+/** Shared by every screen that shows the week; refetched after a minute. */
+export const loadWeekRecord = (): Promise<WeekRecord | null> => {
+  if (!weekPromise) {
+    weekPromise = rpc("get_week_record").then(({ data, error }: any) => {
+      if (error || !data) return null;
+      const tipsters: Record<string, WeekLine> = {};
+      Object.entries(data.tipsters ?? {}).forEach(([k, v]) => (tipsters[k] = line(v)));
+      return {
+        ...line(data),
+        weekStart: String(data.week_start),
+        series: (data.series ?? []).map((p: any) => ({ day: p.day, units: Number(p.units) })),
+        tipsters,
+      };
+    });
+    setTimeout(() => (weekPromise = null), 60_000);
+  }
+  return weekPromise;
+};
+
+/** Win rate in %, pushes not counted; null with nothing settled. */
+export const winRate = (l: WeekLine) => (l.won + l.lost > 0 ? Math.round((l.won / (l.won + l.lost)) * 100) : null);
+
+/** "16–22 Nov" for the week starting on `weekStart`. */
+export const weekLabel = (weekStart: string) => {
+  const a = new Date(weekStart + "T00:00:00Z");
+  const b = new Date(a.getTime() + 6 * 864e5);
+  const m = (d: Date) => d.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" });
+  return a.getUTCMonth() === b.getUTCMonth()
+    ? `${a.getUTCDate()}–${b.getUTCDate()} ${m(b)}`
+    : `${a.getUTCDate()} ${m(a)} – ${b.getUTCDate()} ${m(b)}`;
+};
+
 export const loadTrackRecord = async (days: number): Promise<TrackRecord | null> => {
   const { data, error } = await rpc("get_track_record", { p_days: days });
   if (error || !data) return null;

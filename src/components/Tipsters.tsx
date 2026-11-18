@@ -1,10 +1,12 @@
+import { useEffect, useState } from "react";
 import { Quote } from "lucide-react";
+import { WeekLine, WeekRecord, loadWeekRecord, weekLabel, winRate } from "@/lib/engagement";
 import { TIPSTERS, Tipster } from "@/lib/tipsters";
 import stadium from "@/assets/textures/stadium-night.webp";
 import mark from "@/assets/brand/mark.svg";
 
 /** A tipster as a "player card" in the same style as the picks. */
-const TipsterCard = ({ t }: { t: Tipster }) => (
+const TipsterCard = ({ t, week }: { t: Tipster; week?: WeekLine | null }) => (
   <article
     className="rounded-[18px] p-[5px] bevel"
     style={{
@@ -40,6 +42,8 @@ const TipsterCard = ({ t }: { t: Tipster }) => (
         <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] mt-1" style={{ color: "#f6dc8a" }}>{t.role}</p>
       </div>
 
+      {week !== undefined && <WeekStrip line={week} color={t.color} />}
+
       <div className="px-3 pt-3 pb-3 flex-1 flex flex-col gap-2.5">
         <div className="flex flex-wrap gap-1">
           {t.focus.map((f) => (
@@ -64,8 +68,45 @@ const TipsterCard = ({ t }: { t: Tipster }) => (
   </article>
 );
 
-/** "Meet the tipsters": the two people who deal the cards. */
-const Tipsters = ({ className = "" }: { className?: string }) => (
+/** This week's results for one tipster, from settled cards only. */
+const WeekStrip = ({ line, color }: { line: WeekLine | null; color: string }) => {
+  if (!line || line.total === 0)
+    return (
+      <p className="mx-3 mt-3 h-[46px] rounded-[8px] bg-stock-ink/[0.05] grid place-items-center text-[11.5px] font-semibold opacity-60">
+        No settled cards this week yet
+      </p>
+    );
+  const r = winRate(line);
+  const cells: [string, string, boolean?][] = [
+    ["W-L-P", `${line.won}-${line.lost}-${line.draw}`],
+    ["Win rate", r == null ? "—" : `${r}%`],
+    ["Units", `${line.units > 0 ? "+" : ""}${line.units.toFixed(1)}`, true],
+  ];
+  return (
+    <div className="mx-3 mt-3 grid grid-cols-3 rounded-[8px] overflow-hidden ring-1 ring-stock-ink/10 divide-x divide-stock-ink/10">
+      {cells.map(([k, v, u]) => (
+        <div key={k} className="px-1.5 py-1.5 text-center bg-stock-ink/[0.04]">
+          <p className="text-[8.5px] font-black uppercase tracking-[0.12em] opacity-50">{k}</p>
+          <p
+            className="num font-black text-[15px] leading-tight mt-0.5"
+            style={u ? { color: line.units >= 0 ? color : "#b4232a" } : undefined}
+          >
+            {v}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+/** "Meet the tipsters": the two people who deal the cards, with this week's stats. */
+const Tipsters = ({ className = "" }: { className?: string }) => {
+  // undefined while loading (strip hidden), null when the stats RPC isn't deployed.
+  const [week, setWeek] = useState<WeekRecord | null | undefined>(undefined);
+  useEffect(() => {
+    loadWeekRecord().then(setWeek);
+  }, []);
+  return (
   <section className={className} aria-labelledby="tipsters-title">
     <p className="label">Who deals the cards</p>
     <h2 id="tipsters-title" className="font-display font-black uppercase text-[22px] leading-[1.05] tracking-[-0.02em] mt-1.5">
@@ -73,13 +114,15 @@ const Tipsters = ({ className = "" }: { className?: string }) => (
     </h2>
     <p className="text-[14px] text-muted-foreground mt-1.5 max-w-md">
       Every card on the table is picked by hand by one of these two. Look for their tag on each card.
+      {week && <> Stats count this week only ({weekLabel(week.weekStart)}) and reset every Monday.</>}
     </p>
     <div className="mt-4 grid grid-cols-1 min-[420px]:grid-cols-2 gap-3 md:gap-4 [&>*]:min-w-0">
       {TIPSTERS.map((t) => (
-        <TipsterCard key={t.id} t={t} />
+        <TipsterCard key={t.id} t={t} week={week === undefined || week === null ? undefined : week.tipsters[t.id] ?? null} />
       ))}
     </div>
   </section>
-);
+  );
+};
 
 export default Tipsters;

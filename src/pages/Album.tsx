@@ -10,7 +10,9 @@ import StatusTag from "@/components/StatusTag";
 import MiniCard from "@/components/MiniCard";
 import CountUp from "@/components/CountUp";
 import { useAuth } from "@/contexts/AuthContext";
-import { AlbumCard, TrackRecord, loadAlbum, loadTrackRecord } from "@/lib/engagement";
+import { AlbumCard, WeekRecord, loadAlbum, loadWeekRecord, weekLabel, winRate } from "@/lib/engagement";
+import { TIPSTERS } from "@/lib/tipsters";
+import mark from "@/assets/brand/mark.svg";
 
 // ---------------------------------------------------------------------------
 // Badges, earned from the cards in the album
@@ -34,8 +36,8 @@ const BADGES: { id: string; name: string; hint: string; test: (c: AlbumCard[]) =
 // Single series on the dark felt: the brand yellow, a 2px line, faint fill.
 const LINE = "hsl(45 100% 62%)";
 
-const RecordChart = ({ data }: { data: TrackRecord["series"] }) => (
-  <div className="h-[170px] -mx-2" role="img" aria-label="Cumulative units over time">
+const RecordChart = ({ data }: { data: WeekRecord["series"] }) => (
+  <div className="h-[170px] -mx-2" role="img" aria-label="Running total in units this week">
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
         <defs>
@@ -50,8 +52,8 @@ const RecordChart = ({ data }: { data: TrackRecord["series"] }) => (
           tickLine={false}
           axisLine={false}
           tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-          tickFormatter={(d: string) => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-          minTickGap={28}
+          tickFormatter={(d: string) => new Date(d + "T00:00:00Z").toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" })}
+          interval={0}
         />
         <YAxis width={36} tickLine={false} axisLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
         <ReferenceLine y={0} stroke="hsl(230 20% 100% / .25)" />
@@ -60,12 +62,40 @@ const RecordChart = ({ data }: { data: TrackRecord["series"] }) => (
           contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 13 }}
           labelStyle={{ color: "hsl(var(--muted-foreground))" }}
           itemStyle={{ color: "hsl(var(--foreground))" }}
-          labelFormatter={(d: string) => new Date(d).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
+          labelFormatter={(d: string) => new Date(d + "T00:00:00Z").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })}
           formatter={(v: number) => [`${v > 0 ? "+" : ""}${v.toFixed(2)} u`, "Running total"]}
         />
         <Area type="monotone" dataKey="units" stroke={LINE} strokeWidth={2} fill="url(#unitsFill)" dot={false} activeDot={{ r: 5, stroke: "hsl(var(--background))", strokeWidth: 2 }} />
       </AreaChart>
     </ResponsiveContainer>
+  </div>
+);
+
+/** One row per tipster: this week's W-L-P, win rate and units. */
+const WeekByTipster = ({ record }: { record: WeekRecord }) => (
+  <div className="mt-4 space-y-2">
+    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">By tipster</p>
+    {TIPSTERS.map((t) => {
+      const l = record.tipsters[t.id];
+      const r = l ? winRate(l) : null;
+      return (
+        <div key={t.id} className="flex items-center gap-3 rounded-[14px] bg-white/[0.05] pl-2 pr-3 py-2">
+          <img src={mark} alt="" className="w-8 h-8 rounded-full shrink-0" style={{ boxShadow: `0 0 0 2px ${t.color}` }} />
+          <div className="min-w-0 flex-1">
+            <p className="font-display font-black uppercase text-[13px] leading-tight truncate">{t.nick}</p>
+            <p className="text-[11.5px] text-muted-foreground num">
+              {l && l.total ? `${l.won}-${l.lost}-${l.draw}${r != null ? ` · ${r}%` : ""}` : "No settled cards yet"}
+            </p>
+          </div>
+          {l && l.total > 0 && (
+            <span className={`num font-black text-[16px] ${l.units >= 0 ? "foil-gold-text" : "text-red"}`}>
+              {l.units > 0 ? "+" : ""}
+              {l.units.toFixed(1)}u
+            </span>
+          )}
+        </div>
+      );
+    })}
   </div>
 );
 
@@ -80,8 +110,7 @@ const Pocket = ({ card }: { card: AlbumCard }) => (
 const Album = () => {
   const { user, loading: authLoading } = useAuth();
   const [cards, setCards] = useState<AlbumCard[] | null>(null);
-  const [record, setRecord] = useState<TrackRecord | null | undefined>(undefined);
-  const [days, setDays] = useState(30);
+  const [record, setRecord] = useState<WeekRecord | null | undefined>(undefined);
 
   useEffect(() => {
     if (authLoading) return;
@@ -93,9 +122,8 @@ const Album = () => {
   }, [user, authLoading]);
 
   useEffect(() => {
-    setRecord(undefined);
-    loadTrackRecord(days).then(setRecord);
-  }, [days]);
+    loadWeekRecord().then(setRecord);
+  }, []);
 
   const byLeague = useMemo(() => {
     const m = new Map<string, AlbumCard[]>();
@@ -104,7 +132,7 @@ const Album = () => {
   }, [cards]);
 
   const earned = BADGES.filter((b) => b.test(cards ?? []));
-  const rate = record && record.won + record.lost > 0 ? Math.round((record.won / (record.won + record.lost)) * 100) : null;
+  const rate = record ? winRate(record) : null;
 
   return (
     <PageTransition>
@@ -128,29 +156,22 @@ const Album = () => {
           </section>
 
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-start">
-          {/* Track record */}
+          {/* This week's record: only the current week counts, resets every Monday */}
           <section className="rounded-[22px] bg-white/[0.04] border border-white/[0.08] p-4">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="font-display font-black uppercase text-[16px]">Track record</h2>
-              <div className="flex p-0.5 rounded-full bg-black/25" role="tablist">
-                {[7, 30, 90].map((d) => (
-                  <button
-                    key={d}
-                    role="tab"
-                    aria-selected={days === d}
-                    onClick={() => setDays(d)}
-                    className={`h-8 px-3 rounded-full text-[12.5px] font-bold ${days === d ? "bg-foreground text-background" : "text-foreground/70"}`}
-                  >
-                    {d}d
-                  </button>
-                ))}
-              </div>
+              <h2 className="font-display font-black uppercase text-[16px]">This week</h2>
+              {record && (
+                <span className="h-7 px-3 rounded-full bg-black/25 text-[12px] font-bold grid place-items-center whitespace-nowrap">
+                  {weekLabel(record.weekStart)}
+                </span>
+              )}
             </div>
+            <p className="text-[12.5px] text-muted-foreground mt-1">Counts the current week only. Resets every Monday.</p>
             {record === undefined ? (
               <div className="h-[260px] mt-4 rounded-[14px] bg-white/[0.04] animate-pulse" />
             ) : record === null || record.total === 0 ? (
               <p className="text-[14px] text-muted-foreground mt-4">
-                {record === null ? "The record will show up once the history migration is live." : "No settled cards in this period yet."}
+                {record === null ? "Weekly stats will show up once the stats migration is live." : "No settled cards this week yet. The first results land after kick-off."}
               </p>
             ) : (
               <>
@@ -173,6 +194,7 @@ const Album = () => {
                 </div>
                 <p className="text-[12.5px] text-muted-foreground mt-3">Running total in units, 1 unit staked on every card.</p>
                 <RecordChart data={record.series} />
+                <WeekByTipster record={record} />
               </>
             )}
           </section>
