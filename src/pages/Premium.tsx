@@ -7,6 +7,7 @@ import StadiumBackdrop from "@/components/StadiumBackdrop";
 import TipCard, { Tip } from "@/components/TipCard";
 import BoosterPack from "@/components/BoosterPack";
 import MemberCard from "@/components/MemberCard";
+import Tipsters from "@/components/Tipsters";
 import { numberFromId } from "@/components/Barcode";
 import PageTransition from "@/components/PageTransition";
 import { useAuth } from "@/contexts/AuthContext";
@@ -336,6 +337,8 @@ export default function Premium() {
             <p className="text-center text-[12.5px] text-muted-foreground mt-3">Illustration only, not a live pick.</p>
           </section>
         )}
+
+        <Tipsters />
 
         <section className="rounded-[20px] bg-white/[0.04] border border-white/[0.07] p-5">
           <h2 className="font-display font-black uppercase text-[16px] tracking-[-0.01em]">In every pack</h2>

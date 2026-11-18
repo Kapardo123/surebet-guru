@@ -28,6 +28,7 @@ import { track } from "@/lib/analytics";
 import { needsOnboarding } from "@/lib/onboarding";
 import { AnimatePresence } from "framer-motion";
 import TodayPanel from "@/components/TodayPanel";
+import Tipsters from "@/components/Tipsters";
 import PullToShuffle from "@/components/PullToShuffle";
 import { isNativeApp, PLAY_STORE_URL } from "@/lib/platform";
 import mark from "@/assets/brand/mark.svg";
@@ -379,7 +380,7 @@ const Index = () => {
         />
         </div>
 
-        <div className="lg:col-start-2 lg:row-start-1 lg:row-span-3 lg:sticky lg:top-24">
+        <div className="lg:col-start-2 lg:row-start-1 lg:row-span-4 lg:sticky lg:top-24">
           <TodayHotTip />
         </div>
 
@@ -442,7 +443,9 @@ const Index = () => {
           )}
         </section>
 
-        <p className="lg:col-start-1 lg:row-start-3 text-[13.5px] leading-relaxed text-muted-foreground rounded-[16px] bg-white/[0.04] px-4 py-3.5">
+        <Tipsters className="lg:col-start-1 lg:row-start-3" />
+
+        <p className="lg:col-start-1 lg:row-start-4 text-[13.5px] leading-relaxed text-muted-foreground rounded-[16px] bg-white/[0.04] px-4 py-3.5">
           Cards are opinions, not guarantees. Bet only what you can afford to lose. 18+.
         </p>
       </main>
