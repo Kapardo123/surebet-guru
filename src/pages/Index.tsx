@@ -12,9 +12,7 @@ import { Tip } from "@/components/TipCard";
 import { LogIn, User as UserIcon } from "lucide-react";
 import PremiumBadge from "@/components/PremiumBadge";
 import FilterBar, { PremiumFilter } from "@/components/FilterBar";
-import FormGuide from "@/components/FormGuide";
 import DailyPack from "@/components/DailyPack";
-import BinderStrip from "@/components/BinderStrip";
 import CardInspector from "@/components/CardInspector";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { Link, useSearchParams } from "react-router-dom";
@@ -25,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
 import Onboarding, { needsOnboarding } from "@/components/Onboarding";
 import { AnimatePresence } from "framer-motion";
-import StreakBar from "@/components/StreakBar";
+import TodayPanel from "@/components/TodayPanel";
 import { play } from "@/lib/sfx";
 import {
   StreakState, TimeWindow, collectCard, coveredByPass, loadCredits, loadWeekendPasses, newlySettled, recordDailyOpen,
@@ -357,45 +355,21 @@ const Index = () => {
       />
 
       <main className="max-w-5xl mx-auto px-4 pt-6 space-y-8">
-        <section className="space-y-4">
-          <div>
-            <p className="label">{weekday}'s pull</p>
-            <h1 className="font-display font-black uppercase text-[30px] leading-[1.02] tracking-[-0.02em] mt-1.5">
-              {loading ? (
-                "Shuffling…"
-              ) : (
-                <>
-                  <span className="foil-gold-text">{openCount}</span> {openCount === 1 ? "card" : "cards"} in play
-                </>
-              )}
-            </h1>
-          </div>
-          {!loading && tips.length > 0 && (
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { k: "Open", v: String(openCount) },
-                { k: "Gold", v: String(tips.filter((t) => t.isPremium && t.status === "upcoming").length), gold: true },
-                {
-                  k: "Top odds",
-                  v: (() => {
-                    const free = tips.filter((t) => t.status === "upcoming" && (!t.isPremium || isPremium || owns(t)));
-                    return free.length ? Math.max(...free.map((t) => t.odds)).toFixed(2) : "—";
-                  })(),
-                },
-              ].map((x) => (
-                <div key={x.k} className="rounded-[16px] bg-white/[0.04] border border-white/[0.07] px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{x.k}</p>
-                  <p className={`num font-black text-[22px] leading-none mt-1.5 ${x.gold ? "foil-gold-text" : ""}`}>{x.v}</p>
-                </div>
-              ))}
-            </div>
-          )}
-          {!loading && packOpen && (
-            <BinderStrip tips={tips} seen={seen} userIsPremium={isPremium} onSlot={openCard} />
-          )}
-          {streak && packOpen && <StreakBar streak={streak.streak} credits={credits} local={streak.local} />}
-          {!loading && <FormGuide tips={tips} />}
-        </section>
+        <TodayPanel
+          weekday={weekday}
+          loading={loading}
+          tips={tips}
+          topOdds={(() => {
+            const free = tips.filter((t) => t.status === "upcoming" && (!t.isPremium || isPremium || owns(t)));
+            return free.length ? Math.max(...free.map((t) => t.odds)).toFixed(2) : "—";
+          })()}
+          seen={seen}
+          isPremium={isPremium}
+          onSlot={openCard}
+          streak={packOpen ? streak : null}
+          credits={credits}
+          packOpen={packOpen}
+        />
 
         <TodayHotTip />
 
