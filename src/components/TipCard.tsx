@@ -7,6 +7,8 @@ import SportGlyph from "@/components/SportGlyph";
 import StatusTag from "@/components/StatusTag";
 import CardArt from "@/components/CardArt";
 import { kickoffParts } from "@/lib/format";
+import { tipsterById } from "@/lib/tipsters";
+import mark from "@/assets/brand/mark.svg";
 import { sportTheme } from "@/lib/sport";
 
 export interface Tip {
@@ -28,6 +30,8 @@ export interface Tip {
   wonAt?: string | null;
   /** Server withheld the pick/odds (viewer isn't entitled). */
   masked?: boolean;
+  /** Who dealt the card: a TIPSTERS id ("adam" | "peter"). */
+  tipster?: string | null;
 }
 
 /**
@@ -70,6 +74,7 @@ const TipCard = ({
   const locked = (tip.isPremium && !userIsPremium && !unlocked && !isSettled) || !!tip.masked;
   const owned = tip.isPremium && !userIsPremium && unlocked;
   const ko = kickoffParts(tip.kickoff);
+  const dealer = tipsterById(tip.tipster);
 
   const theme = sportTheme(tip.sport);
   const canFlip = !locked && !!tip.description;
@@ -169,11 +174,21 @@ const TipCard = ({
             </p>
           </div>
         </div>
-        <div className="flex justify-center px-2.5 mt-1.5">
-          <span className="inline-flex items-center gap-1.5 max-w-full h-5 px-2 rounded-full bg-stock-ink/[0.06] text-[10px] font-semibold">
+        <div className="flex justify-center gap-1 px-2 mt-1.5 min-w-0">
+          <span className="inline-flex items-center gap-1.5 min-w-0 h-5 px-2 rounded-full bg-stock-ink/[0.06] text-[10px] font-semibold">
             <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: gold ? "#b98a2a" : theme.frame }} />
             <span className="truncate opacity-75">{tip.league}</span>
           </span>
+          {dealer && (
+            <span
+              className="inline-flex items-center gap-1 shrink-0 h-5 pl-0.5 pr-1.5 rounded-full text-[9.5px] font-bold text-white"
+              style={{ background: dealer.color }}
+              title={`Picked by ${dealer.nick}`}
+            >
+              <img src={mark} alt="" className="w-4 h-4 rounded-full" />
+              {dealer.nick}
+            </span>
+          )}
         </div>
 
         {/* Pick, set like an ability box */}
@@ -249,7 +264,7 @@ const TipCard = ({
           >
             <SportGlyph sport={tip.sport} size={12} />
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary flex-1">The read</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary flex-1 truncate">{dealer ? `By ${dealer.nick}` : "The read"}</span>
           <span className={`num font-black text-[19px] leading-none ${gold ? "foil-gold-text" : ""}`}>{oddsText}</span>
         </div>
 

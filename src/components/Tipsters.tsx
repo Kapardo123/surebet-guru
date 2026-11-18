@@ -1,6 +1,7 @@
 import { Quote } from "lucide-react";
 import { TIPSTERS, Tipster } from "@/lib/tipsters";
 import stadium from "@/assets/textures/stadium-night.webp";
+import mark from "@/assets/brand/mark.svg";
 
 /** A tipster as a "player card" in the same style as the picks. */
 const TipsterCard = ({ t }: { t: Tipster }) => (
@@ -20,11 +21,11 @@ const TipsterCard = ({ t }: { t: Tipster }) => (
         <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, ${t.color}55, transparent 55%), radial-gradient(circle at 50% 120%, ${t.color}aa, transparent 60%)` }} />
         <div className="relative h-full grid place-items-center">
           <span
-            className="grid place-items-center w-[78px] h-[78px] rounded-full text-white font-display font-black text-[36px] tracking-[-0.04em] shadow-[0_10px_24px_rgba(0,0,0,.45)]"
-            style={{ background: `radial-gradient(circle at 35% 30%, ${t.color}, #0b0f24)`, boxShadow: `0 0 0 3px #f3efe4, 0 0 0 5px ${t.color}, 0 10px 24px rgba(0,0,0,.45)` }}
+            className="grid place-items-center w-[80px] h-[80px] rounded-full overflow-hidden"
+            style={{ boxShadow: `0 0 0 3px #f3efe4, 0 0 0 6px ${t.color}, 0 10px 24px rgba(0,0,0,.5)` }}
             aria-hidden
           >
-            {t.name[0]}
+            <img src={mark} alt="" className="w-full h-full" />
           </span>
         </div>
         <span className="absolute left-2 top-1.5 font-display font-black text-[8px] tracking-[0.1em] text-white/75">GSB · TIPSTER</span>
@@ -35,7 +36,7 @@ const TipsterCard = ({ t }: { t: Tipster }) => (
         className="relative -mt-3 mx-[3px] px-3 py-1.5 text-center bg-[linear-gradient(180deg,hsl(232_32%_20%),hsl(232_38%_12%))] shadow-[0_3px_6px_rgba(0,0,0,.25)]"
         style={{ clipPath: "polygon(0 0, 100% 0, calc(100% - 7px) 50%, 100% 100%, 0 100%, 7px 50%)" }}
       >
-        <h3 className="font-display font-black uppercase text-[17px] leading-none text-white">{t.name}</h3>
+        <h3 className="font-display font-black uppercase text-[17px] leading-none text-white">{t.nick}</h3>
         <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] mt-1" style={{ color: "#f6dc8a" }}>{t.role}</p>
       </div>
 
@@ -71,7 +72,7 @@ const Tipsters = ({ className = "" }: { className?: string }) => (
       Meet the tipsters
     </h2>
     <p className="text-[14px] text-muted-foreground mt-1.5 max-w-md">
-      Every card on the table is picked by hand by one of these two.
+      Every card on the table is picked by hand by one of these two. Look for their tag on each card.
     </p>
     <div className="mt-4 grid grid-cols-1 min-[420px]:grid-cols-2 gap-3 md:gap-4 [&>*]:min-w-0">
       {TIPSTERS.map((t) => (

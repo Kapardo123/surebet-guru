@@ -13,6 +13,7 @@ import { loadFeaturedPick, saveFeaturedPick, FeaturedPick } from "@/lib/featured
 import { fetchTeamLogoCandidates, LogoCandidate, saveCustomTeamLogo } from "@/lib/logoFetcher";
 import { Tip } from "@/components/TipCard";
 import { Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, Users, Bell, Search, RefreshCw, PlusCircle, Loader2, Sparkles, ClipboardPaste, List, Send, Clock, EyeOff, Upload, Download, BarChart3 } from "lucide-react";
+import { TIPSTERS } from "@/lib/tipsters";
 import TipCard from "@/components/TipCard";
 import AdminStats from "@/components/AdminStats";
 import { Link } from "react-router-dom";
@@ -97,6 +98,7 @@ const AdminPanel = () => {
         description: analysis,
         homeTeamLogo: match.homeTeamLogo,
         awayTeamLogo: match.awayTeamLogo,
+        tipster: form.tipster,
       });
       setEditingTipId(null);
       setActiveTab("tips");
@@ -328,7 +330,7 @@ const AdminPanel = () => {
 
   const resetTipForm = () => {
     setEditingTipId(null);
-    setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, isPublished: true, description: "", homeTeamLogo: null, awayTeamLogo: null });
+    setForm({ sport: "Football", league: "", homeTeam: "", awayTeam: "", prediction: "", odds: "", kickoff: "", status: "upcoming", isPremium: false, isPublished: true, description: "", homeTeamLogo: null, awayTeamLogo: null, tipster: form.tipster });
     setHomeLogoCandidates([]);
     setAwayLogoCandidates([]);
   };
@@ -495,6 +497,7 @@ const AdminPanel = () => {
         homeTeamLogo: form.homeTeamLogo,
         awayTeamLogo: form.awayTeamLogo,
         description: form.description,
+        tipster: form.tipster || null,
       });
       // A Gold pick just won: tell the members who hold it.
       if (justWon && form.isPremium) {
@@ -525,6 +528,7 @@ const AdminPanel = () => {
         homeTeamLogo: form.homeTeamLogo,
         awayTeamLogo: form.awayTeamLogo,
         description: form.description,
+        tipster: form.tipster || null,
       });
       
       if (created && form.isPremium) {
@@ -560,6 +564,7 @@ const AdminPanel = () => {
       description: tip.description || "",
       homeTeamLogo: tip.homeTeamLogo || null,
       awayTeamLogo: tip.awayTeamLogo || null,
+      tipster: tip.tipster || "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -834,6 +839,7 @@ const AdminPanel = () => {
     description: "",
     homeTeamLogo: null as string | null,
     awayTeamLogo: null as string | null,
+    tipster: "" as string,
   });
 
   const [homeLogoCandidates, setHomeLogoCandidates] = useState<LogoCandidate[]>([]);
@@ -1274,6 +1280,25 @@ const AdminPanel = () => {
               </div>
 
               <div className="space-y-1.5">
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Tipster (who adds this tip)</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {TIPSTERS.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setForm({ ...form, tipster: form.tipster === t.id ? "" : t.id })}
+                      aria-pressed={form.tipster === t.id}
+                      className="h-10 rounded-md border text-sm font-bold flex items-center justify-center gap-2 transition-colors"
+                      style={form.tipster === t.id ? { background: t.color, borderColor: t.color, color: "#fff" } : { borderColor: "hsl(var(--border))" }}
+                    >
+                      <span className="w-2 h-2 rounded-full" style={{ background: form.tipster === t.id ? "#fff" : t.color }} />
+                      {t.nick}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
                 <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Analysis / Description</Label>
                 <textarea 
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-muted/20 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
@@ -1328,6 +1353,7 @@ const AdminPanel = () => {
                   homeTeamLogo: form.homeTeamLogo,
                   awayTeamLogo: form.awayTeamLogo,
                   description: form.description,
+                  tipster: form.tipster || null,
                 }}
               />
             </div>

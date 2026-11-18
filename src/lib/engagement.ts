@@ -115,6 +115,7 @@ export const loadAlbum = async (): Promise<AlbumCard[]> => {
     homeTeamLogo: t.home_team_logo ?? null,
     awayTeamLogo: t.away_team_logo ?? null,
     masked: !!t.masked,
+    tipster: t.tipster ?? null,
     collectedAt: t.collected_at,
   }));
 };

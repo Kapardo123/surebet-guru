@@ -213,6 +213,7 @@ export const loadTips = async (publishedOnly: boolean = true, forceRefresh: bool
           likesCount: tip.likes_count || 0,
           isPublished: true,
           wonAt: tip.won_at || null,
+          tipster: tip.tipster ?? null,
         }));
         
         setCachedTips(tips);
@@ -254,6 +255,7 @@ export const loadTips = async (publishedOnly: boolean = true, forceRefresh: bool
     isPublished: tip.is_published ?? true,
     wonAt: tip.won_at || null,
     masked: !!tip.masked,
+    tipster: tip.tipster ?? null,
   }));
 
   if (publishedOnly) {
@@ -290,6 +292,7 @@ export const loadDraftTips = async (): Promise<Tip[]> => {
     description: tip.description || null,
     likesCount: tip.likes_count || 0,
     isPublished: false,
+    tipster: tip.tipster ?? null,
   }));
 };
 
@@ -339,13 +342,21 @@ export const unpublishTipById = async (id: number): Promise<boolean> => {
   return true;
 };
 
+/** Until the tipster migration is deployed, save the tip without that column. */
+const withoutMissingTipster = async (row: Record<string, unknown>, run: (r: Record<string, unknown>) => any) => {
+  const res = await run(row);
+  if (res.error && /tipster/i.test(res.error.message ?? "")) {
+    const { tipster: _drop, ...rest } = row;
+    return run(rest);
+  }
+  return res;
+};
+
 export const addTip = async (tip: Omit<Tip, "id"> & { isPublished?: boolean }): Promise<Tip | null> => {
   // Automatycznie ustawiaj won_at gdy status = "won"
   const wonAt = tip.status === 'won' ? new Date().toISOString() : null;
 
-  const { data, error } = await (supabase as any)
-    .from('tips')
-    .insert([{
+  const row: Record<string, unknown> = {
       sport: tip.sport,
       league: tip.league,
       home_team: tip.homeTeam,
@@ -360,10 +371,12 @@ export const addTip = async (tip: Omit<Tip, "id"> & { isPublished?: boolean }): 
       away_team_logo: tip.awayTeamLogo,
       description: tip.description,
       likes_count: tip.likesCount || 0,
-      won_at: wonAt
-    }])
-    .select()
-    .single();
+      won_at: wonAt,
+      tipster: tip.tipster ?? null,
+  };
+  const { data, error } = await withoutMissingTipster(row, (r) =>
+    (supabase as any).from('tips').insert([r]).select().single(),
+  );
 
   if (error) {
     console.error("Error adding tip:", error);
@@ -392,6 +405,7 @@ export const addTip = async (tip: Omit<Tip, "id"> & { isPublished?: boolean }): 
     description: record.description,
     likesCount: record.likes_count || 0,
     isPublished: record.is_published ?? true,
+    tipster: record.tipster ?? null,
   };
 };
 
@@ -410,9 +424,7 @@ export const updateTip = async (updatedTip: Tip & { isPublished?: boolean }) => 
 
   console.log('📝 Updating tip:', updatedTip.id, 'Status:', updatedTip.status, 'wonAt:', wonAt);
 
-  const { error } = await (supabase as any)
-    .from('tips')
-    .update({
+  const row: Record<string, unknown> = {
       sport: updatedTip.sport,
       league: updatedTip.league,
       home_team: updatedTip.homeTeam,
@@ -427,9 +439,12 @@ export const updateTip = async (updatedTip: Tip & { isPublished?: boolean }) => 
       away_team_logo: updatedTip.awayTeamLogo,
       description: updatedTip.description,
       likes_count: updatedTip.likesCount,
-      won_at: wonAt
-    })
-    .eq('id', updatedTip.id);
+      won_at: wonAt,
+      tipster: updatedTip.tipster ?? null,
+  };
+  const { error } = await withoutMissingTipster(row, (r) =>
+    (supabase as any).from('tips').update(r).eq('id', updatedTip.id),
+  );
 
   if (error) {
     console.error("❌ Error updating tip:", error);
