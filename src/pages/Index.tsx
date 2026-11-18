@@ -22,6 +22,9 @@ import UnlockSheet from "@/components/UnlockSheet";
 import { loadTipUnlocks, verifyCheckout, nativeSingleTipPrice } from "@/lib/tipUnlocks";
 import { SINGLE_TIP_CENTS, usd } from "@/lib/pricing";
 import { useToast } from "@/hooks/use-toast";
+import { track } from "@/lib/analytics";
+import Onboarding, { needsOnboarding } from "@/components/Onboarding";
+import { AnimatePresence } from "framer-motion";
 import StreakBar from "@/components/StreakBar";
 import { play } from "@/lib/sfx";
 import {
@@ -76,6 +79,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   // Bump to refetch the feed (e.g. after a card is unlocked server-side).
   const [reloadKey, setReloadKey] = useState(0);
+  const [onboarding, setOnboarding] = useState(needsOnboarding);
   const [inspect, setInspect] = useState<Tip | null>(null);
   const [seen, setSeen] = useState<number[]>(() => readLS(`gsb_seen_${dayKey}`, []));
   const [packOpen, setPackOpen] = useState<boolean>(() => readLS(`gsb_pack_${dayKey}`, false));
@@ -101,10 +105,12 @@ const Index = () => {
     const owned = unlocksRef.current.includes(tip.id) || coveredByPass(tip, passesRef.current);
     if ((tip.isPremium && !isPremiumRef.current && tip.status === "upcoming" && !owned) || (tip.masked && !owned)) {
       setSheetTip(tip);
+      track("unlock_sheet_opened", { tip: tip.id });
       return;
     }
     setCelebrate(fresh);
     setInspect(tip);
+    track("card_inspected", { tip: tip.id, gold: !!tip.isPremium });
     if (userRef.current) collectCard(userRef.current, tip.id).catch(() => {});
     setSeen((prev) => {
       if (prev.includes(tip.id)) return prev;
@@ -118,6 +124,7 @@ const Index = () => {
     setCelebrate(false);
   }, []);
   const openPack = useCallback(() => {
+    track("pack_opened");
     setPackOpen(true);
     writeLS(`gsb_pack_${dayKey}`, true);
   }, []);
@@ -157,6 +164,7 @@ const Index = () => {
       setStreak(st);
       if (!st.local) setCredits(st.credits);
       if (st.rewarded) {
+        track("streak_reward", { streak: st.streak });
         play("coin");
         toast({ title: "Free Gold card earned!", description: `${st.streak} days in a row. Tap any Gold card to use it.` });
       }
@@ -198,6 +206,7 @@ const Index = () => {
   }, [tips, unlocks, openCard]);
 
   const handleUnlocked = useCallback(async (tip: Tip) => {
+    track("unlock_succeeded", { tip: tip.id });
     setSheetTip(null);
     unlocksRef.current = [...unlocksRef.current, tip.id];
     pendingUnlock.current = tip.id;
@@ -467,6 +476,8 @@ const Index = () => {
       </footer>
 
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+      <AnimatePresence>{onboarding && <Onboarding key="onboarding" onDone={() => setOnboarding(false)} />}</AnimatePresence>
 
       <CardInspector tip={inspect} userIsPremium={isPremium || (!!inspect && owns(inspect))} celebrate={celebrate} onClose={closeCard} />
       <UnlockSheet

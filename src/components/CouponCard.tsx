@@ -3,49 +3,20 @@ import { Link } from "react-router-dom";
 import { memo } from "react";
 import { Lock } from "lucide-react";
 import StatusTag from "@/components/StatusTag";
-import TeamLogo from "@/components/TeamLogo";
-import { kickoffParts } from "@/lib/format";
-import { sportTheme } from "@/lib/sport";
+import MiniCard from "@/components/MiniCard";
 
-type Leg = Coupon["matches"][number];
 
 /** One leg as a mini card in the fan. */
-const MiniCard = ({ leg, faceDown }: { leg: Leg; faceDown: boolean }) => {
-  const t = sportTheme(leg.sport);
-  if (faceDown) {
-    return (
-      <div className="w-[104px] h-[146px] rounded-[10px] p-[3px] foil-gold shadow-[0_8px_18px_-6px_rgba(0,0,0,.7)]">
-        <div className="h-full rounded-[7px] card-back grid place-items-center">
-          <span className="font-display font-black text-[15px] foil-gold-text">GSB</span>
-        </div>
-      </div>
-    );
-  }
-  const ko = kickoffParts(leg.kickoff);
-  return (
-    <div className="w-[104px] h-[146px] rounded-[10px] p-[3px] shadow-[0_8px_18px_-6px_rgba(0,0,0,.7)]" style={{ background: t.frame }}>
-      <div className="paper h-full rounded-[7px] bg-stock text-stock-ink overflow-hidden flex flex-col">
-        <div className="h-[46px] flex items-center justify-center gap-1" style={{ background: t.art }}>
-          {[leg.homeTeam, leg.awayTeam].map((n, i) => (
-            <span key={i} className="grid place-items-center w-7 h-7 rounded-full bg-white/90">
-              <TeamLogo teamName={n} logoUrl={i ? leg.awayTeamLogo : leg.homeTeamLogo} size={20} sport={leg.sport} tone="light" />
-            </span>
-          ))}
-        </div>
-        <div className="px-1.5 pt-1 flex-1 min-h-0">
-          <p className="font-display font-extrabold uppercase text-[8.5px] leading-[1.15] line-clamp-2">
-            {leg.homeTeam} v {leg.awayTeam}
-          </p>
-          <p className="text-[10.5px] font-semibold leading-tight mt-1 line-clamp-2">{leg.prediction}</p>
-        </div>
-        <div className="flex items-end justify-between px-1.5 pb-1.5">
-          <span className="num font-black text-[15px] leading-none">{leg.odds.toFixed(2)}</span>
-          {ko.time !== "TBD" && <span className="text-[8.5px] font-semibold opacity-60">{ko.time}</span>}
-        </div>
+const Leg = ({ leg, faceDown, gold }: { leg: Coupon["matches"][number]; faceDown: boolean; gold: boolean }) =>
+  faceDown ? (
+    <div className="w-[104px] h-[146px] rounded-[10px] p-[3px] foil-gold shadow-[0_8px_18px_-6px_rgba(0,0,0,.7)]">
+      <div className="h-full rounded-[7px] card-back grid place-items-center">
+        <span className="font-display font-black text-[15px] foil-gold-text">GSB</span>
       </div>
     </div>
+  ) : (
+    <MiniCard card={leg} gold={gold} className="w-[104px] h-[146px]" />
   );
-};
 
 const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsPremium?: boolean }) => {
   const isSettled = coupon.status === "won" || coupon.status === "lost";
@@ -83,7 +54,7 @@ const CouponCard = ({ coupon, userIsPremium = false }: { coupon: Coupon; userIsP
                 className="shrink-0 transition-transform duration-300 hover:-translate-y-2"
                 style={{ marginLeft: i ? overlap : 0, transform: `rotate(${rot}deg) translateY(${lift}px)`, zIndex: i }}
               >
-                <MiniCard leg={leg} faceDown={locked} />
+                <Leg leg={leg} faceDown={locked} gold={!!coupon.isPremium} />
               </div>
             );
           })}

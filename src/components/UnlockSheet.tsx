@@ -7,6 +7,7 @@ import { kickoffParts } from "@/lib/format";
 import { buySingleTip, buyWeekendPack, nativeSingleTipPrice } from "@/lib/tipUnlocks";
 import { PLANS, SINGLE_TIP_CENTS, WEEKEND_PACK_CENTS, usd } from "@/lib/pricing";
 import { isWeekendTip, redeemCredit } from "@/lib/engagement";
+import { track } from "@/lib/analytics";
 
 /**
  * Bottom sheet shown when a locked Gold card is tapped: buy just this card
@@ -46,6 +47,7 @@ const UnlockSheet = ({
     setError(null);
     try {
       await redeemCredit(tip.id);
+      track("free_card_used", { tip: tip.id });
       onUnlocked(tip);
     } catch (e: any) {
       setError(e?.message || "Couldn't use the free card");
@@ -58,6 +60,7 @@ const UnlockSheet = ({
     if (!tip) return;
     setBusy(true);
     setError(null);
+    track("weekend_pack_started", { from: "sheet" });
     const res = await buyWeekendPack();
     if (res.status === "unlocked") onUnlocked(tip);
     else if (res.status === "error") setError(res.message);
@@ -68,6 +71,7 @@ const UnlockSheet = ({
     if (!tip) return;
     setBusy(true);
     setError(null);
+    track("unlock_started", { tip: tip.id, kind: "single" });
     const res = await buySingleTip(tip.id);
     if (res.status === "unlocked") onUnlocked(tip);
     else if (res.status === "error") setError(res.message);

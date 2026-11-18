@@ -12,7 +12,9 @@ import { addCoupon, loadCoupons, deleteCoupon, updateCoupon, calculateTotalOdds,
 import { loadFeaturedPick, saveFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
 import { fetchTeamLogoCandidates, LogoCandidate, saveCustomTeamLogo } from "@/lib/logoFetcher";
 import { Tip } from "@/components/TipCard";
-import { Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, Users, Bell, Search, RefreshCw, PlusCircle, Loader2, Sparkles, ClipboardPaste, List, Send, Clock, EyeOff, Upload, Download } from "lucide-react";
+import { Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, Users, Bell, Search, RefreshCw, PlusCircle, Loader2, Sparkles, ClipboardPaste, List, Send, Clock, EyeOff, Upload, Download, BarChart3 } from "lucide-react";
+import TipCard from "@/components/TipCard";
+import AdminStats from "@/components/AdminStats";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import TeamLogo from "@/components/TeamLogo";
@@ -167,7 +169,27 @@ const AdminPanel = () => {
     { id: "coupons", label: "Coupons", icon: Receipt },
     { id: "hero", label: "Hero Pick", icon: Zap },
     { id: "premium", label: "Premium", icon: Users },
+    { id: "stats", label: "Stats", icon: BarChart3 },
   ];
+
+  // One-tap settlement from the tips list; a Gold win also pings members.
+  const quickSettle = async (tip: Tip, status: Tip["status"]) => {
+    if (tip.status === status) return;
+    const ok = await updateTip({ ...tip, status });
+    if (!ok) {
+      toast({ title: "Couldn't update the tip", variant: "destructive" });
+      return;
+    }
+    if (status === "won" && tip.isPremium) {
+      try {
+        await supabase.functions.invoke("send-premium-push", {
+          body: { title: "Your Gold card won!", message: `${tip.homeTeam} v ${tip.awayTeam}: ${tip.prediction} @ ${tip.odds.toFixed(2)}` },
+        });
+      } catch (pushError) {}
+    }
+    await refreshData(true);
+    toast({ title: `Marked ${status}` });
+  };
 
   const filteredTips = tips.filter(tip => filterStatus === "all" ? true : tip.status === filterStatus);
 
@@ -865,21 +887,17 @@ const AdminPanel = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0015] via-[#150025] to-[#0a0020] pb-20 relative overflow-hidden">
-      {/* Synthwave glow effects */}
-      <div className="fixed top-0 left-1/3 w-[400px] h-[400px] rounded-full blur-[100px] opacity-10 pointer-events-none" 
-           style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)' }} />
-      
-      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-gradient-to-r from-[#0a0015]/80 via-[#150025]/80 to-[#0a0020]/80 border-b border-purple-500/20 shadow-xl shadow-black/30">
+    <div className="min-h-screen pb-20 relative">
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-white/[0.06]">
         <div className="container max-w-6xl mx-auto px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2.5 md:gap-3">
             <Link to="/" className="flex items-center gap-2.5">
               <Logo />
             </Link>
-            <Badge variant="confidence" className="font-display text-[10px] uppercase tracking-wider bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 border-purple-500/30">Admin</Badge>
+            <span className="h-6 px-2.5 rounded-full bg-white/10 text-[10.5px] font-bold uppercase tracking-[0.12em] grid place-items-center">Admin</span>
           </div>
           <Link to="/">
-            <Button variant="ghost" size="sm" className="gap-1.5 text-purple-300/70 hover:text-pink-400 hover:bg-white/5 transition-all duration-200 rounded-full px-3 md:px-3.5 border border-transparent hover:border-pink-500/30">
+            <Button variant="ghost" size="sm" className="gap-1.5 rounded-full px-3 bg-white/[0.06] hover:bg-white/[0.1]">
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Back</span>
             </Button>
@@ -889,16 +907,14 @@ const AdminPanel = () => {
 
       <main className="container max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* ADMIN NAVIGATION TABS */}
-        <div className="sticky top-[72px] z-40 bg-[#0a0015]/80 backdrop-blur-xl border border-purple-500/20 rounded-xl p-1 shadow-lg shadow-black/20">
-          <div className="flex gap-1 overflow-x-auto pb-1">
+        <div className="sticky top-[72px] z-40 bg-background/80 backdrop-blur-xl border border-white/[0.08] rounded-full p-1">
+          <div className="flex gap-1 overflow-x-auto no-scrollbar">
             {adminTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 text-white shadow-lg shadow-pink-500/30"
-                    : "text-purple-300/70 hover:text-pink-300 hover:bg-white/5"
+                className={`flex items-center gap-2 px-4 h-10 rounded-full text-[13px] font-bold transition-colors whitespace-nowrap ${
+                  activeTab === tab.id ? "bg-foreground text-background" : "text-foreground/70 hover:text-foreground"
                 }`}
               >
                 <tab.icon className="w-4 h-4" />
@@ -1289,6 +1305,34 @@ const AdminPanel = () => {
             </form>
           </CardContent>
         </Card>
+
+        {/* Live preview: exactly how the card will look in the app */}
+        {(form.homeTeam || form.awayTeam || form.prediction) && (
+          <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
+            <p className="label mb-3">Preview</p>
+            <div className="max-w-[220px] mx-auto pointer-events-none">
+              <TipCard
+                still
+                userIsPremium
+                tip={{
+                  id: editingTipId ?? 0,
+                  sport: form.sport || "Football",
+                  league: form.league || "League",
+                  homeTeam: form.homeTeam || "Home",
+                  awayTeam: form.awayTeam || "Away",
+                  prediction: form.prediction || "Your pick",
+                  odds: parseFloat(form.odds) || 0,
+                  kickoff: form.kickoff ? new Date(form.kickoff.replace(" ", "T")).toISOString() : new Date().toISOString(),
+                  status: form.status,
+                  isPremium: form.isPremium,
+                  homeTeamLogo: form.homeTeamLogo,
+                  awayTeamLogo: form.awayTeamLogo,
+                  description: form.description,
+                }}
+              />
+            </div>
+          </div>
+        )}
           </>
         )}
 
@@ -1642,21 +1686,33 @@ const AdminPanel = () => {
                   {filteredTips.map((tip) => {
                     const status = tip.status === 'won' ? 'win' : tip.status === 'lost' ? 'loss' : 'default';
                     return (
-                      <div key={tip.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-xl hover:bg-muted/40 group">
+                      <div key={tip.id} className="flex flex-wrap items-center justify-between gap-2 p-3 bg-muted/20 rounded-xl hover:bg-muted/40 group">
                         <div className="flex items-center gap-2">
                           <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={18} />
                           <span className="text-[9px] text-muted-foreground">vs</span>
                           <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={18} />
-                          <div className="ml-2">
-                            <p className="text-xs font-medium">{tip.homeTeam} vs {tip.awayTeam}</p>
-                            <p className="text-[10px] text-muted-foreground">{tip.prediction} @ {tip.odds}</p>
+                          <div className="ml-2 min-w-0">
+                            <p className="text-xs font-medium truncate">{tip.homeTeam} vs {tip.awayTeam}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">{tip.prediction} @ {tip.odds}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 ml-auto">
                           <Badge variant={status}>{tip.status}</Badge>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => handleEditTip(tip)}><Pencil className="w-3 h-3" /></Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-loss opacity-0 group-hover:opacity-100" onClick={() => handleDelete(tip.id)}><Trash2 className="w-3 h-3" /></Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-yellow-500 opacity-0 group-hover:opacity-100" onClick={() => handleUnpublishTip(tip.id)} title="Move to drafts"><EyeOff className="w-3 h-3" /></Button>
+                          <div className="flex rounded-full bg-black/30 p-0.5" role="group" aria-label="Settle">
+                            {([["won", "W", "bg-success"], ["lost", "L", "bg-loss"], ["draw", "P", "bg-muted-foreground"]] as const).map(([st, label, bg]) => (
+                              <button
+                                key={st}
+                                onClick={() => quickSettle(tip, st)}
+                                title={`Mark ${st}`}
+                                className={`w-6 h-6 rounded-full text-[10px] font-black ${tip.status === st ? `${bg} text-white` : "text-foreground/60 hover:text-foreground"}`}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 opacity-60 hover:opacity-100" onClick={() => handleEditTip(tip)}><Pencil className="w-3 h-3" /></Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-loss opacity-60 hover:opacity-100" onClick={() => handleDelete(tip.id)}><Trash2 className="w-3 h-3" /></Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-yellow-500 opacity-60 hover:opacity-100" onClick={() => handleUnpublishTip(tip.id)} title="Move to drafts"><EyeOff className="w-3 h-3" /></Button>
                         </div>
                       </div>
                     );
@@ -1690,11 +1746,11 @@ const AdminPanel = () => {
                           <div className="flex items-center gap-2">
                             <Badge variant={status}>{tip.status}</Badge>
                             <Badge variant="outline" className="text-yellow-600 border-yellow-500/50">Draft</Badge>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => handleEditTip(tip)}><Pencil className="w-3 h-3" /></Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 text-loss opacity-0 group-hover:opacity-100" onClick={() => handleDelete(tip.id)}><Trash2 className="w-3 h-3" /></Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-60 hover:opacity-100" onClick={() => handleEditTip(tip)}><Pencil className="w-3 h-3" /></Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-loss opacity-60 hover:opacity-100" onClick={() => handleDelete(tip.id)}><Trash2 className="w-3 h-3" /></Button>
                             <Button 
                               size="sm" 
-                              className="h-6 w-6 bg-green-500 hover:bg-green-600 text-white opacity-0 group-hover:opacity-100" 
+                              className="h-6 w-6 bg-green-500 hover:bg-green-600 text-white opacity-60 hover:opacity-100" 
                               onClick={() => handlePublishTip(tip.id)}
                               title="Publish now"
                             >
@@ -1799,10 +1855,10 @@ const AdminPanel = () => {
                               </div>
                             </div>
                             <div className="flex items-center gap-1 flex-shrink-0">
-                              <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEditCouponMatch(i)}>
+                              <Button variant="ghost" size="icon" className="w-7 h-7 opacity-60 hover:opacity-100 transition-opacity" onClick={() => handleEditCouponMatch(i)}>
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="w-7 h-7 text-loss hover:text-loss opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveCouponMatch(i)}>
+                              <Button variant="ghost" size="icon" className="w-7 h-7 text-loss hover:text-loss opacity-60 hover:opacity-100 transition-opacity" onClick={() => handleRemoveCouponMatch(i)}>
                                 <X className="w-3.5 h-3.5" />
                               </Button>
                             </div>
@@ -2053,10 +2109,10 @@ const AdminPanel = () => {
                       <div className="flex items-center gap-1">
                         <Badge variant={c.status === 'won' ? 'win' : c.status === 'lost' ? 'loss' : 'default'} className="text-[9px]">{c.status}</Badge>
                         {c.isPremium && <Crown className="w-3.5 h-3.5 text-accent" />}
-                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleEditCoupon(c)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-60 hover:opacity-100 transition-opacity" onClick={() => handleEditCoupon(c)}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-loss hover:text-loss opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDeleteCoupon(c.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-loss hover:text-loss opacity-60 hover:opacity-100 transition-opacity" onClick={() => handleDeleteCoupon(c.id)}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
@@ -2067,6 +2123,8 @@ const AdminPanel = () => {
             </Card>
           </div>
         )}
+
+        {activeTab === "stats" && <AdminStats />}
 
         {/* UTILITY BUTTONS */}
         <div className="flex items-center justify-end gap-2 flex-wrap">

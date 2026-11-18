@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Lock } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import AppHeader, { headerLink } from "@/components/AppHeader";
 import StadiumBackdrop from "@/components/StadiumBackdrop";
 import PageTransition from "@/components/PageTransition";
 import BottomNav from "@/components/BottomNav";
 import StatusTag from "@/components/StatusTag";
-import CardArt from "@/components/CardArt";
+import MiniCard from "@/components/MiniCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { AlbumCard, TrackRecord, loadAlbum, loadTrackRecord } from "@/lib/engagement";
-import { sportTheme } from "@/lib/sport";
 
 // ---------------------------------------------------------------------------
 // Badges, earned from the cards in the album
@@ -69,31 +68,12 @@ const RecordChart = ({ data }: { data: TrackRecord["series"] }) => (
   </div>
 );
 
-const Pocket = ({ card }: { card: AlbumCard }) => {
-  const t = sportTheme(card.sport);
-  const gold = card.isPremium;
-  return (
-    <div className="relative">
-      <div
-        className={`rounded-[10px] p-[3px] shadow-[0_8px_18px_-8px_rgba(0,0,0,.8)] ${gold ? "foil-gold" : ""} ${card.status === "lost" ? "grayscale-[.8] opacity-75" : ""}`}
-        style={gold ? undefined : { background: t.frame }}
-      >
-        <div className={`rounded-[7px] text-stock-ink overflow-hidden ${gold ? "bg-[linear-gradient(170deg,hsl(44_70%_92%),hsl(40_45%_86%))]" : "paper bg-stock"}`}>
-          <CardArt sport={card.sport} home={card.homeTeam} away={card.awayTeam} homeLogo={card.homeTeamLogo} awayLogo={card.awayTeamLogo} size={14} className="h-[50px] m-[3px] rounded-[5px]" />
-          <div className="px-1.5 pb-1.5">
-            <p className="font-display font-extrabold uppercase text-[8px] leading-[1.15] truncate">{card.homeTeam}</p>
-            <p className="font-display font-extrabold uppercase text-[8px] leading-[1.15] truncate opacity-55">{card.awayTeam}</p>
-            <p className="mt-1 text-[9.5px] font-semibold leading-tight truncate">
-              {card.masked ? <span className="inline-flex items-center gap-0.5 opacity-60"><Lock className="w-2.5 h-2.5" /> Gold</span> : card.prediction}
-            </p>
-            {!card.masked && <p className="num font-black text-[13px] leading-none mt-0.5">{card.odds.toFixed(2)}</p>}
-          </div>
-        </div>
-      </div>
-      {card.status !== "upcoming" && <StatusTag status={card.status} animate={false} className="absolute -top-2 -right-2 scale-[.62] origin-top-right" />}
-    </div>
-  );
-};
+const Pocket = ({ card }: { card: AlbumCard }) => (
+  <div className="relative">
+    <MiniCard card={card} gold={!!card.isPremium} hidden={!!card.masked} lost={card.status === "lost"} className="aspect-[5/7]" />
+    {card.status !== "upcoming" && <StatusTag status={card.status} animate={false} className="absolute -bottom-2 -right-2 scale-[.62] origin-bottom-right" />}
+  </div>
+);
 
 /** The reader's permanent collection, track record and badges. */
 const Album = () => {

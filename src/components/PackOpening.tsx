@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import PackArt, { PACK_SIZE, PackStage } from "@/components/PackArt";
-import CardArt from "@/components/CardArt";
+import MiniCard from "@/components/MiniCard";
 import GoldBurst from "@/components/GoldBurst";
-import SportGlyph from "@/components/SportGlyph";
 import { Tip } from "@/components/TipCard";
-import { sportTheme } from "@/lib/sport";
 import { play } from "@/lib/sfx";
 
 const CARD_W = 92;
@@ -33,30 +31,7 @@ const CardBack = () => (
   </div>
 );
 
-const CardFront = ({ tip }: { tip: Tip }) => {
-  const t = sportTheme(tip.sport);
-  const gold = !!tip.isPremium;
-  return (
-    <div
-      className={`w-full h-full rounded-[10px] p-[3px] shadow-[0_10px_24px_-8px_rgba(0,0,0,.8)] ${gold ? "foil-gold" : ""}`}
-      style={gold ? undefined : { background: t.frame }}
-    >
-      <div className={`h-full rounded-[7px] text-stock-ink overflow-hidden flex flex-col ${gold ? "bg-[linear-gradient(170deg,hsl(44_70%_92%),hsl(40_45%_86%))]" : "paper bg-stock"}`}>
-        <CardArt sport={tip.sport} home={tip.homeTeam} away={tip.awayTeam} homeLogo={tip.homeTeamLogo} awayLogo={tip.awayTeamLogo} size={15} holo={gold} className="h-[58px] m-[3px] rounded-[5px]" />
-        <div className="px-1.5 min-w-0">
-          <p className="font-display font-extrabold uppercase text-[8.5px] leading-[1.15] truncate">{tip.homeTeam}</p>
-          <p className="font-display font-extrabold uppercase text-[8.5px] leading-[1.15] truncate opacity-55">{tip.awayTeam}</p>
-        </div>
-        <div className="mt-auto flex items-center justify-between px-1.5 pb-1.5">
-          <span className="grid place-items-center w-4 h-4 rounded-full text-white" style={{ background: gold ? "linear-gradient(135deg,#b98a2a,#f6dc8a)" : t.frame }}>
-            <SportGlyph sport={tip.sport} size={10} />
-          </span>
-          <span className={`text-[9px] font-black uppercase tracking-[0.1em] ${gold ? "text-[#a8781f]" : "opacity-50"}`}>{gold ? "◆ Gold" : "● Common"}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
+const CardFront = ({ tip }: { tip: Tip }) => <MiniCard card={tip} gold={!!tip.isPremium} hidden={!!tip.masked} className="w-full h-full" />;
 
 /**
  * Full-screen pack opening: the pack comes forward, trembles, light leaks

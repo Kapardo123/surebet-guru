@@ -48,6 +48,7 @@
     "@radix-ui/react-toggle-group": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@revenuecat/purchases-capacitor": "^12.3.0",
+    "@sentry/react": "^8.55.2",
     "@tanstack/react-query": "^5.83.0",
     "@vercel/node": "^4.0.0",
     "class-variance-authority": "^0.7.1",

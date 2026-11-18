@@ -152,6 +152,15 @@ Pojedynczy typ Gold (`tip_unlocks`):
 Wersja aplikacji jest teraz brana z `package.json` (`__APP_VERSION__`); przy wydaniu
 podbij `package.json`, `android/app/build.gradle` (versionName/versionCode) i `api/app-version.ts`.
 
+### Statystyki i monitorowanie błędów
+
+- **Statystyki:** wykonaj `supabase/migrations/20261118c_events.sql`. Aplikacja zapisuje
+  zdarzenia (otwarcie paczki, kliknięcie karty Gold, zakup…) do tabeli `events`;
+  lejek widać w panelu admina w zakładce **Stats**. Czytać mogą tylko admini.
+- **Sentry:** załóż projekt w Sentry (React) i ustaw zmienną `VITE_SENTRY_DSN`
+  (Vercel → Environment Variables oraz `.env` przed budowaniem APK). Bez niej
+  monitorowanie jest wyłączone. Do raportów trafia tylko ID użytkownika, nie e‑mail.
+
 ### 2. Wdrożenie na Vercel
 
 1. Połącz swoje repozytorium GitHub z [Vercel](https://vercel.com/).

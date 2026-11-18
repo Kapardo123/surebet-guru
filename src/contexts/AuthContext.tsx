@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { loginRevenueCat, logoutRevenueCat } from "@/integrations/revenuecat";
 import { redeemPendingCode } from "@/lib/referral";
+import { setMonitoringUser } from "@/lib/monitoring";
 
 
 interface AuthContextType {
@@ -47,6 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         setSession(session);
+        setMonitoringUser(session?.user?.id ?? null);
         setLoading(false);
       }
     );

@@ -8,6 +8,7 @@ import CardArt from "@/components/CardArt";
 import { formatKickoff } from "@/lib/format";
 import { useAdMob } from "@/hooks/useAdMob";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
+import { track } from "@/lib/analytics";
 
 const useCountdown = (kickoff: string) => {
   const [now, setNow] = useState(Date.now());
@@ -100,6 +101,7 @@ const TodayHotTip = () => {
       setAdFailed(true);
       return;
     }
+    track("pick_of_day_revealed");
     setBurst(true);
     window.setTimeout(() => setBurst(false), 1600);
     setIsUnlocked(true);

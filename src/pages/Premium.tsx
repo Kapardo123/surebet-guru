@@ -17,6 +17,7 @@ import { Capacitor } from "@capacitor/core";
 import { getOfferings, purchasePackage, presentPaywall, restorePurchases } from "@/integrations/revenuecat";
 import { PLANS, usd, perDay, saving, SINGLE_TIP_CENTS, WEEKEND_PACK_CENTS } from "@/lib/pricing";
 import { APP_VERSION, APP_BUILD } from "@/lib/version";
+import { track } from "@/lib/analytics";
 import { buyWeekendPack, startPlanCheckout, verifyCheckout } from "@/lib/tipUnlocks";
 
 export default function Premium() {
@@ -58,6 +59,7 @@ export default function Premium() {
     verifyCheckout(sessionId)
       .then(async () => {
         await refresh();
+        track("plan_purchased", { platform: "web" });
         toast({ title: "Welcome to Gold", description: "Every card is face up now." });
       })
       .catch((e) => toast({ title: "Payment not confirmed yet", description: e.message, variant: "destructive" }))
@@ -104,13 +106,18 @@ export default function Premium() {
             pkg = rcOfferings.current.availablePackages.find((p: any) => p.identifier.includes('15'));
           }
           if (pkg) {
+            track("plan_checkout_started", { duration, platform: "android" });
             const dInfo = await purchasePackage(pkg);
-            if (dInfo) await refresh(dInfo, duration);
+            if (dInfo) {
+              track("plan_purchased", { duration, platform: "android" });
+              await refresh(dInfo, duration);
+            }
           }
         }
       } else {
         // Web: Stripe Checkout created server-side, so the charged amount
         // always matches PLAN_CENTS in the create-payment function.
+        track("plan_checkout_started", { duration, platform: "web" });
         await startPlanCheckout(duration);
       }
     } catch (e: any) {
@@ -288,6 +295,7 @@ export default function Premium() {
           <button
             onClick={async () => {
               if (!user) return navigate("/auth?redirect=/premium");
+              track("weekend_pack_started", { from: "premium" });
               const r = await buyWeekendPack();
               if (r.status === "unlocked") toast({ title: "Weekend pack unlocked", description: "Every Gold card from Friday to Sunday is yours." });
               else if (r.status === "error") toast({ title: "Weekend pack unavailable", description: r.message, variant: "destructive" });

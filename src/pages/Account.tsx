@@ -12,6 +12,7 @@ import { Copy, Gift, Volume2 } from "lucide-react";
 import { getInviteCode, getReferralStats, redeemCode, shareInvite } from "@/lib/referral";
 import { setSoundEnabled, soundEnabled, play } from "@/lib/sfx";
 import { TABLES, TableTheme, getTable, setTable } from "@/lib/theme";
+import { track } from "@/lib/analytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -209,6 +210,7 @@ const Account = () => {
                   </div>
                   <button
                     onClick={async () => {
+                      track("invite_shared");
                       const r = await shareInvite(code);
                       if (r === "copied") toast({ title: "Invite copied", description: "Paste it to a friend." });
                     }}
