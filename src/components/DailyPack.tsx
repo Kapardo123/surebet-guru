@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import HoloCard from "@/components/HoloCard";
+import crinkle from "@/assets/textures/pack-crinkle.webp";
+import crimp from "@/assets/textures/pack-crimp.webp";
 
 const CRIMP =
   "linear-gradient(#000 0 0) center / 100% calc(100% - 16px) no-repeat, " +
@@ -63,10 +65,15 @@ const DailyPack = ({ count, goldCount, onOpen }: { count: number; goldCount: num
         <HoloCard holo={false} maxTilt={14}>
           <div className="holo holo-idle relative w-[230px] h-[318px] text-white" style={{ WebkitMask: CRIMP, mask: CRIMP }}>
             <div className="absolute inset-0" style={{ background: FOIL }} />
-            <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,rgba(255,255,255,.05)_0_2px,transparent_2px_9px)]" />
+            {/* Ridged heat seal at the bottom (the top one is the gold tear strip) */}
+            <div
+              className="absolute inset-x-0 bottom-0 h-[20px] mix-blend-overlay"
+              style={{ backgroundImage: `url(${crimp})`, backgroundSize: "auto 100%", backgroundRepeat: "repeat-x" }}
+            />
             {/* Tear strip */}
             <motion.div
-              className="absolute inset-x-0 top-0 h-[54px] foil-gold z-10 flex items-end justify-center pb-2"
+              className="absolute inset-x-0 top-0 h-[54px] foil-gold z-10 flex items-end justify-center pb-2 bg-blend-overlay"
+              style={{ backgroundImage: `url(${crimp}), linear-gradient(135deg,#8a6416,#f6dc8a 22%,#b98a2a 40%,#fff1b8 55%,#a8781f 72%,#f2cf6a)`, backgroundSize: "auto 100%, 100% 100%", backgroundRepeat: "repeat-x, no-repeat" }}
               animate={tearing ? { y: -90, x: 40, rotate: 18, opacity: 0 } : { y: 0, x: 0, rotate: 0, opacity: 1 }}
               transition={{ duration: 0.45, ease: [0.5, 0, 0.6, 1] }}
             >
@@ -95,6 +102,13 @@ const DailyPack = ({ count, goldCount, onOpen }: { count: number; goldCount: num
                 </span>
               )}
             </div>
+            {/* Crinkled foil, pillow shading */}
+            <div
+              className="pointer-events-none absolute inset-0 mix-blend-overlay opacity-75"
+              style={{ backgroundImage: `url(${crinkle})`, backgroundSize: "cover" }}
+            />
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,.5),rgba(0,0,0,0)_14%,rgba(255,255,255,.1)_48%,rgba(0,0,0,0)_82%,rgba(0,0,0,.55))]" />
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.25),transparent_20%,transparent_85%,rgba(0,0,0,.45))]" />
           </div>
         </HoloCard>
       </motion.button>
