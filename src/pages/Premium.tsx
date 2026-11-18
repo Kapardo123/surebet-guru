@@ -204,7 +204,8 @@ export default function Premium() {
         </div>
       )}
 
-      <main className="max-w-xl mx-auto px-4 pt-7 space-y-12">
+      <main className="max-w-xl lg:max-w-6xl mx-auto px-4 lg:px-8 pt-7 space-y-12 lg:space-y-0 lg:grid lg:grid-cols-[440px_minmax(0,1fr)] lg:gap-x-16 lg:items-start">
+        <aside className="space-y-12 lg:sticky lg:top-24">
         <section className="text-center">
           <p className="label foil-gold-text">GSB Gold</p>
           <h1 className="font-display font-black uppercase text-[36px] leading-[1] tracking-[-0.03em] mt-2">
@@ -229,6 +230,8 @@ export default function Premium() {
           <MemberCard issued={active} name={handle} memberNo={memberNo} validUntil={expiresAt} daysLeft={daysLeft} />
         </section>
 
+        </aside>
+        <div className="space-y-12 min-w-0 lg:pt-4">
         {active && (
           <section className="rounded-[20px] bg-white/[0.05] border border-white/[0.07] px-4 py-4 flex items-center justify-between gap-4">
             <div>
@@ -369,6 +372,7 @@ export default function Premium() {
           </p>
           <p className="text-[12px] text-muted-foreground/60">App version {APP_VERSION} · Build {APP_BUILD}</p>
         </footer>
+        </div>
       </main>
     </div>
     </PageTransition>

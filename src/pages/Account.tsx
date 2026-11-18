@@ -158,7 +158,8 @@ const Account = () => {
       <div className="relative isolate min-h-screen pb-16">
           <StadiumBackdrop height={460} />
         {header}
-        <main className="max-w-xl mx-auto px-4 pt-7 space-y-8">
+        <main className="max-w-xl lg:max-w-6xl mx-auto px-4 lg:px-8 pt-7 space-y-8 lg:space-y-0 lg:grid lg:grid-cols-[400px_minmax(0,1fr)] lg:gap-x-16 lg:items-start">
+        <aside className="space-y-8 lg:sticky lg:top-24">
           <section className="text-center">
             <p className="label">Your collection</p>
             <h1 className="font-display font-black uppercase text-[30px] leading-[1.02] tracking-[-0.02em] mt-1.5">
@@ -174,6 +175,8 @@ const Account = () => {
             </Link>
           )}
 
+        </aside>
+        <div className="space-y-8 min-w-0">
           <section>
             <h2 className="label px-1 mb-2">Card stats</h2>
             <dl className={panel}>
@@ -330,6 +333,7 @@ const Account = () => {
             {signingOut && <Loader2 className="w-4 h-4 animate-spin" />}
             Sign out
           </button>
+        </div>
         </main>
       </div>
     </PageTransition>

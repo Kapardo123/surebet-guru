@@ -337,24 +337,14 @@ const Index = () => {
             {!isPremium && !premiumLoading && (
               <Link to="/premium" className={goldButton}>Go Gold</Link>
             )}
-            <span className="hidden md:inline-flex">
-              {user ? (
-                <Link to="/account" className={headerLink}>
-                  <UserIcon className="w-4 h-4" />
-                  {user.email?.split("@")[0]}
-                </Link>
-              ) : (
-                <Link to="/auth" className={headerLink}>
-                  <LogIn className="w-4 h-4" />
-                  Sign in
-                </Link>
-              )}
-            </span>
+
           </>
         }
       />
 
-      <main className="max-w-5xl mx-auto px-4 pt-6 space-y-8">
+      {/* Phone: one column. Desktop: content on the left, pick of the day pinned on the right. */}
+      <main className="max-w-6xl mx-auto px-4 lg:px-8 pt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-x-10 items-start">
+        <div className="lg:col-start-1 lg:row-start-1">
         <TodayPanel
           weekday={weekday}
           loading={loading}
@@ -370,10 +360,13 @@ const Index = () => {
           credits={credits}
           packOpen={packOpen}
         />
+        </div>
 
-        <TodayHotTip />
+        <div className="lg:col-start-2 lg:row-start-1 lg:row-span-3 lg:sticky lg:top-24">
+          <TodayHotTip />
+        </div>
 
-        <section className="space-y-4">
+        <section className="space-y-4 lg:col-start-1 lg:row-start-2">
           <div role="tablist" className="flex p-1 rounded-full bg-white/[0.05] border border-white/[0.07]">
             {tabBtn("tips", "Cards", filteredTips.length)}
             {tabBtn("coupons", "Sets", filteredCoupons.length)}
@@ -393,7 +386,7 @@ const Index = () => {
               {!loading && !packOpen && tips.length > 0 ? (
                 <DailyPack tips={tips} onOpen={openPack} />
               ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 [&>*]:min-w-0">
+              <div className="grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 gap-3 md:gap-4 lg:gap-5 [&>*]:min-w-0">
                 {loading
                   ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
                   : filteredTips.length === 0
@@ -432,12 +425,12 @@ const Index = () => {
           )}
         </section>
 
-        <p className="text-[13.5px] leading-relaxed text-muted-foreground rounded-[16px] bg-white/[0.04] px-4 py-3.5">
+        <p className="lg:col-start-1 lg:row-start-3 text-[13.5px] leading-relaxed text-muted-foreground rounded-[16px] bg-white/[0.04] px-4 py-3.5">
           Cards are opinions, not guarantees. Bet only what you can afford to lose. 18+.
         </p>
       </main>
 
-      <footer className="max-w-5xl mx-auto px-4 pt-6 pb-8">
+      <footer className="max-w-6xl mx-auto px-4 lg:px-8 pt-6 pb-8">
         <nav className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] font-medium text-muted-foreground">
           <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
           <Link to="/terms" className="hover:text-foreground">Terms</Link>

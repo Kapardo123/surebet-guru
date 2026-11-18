@@ -118,7 +118,7 @@ const Album = () => {
           }
         />
 
-        <main className="max-w-3xl mx-auto px-4 pt-6 space-y-8">
+        <main className="max-w-3xl lg:max-w-6xl mx-auto px-4 lg:px-8 pt-6 space-y-8">
           <section>
             <p className="label">Your album</p>
             <h1 className="font-display font-black uppercase text-[30px] leading-[1.02] tracking-[-0.02em] mt-1.5">
@@ -126,6 +126,7 @@ const Album = () => {
             </h1>
           </section>
 
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-start">
           {/* Track record */}
           <section className="rounded-[22px] bg-white/[0.04] border border-white/[0.08] p-4">
             <div className="flex items-center justify-between gap-3">
@@ -198,6 +199,8 @@ const Album = () => {
             </div>
           </section>
 
+          </div>
+
           {/* Pages by league */}
           {!authLoading && !user ? (
             <section className="rounded-[22px] border border-dashed border-white/15 p-6 text-center">
@@ -222,7 +225,7 @@ const Album = () => {
                   </span>
                 </div>
                 {/* Binder page: pockets */}
-                <div className="mt-3 rounded-[18px] bg-black/25 border border-white/[0.06] p-3 grid grid-cols-3 sm:grid-cols-4 gap-3">
+                <div className="mt-3 rounded-[18px] bg-black/25 border border-white/[0.06] p-3 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 lg:gap-4">
                   {list.map((c) => (
                     <Pocket key={c.id} card={c} />
                   ))}
