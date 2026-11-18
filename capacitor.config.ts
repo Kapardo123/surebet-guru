@@ -17,10 +17,6 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"],
     },
-    AdMob: {
-      appId: 'ca-app-pub-1532874051579555~6005647513', // PRODUKCYJNE
-      initializeForTesting: false, // Wyłącz tryb testowy dla produkcji
-    },
   },
 };
 

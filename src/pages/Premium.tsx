@@ -131,7 +131,6 @@ export default function Premium() {
 
   const features = [
     "Every premium tip and coupon, the moment it is posted",
-    "Pick of the day without watching an ad",
     "Push notification for each new premium pick",
     "Full written analysis behind every selection",
   ];

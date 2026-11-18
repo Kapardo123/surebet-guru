@@ -1,12 +1,11 @@
 import { useState, useEffect, useMemo, memo } from "react";
-import { Play, Loader2, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FeaturedPick, loadFeaturedPick } from "@/lib/featuredPickStorage";
 import StatusTag from "@/components/StatusTag";
 import HoloCard from "@/components/HoloCard";
 import CardArt from "@/components/CardArt";
 import { formatKickoff } from "@/lib/format";
-import { useAdMob } from "@/hooks/useAdMob";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { track } from "@/lib/analytics";
 
@@ -39,7 +38,6 @@ const TodayHotTip = () => {
   const [pick, setPick] = useState<FeaturedPick | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const { isLoading, isRewardedAdReady, error, showRewardedAd } = useAdMob();
   const { active: isPremium } = usePremiumStatus();
 
   const [loaded, setLoaded] = useState(false);
@@ -91,16 +89,8 @@ const TodayHotTip = () => {
   
   const [burst, setBurst] = useState(false);
 
-  const [adFailed, setAdFailed] = useState(false);
-
-  const handleWatchAd = async () => {
-    setAdFailed(false);
-    // Only reveal when the ad network confirms the reward (web: always true).
-    const rewarded = await showRewardedAd().catch(() => false);
-    if (!rewarded) {
-      setAdFailed(true);
-      return;
-    }
+  // Free for everyone: one tap turns the card face up (no ads, no sign-in).
+  const reveal = () => {
     track("pick_of_day_revealed");
     setBurst(true);
     window.setTimeout(() => setBurst(false), 1600);
@@ -210,17 +200,14 @@ const TodayHotTip = () => {
         {!settled && countdown && <div className="mt-3">{countdownPill}</div>}
 
         <button
-          onClick={handleWatchAd}
-          disabled={isLoading || !isRewardedAdReady || isUnlocked}
+          onClick={reveal}
+          disabled={isUnlocked}
           className="mt-6 w-full max-w-[300px] h-13 py-3.5 rounded-full bg-primary text-primary-foreground font-bold text-[15px] flex items-center justify-center gap-2 shadow-[0_8px_24px_-6px_hsl(var(--primary)/.6)] active:scale-[0.98] transition-transform disabled:opacity-60"
         >
-          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
-          {!isRewardedAdReady ? "Preparing ad…" : "Watch an ad to flip it"}
+          <Sparkles className="w-4 h-4" />
+          Flip it
         </button>
-        {(error || adFailed) && (
-          <p className="text-red text-[13px] mt-2">{error ?? "The ad didn't finish, so the card stays face down. Try again."}</p>
-        )}
-        <p className="text-[13px] text-white/55 mt-3">About 30 seconds. Members' cards are always face up.</p>
+        <p className="text-[13px] text-white/55 mt-3">Free for everyone, every day.</p>
       </div>
     </div>
   );
