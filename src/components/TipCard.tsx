@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState, memo } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Lock, RotateCw } from "lucide-react";
+import { Clock3, Crosshair, Lock, RotateCw } from "lucide-react";
 import HoloCard from "@/components/HoloCard";
 import SportGlyph from "@/components/SportGlyph";
 import StatusTag from "@/components/StatusTag";
@@ -34,20 +34,6 @@ export interface Tip {
  * A tip as a collector card. Free = cream stock in the sport's colour,
  * members' = gold foil frame. Tap to flip for the analysis.
  */
-/** Round odds medallion that overlaps the art, like a stat on a game card. */
-const OddsMedal = ({ value, gold, struck }: { value: string; gold: boolean; struck?: boolean }) => (
-  <span
-    className={`grid place-items-center w-[54px] h-[54px] rounded-full p-[3px] shadow-[0_6px_14px_rgba(0,0,0,.45)] ${gold ? "foil-gold" : "bg-stock"}`}
-  >
-    <span className="w-full h-full rounded-full bg-[hsl(232_42%_12%)] grid place-items-center text-center leading-none">
-      <span>
-        <span className={`block num font-black text-[15px] ${gold ? "foil-gold-text" : "text-white"} ${struck ? "line-through opacity-60" : ""}`}>{value}</span>
-        <span className="block text-[7.5px] font-bold uppercase tracking-[0.14em] text-white/55 mt-0.5">Odds</span>
-      </span>
-    </span>
-  </span>
-);
-
 interface TipCardProps {
   tip: Tip;
   userIsPremium?: boolean;
@@ -91,29 +77,52 @@ const TipCard = ({
   // Shrink long names so most fit on one line before truncating.
   const nameSize = (n: string) => (n.length > 15 ? "text-[10px]" : n.length > 11 ? "text-[11px]" : "text-[12.5px]");
 
-  const frame = tip.isPremium ? "foil-gold" : "";
-  const frameStyle = tip.isPremium ? undefined : { background: theme.frame };
+  const gold = !!tip.isPremium;
+  // Common frames: the sport colour as a brushed, bevelled metal; Gold: foil.
+  const frameStyle = gold
+    ? undefined
+    : {
+        backgroundColor: theme.frame,
+        backgroundImage: `linear-gradient(145deg, hsl(${theme.hue} 60% 62% / .9), transparent 38%, transparent 62%, hsl(${theme.hue} 60% 18% / .85)), repeating-linear-gradient(115deg, rgba(255,255,255,.07) 0 1px, transparent 1px 4px)`,
+      };
+  const frame = gold ? "foil-gold" : "";
+  const oddsText = locked ? "?.??" : tip.odds.toFixed(2);
 
   const front = (
     <div
-      className={`flip-face [grid-area:1/1] rounded-[16px] p-[5px] bevel ${frame}`}
+      className={`card-sheen flip-face [grid-area:1/1] rounded-[16px] p-[5px] bevel ${gold ? "foil-gold foil-weave" : ""} ${
+        tip.status === "won" ? "shadow-[0_0_0_1px_hsl(var(--gold)/.6),0_0_26px_-4px_hsl(var(--gold)/.75),0_12px_26px_-12px_rgba(0,0,0,.75)]" : ""
+      }`}
       style={frameStyle}
     >
       <div
-        className={`h-full rounded-[12px] text-stock-ink overflow-hidden flex flex-col shadow-[inset_0_0_0_1px_rgba(0,0,0,.06)] ${tip.isPremium ? "bg-[linear-gradient(170deg,hsl(44_70%_92%),hsl(40_45%_88%))]" : "paper bg-stock"} ${isLost ? "grayscale-[.85] opacity-80" : ""}`}
+        className={`relative h-full rounded-[12px] text-stock-ink overflow-hidden flex flex-col ${gold ? "bg-[linear-gradient(170deg,hsl(44_70%_93%),hsl(40_45%_87%))]" : "paper bg-stock"} ${isLost ? "grayscale-[.85] opacity-80" : ""}`}
       >
-        {/* Title bar */}
-        <div className="flex items-center gap-1.5 px-2.5 h-8">
+        {/* Thin printed keyline inside the frame */}
+        <span className={`pointer-events-none absolute inset-[3px] rounded-[9px] border ${gold ? "border-[#b98a2a]/45" : "border-stock-ink/12"}`} aria-hidden />
+
+        {/* Title bar: sport on the left, odds as the headline stat */}
+        <div className="relative flex items-center gap-1.5 pl-2.5 pr-2 h-9">
           <span
-            className="grid place-items-center w-5 h-5 rounded-full text-white shrink-0"
-            style={{ background: tip.isPremium ? "linear-gradient(135deg,#b98a2a,#f6dc8a)" : theme.frame }}
+            className="grid place-items-center w-5 h-5 rounded-full text-white shrink-0 shadow-[inset_0_-1px_0_rgba(0,0,0,.25)]"
+            style={{ background: gold ? "linear-gradient(135deg,#b98a2a,#f6dc8a)" : theme.frame }}
           >
             <SportGlyph sport={tip.sport} size={12} />
           </span>
-          <span className="text-[10.5px] font-bold uppercase tracking-[0.08em] truncate">{tip.sport}</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.08em] truncate min-w-0 flex-1">{tip.sport}</span>
+          <span className="shrink-0 flex flex-col items-end leading-none">
+            <span className="text-[7px] font-black uppercase tracking-[0.14em] opacity-50 mb-0.5">Odds</span>
+            <span
+              className={`num font-black text-[19px] leading-none ${gold ? "foil-gold-text" : ""} ${isLost ? "line-through decoration-2 opacity-60" : ""}`}
+              style={gold ? { WebkitTextStroke: "0.3px #6b4a0e" } : undefined}
+            >
+              {oddsText}
+            </span>
+          </span>
         </div>
 
-        <div className="relative mx-1.5">
+        {/* Art window */}
+        <div className="relative mx-[7px]">
           <CardArt
             sport={tip.sport}
             home={tip.homeTeam}
@@ -121,13 +130,15 @@ const TipCard = ({
             homeLogo={tip.homeTeamLogo}
             awayLogo={tip.awayTeamLogo}
             size={26}
-            holo={!!tip.isPremium && !locked}
-            className="h-[88px] rounded-[8px]"
+            holo={gold && !locked}
+            className="h-[94px] rounded-[7px] ring-[1.5px] ring-black/20 shadow-[inset_0_2px_6px_rgba(0,0,0,.35)]"
           />
-          <span className="absolute -bottom-6 right-1.5 z-10">
-            <OddsMedal value={locked ? "?.??" : tip.odds.toFixed(2)} gold={!!tip.isPremium} struck={isLost} />
+          {/* glass gloss + stamped set mark */}
+          <span className="pointer-events-none absolute inset-0 rounded-[7px] bg-[linear-gradient(160deg,rgba(255,255,255,.28),transparent_38%)]" aria-hidden />
+          <span className="pointer-events-none absolute left-1.5 top-1 font-display font-black text-[7px] tracking-[0.1em] text-white/70 drop-shadow" aria-hidden>
+            GSB
           </span>
-          {isSettled && <StatusTag status={tip.status} className="absolute -top-2 -left-1 z-10" />}
+          {isSettled && <StatusTag status={tip.status} className="absolute -top-2 -right-1 z-10 scale-[.85] origin-top-right" />}
           {owned && !isSettled && (
             <span className="absolute top-1.5 left-1.5 z-10 h-5 px-2 rounded-full foil-gold text-stock-ink text-[9.5px] font-black uppercase tracking-[0.12em] grid place-items-center shadow">
               Owned
@@ -135,23 +146,31 @@ const TipCard = ({
           )}
         </div>
 
-        {/* Name plate */}
-        <div className="px-2.5 pt-2">
-          <p className={`font-display font-extrabold uppercase leading-[1.2] tracking-[-0.01em] truncate pr-[58px] ${nameSize(tip.homeTeam)}`} title={tip.homeTeam}>
-            {tip.homeTeam}
-          </p>
-          <p className={`font-display font-extrabold uppercase leading-[1.2] tracking-[-0.01em] truncate opacity-55 ${nameSize(tip.awayTeam)}`} title={tip.awayTeam}>
-            {tip.awayTeam}
-          </p>
+        {/* Name banner, notched like a ribbon, overlapping the art */}
+        <div className="relative -mt-2.5 mx-1 z-[1]">
+          <div
+            className={`px-3 py-1.5 text-center shadow-[0_3px_6px_rgba(0,0,0,.25)] ${gold ? "bg-[linear-gradient(180deg,#2a2f55,#161a33)]" : "bg-[linear-gradient(180deg,hsl(232_32%_20%),hsl(232_38%_12%))]"}`}
+            style={{ clipPath: "polygon(0 0, 100% 0, calc(100% - 6px) 50%, 100% 100%, 0 100%, 6px 50%)" }}
+          >
+            <p className={`font-display font-extrabold uppercase leading-[1.15] tracking-[-0.01em] truncate text-white ${nameSize(tip.homeTeam)}`} title={tip.homeTeam}>
+              {tip.homeTeam}
+            </p>
+            <p className={`font-display font-extrabold uppercase leading-[1.15] tracking-[-0.01em] truncate ${gold ? "text-[#e7c35e]" : "text-white/60"} ${nameSize(tip.awayTeam)}`} title={tip.awayTeam}>
+              {tip.awayTeam}
+            </p>
+          </div>
         </div>
-        <p className="px-2.5 text-[11px] font-medium opacity-60 truncate mt-1">{tip.league}</p>
+        <p className="px-2.5 text-[10.5px] font-medium opacity-60 truncate mt-1.5 text-center">{tip.league}</p>
 
-        {/* Pick */}
+        {/* Pick, set like an ability box */}
         <div
-          className="mx-2 mt-2 rounded-[8px] px-2 py-1.5 flex-1"
-          style={{ background: tip.isPremium ? "hsl(40 60% 50% / .14)" : `hsl(${theme.hue} 50% 40% / .10)` }}
+          className="relative mx-2 mt-1.5 rounded-[8px] pl-3 pr-2 py-1.5 flex-1 overflow-hidden"
+          style={{ background: gold ? "hsl(40 60% 50% / .14)" : `hsl(${theme.hue} 50% 40% / .10)` }}
         >
-          <p className="text-[9.5px] font-bold uppercase tracking-[0.12em] opacity-55">Pick</p>
+          <span className="absolute left-0 inset-y-0 w-[3px]" style={{ background: gold ? "linear-gradient(#b98a2a,#f6dc8a)" : theme.frame }} aria-hidden />
+          <p className="flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.14em] opacity-55">
+            <Crosshair className="w-2.5 h-2.5" /> Pick
+          </p>
           {locked ? (
             <span className="block mt-1 mb-0.5 redact w-[85%] h-[1.05em]" />
           ) : (
@@ -159,13 +178,18 @@ const TipCard = ({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="mt-1.5 flex items-center justify-between px-2.5 pb-2 text-[11px]">
-          <span className="font-semibold tabular-nums">
+        {/* Footer: kick-off, set symbol, card number */}
+        <div className="mt-1.5 flex items-center justify-between px-2.5 pb-2 text-[10.5px]">
+          <span className="flex items-center gap-1 font-semibold tabular-nums whitespace-nowrap min-w-0">
+            <Clock3 className="w-3 h-3 opacity-50" />
             {ko.time} <span className="font-medium opacity-55">{ko.day}</span>
           </span>
-          <span className="flex items-center gap-1 font-display font-bold text-[9.5px] opacity-50">
-            <span className={tip.isPremium ? "text-[#b98a2a] opacity-100" : ""}>{tip.isPremium ? "◆" : "●"}</span>
+          <span className="flex items-center gap-1 font-display font-bold text-[9px] opacity-55 whitespace-nowrap">
+            <span
+              className="w-2 h-2 rotate-45 rounded-[1px]"
+              style={{ background: gold ? "linear-gradient(135deg,#b98a2a,#fff1b8)" : "currentColor", opacity: gold ? 1 : 0.6 }}
+              aria-label={gold ? "Gold" : "Common"}
+            />
             {no}{of && `/${of}`}
           </span>
         </div>

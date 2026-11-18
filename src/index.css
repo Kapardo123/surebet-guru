@@ -352,3 +352,23 @@
   opacity: .8;
 }
 @media (prefers-reduced-motion: reduce) { .snow { animation: none; } }
+
+/* Light that follows the finger across a card (driven by HoloCard's --mx/--my). */
+.card-sheen { position: relative; }
+.card-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at calc(var(--mx, .3) * 100%) calc(var(--my, .2) * 100%), rgba(255,255,255,.22), transparent 45%);
+  mix-blend-mode: soft-light;
+  z-index: 2;
+}
+/* Fine engraved weave on gold foil frames. */
+.foil-weave {
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.12) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(-45deg, rgba(90,60,10,.12) 0 1px, transparent 1px 5px),
+    linear-gradient(135deg, #8a6416 0%, #f6dc8a 22%, #b98a2a 40%, #fff1b8 55%, #a8781f 72%, #f2cf6a 100%);
+}
