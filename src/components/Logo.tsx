@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import AdminLoginDialog from "@/components/AdminLoginDialog";
+import mark from "@/assets/brand/mark.svg";
 
 const Logo = ({ size = "sm" }: { size?: "sm" | "lg" }) => {
   const [tapCount, setTapCount] = useState(0);
@@ -25,14 +26,17 @@ const Logo = ({ size = "sm" }: { size?: "sm" | "lg" }) => {
         className="select-none cursor-pointer flex items-center gap-2.5"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTap(); }}
       >
-        <span className={`relative shrink-0 ${size === "lg" ? "w-16 h-16" : "w-8 h-8"}`} aria-hidden>
-          <span className="absolute inset-y-0 left-0 w-[64%] rounded-[22%] bg-stock -rotate-[14deg] origin-bottom shadow" />
-          <span className="absolute inset-y-0 right-0 w-[64%] rounded-[22%] foil-gold rotate-[10deg] origin-bottom shadow-[0_2px_6px_rgba(0,0,0,.4)] grid place-items-center">
-            <span className={`font-display font-black text-stock-ink ${size === "lg" ? "text-[20px]" : "text-[10px]"}`}>G</span>
-          </span>
-        </span>
-        <span className={`font-display font-black uppercase leading-[0.95] tracking-[-0.02em] text-foreground ${size === "lg" ? "text-[30px]" : "text-[14px]"}`}>
-          Great Sport<br />Bets
+        <img
+          src={mark}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className={`shrink-0 drop-shadow-[0_4px_10px_rgba(0,0,0,.45)] ${size === "lg" ? "w-20 h-20" : "w-10 h-10"}`}
+        />
+        <span className={`font-display font-black uppercase leading-[0.92] tracking-[-0.02em] text-foreground ${size === "lg" ? "text-[30px]" : "text-[14px]"}`}>
+          Great Sport
+          <br />
+          <span className="foil-gold-text">Bets</span>
         </span>
       </div>
 

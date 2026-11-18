@@ -93,7 +93,7 @@ export default defineConfig(({ mode }) => ({
     sportytraderOddsDev(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "logo.png", "splash.png"],
+      includeAssets: ["favicon.ico", "logo.png", "splash.png", "icon-192.png", "icon-512-maskable.png", "apple-touch-icon.png"],
       workbox: {
         navigateFallback: "/index.html",
         navigateFallbackAllowlist: [/^\/(?!api|app-ads\.txt|google.*\.html|\.well-known).*/],
@@ -118,22 +118,9 @@ export default defineConfig(({ mode }) => ({
         background_color: "#0e1120",
         display: "standalone",
         icons: [
-          {
-            src: "logo.png",
-            sizes: "192x192",
-            type: "image/png",
-          },
-          {
-            src: "logo.png",
-            sizes: "512x512",
-            type: "image/png",
-          },
-          {
-            src: "logo.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable",
-          },
+          { src: "icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "logo.png", sizes: "512x512", type: "image/png" },
+          { src: "icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
     }),
