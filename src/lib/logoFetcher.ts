@@ -1,134 +1,35 @@
-import { Capacitor } from "@capacitor/core";
 import { FOOTBALL_LOGOS, NBA_FULL, NBA_SHORT } from "@/lib/logoMaps";
+import {
+  LogoCandidate,
+  SportKind,
+  SPORT_WORDS,
+  bareKey,
+  fetchJson,
+  isValidLogoUrl,
+  nameScore,
+  sportAgrees,
+  sportKind,
+  teamKey,
+} from "@/lib/logoNames";
+import { findInDirectories } from "@/lib/logoDirectories";
+
+export { bareKey, isValidLogoUrl, nameScore, sportKind, teamKey };
+export type { LogoCandidate, SportKind };
 
 /*
  * Team logo lookup.
  *
  * 1. A logo the admin uploaded for this team.
  * 2. The curated maps (football clubs, all NBA teams): instant, no network.
- * 3. Online, sport-aware and in two stages so a team costs few requests:
- *    a) TheSportsDB + SofaScore, which say which sport a team plays;
- *    b) only if (a) found nothing convincing: Wikidata's logo property and
- *       the team's Wikipedia page.
+ * 3. Online, sport-aware and in stages so a team costs few requests:
+ *    a) league directories (ESPN, TheSportsDB): a whole league's teams and
+ *       official logos in one cached request, the tip's league first;
+ *    b) team search on TheSportsDB, SofaScore and FotMob (football);
+ *    c) only if nothing convincing yet: Wikidata's logo property and the
+ *       team's Wikipedia page.
  * Every candidate is scored by name similarity and dropped when its sport
  * doesn't match the tip's.
  */
-
-// ---------------------------------------------------------------------------
-// Names and sports
-// ---------------------------------------------------------------------------
-
-/** Lower case, no accents, "&" as "and", punctuation as spaces, single spaces. */
-export const teamKey = (name: string): string =>
-  (name || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/ł/g, "l")
-    .replace(/ø/g, "o")
-    .replace(/ß/g, "ss")
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-
-// Legal-form and sport words that say nothing about which club it is.
-const AFFIXES = new Set([
-  "fc", "cf", "afc", "sc", "ac", "as", "ss", "ssc", "us", "bc", "kk", "bk", "sk", "fk", "nk", "cd", "ud", "rc", "rcd",
-  "sl", "bsc", "tsg", "vfb", "vfl", "sv", "if", "ff", "ks", "mks", "club", "calcio", "futbol", "football", "soccer",
-  "basket", "basketball", "baloncesto", "basquet", "pallacanestro", "team", "the",
-]);
-
-/** teamKey without legal forms and sport words: "FC Barcelona" -> "barcelona". */
-export const bareKey = (name: string): string => {
-  const words = teamKey(name).split(" ").filter((w) => w && !AFFIXES.has(w));
-  return words.length ? words.join(" ") : teamKey(name);
-};
-
-export type SportKind = "football" | "basketball" | "hockey" | "other";
-
-export const sportKind = (sport?: string | null): SportKind => {
-  const s = (sport || "").toLowerCase();
-  if (!s) return "other";
-  if (s.includes("basket") || s.includes("nba") || s.includes("koszyk")) return "basketball";
-  if (s.includes("hockey") || s.includes("hokej")) return "hockey";
-  if (s.includes("football") || s.includes("soccer") || s.includes("piłka") || s.includes("pilka")) return "football";
-  return "other";
-};
-
-// What each source calls the sport.
-const SPORT_WORDS: Record<Exclude<SportKind, "other">, RegExp> = {
-  football: /\b(soccer|association football|football club|footballclub|football)\b/i,
-  basketball: /\bbasketball\b/i,
-  hockey: /\b(ice hockey|hockey)\b/i,
-};
-
-/** Does a source's sport label agree with the tip's? Unknown on either side = yes. */
-const sportAgrees = (kind: SportKind, label?: string | null): boolean => {
-  if (kind === "other" || !label) return true;
-  const l = label.toLowerCase();
-  if (kind === "football") return /soccer|football/.test(l) && !/american|australian|basketball/.test(l);
-  if (kind === "basketball") return /basket/.test(l);
-  return /hockey/.test(l);
-};
-
-/**
- * Name similarity, 0..100. Exact (ignoring "FC" and the like) is 100; otherwise
- * it weighs how much of the searched name the candidate covers, then how
- * little else it adds: "Celtics" vs "Boston Celtics" ≈ 85, "Celtic" vs
- * "Boston Celtics" ≈ 0.
- */
-export const nameScore = (candidate: string, query: string): number => {
-  const c = bareKey(candidate);
-  const q = bareKey(query);
-  if (!c || !q) return 0;
-  if (c === q) return 100;
-  if (c.replace(/ /g, "") === q.replace(/ /g, "")) return 98;
-  const ct = c.split(" ");
-  const qt = q.split(" ");
-  // Whole words only: "celtic" is not "celtics".
-  const hit = qt.filter((t) => ct.includes(t)).length;
-  if (!hit) return 0;
-  const coverage = hit / qt.length;
-  const precision = ct.filter((u) => qt.includes(u)).length / ct.length;
-  return Math.round(100 * (0.7 * coverage + 0.3 * precision));
-};
-
-// ---------------------------------------------------------------------------
-// Types and helpers
-// ---------------------------------------------------------------------------
-
-export interface LogoCandidate {
-  url: string;
-  source: string;
-  teamName: string;
-  score?: number;
-}
-
-// Broken/hotlink-protected junk must not enter the cache chain.
-export const isValidLogoUrl = (u?: string | null): u is string => !!u && /^https?:\/\//i.test(u.trim());
-
-// Hard cap per request so one slow or hung source never stalls rendering.
-// With CapacitorHttp (native) the fetch goes through the Android bridge and
-// aborting it can crash the app, so no AbortController there.
-const IS_NATIVE = Capacitor.isNativePlatform();
-const fetchJson = async (url: string, ms = 7000): Promise<any | null> => {
-  try {
-    if (IS_NATIVE) {
-      const r = await fetch(url);
-      return r.ok ? await r.json() : null;
-    }
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), ms);
-    try {
-      const r = await fetch(url, { signal: ctrl.signal });
-      return r.ok ? await r.json() : null;
-    } finally {
-      clearTimeout(timer);
-    }
-  } catch {
-    return null;
-  }
-};
 
 // ---------------------------------------------------------------------------
 // 1. Logos uploaded by the admin
@@ -236,6 +137,36 @@ export const parseSofa = (data: any, teamName: string, kind: SportKind): LogoCan
   return out;
 };
 
+/**
+ * FotMob search (football only) -> candidates (exported for tests). The
+ * response nests teams in groups; walk it and keep anything typed "team".
+ */
+export const parseFotmob = (data: any, teamName: string): LogoCandidate[] => {
+  const out: LogoCandidate[] = [];
+  const seen = new Set<string>();
+  const walk = (v: any, depth = 0) => {
+    if (!v || depth > 6) return;
+    if (Array.isArray(v)) return v.forEach((x) => walk(x, depth + 1));
+    if (typeof v !== "object") return;
+    const id = v.id ?? v.teamId;
+    const name = v.name ?? v.teamName ?? v.title;
+    if ((v.type === "team" || v.teamId) && id && typeof name === "string" && !seen.has(String(id))) {
+      seen.add(String(id));
+      const score = nameScore(name, teamName);
+      if (score >= 60)
+        out.push({ url: `https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png`, source: "FotMob", teamName: name, score });
+    }
+    Object.values(v).forEach((x) => walk(x, depth + 1));
+  };
+  walk(data);
+  return out;
+};
+
+const fromFotmob = async (teamName: string, kind: SportKind) =>
+  kind === "football" || kind === "other"
+    ? parseFotmob(await fetchJson(`https://www.fotmob.com/api/search/suggest?term=${encodeURIComponent(teamName.trim())}&lang=en`), teamName)
+    : [];
+
 const fromSportsDB = async (teamName: string, kind: SportKind) =>
   parseSportsDB(
     await fetchJson(`https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(teamName.trim())}`),
@@ -331,14 +262,20 @@ const rank = (list: LogoCandidate[]): LogoCandidate[] => {
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 };
 
-const searchOnline = (teamName: string, sport?: string | null): Promise<LogoCandidate[]> => {
+const searchOnline = (teamName: string, sport?: string | null, league?: string | null): Promise<LogoCandidate[]> => {
   const kind = sportKind(sport);
   const key = `${kind}:${bareKey(teamName)}`;
   let p = inflight.get(key);
   if (!p) {
     p = slot(async () => {
-      const [db, sofa] = await Promise.all([fromSportsDB(teamName, kind), fromSofa(teamName, kind)]);
-      let all = rank([...db, ...sofa]);
+      // League directories first: one cached request covers a whole league.
+      const dir = await findInDirectories(teamName, kind, league).catch(() => null);
+      const [db, sofa, fotmob] = await Promise.all([
+        fromSportsDB(teamName, kind),
+        fromSofa(teamName, kind),
+        fromFotmob(teamName, kind),
+      ]);
+      let all = rank([...(dir ? [dir] : []), ...db, ...sofa, ...fotmob]);
       if ((all[0]?.score ?? 0) < 85) {
         const [wd, wp] = await Promise.all([fromWikidata(teamName, kind), fromWikipedia(teamName, kind)]);
         all = rank([...all, ...wd, ...wp]);
@@ -358,7 +295,7 @@ const searchOnline = (teamName: string, sport?: string | null): Promise<LogoCand
 export const resolveTeamLogos = async (
   teamName: string,
   sport?: string | null,
-  opts: { online?: boolean; exclude?: string[] } = {},
+  opts: { online?: boolean; exclude?: string[]; league?: string | null } = {},
 ): Promise<string[]> => {
   if (!teamName || teamName.trim().length < 2) return [];
   const exclude = new Set(opts.exclude ?? []);
@@ -366,15 +303,19 @@ export const resolveTeamLogos = async (
     (c): c is LogoCandidate => !!c && !exclude.has(c.url),
   );
   if (first.length && !opts.online) return first.map((c) => c.url);
-  const online = (await searchOnline(teamName, sport)).filter((c) => (c.score ?? 0) >= 70 && !exclude.has(c.url));
+  const online = (await searchOnline(teamName, sport, opts.league)).filter((c) => (c.score ?? 0) >= 70 && !exclude.has(c.url));
   return rank([...first, ...online]).map((c) => c.url).slice(0, 5);
 };
 
 /** Everything found for a team, for the admin's logo picker. */
-export const fetchTeamLogoCandidates = async (teamName: string, sport?: string | null): Promise<LogoCandidate[]> => {
+export const fetchTeamLogoCandidates = async (
+  teamName: string,
+  sport?: string | null,
+  league?: string | null,
+): Promise<LogoCandidate[]> => {
   if (!teamName || teamName.trim().length < 2) return [];
   const first = [getCustomTeamLogo(teamName), getCuratedLogo(teamName, sport)].filter((c): c is LogoCandidate => !!c);
-  const online = await searchOnline(teamName, sport).catch(() => []);
+  const online = await searchOnline(teamName, sport, league).catch(() => []);
   const seen = new Set<string>();
   return [...first, ...online]
     .filter((c) => !seen.has(c.url) && (seen.add(c.url), true))
@@ -382,5 +323,5 @@ export const fetchTeamLogoCandidates = async (teamName: string, sport?: string |
 };
 
 /** The best single logo URL, or null. */
-export const fetchTeamLogoUrl = async (teamName: string, sport?: string | null): Promise<string | null> =>
-  (await resolveTeamLogos(teamName, sport))[0] ?? null;
+export const fetchTeamLogoUrl = async (teamName: string, sport?: string | null, league?: string | null): Promise<string | null> =>
+  (await resolveTeamLogos(teamName, sport, { league }))[0] ?? null;

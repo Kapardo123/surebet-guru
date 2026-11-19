@@ -362,6 +362,7 @@ export const ImportMatchCard = ({
         <div className="relative mx-[7px]">
           <CardArt
             sport={sport}
+            league={league}
             home={homeTeam}
             away={awayTeam || homeTeam}
             homeLogo={homeLogo}

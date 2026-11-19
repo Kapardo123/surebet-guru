@@ -139,6 +139,7 @@ const TipCard = ({
         <div className="relative mx-[7px]">
           <CardArt
             sport={tip.sport}
+            league={tip.league}
             home={tip.homeTeam}
             away={tip.awayTeam}
             homeLogo={tip.homeTeamLogo}

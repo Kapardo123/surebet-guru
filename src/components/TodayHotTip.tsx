@@ -129,7 +129,7 @@ const TodayHotTip = () => {
         </div>
 
         <div className="relative mx-2.5">
-          <CardArt sport={sport} home={data.homeTeam} away={data.awayTeam} homeLogo={data.homeTeamLogo} awayLogo={data.awayTeamLogo} size={46} holo sparkles className="h-[156px] rounded-[12px]" />
+          <CardArt sport={sport} league={data.league} home={data.homeTeam} away={data.awayTeam} homeLogo={data.homeTeamLogo} awayLogo={data.awayTeamLogo} size={46} holo sparkles className="h-[156px] rounded-[12px]" />
           <div className="absolute left-2.5 bottom-2.5 z-10">{countdownPill}</div>
           <span className="absolute -bottom-8 right-3 z-10 grid place-items-center w-[76px] h-[76px] rounded-full p-[4px] foil-gold shadow-[0_10px_24px_rgba(0,0,0,.55)]">
             <span className="w-full h-full rounded-full bg-[hsl(232_45%_10%)] grid place-items-center text-center leading-none">

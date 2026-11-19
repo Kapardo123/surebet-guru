@@ -7,6 +7,7 @@ import { teamColors } from "@/components/Crest";
 /** Illustrated window at the top of a card: surface diagram + both crests. */
 const CardArt = ({
   sport,
+  league,
   home,
   away,
   homeLogo,
@@ -18,6 +19,8 @@ const CardArt = ({
   children,
 }: {
   sport?: string | null;
+  /** Helps the logo lookup find the right club. */
+  league?: string | null;
   home: string;
   away: string;
   homeLogo?: string | null;
@@ -41,7 +44,7 @@ const CardArt = ({
       className="grid place-items-center rounded-full bg-[hsl(42_45%_96%)] shadow-[0_6px_14px_rgba(0,0,0,.35),inset_0_-2px_0_rgba(0,0,0,.08)]"
       style={{ width: size + 16, height: size + 16, boxShadow: `0 0 0 3px ${ring}, 0 0 0 4.5px rgba(255,255,255,.75), 0 6px 14px rgba(0,0,0,.4)` }}
     >
-      <TeamLogo teamName={name} logoUrl={logo} size={size} sport={sport ?? undefined} tone="light" />
+      <TeamLogo teamName={name} logoUrl={logo} size={size} sport={sport ?? undefined} league={league} tone="light" />
     </span>
   );
   return (

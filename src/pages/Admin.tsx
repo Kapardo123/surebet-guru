@@ -340,7 +340,7 @@ const AdminPanel = () => {
     if (!form.homeTeam || form.homeTeam.length < 3) return;
     setLoadingHomeLogos(true);
     try {
-      const candidates = await fetchTeamLogoCandidates(form.homeTeam, (form as { sport?: string | null }).sport);
+      const candidates = await fetchTeamLogoCandidates(form.homeTeam, (form as { sport?: string | null }).sport, (form as { league?: string | null }).league);
       setHomeLogoCandidates(candidates);
     } catch {
       setHomeLogoCandidates([]);
@@ -353,7 +353,7 @@ const AdminPanel = () => {
     if (!form.awayTeam || form.awayTeam.length < 3) return;
     setLoadingAwayLogos(true);
     try {
-      const candidates = await fetchTeamLogoCandidates(form.awayTeam, (form as { sport?: string | null }).sport);
+      const candidates = await fetchTeamLogoCandidates(form.awayTeam, (form as { sport?: string | null }).sport, (form as { league?: string | null }).league);
       setAwayLogoCandidates(candidates);
     } catch {
       setAwayLogoCandidates([]);
@@ -401,7 +401,7 @@ const AdminPanel = () => {
     if (!featured.homeTeam || featured.homeTeam.length < 3) return;
     setLoadingFeaturedHome(true);
     try {
-      const candidates = await fetchTeamLogoCandidates(featured.homeTeam, (featured as { sport?: string | null }).sport);
+      const candidates = await fetchTeamLogoCandidates(featured.homeTeam, (featured as { sport?: string | null }).sport, (featured as { league?: string | null }).league);
       setFeaturedHomeCandidates(candidates);
     } catch {
       setFeaturedHomeCandidates([]);
@@ -414,7 +414,7 @@ const AdminPanel = () => {
     if (!featured.awayTeam || featured.awayTeam.length < 3) return;
     setLoadingFeaturedAway(true);
     try {
-      const candidates = await fetchTeamLogoCandidates(featured.awayTeam, (featured as { sport?: string | null }).sport);
+      const candidates = await fetchTeamLogoCandidates(featured.awayTeam, (featured as { sport?: string | null }).sport, (featured as { league?: string | null }).league);
       setFeaturedAwayCandidates(candidates);
     } catch {
       setFeaturedAwayCandidates([]);
@@ -427,7 +427,7 @@ const AdminPanel = () => {
     if (!couponMatchForm.homeTeam || couponMatchForm.homeTeam.length < 3) return;
     setLoadingCouponHome(true);
     try {
-      const candidates = await fetchTeamLogoCandidates(couponMatchForm.homeTeam, (couponMatchForm as { sport?: string | null }).sport);
+      const candidates = await fetchTeamLogoCandidates(couponMatchForm.homeTeam, (couponMatchForm as { sport?: string | null }).sport, (couponMatchForm as { league?: string | null }).league);
       setCouponHomeCandidates(candidates);
     } catch {
       setCouponHomeCandidates([]);
@@ -440,7 +440,7 @@ const AdminPanel = () => {
     if (!couponMatchForm.awayTeam || couponMatchForm.awayTeam.length < 3) return;
     setLoadingCouponAway(true);
     try {
-      const candidates = await fetchTeamLogoCandidates(couponMatchForm.awayTeam, (couponMatchForm as { sport?: string | null }).sport);
+      const candidates = await fetchTeamLogoCandidates(couponMatchForm.awayTeam, (couponMatchForm as { sport?: string | null }).sport, (couponMatchForm as { league?: string | null }).league);
       setCouponAwayCandidates(candidates);
     } catch {
       setCouponAwayCandidates([]);

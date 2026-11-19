@@ -75,7 +75,7 @@ export const setCachedTeamLogo = (teamName: string, url: string, sport?: string 
   putEntry(key, { ...prev, urls: [url, ...(prev?.urls ?? []).filter((u) => u !== url)], timestamp: Date.now() });
 };
 
-export const useTeamLogo = (teamName: string, sport?: string | null) => {
+export const useTeamLogo = (teamName: string, sport?: string | null, league?: string | null) => {
   const key = keyOf(teamName || "", sport);
   const [urls, setUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -86,7 +86,7 @@ export const useTeamLogo = (teamName: string, sport?: string | null) => {
       setLoading(true);
       try {
         const prev = readCache()[key];
-        const found = await resolveTeamLogos(teamName, sport, { online, exclude: prev?.broken });
+        const found = await resolveTeamLogos(teamName, sport, { online, exclude: prev?.broken, league });
         putEntry(key, { urls: found, broken: prev?.broken, online: online || prev?.online, timestamp: Date.now() });
         setUrls(found);
       } catch {
@@ -95,7 +95,7 @@ export const useTeamLogo = (teamName: string, sport?: string | null) => {
         setLoading(false);
       }
     },
-    [key, teamName, sport],
+    [key, teamName, sport, league],
   );
 
   // Another instance resolved the same team: take its result.

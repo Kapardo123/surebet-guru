@@ -8,6 +8,7 @@ interface TeamLogoProps {
   size?: number;
   logoUrl?: string | null;
   sport?: string;
+  league?: string | null;
   /** Initials colour scheme when no crest is found: "light" = for a light chip. */
   tone?: "dark" | "light";
 }
@@ -52,11 +53,12 @@ const TeamLogo = ({
   size = 28,
   logoUrl: propLogoUrl,
   sport,
+  league,
   tone = "dark",
 }: TeamLogoProps) => {
   // The hook resolves by name and sport, so a broken stored URL falls back to
   // the next logo found instead of dropping straight to a generated crest.
-  const { urls: found, loading: hookLoading, reportBroken } = useTeamLogo(teamName, sport);
+  const { urls: found, loading: hookLoading, reportBroken } = useTeamLogo(teamName, sport, league);
   const [failedUrls, setFailedUrls] = useState<string[]>([]);
 
   useEffect(() => {

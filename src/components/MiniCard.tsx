@@ -70,6 +70,7 @@ const MiniCard = ({
         <div className="relative mx-[3px]">
           <CardArt
             sport={card.sport}
+            league={card.league}
             home={card.homeTeam}
             away={card.awayTeam}
             homeLogo={card.homeTeamLogo}
