@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { directoriesForLeague, findInDirectories, parseEspnTeams, parseTsdbTeams, pickTeam } from "@/lib/logoDirectories";
+import { directoriesForLeague, findInDirectories, parseEspnTeams, parseOpenLiga, parseTsdbTeams, pickTeam } from "@/lib/logoDirectories";
 import { parseFotmob } from "@/lib/logoFetcher";
 
 const espnTeams = {
@@ -51,6 +51,15 @@ describe("directory parsers", () => {
     expect(teams[0].names).toEqual(["Lech Poznań", "LPO", "KKS Lech", "Lech"]);
   });
 
+  it("OpenLigaDB: name and short name", () => {
+    const teams = parseOpenLiga([
+      { teamId: 40, teamName: "FC Bayern München", shortName: "Bayern", teamIconUrl: "https://upload.wikimedia.org/bayern.svg" },
+      { teamId: 1, teamName: "No icon", shortName: "x", teamIconUrl: null },
+    ]);
+    expect(teams).toEqual([{ names: ["FC Bayern München", "Bayern"], logo: "https://upload.wikimedia.org/bayern.svg" }]);
+    expect(pickTeam(teams, "Bayern Munich")?.team.logo).toContain("bayern.svg");
+  });
+
   it("finds a team by any of its names, ignoring FC and accents", () => {
     const teams = parseEspnTeams(espnTeams);
     expect(pickTeam(teams, "Man United")?.team.logo).toContain("/360.png");
@@ -67,8 +76,9 @@ describe("league names pick the right directory", () => {
   it("big football leagues go to ESPN", () => {
     expect(ids("Premier League")[0]).toBe("espn:eng.1");
     expect(ids("LaLiga")[0]).toBe("espn:esp.1");
-    expect(ids("Bundesliga")[0]).toBe("espn:ger.1");
-    expect(ids("2. Bundesliga")[0]).toBe("espn:ger.2");
+    expect(ids("Bundesliga")).toEqual(["openliga:bl1", "espn:ger.1"]);
+    expect(ids("2. Bundesliga")).toEqual(["openliga:bl2", "espn:ger.2"]);
+    expect(ids("3. Liga")).toEqual(["openliga:bl3"]);
     expect(ids("Serie A")[0]).toBe("espn:ita.1");
     expect(ids("UEFA Champions League")[0]).toBe("espn:uefa.champions");
     expect(ids("Championship")[0]).toBe("espn:eng.2");

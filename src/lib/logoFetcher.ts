@@ -13,6 +13,7 @@ import {
 } from "@/lib/logoNames";
 import { findInDirectories } from "@/lib/logoDirectories";
 import { getCountryFlag } from "@/lib/logoCountries";
+import { keepWorking, leagueCountry, rankCandidates } from "@/lib/logoRank";
 
 export { bareKey, isValidLogoUrl, nameScore, sportKind, teamKey };
 export type { LogoCandidate, SportKind };
@@ -118,8 +119,14 @@ export const parseSportsDB = (data: any, teamName: string, kind: SportKind): Log
     const alt = String(t.strTeamAlternate || "").split(",");
     const score = Math.max(nameScore(name, teamName), ...alt.map((a: string) => nameScore(a, teamName)));
     if (score < 60) continue;
-    for (const url of [t.strBadge, t.strTeamBadge, t.strLogo, t.strTeamLogo]) {
-      if (isValidLogoUrl(url)) out.push({ url, source: "TheSportsDB", teamName: name, score });
+    const meta = { country: t.strCountry ?? null, league: t.strLeague ?? null };
+    for (const [url, type] of [
+      [t.strBadge, "badge"],
+      [t.strTeamBadge, "badge"],
+      [t.strLogo, "wordmark"],
+      [t.strTeamLogo, "wordmark"],
+    ] as const) {
+      if (isValidLogoUrl(url)) out.push({ url, source: "TheSportsDB", teamName: name, score, meta: { ...meta, type } });
     }
   }
   return out;
@@ -134,8 +141,9 @@ export const parseSofa = (data: any, teamName: string, kind: SportKind): LogoCan
     if (!sportAgrees(kind, t.sport?.slug?.replace(/-/g, " ") || t.sport?.name)) continue;
     const score = Math.max(nameScore(t.name || "", teamName), nameScore(t.shortName || "", teamName));
     if (score < 60) continue;
-    out.push({ url: `https://img.sofascore.com/api/v1/team/${t.id}/image`, source: "SofaScore", teamName: t.name, score });
-    out.push({ url: `https://api.sofascore.com/api/v1/team/${t.id}/image`, source: "SofaScore", teamName: t.name, score: score - 1 });
+    const meta = { country: t.country?.name ?? null, type: "badge" as const };
+    out.push({ url: `https://img.sofascore.com/api/v1/team/${t.id}/image`, source: "SofaScore", teamName: t.name, score, meta });
+    out.push({ url: `https://api.sofascore.com/api/v1/team/${t.id}/image`, source: "SofaScore", teamName: t.name, score: score - 1, meta });
   }
   return out;
 };
@@ -157,7 +165,13 @@ export const parseFotmob = (data: any, teamName: string): LogoCandidate[] => {
       seen.add(String(id));
       const score = nameScore(name, teamName);
       if (score >= 60)
-        out.push({ url: `https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png`, source: "FotMob", teamName: name, score });
+        out.push({
+          url: `https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png`,
+          source: "FotMob",
+          teamName: name,
+          score,
+          meta: { country: v.countryName ?? v.country ?? null, type: "badge" },
+        });
     }
     Object.values(v).forEach((x) => walk(x, depth + 1));
   };
@@ -191,7 +205,7 @@ export const parseEspnSearch = (data: any, teamName: string, kind: SportKind): L
         const score = nameScore(name, teamName);
         if (score >= 60) {
           seen.add(img);
-          out.push({ url: img, source: "ESPN search", teamName: name, score });
+          out.push({ url: img, source: "ESPN search", teamName: name, score, meta: { league: v.league ?? v.defaultLeagueSlug ?? null, type: "badge" } });
         }
       }
     }
@@ -246,7 +260,7 @@ const fromWikidata = async (teamName: string, kind: SportKind): Promise<LogoCand
     if (score < 60) continue;
     for (const claim of ents?.entities?.[i.id]?.claims?.P154 || []) {
       const file = claim?.mainsnak?.datavalue?.value;
-      if (typeof file === "string") out.push({ url: commonsFile(file), source: "Wikidata", teamName: i.label, score: score - 2 });
+      if (typeof file === "string") out.push({ url: commonsFile(file), source: "Wikidata", teamName: i.label, score, meta: { type: "badge" } });
     }
   }
   return out;
@@ -278,7 +292,7 @@ const fromWikipedia = async (teamName: string, kind: SportKind): Promise<LogoCan
       // Club pages lead with the crest; a wide photo is a stadium, not a logo.
       const w = page?.thumbnail?.width || 1;
       const h = page?.thumbnail?.height || 1;
-      if (isValidLogoUrl(thumb) && w / h < 1.6) out.push({ url: thumb, source: `Wikipedia (${lang})`, teamName: title, score: score - 5 });
+      if (isValidLogoUrl(thumb) && w / h < 1.6) out.push({ url: thumb, source: `Wikipedia (${lang})`, teamName: title, score, meta: { type: "thumb" } });
     }
     if (out.length) break;
   }
@@ -305,16 +319,12 @@ const slot = async <T,>(fn: () => Promise<T>): Promise<T> => {
   }
 };
 
-const rank = (list: LogoCandidate[]): LogoCandidate[] => {
-  const seen = new Set<string>();
-  return list
-    .filter((c) => isValidLogoUrl(c.url) && !seen.has(c.url) && (seen.add(c.url), true))
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-};
 
 const searchOnline = (teamName: string, sport?: string | null, league?: string | null): Promise<LogoCandidate[]> => {
   const kind = sportKind(sport);
-  const key = `${kind}:${bareKey(teamName)}`;
+  const ctx = { teamName, kind, league };
+  // The tip's country changes the ranking (Arsenal vs Arsenal Tula), so it's part of the key.
+  const key = `${kind}:${bareKey(teamName)}:${leagueCountry(league) ?? ""}`;
   let p = inflight.get(key);
   if (!p) {
     p = slot(async () => {
@@ -326,10 +336,10 @@ const searchOnline = (teamName: string, sport?: string | null, league?: string |
         fromFotmob(teamName, kind),
         fromEspnSearch(teamName, kind),
       ]);
-      let all = rank([...(dir ? [dir] : []), ...db, ...sofa, ...fotmob, ...espnSearch]);
-      if ((all[0]?.score ?? 0) < 85) {
+      let all = rankCandidates([...(dir ? [dir] : []), ...db, ...sofa, ...fotmob, ...espnSearch], ctx);
+      if ((all[0]?.score ?? 0) < 90) {
         const [wd, wp] = await Promise.all([fromWikidata(teamName, kind), fromWikipedia(teamName, kind)]);
-        all = rank([...all, ...wd, ...wp]);
+        all = rankCandidates([...all, ...wd, ...wp], ctx);
       }
       return all;
     }).finally(() => inflight.delete(key));
@@ -354,8 +364,12 @@ export const resolveTeamLogos = async (
     (c): c is LogoCandidate => !!c && !exclude.has(c.url),
   );
   if (first.length && !opts.online) return first.map((c) => c.url);
-  const online = (await searchOnline(teamName, sport, opts.league)).filter((c) => (c.score ?? 0) >= 70 && !exclude.has(c.url));
-  return rank([...first, ...online]).map((c) => c.url).slice(0, 5);
+  const online = (await searchOnline(teamName, sport, opts.league)).filter((c) => !exclude.has(c.url));
+  const ranked = rankCandidates([...first, ...online], { teamName, kind: sportKind(sport), league: opts.league }).filter(
+    (c) => (c.score ?? 0) >= 70,
+  );
+  // Only images that load and look like a logo make it to the card.
+  return (await keepWorking(ranked)).map((c) => c.url);
 };
 
 /** Everything found for a team, for the admin's logo picker. */
@@ -369,10 +383,7 @@ export const fetchTeamLogoCandidates = async (
     (c): c is LogoCandidate => !!c,
   );
   const online = await searchOnline(teamName, sport, league).catch(() => []);
-  const seen = new Set<string>();
-  return [...first, ...online]
-    .filter((c) => !seen.has(c.url) && (seen.add(c.url), true))
-    .slice(0, 15);
+  return rankCandidates([...first, ...online], { teamName, kind: sportKind(sport), league }).slice(0, 15);
 };
 
 /** The best single logo URL, or null. */

@@ -125,6 +125,8 @@ const TeamLogo = ({
       className="object-contain flex-shrink-0"
       style={{ width: size, height: size }}
       loading="lazy"
+      // Same as the lookup's image check: some logo hosts refuse other sites' referrers.
+      referrerPolicy="no-referrer"
       onError={() => {
         setFailedUrls((prev) => [...prev, url]);
         reportBroken(url);

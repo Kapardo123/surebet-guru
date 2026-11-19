@@ -61,6 +61,18 @@ export const parseTsdbTeams = (data: any): DirTeam[] => {
   return out;
 };
 
+/** OpenLigaDB: /getavailableteams/{league}/{season} */
+export const parseOpenLiga = (data: any): DirTeam[] => {
+  const out: DirTeam[] = [];
+  for (const t of Array.isArray(data) ? data : []) {
+    const logo = t?.teamIconUrl;
+    if (!isValidLogoUrl(logo)) continue;
+    const names = [t.teamName, t.shortName].filter((n): n is string => typeof n === "string" && n.trim().length > 1);
+    if (names.length) out.push({ names: [...new Set(names)], logo });
+  }
+  return out;
+};
+
 // ---------------------------------------------------------------------------
 // The directories
 // ---------------------------------------------------------------------------
@@ -88,6 +100,16 @@ const tsdb = (sport: SportKind, league: string, women = false): Directory => ({
   women,
   url: `https://www.thesportsdb.com/api/v1/json/3/search_all_teams.php?l=${encodeURIComponent(league)}`,
   parse: parseTsdbTeams,
+});
+
+// German leagues from OpenLigaDB (free, no key). Seasons start in July.
+const now = new Date();
+const SEASON = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+const openliga = (slug: string): Directory => ({
+  id: `openliga:${slug}`,
+  sport: "football",
+  url: `https://api.openligadb.de/getavailableteams/${slug}/${SEASON}`,
+  parse: parseOpenLiga,
 });
 
 /** League name patterns -> directory. First match wins, so specific ones go first. */
@@ -132,6 +154,8 @@ const LEAGUES: [RegExp, Directory][] = [
   // --- Football: second tiers before first tiers with the same words
   [/championship|efl/, espn("football", "eng.2")],
   [/league one/, espn("football", "eng.3")],
+  [/3 liga|dritte liga/, openliga("bl3")],
+  [/2 bundesliga|bundesliga 2|zweite bundesliga/, openliga("bl2")],
   [/2 bundesliga|bundesliga 2|zweite bundesliga/, espn("football", "ger.2")],
   [/serie b/, espn("football", "ita.2")],
   [/ligue 2/, espn("football", "fra.2")],
@@ -160,6 +184,7 @@ const LEAGUES: [RegExp, Directory][] = [
   // --- Football: the big leagues by name
   [/premier league|epl|england|anglia/, espn("football", "eng.1")],
   [/la ?liga|primera division|hiszpania|spain/, espn("football", "esp.1")],
+  [/bundesliga|germany|niemcy/, openliga("bl1")],
   [/bundesliga|germany|niemcy/, espn("football", "ger.1")],
   [/serie a|italy|wlochy/, espn("football", "ita.1")],
   [/ligue 1|france|francja/, espn("football", "fra.1")],
@@ -312,14 +337,24 @@ export const findInDirectories = async (
   league?: string | null,
 ): Promise<LogoCandidate | null> => {
   const women = isWomen(teamName, league);
-  const dirs = [...directoriesForLeague(league, kind, women), ...defaultDirectories(kind, women)];
+  const leagueDirs = directoriesForLeague(league, kind, women);
+  const dirs = [...leagueDirs, ...defaultDirectories(kind, women)];
   const seen = new Set<string>();
   for (const d of dirs) {
     if (seen.has(d.id)) continue;
     seen.add(d.id);
     const found = pickTeam(await loadDirectory(d), teamName);
     if (found) {
-      return { url: found.team.logo, source: d.id.startsWith("espn") ? "ESPN" : "TheSportsDB", teamName: found.team.names[0], score: found.score };
+      const source = d.id.startsWith("espn") ? "ESPN" : d.id.startsWith("openliga") ? "OpenLigaDB" : "TheSportsDB";
+      // Found in the tip's own league: that's the strongest sign it's the right team.
+      const fromLeague = leagueDirs.includes(d);
+      return {
+        url: found.team.logo,
+        source,
+        teamName: found.team.names[0],
+        score: found.score,
+        meta: { league: fromLeague ? league ?? null : null, type: "badge" },
+      };
     }
   }
   return null;

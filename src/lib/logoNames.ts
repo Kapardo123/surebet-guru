@@ -25,6 +25,8 @@ const AFFIXES = new Set([
   "sl", "bsc", "tsg", "vfb", "vfl", "sv", "if", "ff", "ks", "mks", "club", "calcio", "futbol", "football", "soccer",
   "basket", "basketball", "baloncesto", "basquet", "pallacanestro", "team", "the", "volley", "volleyball", "handball",
   "hc", "hk", "ehc",
+  // Club-form prefixes: Polish (KKS Lech), German (TSV, FSV), Balkan and Romanian (OFK, CS).
+  "kks", "gks", "lks", "wks", "rks", "zks", "tks", "tsv", "fsv", "ofk", "cs", "csm",
   // Women's sides carry the club's crest: "Arsenal Women" looks like Arsenal.
   "women", "womens", "ladies", "feminino", "femenino", "femenina", "feminine", "feminin", "frauen", "damen", "kobiet", "kobiety", "kobieca", "reprezentacja",
   "wfc", "lfc",
@@ -144,7 +146,15 @@ export interface LogoCandidate {
   url: string;
   source: string;
   teamName: string;
+  /** Name similarity to the searched team, 0..100 (300 = uploaded by the admin). */
   score?: number;
+  /** What the source says about the team, used to pick between candidates. */
+  meta?: {
+    country?: string | null;
+    league?: string | null;
+    /** badge = crest (best); wordmark = text logo; thumb = page picture. */
+    type?: "badge" | "wordmark" | "thumb";
+  };
 }
 
 // Broken/hotlink-protected junk must not enter the cache chain.
