@@ -11,6 +11,7 @@ import { addTip, loadTips, deleteTip, updateTip, loadDraftTips, publishAllDrafts
 import { addCoupon, loadCoupons, deleteCoupon, updateCoupon, calculateTotalOdds, CouponMatch, Coupon } from "@/lib/couponStorage";
 import { loadFeaturedPick, saveFeaturedPick, FeaturedPick } from "@/lib/featuredPickStorage";
 import { fetchTeamLogoCandidates, LogoCandidate, saveCustomTeamLogo } from "@/lib/logoFetcher";
+import { clearTeamLogoCache } from "@/hooks/useTeamLogo";
 import { Tip } from "@/components/TipCard";
 import { Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, Users, Bell, Search, RefreshCw, PlusCircle, Loader2, Sparkles, ClipboardPaste, List, Send, Clock, EyeOff, Upload, Download, BarChart3 } from "lucide-react";
 import { TIPSTERS } from "@/lib/tipsters";
@@ -339,7 +340,7 @@ const AdminPanel = () => {
     if (!form.homeTeam || form.homeTeam.length < 3) return;
     setLoadingHomeLogos(true);
     try {
-      const candidates = await fetchTeamLogoCandidates(form.homeTeam);
+      const candidates = await fetchTeamLogoCandidates(form.homeTeam, (form as { sport?: string | null }).sport);
       setHomeLogoCandidates(candidates);
     } catch {
       setHomeLogoCandidates([]);
@@ -352,7 +353,7 @@ const AdminPanel = () => {
     if (!form.awayTeam || form.awayTeam.length < 3) return;
     setLoadingAwayLogos(true);
     try {
-      const candidates = await fetchTeamLogoCandidates(form.awayTeam);
+      const candidates = await fetchTeamLogoCandidates(form.awayTeam, (form as { sport?: string | null }).sport);
       setAwayLogoCandidates(candidates);
     } catch {
       setAwayLogoCandidates([]);
@@ -400,7 +401,7 @@ const AdminPanel = () => {
     if (!featured.homeTeam || featured.homeTeam.length < 3) return;
     setLoadingFeaturedHome(true);
     try {
-      const candidates = await fetchTeamLogoCandidates(featured.homeTeam);
+      const candidates = await fetchTeamLogoCandidates(featured.homeTeam, (featured as { sport?: string | null }).sport);
       setFeaturedHomeCandidates(candidates);
     } catch {
       setFeaturedHomeCandidates([]);
@@ -413,7 +414,7 @@ const AdminPanel = () => {
     if (!featured.awayTeam || featured.awayTeam.length < 3) return;
     setLoadingFeaturedAway(true);
     try {
-      const candidates = await fetchTeamLogoCandidates(featured.awayTeam);
+      const candidates = await fetchTeamLogoCandidates(featured.awayTeam, (featured as { sport?: string | null }).sport);
       setFeaturedAwayCandidates(candidates);
     } catch {
       setFeaturedAwayCandidates([]);
@@ -426,7 +427,7 @@ const AdminPanel = () => {
     if (!couponMatchForm.homeTeam || couponMatchForm.homeTeam.length < 3) return;
     setLoadingCouponHome(true);
     try {
-      const candidates = await fetchTeamLogoCandidates(couponMatchForm.homeTeam);
+      const candidates = await fetchTeamLogoCandidates(couponMatchForm.homeTeam, (couponMatchForm as { sport?: string | null }).sport);
       setCouponHomeCandidates(candidates);
     } catch {
       setCouponHomeCandidates([]);
@@ -439,7 +440,7 @@ const AdminPanel = () => {
     if (!couponMatchForm.awayTeam || couponMatchForm.awayTeam.length < 3) return;
     setLoadingCouponAway(true);
     try {
-      const candidates = await fetchTeamLogoCandidates(couponMatchForm.awayTeam);
+      const candidates = await fetchTeamLogoCandidates(couponMatchForm.awayTeam, (couponMatchForm as { sport?: string | null }).sport);
       setCouponAwayCandidates(candidates);
     } catch {
       setCouponAwayCandidates([]);
@@ -714,21 +715,12 @@ const AdminPanel = () => {
   };
 
   const handleClearLogoCache = async () => {
-    if (!window.confirm("Are you sure you want to clear ALL cached team logos? They will be re-fetched on next load.")) return;
-    
-    try {
-      const { error } = await supabase
-        .from('team_logos_cache')
-        .delete()
-        .neq('team_name', 'FORCE_DELETE_ALL_WORKAROUND'); // Delete all rows
-
-      if (error) throw error;
-      
-      toast({ title: "Logo cache cleared! 🧹", description: "Logos will be re-fetched when needed." });
-      refreshData();
-    } catch (err: any) {
-      toast({ title: "Error clearing cache", description: err.message, variant: "destructive" });
-    }
+    if (!window.confirm("Clear all found team logos? They'll be looked up again as cards show up.")) return;
+    // The logos live in this browser's cache; the old shared table is cleared too, best effort.
+    clearTeamLogoCache();
+    await (supabase as any).from("team_logos_cache").delete().neq("team_name", "FORCE_DELETE_ALL_WORKAROUND").then(() => {}, () => {});
+    toast({ title: "Logo cache cleared 🧹", description: "Logos are looked up again when needed." });
+    refreshData();
   };
 
   const [aiText, setAiText] = useState("");
@@ -1102,7 +1094,7 @@ const AdminPanel = () => {
                     <div className="relative">
                       <Input className="h-10 bg-muted/20 pr-28" value={form.homeTeam} onChange={(e) => setForm({ ...form, homeTeam: e.target.value })} />
                       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                        {form.homeTeamLogo && <TeamLogo teamName={form.homeTeam} logoUrl={form.homeTeamLogo} size={20} />}
+                        {form.homeTeamLogo && <TeamLogo teamName={form.homeTeam} logoUrl={form.homeTeamLogo} sport={form.sport} size={20} />}
                         <Button
                           type="button"
                           variant="ghost"
@@ -1147,7 +1139,7 @@ const AdminPanel = () => {
                     <div className="relative">
                       <Input className="h-10 bg-muted/20 pr-28" value={form.awayTeam} onChange={(e) => setForm({ ...form, awayTeam: e.target.value })} />
                       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                        {form.awayTeamLogo && <TeamLogo teamName={form.awayTeam} logoUrl={form.awayTeamLogo} size={20} />}
+                        {form.awayTeamLogo && <TeamLogo teamName={form.awayTeam} logoUrl={form.awayTeamLogo} sport={form.sport} size={20} />}
                         <Button
                           type="button"
                           variant="ghost"
@@ -1714,9 +1706,9 @@ const AdminPanel = () => {
                     return (
                       <div key={tip.id} className="flex flex-wrap items-center justify-between gap-2 p-3 bg-muted/20 rounded-xl hover:bg-muted/40 group">
                         <div className="flex items-center gap-2">
-                          <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={18} />
+                          <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} sport={tip.sport} size={18} />
                           <span className="text-[9px] text-muted-foreground">vs</span>
-                          <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={18} />
+                          <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} sport={tip.sport} size={18} />
                           <div className="ml-2 min-w-0">
                             <p className="text-xs font-medium truncate">{tip.homeTeam} vs {tip.awayTeam}</p>
                             <p className="text-[10px] text-muted-foreground truncate">{tip.prediction} @ {tip.odds}</p>
@@ -1760,9 +1752,9 @@ const AdminPanel = () => {
                       return (
                         <div key={tip.id} className="flex items-center justify-between p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-xl hover:bg-yellow-500/10 group">
                           <div className="flex items-center gap-2">
-                            <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} size={18} />
+                            <TeamLogo teamName={tip.homeTeam} logoUrl={tip.homeTeamLogo} sport={tip.sport} size={18} />
                             <span className="text-[9px] text-muted-foreground">vs</span>
-                            <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} size={18} />
+                            <TeamLogo teamName={tip.awayTeam} logoUrl={tip.awayTeamLogo} sport={tip.sport} size={18} />
                             <div className="ml-2">
                               <p className="text-xs font-medium">{tip.homeTeam} vs {tip.awayTeam}</p>
                               <p className="text-[10px] text-muted-foreground">{tip.prediction} @ {tip.odds}</p>

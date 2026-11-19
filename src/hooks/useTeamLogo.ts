@@ -1,25 +1,32 @@
-import { useState, useEffect, useRef } from "react";
-import { fetchTeamLogoUrl, getCustomTeamLogo } from "@/lib/logoFetcher";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { bareKey, getCustomTeamLogo, resolveTeamLogos, sportKind } from "@/lib/logoFetcher";
 
-const LOGO_CACHE_KEY = "team_logos_cache";
-const MAX_CACHE_ENTRIES = 500; // a busy day lists ~115 matches × 2 teams
-// A failed lookup is remembered so one team without a logo does not re-fire
-// six API searches on every page render. Shorter than the success TTL because
-// the sources gain coverage over time — failures deserve a retry eventually.
+/*
+ * Logo URLs per team and sport, cached in localStorage and shared between
+ * every mounted TeamLogo. An image that fails to load is reported back, kept
+ * out of the cache and, once the known URLs run out, triggers one online
+ * search for alternatives.
+ */
+
+// v2: keyed by sport, so cached v1 mix-ups (Celtic FC for Boston Celtics) go.
+const LOGO_CACHE_KEY = "team_logos_cache_v2";
+const MAX_CACHE_ENTRIES = 600;
+// A failed lookup is remembered so a team without a logo does not search on
+// every render. Shorter than a success because sources gain coverage.
 const NEGATIVE_TTL_MS = 6 * 60 * 60 * 1000;
 export const TEAM_LOGO_EVENT = "gsb-team-logo";
 
 interface CacheEntry {
-  url?: string;
+  urls: string[];
+  broken?: string[];
+  /** The online search already ran for this entry. */
+  online?: boolean;
   timestamp: number;
-  failedAt?: number;
 }
 
 const readCache = (): Record<string, CacheEntry> => {
   try {
-    const raw = localStorage.getItem(LOGO_CACHE_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw);
+    return JSON.parse(localStorage.getItem(LOGO_CACHE_KEY) || "{}");
   } catch {
     return {};
   }
@@ -27,120 +34,111 @@ const readCache = (): Record<string, CacheEntry> => {
 
 const writeCache = (cache: Record<string, CacheEntry>) => {
   try {
-    // Positive results outrank known failures when trimming to the cap.
+    // Teams with a logo outrank known misses when trimming to the cap.
     const entries = Object.entries(cache).sort((a, b) => {
-      if (!!a[1].url !== !!b[1].url) return a[1].url ? -1 : 1;
+      if (!!a[1].urls?.length !== !!b[1].urls?.length) return a[1].urls?.length ? -1 : 1;
       return b[1].timestamp - a[1].timestamp;
     });
-    const trimmed: Record<string, CacheEntry> = {};
-    for (const [k, v] of entries.slice(0, MAX_CACHE_ENTRIES)) trimmed[k] = v;
-    localStorage.setItem(LOGO_CACHE_KEY, JSON.stringify(trimmed));
+    localStorage.setItem(LOGO_CACHE_KEY, JSON.stringify(Object.fromEntries(entries.slice(0, MAX_CACHE_ENTRIES))));
   } catch {
-    /* quota — ignore */
+    /* quota: ignore */
   }
 };
 
-const keyOf = (teamName: string) => teamName.trim().toLowerCase();
+const keyOf = (teamName: string, sport?: string | null) => `${sportKind(sport)}:${bareKey(teamName)}`;
 
-export const getCachedTeamLogo = (teamName: string): string | null => {
-  if (!teamName) return null;
-  return readCache()[keyOf(teamName)]?.url || null;
+const putEntry = (key: string, entry: CacheEntry) => {
+  writeCache({ ...readCache(), [key]: entry });
+  window.dispatchEvent(new CustomEvent(TEAM_LOGO_EVENT, { detail: { key, urls: entry.urls } }));
 };
 
-// True while a previous full search for this team came back empty and has not
-// outlived its retry window.
-const isNegativeCached = (entry?: CacheEntry): boolean =>
-  !!entry && !entry.url && !!entry.failedAt &&
-  Date.now() - entry.failedAt < NEGATIVE_TTL_MS;
+/** Forget every found logo (and the v1 cache) so teams are looked up again. */
+export const clearTeamLogoCache = () => {
+  try {
+    localStorage.removeItem(LOGO_CACHE_KEY);
+    localStorage.removeItem("team_logos_cache");
+  } catch {
+    /* ignore */
+  }
+};
 
-const putCache = (teamName: string, entry: CacheEntry) =>
-  writeCache({ ...readCache(), [keyOf(teamName)]: entry });
+/** First known logo for a team, if any (no network). */
+export const getCachedTeamLogo = (teamName: string, sport?: string | null): string | null =>
+  teamName ? readCache()[keyOf(teamName, sport)]?.urls?.[0] ?? null : null;
 
-export const setCachedTeamLogo = (teamName: string, url: string) => {
+/** Remember a logo that's known to work for this team (e.g. one saved on a tip). */
+export const setCachedTeamLogo = (teamName: string, url: string, sport?: string | null) => {
   if (!teamName || !url) return;
-  putCache(teamName, { url, timestamp: Date.now() });
-  window.dispatchEvent(
-    new CustomEvent(TEAM_LOGO_EVENT, { detail: { teamName, url } }),
-  );
+  const key = keyOf(teamName, sport);
+  const prev = readCache()[key];
+  if (prev?.urls?.[0] === url || prev?.broken?.includes(url)) return;
+  putEntry(key, { ...prev, urls: [url, ...(prev?.urls ?? []).filter((u) => u !== url)], timestamp: Date.now() });
 };
 
-const setFailedTeamLogo = (teamName: string) => {
-  if (!teamName) return;
-  putCache(teamName, { timestamp: Date.now(), failedAt: Date.now() });
-};
-
-export const useTeamLogo = (teamName: string) => {
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+export const useTeamLogo = (teamName: string, sport?: string | null) => {
+  const key = keyOf(teamName || "", sport);
+  const [urls, setUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timer = useRef<ReturnType<typeof setTimeout>>();
 
-  // Other instances resolving the same team push their result here, so every
-  // mounted TeamLogo updates from a single network search.
+  const search = useCallback(
+    async (online: boolean) => {
+      setLoading(true);
+      try {
+        const prev = readCache()[key];
+        const found = await resolveTeamLogos(teamName, sport, { online, exclude: prev?.broken });
+        putEntry(key, { urls: found, broken: prev?.broken, online: online || prev?.online, timestamp: Date.now() });
+        setUrls(found);
+      } catch {
+        setUrls([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [key, teamName, sport],
+  );
+
+  // Another instance resolved the same team: take its result.
   useEffect(() => {
     const onResolved = (e: Event) => {
-      const { teamName: name, url } = (e as CustomEvent).detail || {};
-      if (
-        name &&
-        url &&
-        teamName &&
-        name.trim().toLowerCase() === teamName.trim().toLowerCase()
-      ) {
-        setLogoUrl(url);
+      const d = (e as CustomEvent).detail;
+      if (d?.key === key) {
+        setUrls(d.urls || []);
         setLoading(false);
       }
     };
     window.addEventListener(TEAM_LOGO_EVENT, onResolved);
     return () => window.removeEventListener(TEAM_LOGO_EVENT, onResolved);
-  }, [teamName]);
+  }, [key]);
 
   useEffect(() => {
     setLoading(false);
+    if (!teamName || teamName.trim().length < 2) return setUrls([]);
 
-    if (!teamName || teamName.length < 3) {
-      setLogoUrl(null);
-      return;
-    }
-
-    // NAJWYZSZY PRIORYTET: custom logo wgrany z dysku przez admina
     const custom = getCustomTeamLogo(teamName);
-    if (custom) {
-      setLogoUrl(custom.url);
-      return;
-    }
+    if (custom) return setUrls([custom.url]);
 
-    const cached = readCache()[keyOf(teamName)];
-    if (cached?.url) {
-      setLogoUrl(cached.url);
-      return;
-    }
-    // Fresh negative result: no point re-running six API calls right now.
-    if (isNegativeCached(cached)) {
-      setLogoUrl(null);
-      return;
-    }
+    const cached = readCache()[key];
+    if (cached?.urls?.length) return setUrls(cached.urls);
+    if (cached && Date.now() - cached.timestamp < NEGATIVE_TTL_MS) return setUrls([]);
 
-    // fetchTeamLogoUrl dedupes concurrent lookups internally, so several
-    // mounted logos for the same team share one network round-trip.
-    const fetchLogo = async () => {
-      setLoading(true);
-      try {
-        const found = await fetchTeamLogoUrl(teamName);
-        if (found) setCachedTeamLogo(teamName, found);
-        else setFailedTeamLogo(teamName);
-        setLogoUrl(found);
-      } catch {
-        setFailedTeamLogo(teamName);
-        setLogoUrl(null);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setUrls([]);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => search(false), 300);
+    return () => clearTimeout(timer.current);
+  }, [key, teamName, search]);
 
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(fetchLogo, 500);
+  /** An image failed to load: drop it, and look online once the list runs out. */
+  const reportBroken = useCallback(
+    (url: string) => {
+      const prev = readCache()[key] ?? { urls: [], timestamp: Date.now() };
+      const left = prev.urls.filter((u) => u !== url);
+      const entry: CacheEntry = { ...prev, urls: left, broken: [...new Set([...(prev.broken ?? []), url])] };
+      putEntry(key, entry);
+      if (!left.length && !prev.online && teamName) search(true);
+    },
+    [key, teamName, search],
+  );
 
-    return () => clearTimeout(timerRef.current);
-  }, [teamName]);
-
-  return { logoUrl, loading };
+  return { logoUrl: urls[0] ?? null, urls, loading, reportBroken };
 };

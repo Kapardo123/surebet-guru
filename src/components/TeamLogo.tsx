@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, memo } from "react";
-import { useTeamLogo, getCachedTeamLogo, setCachedTeamLogo } from "@/hooks/useTeamLogo";
+import { useTeamLogo, setCachedTeamLogo } from "@/hooks/useTeamLogo";
 import { MdSportsTennis } from "react-icons/md";
 import Crest from "@/components/Crest";
 
@@ -35,31 +35,15 @@ const getInitials = (name: string) => {
     .toUpperCase();
 };
 
-// Only real image URLs are worth rendering; anything else falls through the chain.
+// Real image URLs, or a logo the admin uploaded from disk (data URL).
 const isUsableUrl = (u?: string | null): u is string =>
-  !!u && /^https?:\/\//i.test(u.trim());
+  !!u && (/^https?:\/\//i.test(u.trim()) || /^data:image\//i.test(u.trim()));
 
-// Order = priority: what the tip/coupon/hero saved, then a fresh lookup for
-// this team, then whatever any previous render already resolved into cache.
-const buildCandidates = (
-  teamName: string,
-  propUrl?: string | null,
-  hookUrl?: string | null,
-): string[] => {
-  const seen = new Set<string>();
+// Order = priority: what the tip/coupon/hero saved, then every logo found for
+// this team and sport, best first. A URL that fails to load is skipped.
+const buildCandidates = (propUrl: string | null | undefined, found: string[]): string[] => {
   const list: string[] = [];
-  const push = (u?: string | null) => {
-    if (isUsableUrl(u)) {
-      const trimmed = u.trim();
-      if (!seen.has(trimmed)) {
-        seen.add(trimmed);
-        list.push(trimmed);
-      }
-    }
-  };
-  push(propUrl);
-  push(hookUrl);
-  push(getCachedTeamLogo(teamName));
+  for (const u of [propUrl, ...found]) if (isUsableUrl(u) && !list.includes(u.trim())) list.push(u.trim());
   return list;
 };
 
@@ -70,27 +54,24 @@ const TeamLogo = ({
   sport,
   tone = "dark",
 }: TeamLogoProps) => {
-  // The hook always resolves by name, so a broken stored URL can fall back to
-  // a freshly found one instead of dropping straight to initials.
-  const { logoUrl: hookLogoUrl, loading: hookLoading } = useTeamLogo(teamName);
+  // The hook resolves by name and sport, so a broken stored URL falls back to
+  // the next logo found instead of dropping straight to a generated crest.
+  const { urls: found, loading: hookLoading, reportBroken } = useTeamLogo(teamName, sport);
   const [failedUrls, setFailedUrls] = useState<string[]>([]);
 
   useEffect(() => {
     setFailedUrls([]);
-  }, [teamName]);
+  }, [teamName, sport]);
 
-  // A prop URL that loads also warms the global cache under this team name.
+  // A saved URL for this team also warms the shared cache.
   useEffect(() => {
-    if (isUsableUrl(propLogoUrl)) setCachedTeamLogo(teamName, propLogoUrl.trim());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [propLogoUrl, teamName]);
+    if (isUsableUrl(propLogoUrl) && /^https?:/i.test(propLogoUrl)) setCachedTeamLogo(teamName, propLogoUrl.trim(), sport);
+     
+  }, [propLogoUrl, teamName, sport]);
 
   const url = useMemo(
-    () =>
-      buildCandidates(teamName, propLogoUrl, hookLogoUrl).find(
-        (u) => !failedUrls.includes(u),
-      ) ?? null,
-    [teamName, propLogoUrl, hookLogoUrl, failedUrls],
+    () => buildCandidates(propLogoUrl, found).find((u) => !failedUrls.includes(u)) ?? null,
+    [propLogoUrl, found, failedUrls],
   );
 
   const isTennis = sport?.toLowerCase().includes("tennis");
@@ -142,7 +123,10 @@ const TeamLogo = ({
       className="object-contain flex-shrink-0"
       style={{ width: size, height: size }}
       loading="lazy"
-      onError={() => setFailedUrls((prev) => [...prev, url])}
+      onError={() => {
+        setFailedUrls((prev) => [...prev, url]);
+        reportBroken(url);
+      }}
     />
   );
 };
