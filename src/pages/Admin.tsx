@@ -15,6 +15,7 @@ import { clearTeamLogoCache } from "@/hooks/useTeamLogo";
 import { Tip } from "@/components/TipCard";
 import { Trash2, ArrowLeft, Crown, Receipt, X, Zap, Pencil, Save, Users, Bell, Search, RefreshCw, PlusCircle, Loader2, Sparkles, ClipboardPaste, List, Send, Clock, EyeOff, Upload, Download, BarChart3 } from "lucide-react";
 import { TIPSTERS } from "@/lib/tipsters";
+import AnalysisStyler from "@/components/AnalysisStyler";
 import TipCard from "@/components/TipCard";
 import AdminStats from "@/components/AdminStats";
 import { Link } from "react-router-dom";
@@ -1297,6 +1298,20 @@ const AdminPanel = () => {
                   placeholder="Why this tip?" 
                   value={form.description} 
                   onChange={(e) => setForm({ ...form, description: e.target.value })} 
+                />
+                <AnalysisStyler
+                  text={form.description}
+                  tipster={form.tipster}
+                  match={{
+                    homeTeam: form.homeTeam,
+                    awayTeam: form.awayTeam,
+                    sport: form.sport,
+                    league: form.league,
+                    prediction: form.prediction,
+                    odds: form.odds,
+                    kickoff: form.kickoff,
+                  }}
+                  onApply={(text) => setForm((f) => ({ ...f, description: text }))}
                 />
               </div>
 
