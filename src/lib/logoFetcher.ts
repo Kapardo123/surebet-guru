@@ -12,6 +12,7 @@ import {
   teamKey,
 } from "@/lib/logoNames";
 import { findInDirectories } from "@/lib/logoDirectories";
+import { getCountryFlag } from "@/lib/logoCountries";
 
 export { bareKey, isValidLogoUrl, nameScore, sportKind, teamKey };
 export type { LogoCandidate, SportKind };
@@ -20,11 +21,12 @@ export type { LogoCandidate, SportKind };
  * Team logo lookup.
  *
  * 1. A logo the admin uploaded for this team.
- * 2. The curated maps (football clubs, all NBA teams): instant, no network.
+ * 2. Instant, no API call: the curated maps (football clubs, all NBA teams)
+ *    and, for national teams, the country's flag.
  * 3. Online, sport-aware and in stages so a team costs few requests:
  *    a) league directories (ESPN, TheSportsDB): a whole league's teams and
  *       official logos in one cached request, the tip's league first;
- *    b) team search on TheSportsDB, SofaScore and FotMob (football);
+ *    b) team search on TheSportsDB, SofaScore, FotMob (football) and ESPN;
  *    c) only if nothing convincing yet: Wikidata's logo property and the
  *       team's Wikipedia page.
  * Every candidate is scored by name similarity and dropped when its sport
@@ -87,12 +89,13 @@ export const getCuratedLogo = (teamName: string, sport?: string | null): LogoCan
   const maps: [Map<string, string>, string][] =
     kind === "basketball"
       ? [[NBA_FULL_IDX, "NBA"], [NBA_SHORT_IDX, "NBA"]]
-      : kind === "football"
-        ? [[FOOTBALL, "Curated"]]
-        : kind === "hockey"
-          ? []
-          : // Sport unknown: football clubs, and NBA teams only by full name.
-            [[FOOTBALL, "Curated"], [NBA_FULL_IDX, "NBA"]];
+      : kind === "football" || kind === "volleyball" || kind === "handball"
+        ? // Multi-sport clubs wear the same crest in every section.
+          [[FOOTBALL, "Curated"]]
+        : kind === "other"
+          ? // Sport unknown: football clubs, and NBA teams only by full name.
+            [[FOOTBALL, "Curated"], [NBA_FULL_IDX, "NBA"]]
+          : [];
   for (const [map, source] of maps) {
     for (const k of keys) {
       const url = map.get(k);
@@ -167,6 +170,44 @@ const fromFotmob = async (teamName: string, kind: SportKind) =>
     ? parseFotmob(await fetchJson(`https://www.fotmob.com/api/search/suggest?term=${encodeURIComponent(teamName.trim())}&lang=en`), teamName)
     : [];
 
+/**
+ * ESPN's site-wide search (every sport ESPN covers, women's leagues too) ->
+ * candidates (exported for tests). Read defensively: any object with a team
+ * name and an image counts.
+ */
+export const parseEspnSearch = (data: any, teamName: string, kind: SportKind): LogoCandidate[] => {
+  const out: LogoCandidate[] = [];
+  const seen = new Set<string>();
+  const walk = (v: any, depth = 0) => {
+    if (!v || depth > 6) return;
+    if (Array.isArray(v)) return v.forEach((x) => walk(x, depth + 1));
+    if (typeof v !== "object") return;
+    const name = v.displayName ?? v.name;
+    const img = v.image?.default ?? v.image?.href ?? (typeof v.image === "string" ? v.image : null) ?? v.logo ?? v.logos?.[0]?.href;
+    const isTeam = v.type === "team" || v.uid?.includes?.("~t:") || (!!v.logos && !v.type);
+    if (isTeam && typeof name === "string" && isValidLogoUrl(img) && !seen.has(img)) {
+      const label = [v.sport, v.defaultLeagueSlug, v.league, v.description].filter((x) => typeof x === "string").join(" ");
+      if (sportAgrees(kind, label || null)) {
+        const score = nameScore(name, teamName);
+        if (score >= 60) {
+          seen.add(img);
+          out.push({ url: img, source: "ESPN search", teamName: name, score });
+        }
+      }
+    }
+    Object.values(v).forEach((x) => walk(x, depth + 1));
+  };
+  walk(data);
+  return out;
+};
+
+const fromEspnSearch = async (teamName: string, kind: SportKind) =>
+  parseEspnSearch(
+    await fetchJson(`https://site.web.api.espn.com/apis/search/v2?query=${encodeURIComponent(teamName.trim())}&limit=10&type=team`),
+    teamName,
+    kind,
+  );
+
 const fromSportsDB = async (teamName: string, kind: SportKind) =>
   parseSportsDB(
     await fetchJson(`https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(teamName.trim())}`),
@@ -211,7 +252,16 @@ const fromWikidata = async (teamName: string, kind: SportKind): Promise<LogoCand
   return out;
 };
 
-const WIKI_SUFFIX: Record<SportKind, string> = { football: " F.C.", basketball: " basketball", hockey: " hockey", other: "" };
+const WIKI_SUFFIX: Record<SportKind, string> = {
+  football: " F.C.",
+  basketball: " basketball",
+  hockey: " hockey",
+  volleyball: " volleyball",
+  handball: " handball",
+  "american-football": "",
+  baseball: "",
+  other: "",
+};
 
 const fromWikipedia = async (teamName: string, kind: SportKind): Promise<LogoCandidate[]> => {
   const out: LogoCandidate[] = [];
@@ -270,12 +320,13 @@ const searchOnline = (teamName: string, sport?: string | null, league?: string |
     p = slot(async () => {
       // League directories first: one cached request covers a whole league.
       const dir = await findInDirectories(teamName, kind, league).catch(() => null);
-      const [db, sofa, fotmob] = await Promise.all([
+      const [db, sofa, fotmob, espnSearch] = await Promise.all([
         fromSportsDB(teamName, kind),
         fromSofa(teamName, kind),
         fromFotmob(teamName, kind),
+        fromEspnSearch(teamName, kind),
       ]);
-      let all = rank([...(dir ? [dir] : []), ...db, ...sofa, ...fotmob]);
+      let all = rank([...(dir ? [dir] : []), ...db, ...sofa, ...fotmob, ...espnSearch]);
       if ((all[0]?.score ?? 0) < 85) {
         const [wd, wp] = await Promise.all([fromWikidata(teamName, kind), fromWikipedia(teamName, kind)]);
         all = rank([...all, ...wd, ...wp]);
@@ -299,7 +350,7 @@ export const resolveTeamLogos = async (
 ): Promise<string[]> => {
   if (!teamName || teamName.trim().length < 2) return [];
   const exclude = new Set(opts.exclude ?? []);
-  const first = [getCustomTeamLogo(teamName), getCuratedLogo(teamName, sport)].filter(
+  const first = [getCustomTeamLogo(teamName), getCuratedLogo(teamName, sport), getCountryFlag(teamName, sport, opts.league)].filter(
     (c): c is LogoCandidate => !!c && !exclude.has(c.url),
   );
   if (first.length && !opts.online) return first.map((c) => c.url);
@@ -314,7 +365,9 @@ export const fetchTeamLogoCandidates = async (
   league?: string | null,
 ): Promise<LogoCandidate[]> => {
   if (!teamName || teamName.trim().length < 2) return [];
-  const first = [getCustomTeamLogo(teamName), getCuratedLogo(teamName, sport)].filter((c): c is LogoCandidate => !!c);
+  const first = [getCustomTeamLogo(teamName), getCuratedLogo(teamName, sport), getCountryFlag(teamName, sport, league)].filter(
+    (c): c is LogoCandidate => !!c,
+  );
   const online = await searchOnline(teamName, sport, league).catch(() => []);
   const seen = new Set<string>();
   return [...first, ...online]

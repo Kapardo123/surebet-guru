@@ -1,4 +1,4 @@
-import { LogoCandidate, SportKind, bareKey, fetchJson, isValidLogoUrl, nameScore, teamKey } from "@/lib/logoNames";
+import { LogoCandidate, SportKind, bareKey, fetchJson, isValidLogoUrl, isWomen, nameScore, teamKey } from "@/lib/logoNames";
 
 /*
  * League directories: one request returns every team in a league with its
@@ -16,6 +16,8 @@ export interface DirTeam {
 interface Directory {
   id: string;
   sport: SportKind;
+  /** Women's competition: only opened for women's tips. */
+  women?: boolean;
   url: string;
   parse: (data: any) => DirTeam[];
 }
@@ -63,22 +65,66 @@ export const parseTsdbTeams = (data: any): DirTeam[] => {
 // The directories
 // ---------------------------------------------------------------------------
 
-const espn = (sport: SportKind, slug: string): Directory => ({
+// ESPN's path segment per sport ("football" there is American football).
+const ESPN_SPORT: Partial<Record<SportKind, string>> = {
+  football: "soccer",
+  basketball: "basketball",
+  hockey: "hockey",
+  "american-football": "football",
+  baseball: "baseball",
+};
+
+const espn = (sport: SportKind, slug: string, women = false): Directory => ({
   id: `espn:${slug}`,
   sport,
-  url: `https://site.api.espn.com/apis/site/v2/sports/${sport === "football" ? "soccer" : sport === "hockey" ? "hockey" : "basketball"}/${slug}/teams?limit=500`,
+  women,
+  url: `https://site.api.espn.com/apis/site/v2/sports/${ESPN_SPORT[sport] ?? "soccer"}/${slug}/teams?limit=500`,
   parse: parseEspnTeams,
 });
 
-const tsdb = (sport: SportKind, league: string): Directory => ({
+const tsdb = (sport: SportKind, league: string, women = false): Directory => ({
   id: `tsdb:${league}`,
   sport,
+  women,
   url: `https://www.thesportsdb.com/api/v1/json/3/search_all_teams.php?l=${encodeURIComponent(league)}`,
   parse: parseTsdbTeams,
 });
 
 /** League name patterns -> directory. First match wins, so specific ones go first. */
 const LEAGUES: [RegExp, Directory][] = [
+  // --- Women's football (only for women's tips; the club's men's league is
+  //     tried next, since women's sides carry the same crest)
+  [/champions league|liga mistrzyn|wchampions/, espn("football", "uefa.wchampions", true)],
+  [/world cup|mundial|mistrzostw swiata/, espn("football", "fifa.wwc", true)],
+  [/euro/, espn("football", "uefa.weuro", true)],
+  [/\bwsl\b|super league|england|anglia/, espn("football", "eng.w.1", true)],
+  [/nwsl|usa|national women/, espn("football", "usa.nwsl", true)],
+  [/liga f|spain|hiszpania/, espn("football", "esp.1")],
+  [/frauen|germany|niemcy/, espn("football", "ger.1")],
+  [/premiere ligue|d1 arkema|division 1|france|francja/, espn("football", "fra.1")],
+  [/serie a|italy|wlochy/, espn("football", "ita.1")],
+  [/eredivisie|vrouwen|netherlands|holandia/, espn("football", "ned.1")],
+  [/ekstraliga|poland|polska/, tsdb("football", "Polish Ekstraklasa")],
+  [/damallsvenskan|sweden|szwecja/, tsdb("football", "Swedish Allsvenskan")],
+  [/toppserien|norway|norwegia/, tsdb("football", "Norwegian Eliteserien")],
+  // --- National teams
+  [/world cup qual|eliminacje ms|wc qual/, espn("football", "fifa.worldq.uefa")],
+  [/world cup|mundial|mistrzostwa swiata/, espn("football", "fifa.world")],
+  [/nations league|liga narodow/, espn("football", "uefa.nations")],
+  [/euro qual|eliminacje euro/, espn("football", "uefa.euroq")],
+  [/\beuro\b|european championship|mistrzostwa europy/, espn("football", "uefa.euro")],
+  [/copa america/, espn("football", "conmebol.america")],
+  [/friendl|towarzysk/, espn("football", "fifa.friendly")],
+  [/club world cup|klubowe/, espn("football", "fifa.cwc")],
+  [/libertadores/, espn("football", "conmebol.libertadores")],
+  [/sudamericana/, espn("football", "conmebol.sudamericana")],
+  [/fa cup|puchar anglii/, espn("football", "eng.fa")],
+  [/carabao|league cup|efl cup/, espn("football", "eng.league_cup")],
+  [/copa del rey|puchar krola/, espn("football", "esp.copa_del_rey")],
+  [/dfb pokal|puchar niemiec/, espn("football", "ger.dfb_pokal")],
+  [/coppa italia|puchar wloch/, espn("football", "ita.coppa_italia")],
+  [/coupe de france|puchar francji/, espn("football", "fra.coupe_de_france")],
+  [/puchar polski|polish cup/, tsdb("football", "Polish Ekstraklasa")],
   // --- Football: European cups
   [/champions league|liga mistrzow|ucl\b/, espn("football", "uefa.champions")],
   [/conference league|liga konferencji/, espn("football", "uefa.europa.conf")],
@@ -137,26 +183,67 @@ const LEAGUES: [RegExp, Directory][] = [
   [/greek basket|basket league greece/, tsdb("basketball", "Greek Basket League")],
   // --- Hockey
   [/nhl/, espn("hockey", "nhl")],
+  [/khl/, tsdb("hockey", "Russian KHL")],
+  [/shl|swedish hockey/, tsdb("hockey", "Swedish SHL")],
+  [/liiga|finnish/, tsdb("hockey", "Finnish Liiga")],
+  [/\bdel\b|deutsche eishockey/, tsdb("hockey", "German DEL")],
+  [/extraliga|czech/, tsdb("hockey", "Czech Extraliga")],
+  [/polska hokej|phl|polish hockey/, tsdb("hockey", "Polish Hockey League")],
+  [/ahl/, tsdb("hockey", "American Hockey League")],
+  // --- Volleyball
+  [/plusliga/, tsdb("volleyball", "Polish PlusLiga")],
+  [/tauron liga|liga siatkowki kobiet/, tsdb("volleyball", "Polish Tauron Liga", true)],
+  [/superlega/, tsdb("volleyball", "Italian SuperLega")],
+  [/volleyball champions league|cev/, tsdb("volleyball", "CEV Champions League")],
+  // --- Handball
+  [/ehf|champions league/, tsdb("handball", "EHF Champions League")],
+  [/superliga|orlen superliga|polish handball/, tsdb("handball", "Polish Superliga Handball")],
+  [/bundesliga|hbl/, tsdb("handball", "German Handball-Bundesliga")],
+  [/liga asobal|asobal/, tsdb("handball", "Spanish Liga ASOBAL")],
+  // --- American football and baseball
+  [/nfl/, espn("american-football", "nfl")],
+  [/ncaa|college/, espn("american-football", "college-football")],
+  [/mlb/, espn("baseball", "mlb")],
 ];
 
 const norm = (s: string) => teamKey(s);
 
 /** Directories that fit a league name (and the sport, when known). */
-export const directoriesForLeague = (league: string | null | undefined, kind: SportKind): Directory[] => {
+export const directoriesForLeague = (
+  league: string | null | undefined,
+  kind: SportKind,
+  women = false,
+): Directory[] => {
   const l = norm(league || "");
   if (!l) return [];
-  return LEAGUES.filter(([re, d]) => re.test(l) && (kind === "other" || d.sport === kind)).map(([, d]) => d).slice(0, 2);
+  const sportOk = (d: Directory) => kind === "other" || d.sport === kind;
+  // The women's block ends where the national-team block starts.
+  const womenEnd = LEAGUES.findIndex(([, d]) => d.id === "espn:fifa.worldq.uefa");
+  const rules = women ? LEAGUES.slice(0, womenEnd) : LEAGUES.slice(womenEnd);
+  const found = rules.filter(([re, d]) => re.test(l) && sportOk(d)).map(([, d]) => d);
+  // A women's league not on the list: the men's directory for the same name.
+  if (women && found.length === 0) return directoriesForLeague(league, kind, false);
+  return found.slice(0, 2);
 };
 
 // Tried in this order when the tip's league is unknown or not listed.
 const DEFAULTS: Record<SportKind, string[]> = {
-  football: ["uefa.champions", "uefa.europa", "eng.1", "esp.1", "ger.1", "ita.1", "fra.1", "uefa.europa.conf", "ned.1", "por.1"],
+  football: ["uefa.champions", "uefa.europa", "eng.1", "esp.1", "ger.1", "ita.1", "fra.1", "uefa.europa.conf", "ned.1", "por.1", "fifa.world"],
   basketball: ["nba", "wnba"],
   hockey: ["nhl"],
+  volleyball: [],
+  handball: [],
+  "american-football": ["nfl", "college-football"],
+  baseball: ["mlb"],
   other: ["uefa.champions", "eng.1", "nba"],
 };
-const defaultDirectories = (kind: SportKind): Directory[] =>
-  DEFAULTS[kind].map((slug) => LEAGUES.find(([, d]) => d.id === `espn:${slug}`)?.[1]).filter((d): d is Directory => !!d);
+// Women's tips: the women's competitions first, then the men's (same crests).
+const WOMEN_DEFAULTS = ["uefa.wchampions", "eng.w.1", "usa.nwsl", "fifa.wwc"];
+
+const defaultDirectories = (kind: SportKind, women = false): Directory[] =>
+  [...(women && (kind === "football" || kind === "other") ? WOMEN_DEFAULTS : []), ...DEFAULTS[kind]]
+    .map((slug) => LEAGUES.find(([, d]) => d.id === `espn:${slug}`)?.[1])
+    .filter((d): d is Directory => !!d);
 
 // ---------------------------------------------------------------------------
 // Loading with a cache
@@ -224,7 +311,8 @@ export const findInDirectories = async (
   kind: SportKind,
   league?: string | null,
 ): Promise<LogoCandidate | null> => {
-  const dirs = [...directoriesForLeague(league, kind), ...defaultDirectories(kind)];
+  const women = isWomen(teamName, league);
+  const dirs = [...directoriesForLeague(league, kind, women), ...defaultDirectories(kind, women)];
   const seen = new Set<string>();
   for (const d of dirs) {
     if (seen.has(d.id)) continue;
